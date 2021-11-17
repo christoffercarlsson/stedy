@@ -1,0 +1,39 @@
+{
+  "name": "stedy",
+  "version": "0.0.0",
+  "description": "",
+  "license": "Unlicense",
+  "repository": "git://github.com/christoffercarlsson/stedy.git",
+  "type": "module",
+  "exports": {
+    "./build": "./src/build.js",
+    "./chunk": "./src/chunk.js",
+    "./crypto": "./src/crypto.js",
+    "./test": "./src/test.js",
+    "./util": "./src/util.js"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "esbuild": "^0.12.29",
+    "esbuild-node-externals": "^1.3.0",
+    "fs-extra": "^10.0.0"
+  },
+  "devDependencies": {
+    "@christoffercarlsson/eslint-config": "^0.3.0",
+    "@christoffercarlsson/prettier-config": "^0.5.0",
+    "@babel/eslint-parser": "^7.15.0",
+    "eslint": "^7.32.0",
+    "globby": "^12.0.2",
+    "prettier": "^2.3.2"
+  },
+  "files": [
+    "dist/**/*.js"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "format": "prettier --ignore-path .gitignore --loglevel silent --write .",
+    "lint": "eslint --ignore-path .gitignore .",
+    "prepack": "npm run build",
+    "test": "node scripts/run-tests.js"
+  }
+}

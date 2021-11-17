@@ -1,0 +1,6 @@
+export const ENCODING_BASE64 = 'base64'
+export const ENCODING_BASE64_URLSAFE = 'base64url'
+export const ENCODING_HEX = 'hex'
+export const ENCODING_JSON = 'json'
+export const ENCODING_PEM = 'pem'
+export const ENCODING_UTF8 = 'utf8'

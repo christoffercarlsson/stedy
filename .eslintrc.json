@@ -1,0 +1,9 @@
+{
+  "extends": "@christoffercarlsson/eslint-config",
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "allowImportExportEverywhere": true,
+    "requireConfigFile": false
+  },
+  "root": true
+}
