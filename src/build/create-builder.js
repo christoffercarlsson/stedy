@@ -4,6 +4,7 @@ import {
 } from 'path/posix'
 import { build as esbuild } from 'esbuild'
 import { nodeExternalsPlugin } from 'esbuild-node-externals'
+import aliasPlugin from 'esbuild-plugin-alias'
 import { emptyDir } from 'fs-extra'
 import {
   FORMAT_CJS,
@@ -39,10 +40,25 @@ const createEnvironmentDefinition = (environment) => {
   )
 }
 
+const createAliases = (workingDirectory, aliases) => {
+  if (aliases.size === 0) {
+    return {}
+  }
+  return [...aliases].reduce(
+    (definitions, [module, path]) => ({
+      ...definitions,
+      [module]: resolvePath(workingDirectory, path)
+    }),
+    {}
+  )
+}
+
 const build = async (
   workingDirectory,
   outputDirectory,
   entryPoints,
+  clean,
+  aliases,
   include,
   environment,
   target,
@@ -63,7 +79,9 @@ const build = async (
       'Unable to determine which external packages to include in the bundle'
     )
   }
-  await emptyDir(resolvePath(workingDirectory, outputDirectory))
+  if (clean) {
+    await emptyDir(resolvePath(workingDirectory, outputDirectory))
+  }
   await esbuild({
     absWorkingDir: workingDirectory,
     bundle: true,
@@ -77,7 +95,8 @@ const build = async (
       nodeExternalsPlugin({
         packagePath: resolvePath(workingDirectory, 'package.json'),
         allowList: include
-      })
+      }),
+      aliasPlugin(createAliases(workingDirectory, aliases))
     ],
     sourcemap: sourceMaps ? 'external' : false,
     target
@@ -93,11 +112,13 @@ const createBuilder =
     target = TARGET_ES2020
   } = {}) =>
   async (workingDirectory, entryPoints, options = {}) => {
-    const { include = [], environment = {} } = options
+    const { alias = {}, clean = true, include = [], environment = {} } = options
     await build(
       workingDirectory,
       outputDirectory,
       Array.isArray(entryPoints) ? entryPoints : [entryPoints],
+      clean === true,
+      alias instanceof Map ? alias : new Map(Object.entries(alias)),
       Array.isArray(include) ? include : [include],
       environment instanceof Map
         ? environment
