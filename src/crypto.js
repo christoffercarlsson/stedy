@@ -25,7 +25,7 @@ import _hmac from './crypto/hmac.js'
 import importKey from './crypto/import-key.js'
 import _pbkdf2 from './crypto/pbkdf2.js'
 import _sign from './crypto/sign.js'
-import { isWebEnvironment } from './crypto/utils.js'
+import { getCurves, isWebEnvironment } from './crypto/utils.js'
 import _verify from './crypto/verify.js'
 
 const crypto = memoizeFirst(async () => {
@@ -74,6 +74,7 @@ export {
   generateKey,
   generateRandomBytes,
   generateSignKeyPair,
+  getCurves,
   hash,
   hkdf,
   hmac,

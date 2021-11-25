@@ -169,7 +169,7 @@ const identifyCurve = (key) => {
   return curve || ''
 }
 
-const getCurves = () => {
+export const getCurves = () => {
   if (isWebEnvironment()) {
     return curves
   }

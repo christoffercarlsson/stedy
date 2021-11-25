@@ -3,6 +3,7 @@ import {
   addKeyPrefix,
   ensureSupportedCurve,
   ensureSupportedKey,
+  getCurves,
   removeKeyPrefix
 } from './utils/curve.js'
 import exportKeyPair from './utils/export-key-pair.js'
@@ -27,6 +28,7 @@ export {
   ensureSupportedHash,
   ensureSupportedKey,
   exportKeyPair,
+  getCurves,
   getHashSize,
   getKeySize,
   getSignAlgorithm,
