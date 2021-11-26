@@ -60,9 +60,9 @@ const format = (options, source, language) => {
   })
 }
 
-export const createFormatterSync =
+const createFormatter =
   (options = {}, onError) =>
-  (source, language) => {
+  async (source, language) => {
     try {
       return format(options, source, language)
     } catch (error) {
@@ -72,10 +72,5 @@ export const createFormatterSync =
       return typeof source === 'string' ? source : ''
     }
   }
-
-const createFormatter = (...args) => {
-  const format = createFormatterSync(...args)
-  return async (...formatArgs) => format(...formatArgs)
-}
 
 export default createFormatter

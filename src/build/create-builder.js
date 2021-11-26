@@ -60,6 +60,7 @@ const build = async (
   clean,
   aliases,
   include,
+  inject,
   environment,
   target,
   format,
@@ -88,6 +89,7 @@ const build = async (
     define: createEnvironmentDefinition(environment),
     entryPoints,
     format,
+    inject: inject.map((path) => resolvePath(workingDirectory, path)),
     minify,
     outdir: outputDirectory,
     platform: 'node',
@@ -103,6 +105,11 @@ const build = async (
   })
 }
 
+const ensureArray = (value) => (Array.isArray(value) ? value : [value])
+
+const ensureMap = (value) =>
+  value instanceof Map ? value : new Map(Object.entries(value))
+
 const createBuilder =
   ({
     format = FORMAT_ESM,
@@ -112,17 +119,22 @@ const createBuilder =
     target = TARGET_ES2020
   } = {}) =>
   async (workingDirectory, entryPoints, options = {}) => {
-    const { alias = {}, clean = true, include = [], environment = {} } = options
+    const {
+      alias = {},
+      clean = true,
+      include = [],
+      inject = [],
+      environment = {}
+    } = options
     await build(
       workingDirectory,
       outputDirectory,
-      Array.isArray(entryPoints) ? entryPoints : [entryPoints],
+      ensureArray(entryPoints),
       clean === true,
-      alias instanceof Map ? alias : new Map(Object.entries(alias)),
-      Array.isArray(include) ? include : [include],
-      environment instanceof Map
-        ? environment
-        : new Map(Object.entries(environment)),
+      ensureMap(alias),
+      ensureArray(include),
+      ensureArray(inject),
+      ensureMap(environment),
       target,
       format === FORMAT_CJS ? FORMAT_CJS : FORMAT_ESM,
       minify === true,

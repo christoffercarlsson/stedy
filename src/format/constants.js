@@ -1,8 +1,3 @@
-export const FORMAT_MESSAGE_DELETE = 'Delete `{{ deleteText }}`'
-export const FORMAT_MESSAGE_INSERT = 'Insert `{{ insertText }}`'
-export const FORMAT_MESSAGE_REPLACE =
-  'Replace `{{ deleteText }}` with `{{ insertText }}`'
-export const FORMAT_RULE = 'stedy/format'
 export const LANGUAGE_CSS = 'css'
 export const LANGUAGE_HTML = 'html'
 export const LANGUAGE_JAVASCRIPT = 'javascript'

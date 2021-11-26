@@ -9,6 +9,7 @@
     "./build": "./dist/build.js",
     "./chunk": "./dist/chunk.js",
     "./crypto": "./dist/crypto.js",
+    "./format": "./dist/format.js",
     "./lint": "./dist/lint.js",
     "./test": "./dist/test.js",
     "./util": "./dist/util.js"
@@ -28,7 +29,7 @@
     "globby": "^12.0.2",
     "path-browserify": "^1.0.1",
     "prettier": "^2.4.0",
-    "prettier-linter-helpers": "^1.0.0",
+    "process": "^0.11.10",
     "tty-browserify": "^0.0.1",
     "util": "^0.12.4"
   },

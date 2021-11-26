@@ -14,11 +14,18 @@ const run = async () => {
       'src/build.js',
       'src/chunk.js',
       'src/crypto.js',
+      'src/format.js',
       'src/test.js',
       'src/util.js'
     ],
     {
-      include: ['esbuild-node-externals', 'esbuild-plugin-alias', 'fs-extra']
+      include: [
+        '@christoffercarlsson/prettier-config',
+        'esbuild-node-externals',
+        'esbuild-plugin-alias',
+        'fs-extra',
+        'prettier'
+      ]
     }
   )
   await build(workingDirectory, 'src/lint.js', {
@@ -31,15 +38,14 @@ const run = async () => {
     clean: false,
     include: [
       '@christoffercarlsson/eslint-config',
-      '@christoffercarlsson/prettier-config',
       'assert-browserify',
       'eslint',
       'path-browserify',
-      'prettier',
-      'prettier-linter-helpers',
+      'process',
       'tty-browserify',
       'util'
-    ]
+    ],
+    inject: 'src/lint/process-shim.js'
   })
 }
 
