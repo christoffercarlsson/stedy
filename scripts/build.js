@@ -19,13 +19,7 @@ const run = async () => {
       'src/util.js'
     ],
     {
-      include: [
-        '@christoffercarlsson/prettier-config',
-        'esbuild-node-externals',
-        'esbuild-plugin-alias',
-        'fs-extra',
-        'prettier'
-      ]
+      include: ['@christoffercarlsson/prettier-config', 'prettier']
     }
   )
   await build(workingDirectory, 'src/lint.js', {

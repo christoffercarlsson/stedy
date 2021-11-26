@@ -1,3 +1,4 @@
+import { mkdir, rm as removePath } from 'fs/promises'
 import {
   isAbsolute as isAbsolutePath,
   resolve as resolvePath
@@ -5,7 +6,6 @@ import {
 import { build as esbuild } from 'esbuild'
 import { nodeExternalsPlugin } from 'esbuild-node-externals'
 import aliasPlugin from 'esbuild-plugin-alias'
-import { emptyDir } from 'fs-extra'
 import {
   FORMAT_CJS,
   FORMAT_ESM,
@@ -51,6 +51,11 @@ const createAliases = (workingDirectory, aliases) => {
     }),
     {}
   )
+}
+
+const emptyDir = async (path) => {
+  await removePath(path, { force: true, recursive: true })
+  await mkdir(path, { recursive: true })
 }
 
 const build = async (
