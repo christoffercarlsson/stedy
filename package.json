@@ -8,9 +8,8 @@
   "exports": {
     "./build": "./dist/build.js",
     "./chunk": "./dist/chunk.js",
+    "./code": "./dist/code.js",
     "./crypto": "./dist/crypto.js",
-    "./format": "./dist/format.js",
-    "./lint": "./dist/lint.js",
     "./test": "./dist/test.js",
     "./util": "./dist/util.js"
   },

@@ -13,8 +13,13 @@ const run = async () => {
     [
       'src/build.js',
       'src/chunk.js',
+      'src/code/language.js',
+      'src/code/parsers/babel.js',
+      'src/code/parsers/css.js',
+      'src/code/parsers/html.js',
+      'src/code/parsers/markdown.js',
+      'src/code/prettier.js',
       'src/crypto.js',
-      'src/format.js',
       'src/test.js',
       'src/util.js'
     ],
@@ -22,7 +27,7 @@ const run = async () => {
       include: ['@christoffercarlsson/prettier-config', 'prettier']
     }
   )
-  await build(workingDirectory, 'src/lint.js', {
+  await build(workingDirectory, 'src/code/lint.js', {
     alias: {
       assert: require.resolve('assert-browserify'),
       path: require.resolve('path-browserify'),
@@ -39,8 +44,17 @@ const run = async () => {
       'tty-browserify',
       'util'
     ],
-    inject: 'src/lint/process-shim.js'
+    inject: 'src/code/process-shim.js',
+    outputBase: 'src'
   })
+  await build(
+    workingDirectory,
+    ['src/code/format.js', 'src/code/parse.js', 'src/code.js'],
+    {
+      bundle: false,
+      clean: false
+    }
+  )
 }
 
 run().catch((error) => {

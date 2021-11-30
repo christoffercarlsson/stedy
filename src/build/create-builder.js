@@ -10,7 +10,13 @@ import {
   FORMAT_CJS,
   FORMAT_ESM,
   OUTPUT_DIRECTORY,
-  TARGET_ES2020
+  TARGET_ES2015,
+  TARGET_ES2016,
+  TARGET_ES2017,
+  TARGET_ES2018,
+  TARGET_ES2019,
+  TARGET_ES2020,
+  TARGET_ESNEXT
 } from './constants.js'
 
 const isValidExternals = (externals) =>
@@ -26,6 +32,17 @@ const isValidEntryPoints = (entryPoints) =>
     (entryPoint) =>
       typeof entryPoint === 'string' && !isAbsolutePath(entryPoint)
   )
+
+const isValidTarget = (target) =>
+  [
+    TARGET_ES2015,
+    TARGET_ES2016,
+    TARGET_ES2017,
+    TARGET_ES2018,
+    TARGET_ES2019,
+    TARGET_ES2020,
+    TARGET_ESNEXT
+  ].includes(target)
 
 const createEnvironmentDefinition = (environment) => {
   if (environment.size === 0) {
@@ -61,7 +78,9 @@ const emptyDir = async (path) => {
 const build = async (
   workingDirectory,
   outputDirectory,
+  outputBase,
   entryPoints,
+  bundle,
   clean,
   aliases,
   include,
@@ -88,14 +107,15 @@ const build = async (
   if (clean) {
     await emptyDir(resolvePath(workingDirectory, outputDirectory))
   }
-  await esbuild({
+  return esbuild({
     absWorkingDir: workingDirectory,
-    bundle: true,
+    bundle,
     define: createEnvironmentDefinition(environment),
     entryPoints,
     format,
     inject: inject.map((path) => resolvePath(workingDirectory, path)),
     minify,
+    outbase: outputBase,
     outdir: outputDirectory,
     platform: 'node',
     plugins: [
@@ -123,28 +143,34 @@ const createBuilder =
     sourceMaps = false,
     target = TARGET_ES2020
   } = {}) =>
-  async (workingDirectory, entryPoints, options = {}) => {
-    const {
+  (
+    workingDirectory,
+    entryPoints,
+    {
       alias = {},
+      bundle = true,
       clean = true,
+      environment = {},
       include = [],
       inject = [],
-      environment = {}
-    } = options
-    await build(
+      outputBase
+    } = {}
+  ) =>
+    build(
       workingDirectory,
       outputDirectory,
+      outputBase,
       ensureArray(entryPoints),
+      bundle === true,
       clean === true,
       ensureMap(alias),
       ensureArray(include),
       ensureArray(inject),
       ensureMap(environment),
-      target,
+      isValidTarget(target) ? target : TARGET_ES2020,
       format === FORMAT_CJS ? FORMAT_CJS : FORMAT_ESM,
       minify === true,
       sourceMaps === true
     )
-  }
 
 export default createBuilder
