@@ -73,14 +73,25 @@ export const readUint32BE = (chunk, byteOffset = 0) =>
 export const readUint32LE = (chunk, byteOffset = 0) =>
   readUint32(chunk, byteOffset, true)
 
-const readUint64 = (chunk, byteOffset, littleEndian) =>
-  toDataView(ensureView(chunk)).getBigUint64(byteOffset, littleEndian)
+const readUint64AsRegularNumber = (dataView, byteOffset, littleEndian) => {
+  const left = dataView.getUint32(byteOffset, littleEndian)
+  const right = dataView.getUint32(byteOffset + 4, littleEndian)
+  return littleEndian ? left + 2 ** 32 * right : 2 ** 32 * left + right
+}
 
-export const readUint64BE = (chunk, byteOffset = 0) =>
-  readUint64(chunk, byteOffset, false)
+const readUint64 = (chunk, byteOffset, littleEndian, asRegularNumber) => {
+  const dataView = toDataView(ensureView(chunk))
+  if (asRegularNumber) {
+    return readUint64AsRegularNumber(dataView, byteOffset, littleEndian)
+  }
+  return dataView.getBigUint64(byteOffset, littleEndian)
+}
 
-export const readUint64LE = (chunk, byteOffset = 0) =>
-  readUint64(chunk, byteOffset, true)
+export const readUint64BE = (chunk, byteOffset = 0, asRegularNumber = false) =>
+  readUint64(chunk, byteOffset, false, asRegularNumber)
+
+export const readUint64LE = (chunk, byteOffset = 0, asRegularNumber = false) =>
+  readUint64(chunk, byteOffset, true, asRegularNumber)
 
 const writeFloat32 = (chunk, value, byteOffset, littleEndian) => {
   const view = copy(chunk)
