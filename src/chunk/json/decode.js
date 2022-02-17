@@ -2,6 +2,9 @@ const parseJSON = (string) => {
   try {
     return JSON.parse(string)
   } catch (error) {
+    if (!(error instanceof SyntaxError)) {
+      throw error
+    }
     return {}
   }
 }
