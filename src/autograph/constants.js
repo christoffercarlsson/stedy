@@ -1,0 +1,15 @@
+export const AES_GCM_KEY_SIZE = 32
+export const AES_GCM_NONCE_SIZE = 12
+export const AES_GCM_TAG_SIZE = 16
+export const DH_OUTPUT_SIZE = 32
+export const HKDF_SALT_SIZE = 64
+export const HKDF_OUTPUT_SIZE = 32
+export const KEY_CONTEXT_INITIATOR = 0
+export const KEY_CONTEXT_RESPONDER = 1
+export const KEY_CONTEXT_AGREEMENT = 2
+export const PUBLIC_KEY_SIZE = 32
+export const PRIVATE_KEY_SIZE = 32
+export const SAFETY_NUMBER_DIVISOR = 100000
+export const SAFETY_NUMBER_ITERATIONS = 5200
+export const SIGNATURE_SIZE = 64
+export const CERTIFICATE_ENTRY_SIZE = PUBLIC_KEY_SIZE + SIGNATURE_SIZE
