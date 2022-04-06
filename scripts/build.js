@@ -26,22 +26,27 @@ const run = async () => {
   await build(workingDirectory, bundleFiles, {
     alias: {
       assert: require.resolve('assert-browserify'),
+      buffer: require.resolve('buffer/'),
       crypto: require.resolve('crypto-browserify'),
+      events: require.resolve('events/'),
       path: require.resolve('path-browserify'),
+      stream: require.resolve('stream-browserify'),
       tty: require.resolve('tty-browserify'),
       util: resolvePath(workingDirectory, 'node_modules/util/util.js')
     },
-    clean: false,
     include: [
       '@christoffercarlsson/eslint-config',
       '@christoffercarlsson/prettier-config',
       '@noble/ed25519',
       'assert-browserify',
+      'buffer',
       'crypto-browserify',
       'eslint',
+      'events',
       'path-browserify',
       'prettier',
       'process',
+      'stream-browserify',
       'tty-browserify',
       'util'
     ],

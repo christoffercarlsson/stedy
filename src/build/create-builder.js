@@ -44,18 +44,16 @@ const isValidTarget = (target) =>
     TARGET_ESNEXT
   ].includes(target)
 
-const createEnvironmentDefinition = (environment) => {
-  if (environment.size === 0) {
-    return undefined
-  }
-  return [...environment].reduce(
+const createEnvironmentDefinition = (environment) =>
+  [...environment].reduce(
     (definitions, [key, value]) => ({
       ...definitions,
       [`process.env.${key}`]: JSON.stringify(value)
     }),
-    {}
+    {
+      global: 'globalThis'
+    }
   )
-}
 
 const createAliases = (workingDirectory, aliases) => {
   if (aliases.size === 0) {
