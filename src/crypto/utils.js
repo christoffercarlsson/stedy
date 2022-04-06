@@ -4,6 +4,7 @@ import {
   ensureSupportedCurve,
   ensureSupportedKey,
   getCurves,
+  isCurve25519Web,
   removeKeyPrefix
 } from './utils/curve.js'
 import exportKeyPair from './utils/export-key-pair.js'
@@ -39,6 +40,7 @@ export {
   importPublicKey,
   importSignPrivateKey,
   importSignPublicKey,
+  isCurve25519Web,
   isWebEnvironment,
   removeKeyPrefix
 }

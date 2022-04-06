@@ -9,7 +9,13 @@ import {
   KEY_USAGE_SIGN,
   KEY_USAGE_VERIFY
 } from './constants.js'
-import { exportKeyPair, ensureSupportedCurve } from './utils.js'
+import { signKeyPair } from './curve25519.js'
+import {
+  exportKeyPair,
+  ensureSupportedCurve,
+  addKeyPrefix,
+  isCurve25519Web
+} from './utils.js'
 
 const getAlgorithm = (curve) => {
   switch (curve) {
@@ -31,14 +37,22 @@ const getAlgorithm = (curve) => {
   }
 }
 
-const generateSignKeyPair = async (crypto, curve) =>
-  exportKeyPair(
+const generateSignKeyPair = async (crypto, curve) => {
+  const crv = await ensureSupportedCurve(curve)
+  if (isCurve25519Web(crv)) {
+    const { publicKey, privateKey } = await signKeyPair()
+    return {
+      publicKey: addKeyPrefix(CURVE_CURVE25519, true, true, publicKey),
+      privateKey: addKeyPrefix(CURVE_CURVE25519, true, false, privateKey)
+    }
+  }
+  return exportKeyPair(
     crypto,
-    await crypto.subtle.generateKey(
-      getAlgorithm(await ensureSupportedCurve(curve)),
-      true,
-      [KEY_USAGE_SIGN, KEY_USAGE_VERIFY]
-    )
+    await crypto.subtle.generateKey(getAlgorithm(crv), true, [
+      KEY_USAGE_SIGN,
+      KEY_USAGE_VERIFY
+    ])
   )
+}
 
 export default generateSignKeyPair

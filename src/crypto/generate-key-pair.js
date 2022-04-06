@@ -7,7 +7,13 @@ import {
   KEY_USAGE_DERIVE_BITS,
   KEY_USAGE_DERIVE_KEY
 } from './constants.js'
-import { exportKeyPair, ensureSupportedCurve } from './utils.js'
+import { keyPair } from './curve25519.js'
+import {
+  exportKeyPair,
+  ensureSupportedCurve,
+  addKeyPrefix,
+  isCurve25519Web
+} from './utils.js'
 
 const getNamedCurve = (curve) => {
   if (curve === CURVE_CURVE448) {
@@ -20,7 +26,15 @@ const getNamedCurve = (curve) => {
 }
 
 const generateKeyPair = async (crypto, curve) => {
-  const namedCurve = getNamedCurve(await ensureSupportedCurve(curve))
+  const crv = await ensureSupportedCurve(curve)
+  if (isCurve25519Web(crv)) {
+    const { publicKey, privateKey } = await keyPair()
+    return {
+      publicKey: addKeyPrefix(CURVE_CURVE25519, false, true, publicKey),
+      privateKey: addKeyPrefix(CURVE_CURVE25519, false, false, privateKey)
+    }
+  }
+  const namedCurve = getNamedCurve(crv)
   return exportKeyPair(
     crypto,
     await crypto.subtle.generateKey(

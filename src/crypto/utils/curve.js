@@ -11,7 +11,7 @@ import {
 } from '../constants.js'
 import isWebEnvironment from './is-web-environment.js'
 
-const curves = [CURVE_P256, CURVE_P384, CURVE_P521]
+const curves = [CURVE_P256, CURVE_P384, CURVE_P521, CURVE_CURVE25519]
 
 const prefixes = [
   [
@@ -173,8 +173,11 @@ export const getCurves = () => {
   if (isWebEnvironment()) {
     return curves
   }
-  return curves.concat([CURVE_CURVE448, CURVE_CURVE25519])
+  return curves.concat([CURVE_CURVE448])
 }
+
+export const isCurve25519Web = (curve) =>
+  curve === CURVE_CURVE25519 && isWebEnvironment()
 
 const isSupportedCurve = (curve) => getCurves().includes(curve)
 

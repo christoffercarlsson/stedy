@@ -1,9 +1,12 @@
 import { createFrom } from '../chunk.js'
 import { ALGORITHM_ECDH, SHARED_SECRET_DEFAULT_SIZE } from './constants.js'
+import { scalarMult } from './curve25519.js'
 import {
   ensureSupportedKey,
   importPrivateKey,
-  importPublicKey
+  importPublicKey,
+  isCurve25519Web,
+  removeKeyPrefix
 } from './utils.js'
 
 const deriveSharedSecret = async (
@@ -14,7 +17,14 @@ const deriveSharedSecret = async (
 ) => {
   const privateKey = createFrom(ourPrivateKey)
   const publicKey = createFrom(theirPublicKey)
+  const outputSize =
+    Number.isInteger(size) && size > 0 ? size : SHARED_SECRET_DEFAULT_SIZE
   const curve = await ensureSupportedKey(privateKey)
+  if (isCurve25519Web(curve)) {
+    return (
+      await scalarMult(removeKeyPrefix(privateKey), removeKeyPrefix(publicKey))
+    ).subarray(0, outputSize)
+  }
   return createFrom(
     await crypto.subtle.deriveBits(
       {
@@ -22,8 +32,7 @@ const deriveSharedSecret = async (
         public: await importPublicKey(crypto, curve, publicKey)
       },
       await importPrivateKey(crypto, curve, privateKey),
-      (Number.isInteger(size) && size > 0 ? size : SHARED_SECRET_DEFAULT_SIZE) *
-        8
+      outputSize * 8
     )
   )
 }
