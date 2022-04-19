@@ -8,13 +8,19 @@ const require = createRequire(import.meta.url)
 
 const workingDirectory = cwd()
 
-const findBuildFiles = async (bundleFiles) => {
-  const files = await globby('src/**/*.js', { onlyFiles: true })
-  return files.filter((path) => !bundleFiles.includes(path))
+const findBuildFiles = async (bundleFiles, shims) => {
+  const files = await globby('src/**/*.js', {
+    cwd: workingDirectory,
+    onlyFiles: true
+  })
+  return files.filter(
+    (path) => !bundleFiles.includes(path) && !shims.includes(path)
+  )
 }
 
 const run = async () => {
   const bundleFiles = [
+    'src/build/plugins.js',
     'src/code/lint.js',
     'src/code/parsers/babel.js',
     'src/code/parsers/css.js',
@@ -23,6 +29,7 @@ const run = async () => {
     'src/code/prettier.js',
     'src/crypto/curve25519.js'
   ]
+  const shims = ['src/code/process-shim.js']
   await build(workingDirectory, bundleFiles, {
     alias: {
       assert: require.resolve('assert-browserify'),
@@ -34,25 +41,9 @@ const run = async () => {
       tty: require.resolve('tty-browserify'),
       util: resolvePath(workingDirectory, 'node_modules/util/util.js')
     },
-    include: [
-      '@christoffercarlsson/eslint-config',
-      '@christoffercarlsson/prettier-config',
-      '@noble/ed25519',
-      'assert-browserify',
-      'buffer',
-      'crypto-browserify',
-      'eslint',
-      'events',
-      'path-browserify',
-      'prettier',
-      'process',
-      'stream-browserify',
-      'tty-browserify',
-      'util'
-    ],
-    inject: 'src/code/process-shim.js'
+    inject: shims
   })
-  await build(workingDirectory, await findBuildFiles(bundleFiles), {
+  await build(workingDirectory, await findBuildFiles(bundleFiles, shims), {
     bundle: false,
     clean: false
   })

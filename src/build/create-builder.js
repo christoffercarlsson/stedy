@@ -4,8 +4,6 @@ import {
   resolve as resolvePath
 } from 'path/posix'
 import { build as esbuild } from 'esbuild'
-import { nodeExternalsPlugin } from 'esbuild-node-externals'
-import aliasPlugin from 'esbuild-plugin-alias'
 import {
   FORMAT_CJS,
   FORMAT_ESM,
@@ -18,12 +16,7 @@ import {
   TARGET_ES2020,
   TARGET_ESNEXT
 } from './constants.js'
-
-const isValidExternals = (externals) =>
-  Array.isArray(externals) &&
-  externals.every(
-    (external) => typeof external === 'string' && external.length > 0
-  )
+import { aliasPlugin } from './plugins.js'
 
 const isValidEntryPoints = (entryPoints) =>
   Array.isArray(entryPoints) &&
@@ -81,7 +74,6 @@ const build = async (
   bundle,
   clean,
   aliases,
-  include,
   inject,
   environment,
   target,
@@ -97,11 +89,6 @@ const build = async (
       'Each entry point must be a path relative to the working directory'
     )
   }
-  if (!isValidExternals(include)) {
-    throw new Error(
-      'Unable to determine which external packages to include in the bundle'
-    )
-  }
   if (clean) {
     await emptyDir(resolvePath(workingDirectory, outputDirectory))
   }
@@ -109,20 +96,17 @@ const build = async (
     absWorkingDir: workingDirectory,
     bundle,
     define: createEnvironmentDefinition(environment),
-    entryPoints,
+    entryPoints: entryPoints.filter(
+      (entryPoint) => !inject.includes(entryPoint)
+    ),
+    external: bundle ? ['esbuild'] : undefined,
     format,
     inject: inject.map((path) => resolvePath(workingDirectory, path)),
     minify,
     outbase: outputBase,
     outdir: outputDirectory,
     platform: 'node',
-    plugins: [
-      nodeExternalsPlugin({
-        packagePath: resolvePath(workingDirectory, 'package.json'),
-        allowList: include
-      }),
-      aliasPlugin(createAliases(workingDirectory, aliases))
-    ],
+    plugins: [aliasPlugin(createAliases(workingDirectory, aliases))],
     sourcemap: sourceMaps ? 'external' : false,
     target
   })
@@ -149,7 +133,6 @@ const createBuilder =
       bundle = true,
       clean = true,
       environment = {},
-      include = [],
       inject = [],
       outputBase
     } = {}
@@ -162,7 +145,6 @@ const createBuilder =
       bundle === true,
       clean === true,
       ensureMap(alias),
-      ensureArray(include),
       ensureArray(inject),
       ensureMap(environment),
       isValidTarget(target) ? target : TARGET_ES2020,

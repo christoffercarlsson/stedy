@@ -19,9 +19,7 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "esbuild": "^0.13.0",
-    "esbuild-node-externals": "^1.4.1",
-    "esbuild-plugin-alias": "^0.2.1"
+    "esbuild": "^0.14.0"
   },
   "devDependencies": {
     "@christoffercarlsson/eslint-config": "^0.5.0",
@@ -30,6 +28,7 @@
     "assert-browserify": "^2.0.0",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
+    "esbuild-plugin-alias": "^0.2.1",
     "eslint": "^7.32.0",
     "events": "^3.3.0",
     "globby": "^13.1.1",
