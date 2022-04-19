@@ -9,7 +9,6 @@ import {
 } from '../crypto.js'
 import {
   AES_GCM_KEY_SIZE,
-  CERTIFICATE_ENTRY_SIZE,
   HKDF_OUTPUT_SIZE,
   HKDF_SALT_SIZE,
   KEY_CONTEXT_AGREEMENT,
@@ -44,7 +43,7 @@ const ensureViewEntries = (value, size, message) => {
 export const ensureValidCertificate = (
   certificate,
   message = 'Invalid certificate size'
-) => ensureViewEntries(certificate, CERTIFICATE_ENTRY_SIZE, message)
+) => ensureViewEntries(certificate, PUBLIC_KEY_SIZE + SIGNATURE_SIZE, message)
 
 export const ensureValidPrivateKey = (
   key,

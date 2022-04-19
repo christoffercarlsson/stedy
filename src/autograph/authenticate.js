@@ -9,9 +9,9 @@ import {
 import { CIPHER_AES256_GCM, encrypt } from '../crypto.js'
 import {
   AES_GCM_NONCE_SIZE,
-  CERTIFICATE_ENTRY_SIZE,
   KEY_CONTEXT_INITIATOR,
-  PUBLIC_KEY_SIZE
+  PUBLIC_KEY_SIZE,
+  SIGNATURE_SIZE
 } from './constants.js'
 import {
   deriveKey,
@@ -21,13 +21,11 @@ import {
 } from './utils.js'
 
 const createCertificate = (certificate) => {
-  const entries = Math.min(
-    certificate.byteLength / CERTIFICATE_ENTRY_SIZE,
-    65535
-  )
+  const entrySize = PUBLIC_KEY_SIZE + SIGNATURE_SIZE
+  const entries = Math.min(certificate.byteLength / entrySize, 65535)
   return append(
     writeUint16BE(alloc(2), entries),
-    certificate.subarray(0, CERTIFICATE_ENTRY_SIZE * entries)
+    certificate.subarray(0, entrySize * entries)
   )
 }
 

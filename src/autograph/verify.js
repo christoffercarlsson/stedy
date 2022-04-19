@@ -10,7 +10,6 @@ import {
 import { CIPHER_AES256_GCM, decrypt } from '../crypto.js'
 import {
   AES_GCM_NONCE_SIZE,
-  CERTIFICATE_ENTRY_SIZE,
   KEY_CONTEXT_INITIATOR,
   PUBLIC_KEY_SIZE,
   SIGNATURE_SIZE
@@ -37,7 +36,7 @@ const parse = (ourKeyShare, theirKeyShare, message) => {
   const [signature, next] = read(message, SIGNATURE_SIZE)
   const [certificate, data] = read(
     next.subarray(2),
-    readUint16BE(next) * CERTIFICATE_ENTRY_SIZE
+    readUint16BE(next) * (PUBLIC_KEY_SIZE + SIGNATURE_SIZE)
   )
   return { ourPublicKey, theirIdentityKey, signature, certificate, data }
 }
@@ -67,8 +66,8 @@ const isTrustedParty = (identityKeys, identityKey) =>
   identityKeys.some((key) => equals(key, identityKey))
 
 const findTrustedSignatures = (identityKeys, certificate) => {
-  const entries = split(certificate, CERTIFICATE_ENTRY_SIZE).map((entry) =>
-    read(entry, PUBLIC_KEY_SIZE)
+  const entries = split(certificate, PUBLIC_KEY_SIZE + SIGNATURE_SIZE).map(
+    (entry) => read(entry, PUBLIC_KEY_SIZE)
   )
   return entries.reduce((trustedEntries, [identityKey, signature]) => {
     if (isTrustedParty(identityKeys, identityKey)) {
