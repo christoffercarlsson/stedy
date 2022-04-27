@@ -6,6 +6,7 @@ import createTrustedParties from './autograph/create-trusted-parties.js'
 import deriveSecretKey from './autograph/derive-secret-key.js'
 import { generateKeyPair } from './autograph/generate-key-pair.js'
 import generateKeyShare from './autograph/generate-key-share.js'
+import sign from './autograph/sign.js'
 import verify from './autograph/verify.js'
 
 export {
@@ -18,5 +19,6 @@ export {
   generateKeyPair,
   generateKeyShare,
   identify,
+  sign,
   verify
 }

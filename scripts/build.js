@@ -37,6 +37,8 @@ const run = async () => {
       crypto: require.resolve('crypto-browserify'),
       events: require.resolve('events/'),
       path: require.resolve('path-browserify'),
+      process: require.resolve('process/'),
+      string_decoder: require.resolve('string_decoder/'),
       stream: require.resolve('stream-browserify'),
       tty: require.resolve('tty-browserify'),
       util: resolvePath(workingDirectory, 'node_modules/util/util.js')

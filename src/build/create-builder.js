@@ -1,4 +1,5 @@
 import { mkdir, rm as removePath } from 'fs/promises'
+import { builtinModules as nodeCoreModules } from 'module'
 import {
   isAbsolute as isAbsolutePath,
   resolve as resolvePath
@@ -66,6 +67,11 @@ const emptyDir = async (path) => {
   await mkdir(path, { recursive: true })
 }
 
+const getExternals = (aliases) => [
+  'esbuild',
+  ...nodeCoreModules.filter((name) => !aliases.has(name))
+]
+
 const build = async (
   workingDirectory,
   outputDirectory,
@@ -99,13 +105,13 @@ const build = async (
     entryPoints: entryPoints.filter(
       (entryPoint) => !inject.includes(entryPoint)
     ),
-    external: bundle ? ['esbuild'] : undefined,
+    external: bundle ? getExternals(aliases) : undefined,
     format,
     inject: inject.map((path) => resolvePath(workingDirectory, path)),
     minify,
     outbase: outputBase,
     outdir: outputDirectory,
-    platform: 'node',
+    platform: 'browser',
     plugins: [aliasPlugin(createAliases(workingDirectory, aliases))],
     sourcemap: sourceMaps ? 'external' : false,
     target
