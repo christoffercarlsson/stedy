@@ -3,21 +3,15 @@ import {
   ALGORITHM_ECDSA,
   ALGORITHM_HKDF,
   ALGORITHM_HMAC,
-  ALGORITHM_NODE_ED25519,
   ALGORITHM_NODE_ED448,
   ALGORITHM_PBKDF2,
-  CURVE_CURVE25519,
   CURVE_CURVE448,
-  CURVE_NODE_ED25519,
   CURVE_NODE_ED448,
-  CURVE_NODE_X25519,
   CURVE_NODE_X448,
   KEY_FORMAT_PKCS8,
   KEY_FORMAT_RAW,
   KEY_FORMAT_SPKI,
-  KEY_SIZE_NODE_ED25519,
   KEY_SIZE_NODE_ED448,
-  KEY_SIZE_NODE_X25519,
   KEY_SIZE_NODE_X448,
   KEY_USAGE_DERIVE_BITS,
   KEY_USAGE_DERIVE_KEY,
@@ -25,63 +19,43 @@ import {
   KEY_USAGE_VERIFY
 } from '../constants.js'
 
-const getEcdhCurve = (curve) => {
-  if (curve === CURVE_CURVE448) {
-    return CURVE_NODE_X448
-  }
-  if (curve === CURVE_CURVE25519) {
-    return CURVE_NODE_X25519
-  }
-  return curve
-}
-
 const getEcdhAlgorithm = (curve, isPublicKey) => {
-  const params = { name: ALGORITHM_ECDH, namedCurve: getEcdhCurve(curve) }
-  if (curve === CURVE_CURVE448 || curve === CURVE_CURVE25519) {
+  const params = {
+    name: ALGORITHM_ECDH,
+    namedCurve: curve === CURVE_CURVE448 ? CURVE_NODE_X448 : curve
+  }
+  if (curve === CURVE_CURVE448) {
     return { ...params, public: isPublicKey }
   }
   return params
 }
 
 const getSignAlgorithm = (curve, isPublicKey) => {
-  switch (curve) {
-    case CURVE_CURVE448:
-      return {
-        name: ALGORITHM_NODE_ED448,
-        namedCurve: CURVE_NODE_ED448,
-        public: isPublicKey
-      }
-    case CURVE_CURVE25519:
-      return {
-        name: ALGORITHM_NODE_ED25519,
-        namedCurve: CURVE_NODE_ED25519,
-        public: isPublicKey
-      }
-    default:
-      return {
-        name: ALGORITHM_ECDSA,
-        namedCurve: curve
-      }
+  if (curve === CURVE_CURVE448) {
+    return {
+      name: ALGORITHM_NODE_ED448,
+      namedCurve: CURVE_NODE_ED448,
+      public: isPublicKey
+    }
+  }
+  return {
+    name: ALGORITHM_ECDSA,
+    namedCurve: curve
   }
 }
 
 const getImportFormat = (curve, isPublicKey) => {
-  if (curve === CURVE_CURVE448 || curve === CURVE_CURVE25519) {
+  if (curve === CURVE_CURVE448) {
     return KEY_FORMAT_RAW
   }
   return isPublicKey ? KEY_FORMAT_SPKI : KEY_FORMAT_PKCS8
 }
 
-const getEddsaKeySize = (curve, sign) => {
-  if (curve === CURVE_CURVE448) {
-    return sign ? KEY_SIZE_NODE_ED448 : KEY_SIZE_NODE_X448
-  }
-  return sign ? KEY_SIZE_NODE_ED25519 : KEY_SIZE_NODE_X25519
-}
-
 const getImportKey = (curve, key, sign) =>
-  curve === CURVE_CURVE448 || curve === CURVE_CURVE25519
-    ? key.subarray(key.byteLength - getEddsaKeySize(curve, sign))
+  curve === CURVE_CURVE448
+    ? key.subarray(
+        key.byteLength - (sign ? KEY_SIZE_NODE_ED448 : KEY_SIZE_NODE_X448)
+      )
     : key
 
 const getEcdhImportKey = (curve, key) => getImportKey(curve, key, false)

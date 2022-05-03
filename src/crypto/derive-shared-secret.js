@@ -1,11 +1,14 @@
 import { createFrom } from '../chunk.js'
-import { ALGORITHM_ECDH, SHARED_SECRET_DEFAULT_SIZE } from './constants.js'
+import {
+  ALGORITHM_ECDH,
+  CURVE_CURVE25519,
+  SHARED_SECRET_DEFAULT_SIZE
+} from './constants.js'
 import { scalarMult } from './curve25519.js'
 import {
   ensureSupportedKey,
   importPrivateKey,
   importPublicKey,
-  isCurve25519Web,
   removeKeyPrefix
 } from './utils.js'
 
@@ -20,7 +23,7 @@ const deriveSharedSecret = async (
   const outputSize =
     Number.isInteger(size) && size > 0 ? size : SHARED_SECRET_DEFAULT_SIZE
   const curve = await ensureSupportedKey(privateKey)
-  if (isCurve25519Web(curve)) {
+  if (curve === CURVE_CURVE25519) {
     return (
       await scalarMult(removeKeyPrefix(privateKey), removeKeyPrefix(publicKey))
     ).subarray(0, outputSize)

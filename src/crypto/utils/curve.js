@@ -176,9 +176,6 @@ export const getCurves = () => {
   return curves.concat([CURVE_CURVE448])
 }
 
-export const isCurve25519Web = (curve) =>
-  curve === CURVE_CURVE25519 && isWebEnvironment()
-
 const isSupportedCurve = (curve) => getCurves().includes(curve)
 
 export const ensureSupportedCurve = (curve) =>
