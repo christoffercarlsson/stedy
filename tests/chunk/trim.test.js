@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { trimLeft, trimRight } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { trimLeft, trimRight } from '../../dist/chunk.js'
 
 export default describe('trim', () => {
   const view = Uint8Array.from([1, 2, 3])

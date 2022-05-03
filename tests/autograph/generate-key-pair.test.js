@@ -1,5 +1,5 @@
-import { describe, expect, it } from '../../src/test.js'
-import { generateKeyPair } from '../../src/autograph.js'
+import { describe, expect, it } from '../../dist/test.js'
+import { generateKeyPair } from '../../dist/autograph.js'
 
 export default describe('generateKeyPair', () =>
   it('should generate an Ed25519 identity key pair', async () => {

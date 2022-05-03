@@ -1,6 +1,6 @@
-import { describe, expect, it } from '../../src/test.js'
-import { concat } from '../../src/chunk.js'
-import { generateKeyPair, generateKeyShare } from '../../src/autograph.js'
+import { describe, expect, it } from '../../dist/test.js'
+import { concat } from '../../dist/chunk.js'
+import { generateKeyPair, generateKeyShare } from '../../dist/autograph.js'
 
 export default describe('generateKeyShare', () =>
   it('should generate a key share', async () => {

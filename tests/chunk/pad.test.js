@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { padLeft, padRight } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { padLeft, padRight } from '../../dist/chunk.js'
 
 export default describe('pad', () => [
   it('should pad a given chunk with zeroes on the left', () => {

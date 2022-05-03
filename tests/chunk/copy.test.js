@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { copy } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { copy } from '../../dist/chunk.js'
 
 export default describe('copy', () =>
   it('should create a copy of a given chunk', () => {

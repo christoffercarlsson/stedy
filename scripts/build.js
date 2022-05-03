@@ -1,4 +1,3 @@
-import { resolve as resolvePath } from 'path/posix'
 import { cwd, exit } from 'process'
 import { createRequire } from 'module'
 import { globby } from 'globby'
@@ -8,14 +7,12 @@ const require = createRequire(import.meta.url)
 
 const workingDirectory = cwd()
 
-const findBuildFiles = async (bundleFiles, shims) => {
+const findBuildFiles = async (bundleFiles) => {
   const files = await globby('src/**/*.js', {
     cwd: workingDirectory,
     onlyFiles: true
   })
-  return files.filter(
-    (path) => !bundleFiles.includes(path) && !shims.includes(path)
-  )
+  return files.filter((path) => !bundleFiles.includes(path))
 }
 
 const run = async () => {
@@ -29,23 +26,15 @@ const run = async () => {
     'src/code/prettier.js',
     'src/crypto/curve25519.js'
   ]
-  const shims = ['src/code/process-shim.js']
   await build(workingDirectory, bundleFiles, {
     alias: {
       assert: require.resolve('assert-browserify'),
-      buffer: require.resolve('buffer/'),
-      crypto: require.resolve('crypto-browserify'),
-      events: require.resolve('events/'),
       path: require.resolve('path-browserify'),
-      process: require.resolve('process/'),
-      string_decoder: require.resolve('string_decoder/'),
-      stream: require.resolve('stream-browserify'),
-      tty: require.resolve('tty-browserify'),
-      util: resolvePath(workingDirectory, 'node_modules/util/util.js')
+      util: require.resolve('util/')
     },
-    inject: shims
+    mainFields: ['browser', 'main', 'module']
   })
-  await build(workingDirectory, await findBuildFiles(bundleFiles, shims), {
+  await build(workingDirectory, await findBuildFiles(bundleFiles), {
     bundle: false,
     clean: false
   })

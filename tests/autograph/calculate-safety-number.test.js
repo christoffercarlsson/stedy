@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { generateKeyPair, calculateSafetyNumber } from '../../src/autograph.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { generateKeyPair, calculateSafetyNumber } from '../../dist/autograph.js'
 
 export default describe('calculateSafetyNumber', () =>
   it('should calculate a safety number given the public keys of both parties', async () => {

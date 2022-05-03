@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { generateKeyPair } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { generateKeyPair } from '../../dist/crypto.js'
 
 export default describe('generateKeyPair', () => {
   const curves = new Map([

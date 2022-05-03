@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { generateRandomBytes } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { generateRandomBytes } from '../../dist/crypto.js'
 
 export default describe('generateRandomBytes', () =>
   it('should generate a set of psuedo-random bytes of a given size', async () => {

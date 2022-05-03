@@ -1,6 +1,6 @@
 /* eslint-disable no-new-wrappers */
-import { describe, it, expect } from '../../src/test.js'
-import { equals } from '../../src/util.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { equals } from '../../dist/util.js'
 
 export default describe('equals', () => {
   const name = 'Alice'

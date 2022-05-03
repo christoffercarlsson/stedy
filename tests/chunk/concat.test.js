@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { concat } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { concat } from '../../dist/chunk.js'
 
 export default describe('concat', () => [
   it('should create a new chunk by concatenating all the chunks in a given list together', () => {

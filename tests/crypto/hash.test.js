@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { hash } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { hash } from '../../dist/crypto.js'
 
 export default describe('hash', () => {
   const message = Uint8Array.from([

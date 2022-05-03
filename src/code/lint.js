@@ -1,4 +1,4 @@
-import { Linter } from 'eslint/lib/linter/linter.js'
+import { Linter } from '../../node_modules/eslint/lib/linter/linter.js'
 import defaultConfig from '@christoffercarlsson/eslint-config'
 import { partial } from '../util.js'
 
@@ -21,7 +21,7 @@ const lintSource = async (config, source, fix = false) => {
   return { fixed: false, source, messages }
 }
 
-export const createLinter = (options = {}) =>
-  partial(lintSource, getConfig(options))
+export const createLinter = (config = {}) =>
+  partial(lintSource, getConfig(config))
 
 export const lint = createLinter()

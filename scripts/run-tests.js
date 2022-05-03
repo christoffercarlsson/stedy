@@ -1,9 +1,10 @@
 import { cwd, exit } from 'process'
 import { cpus } from 'os'
 import { globby } from 'globby'
-import { run } from '../src/test.js'
-;(async () => {
-  const { summary } = await run(
+import { run as runTests } from '../dist/test.js'
+
+const run = async () => {
+  const { summary } = await runTests(
     await globby('tests/**/*.test.js', { onlyFiles: true }),
     {
       concurrency: cpus().length,
@@ -28,4 +29,9 @@ import { run } from '../src/test.js'
     })
     exit(1)
   }
-})()
+}
+
+run().catch((error) => {
+  console.error(error)
+  exit(1)
+})

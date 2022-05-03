@@ -7,6 +7,8 @@ import {
   TARGET_ES2018,
   TARGET_ES2019,
   TARGET_ES2020,
+  TARGET_ES2021,
+  TARGET_ES2022,
   TARGET_ESNEXT
 } from './build/constants.js'
 import createBuilder from './build/create-builder.js'
@@ -22,6 +24,8 @@ export {
   TARGET_ES2018,
   TARGET_ES2019,
   TARGET_ES2020,
+  TARGET_ES2021,
+  TARGET_ES2022,
   TARGET_ESNEXT,
   createBuilder,
   build

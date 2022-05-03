@@ -1,4 +1,4 @@
-import { describe, it, expect } from '../../src/test.js'
+import { describe, it, expect } from '../../dist/test.js'
 import {
   alloc,
   readFloat32BE,
@@ -37,7 +37,7 @@ import {
   writeUint32LE,
   writeUint64BE,
   writeUint64LE
-} from '../../src/chunk.js'
+} from '../../dist/chunk.js'
 
 export default describe('Numbers', () => [
   it('should store a signed 32-bit floating-point value at the specified byte offset', () => {

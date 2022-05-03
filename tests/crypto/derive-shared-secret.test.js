@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { deriveSharedSecret } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { deriveSharedSecret } from '../../dist/crypto.js'
 
 export default describe('deriveSharedSecret', () => {
   const keys = new Map([

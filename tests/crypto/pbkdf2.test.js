@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { pbkdf2 } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { pbkdf2 } from '../../dist/crypto.js'
 
 export default describe('pbkdf2', () => {
   const password = Uint8Array.from([

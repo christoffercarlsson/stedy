@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { createFrom, toString, split } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { createFrom, toString, split } from '../../dist/chunk.js'
 
 export default describe('split', () => [
   it('should split a chunk into smaller chunks', () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { xor } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { xor } from '../../dist/chunk.js'
 
 export default describe('xor', () => [
   it('should calculate the XOR of two given chunks of the same size', () => {

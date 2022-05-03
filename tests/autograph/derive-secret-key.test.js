@@ -1,9 +1,9 @@
-import { describe, expect, it } from '../../src/test.js'
+import { describe, expect, it } from '../../dist/test.js'
 import {
   generateKeyPair,
   generateKeyShare,
   deriveSecretKey
-} from '../../src/autograph.js'
+} from '../../dist/autograph.js'
 
 export default describe('deriveSecretKey', () =>
   it('should derive a shared secret key', async () => {

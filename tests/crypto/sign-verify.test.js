@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { generateSignKeyPair, sign, verify } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { generateSignKeyPair, sign, verify } from '../../dist/crypto.js'
 
 export default describe('sign/verify', () => {
   const message = Uint8Array.from([

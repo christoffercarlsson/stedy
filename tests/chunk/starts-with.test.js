@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { concat, createFrom, startsWith } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { concat, createFrom, startsWith } from '../../dist/chunk.js'
 
 export default describe('startsWith', () =>
   it('should check to see if a chunk starts with a given chunk', () => {

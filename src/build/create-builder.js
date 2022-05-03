@@ -8,6 +8,9 @@ import { build as esbuild } from 'esbuild'
 import {
   FORMAT_CJS,
   FORMAT_ESM,
+  MAIN_FIELD_BROWSER,
+  MAIN_FIELD_MAIN,
+  MAIN_FIELD_MODULE,
   OUTPUT_DIRECTORY,
   TARGET_ES2015,
   TARGET_ES2016,
@@ -15,6 +18,8 @@ import {
   TARGET_ES2018,
   TARGET_ES2019,
   TARGET_ES2020,
+  TARGET_ES2021,
+  TARGET_ES2022,
   TARGET_ESNEXT
 } from './constants.js'
 import { aliasPlugin } from './plugins.js'
@@ -35,6 +40,8 @@ const isValidTarget = (target) =>
     TARGET_ES2018,
     TARGET_ES2019,
     TARGET_ES2020,
+    TARGET_ES2021,
+    TARGET_ES2022,
     TARGET_ESNEXT
   ].includes(target)
 
@@ -84,6 +91,7 @@ const build = async (
   environment,
   target,
   format,
+  mainFields,
   minify,
   sourceMaps
 ) => {
@@ -108,10 +116,11 @@ const build = async (
     external: bundle ? getExternals(aliases) : undefined,
     format,
     inject: inject.map((path) => resolvePath(workingDirectory, path)),
+    mainFields,
     minify,
     outbase: outputBase,
     outdir: outputDirectory,
-    platform: 'browser',
+    platform: 'neutral',
     plugins: [aliasPlugin(createAliases(workingDirectory, aliases))],
     sourcemap: sourceMaps ? 'external' : false,
     target
@@ -123,11 +132,24 @@ const ensureArray = (value) => (Array.isArray(value) ? value : [value])
 const ensureMap = (value) =>
   value instanceof Map ? value : new Map(Object.entries(value))
 
+const defaultMainFields = [
+  MAIN_FIELD_BROWSER,
+  MAIN_FIELD_MODULE,
+  MAIN_FIELD_MAIN
+]
+
+const ensureValidMainFields = (mainFields) => {
+  const fields = ensureArray(mainFields)
+  const isValidFields =
+    fields.length > 0 &&
+    fields.every((field) => defaultMainFields.includes(field))
+  return isValidFields ? fields : defaultMainFields
+}
+
 const createBuilder =
   ({
     format = FORMAT_ESM,
     outputDirectory = OUTPUT_DIRECTORY,
-    minify = true,
     sourceMaps = false,
     target = TARGET_ES2020
   } = {}) =>
@@ -140,6 +162,8 @@ const createBuilder =
       clean = true,
       environment = {},
       inject = [],
+      mainFields = defaultMainFields,
+      minify = true,
       outputBase
     } = {}
   ) =>
@@ -155,6 +179,7 @@ const createBuilder =
       ensureMap(environment),
       isValidTarget(target) ? target : TARGET_ES2020,
       format === FORMAT_CJS ? FORMAT_CJS : FORMAT_ESM,
+      ensureValidMainFields(mainFields),
       minify === true,
       sourceMaps === true
     )

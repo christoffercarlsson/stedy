@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { hkdf } from '../../src/crypto.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { hkdf } from '../../dist/crypto.js'
 
 export default describe('hkdf', () => {
   const ikm = Uint8Array.from([

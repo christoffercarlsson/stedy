@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../src/test.js'
-import { encode } from '../../src/chunk.js'
+import { describe, it, expect } from '../../dist/test.js'
+import { encode } from '../../dist/chunk.js'
 
 export default describe('encode', () => [
   it('should produce a correct Base 64 representation of a given chunk', () => {
