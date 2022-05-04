@@ -1,4 +1,4 @@
-import { mkdir, rm as removePath } from 'fs/promises'
+import { mkdir as createPath, rm as removePath } from 'fs/promises'
 import { builtinModules as nodeCoreModules } from 'module'
 import {
   isAbsolute as isAbsolutePath,
@@ -71,7 +71,7 @@ const createAliases = (workingDirectory, aliases) => {
 
 const emptyDir = async (path) => {
   await removePath(path, { force: true, recursive: true })
-  await mkdir(path, { recursive: true })
+  await createPath(path, { recursive: true })
 }
 
 const getExternals = (aliases) => [

@@ -1,15 +1,56 @@
-import { split } from '../chunk.js'
-import { deriveSharedSecret } from '../crypto.js'
-import { DH_OUTPUT_SIZE, PUBLIC_KEY_SIZE } from './constants.js'
-import { importPrivateKey, importPublicKey } from './utils.js'
+import { KEY_CONTEXT_AGREEMENT } from './constants.js'
+import { deriveSharedSecretKey } from './derive-shared-secret.js'
+import { deriveKey } from './utils.js'
+import verify from './verify.js'
 
-const deriveSecretKey = async (theirKeyShare, ourPrivateKey) => {
-  const [, theirPublicKey] = split(theirKeyShare, PUBLIC_KEY_SIZE)
-  return deriveSharedSecret(
-    await importPrivateKey(ourPrivateKey),
-    await importPublicKey(theirPublicKey),
-    DH_OUTPUT_SIZE
-  )
+const createResult = (identityKey, secretKey, error = null) => ({
+  error: error || null,
+  identityKey,
+  secretKey,
+  verified: error === null
+})
+
+const createErrorResult = (error) => createResult(null, error)
+
+const deriveSecretKey = async (
+  trustThreshold,
+  trustedParties,
+  ourEphemeralPrivateKey,
+  sharedSecret,
+  ourKeyShare,
+  theirKeyShare,
+  ciphertext,
+  context
+) => {
+  try {
+    const {
+      data: theirEphemeralPublicKey,
+      error: verificationError,
+      identityKey
+    } = await verify(
+      trustThreshold,
+      trustedParties,
+      sharedSecret,
+      ourKeyShare,
+      theirKeyShare,
+      ciphertext,
+      context,
+      true
+    )
+    if (verificationError) {
+      return createErrorResult(verificationError)
+    }
+    const secretKey = await deriveKey(
+      await deriveSharedSecretKey(
+        ourEphemeralPrivateKey,
+        theirEphemeralPublicKey
+      ),
+      KEY_CONTEXT_AGREEMENT
+    )
+    return createResult(identityKey, secretKey)
+  } catch (error) {
+    return createErrorResult(error)
+  }
 }
 
 export default deriveSecretKey

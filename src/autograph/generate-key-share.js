@@ -8,7 +8,7 @@ const generateKeyShare = async (ourIdentityPublicKey) => {
     await ensureValidPublicKey(ourIdentityPublicKey),
     keyPair.publicKey
   ])
-  return [keyShare, keyPair]
+  return [keyShare, keyPair.privateKey]
 }
 
 export default generateKeyShare

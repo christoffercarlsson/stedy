@@ -8,7 +8,7 @@ import {
   verify
 } from '../crypto.js'
 import {
-  AES_GCM_KEY_SIZE,
+  DH_OUTPUT_SIZE,
   HKDF_OUTPUT_SIZE,
   HKDF_SALT_SIZE,
   KEY_CONTEXT_AGREEMENT,
@@ -80,10 +80,10 @@ export const ensureValidKeyShare = (
   message = 'Invalid key share size'
 ) => ensureView(keyShare, PUBLIC_KEY_SIZE * 2, message)
 
-export const ensureValidSecretKey = (
-  key,
-  message = 'Invalid secret key size'
-) => ensureView(key, AES_GCM_KEY_SIZE, message)
+export const ensureValidSharedSecret = (
+  sharedSecret,
+  message = 'Invalid shared secret key size'
+) => ensureView(sharedSecret, DH_OUTPUT_SIZE, message)
 
 export const ensureValidSignature = (
   signature,
@@ -128,11 +128,11 @@ export const importPublicKey = (key) => importKey(key, false, true)
 
 export const importPublicSigningKey = (key) => importKey(key, true, true)
 
-export const deriveKey = async (key, context) => {
+export const deriveKey = async (sharedSecret, context) => {
   const salt = alloc(HKDF_SALT_SIZE)
   return hkdf(
     HASH_SHA512,
-    await ensureValidSecretKey(key),
+    await ensureValidSharedSecret(sharedSecret),
     salt,
     await ensureValidKeyContext(context),
     HKDF_OUTPUT_SIZE

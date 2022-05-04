@@ -18,14 +18,14 @@ import {
   deriveKey,
   ensureValidKeyContext,
   ensureValidKeyShare,
-  ensureValidSecretKey,
+  ensureValidSharedSecret,
   ensureValidTrustedParties,
   ensureValidTrustThreshold,
   verifyData
 } from './utils.js'
 
-const decryptMessage = async (secretKey, context, ciphertext, keyShare) => {
-  const key = await deriveKey(secretKey, context)
+const decryptMessage = async (sharedSecret, context, ciphertext, keyShare) => {
+  const key = await deriveKey(sharedSecret, context)
   const nonce = alloc(AES_GCM_NONCE_SIZE)
   return decrypt(CIPHER_AES256_GCM, key, nonce, ciphertext, keyShare)
 }
@@ -137,7 +137,7 @@ const verifyAuthentication = async (
   ourKeyShare,
   theirKeyShare,
   authentication,
-  skipDataVerification
+  omitDataInTrustVerification
 ) => {
   const { ourPublicKey, theirIdentityKey, signature, certificate, data } =
     parse(ourKeyShare, theirKeyShare, authentication)
@@ -152,7 +152,7 @@ const verifyAuthentication = async (
     trustedParties,
     theirIdentityKey,
     certificate,
-    skipDataVerification ? createFrom() : data
+    omitDataInTrustVerification ? createFrom() : data
   )
   return verifyResult(
     signatureVerified === true,
@@ -165,17 +165,17 @@ const verifyAuthentication = async (
 const verify = async (
   trustThreshold,
   trustedParties,
-  secretKey,
+  sharedSecret,
   ourKeyShare,
   theirKeyShare,
   ciphertext,
   context = KEY_CONTEXT_INITIATOR,
-  skipDataVerification = false
+  omitDataInTrustVerification = false
 ) => {
   try {
     const keyShare = await ensureValidKeyShare(theirKeyShare)
     const authentication = await decryptMessage(
-      await ensureValidSecretKey(secretKey),
+      await ensureValidSharedSecret(sharedSecret),
       await ensureValidKeyContext(context),
       createFrom(ciphertext),
       keyShare
@@ -186,7 +186,7 @@ const verify = async (
       await ensureValidKeyShare(ourKeyShare),
       keyShare,
       authentication,
-      skipDataVerification === true
+      omitDataInTrustVerification === true
     )
     return result
   } catch (error) {

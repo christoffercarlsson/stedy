@@ -30,14 +30,14 @@ const createCertificate = (certificate) => {
 }
 
 const encryptMessage = async (
-  secretKey,
+  sharedSecret,
   context,
   signature,
   certificate,
   data,
   keyShare
 ) => {
-  const key = await deriveKey(secretKey, context)
+  const key = await deriveKey(sharedSecret, context)
   const nonce = alloc(AES_GCM_NONCE_SIZE)
   const message = concat([signature, createCertificate(certificate), data])
   return encrypt(CIPHER_AES256_GCM, key, nonce, message, keyShare)
@@ -47,7 +47,7 @@ export const authenticate = async (
   signingFunction,
   ourData,
   certificate,
-  secretKey,
+  sharedSecret,
   ourKeyShare,
   theirKeyShare,
   context = KEY_CONTEXT_INITIATOR
@@ -62,7 +62,7 @@ export const authenticate = async (
     concat([data, theirPublicKey])
   )
   return encryptMessage(
-    secretKey,
+    sharedSecret,
     context,
     signature,
     await ensureValidCertificate(certificate),
@@ -74,7 +74,7 @@ export const authenticate = async (
 export const identify = (
   signingFunction,
   certificate,
-  secretKey,
+  sharedSecret,
   ourKeyShare,
   theirKeyShare,
   context
@@ -83,7 +83,7 @@ export const identify = (
     signingFunction,
     createFrom(),
     certificate,
-    secretKey,
+    sharedSecret,
     ourKeyShare,
     theirKeyShare,
     context
