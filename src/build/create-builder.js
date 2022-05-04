@@ -129,8 +129,15 @@ const build = async (
 
 const ensureArray = (value) => (Array.isArray(value) ? value : [value])
 
-const ensureMap = (value) =>
-  value instanceof Map ? value : new Map(Object.entries(value))
+const ensureMap = (value) => {
+  if (value instanceof Map) {
+    return value
+  }
+  if (Array.isArray(value)) {
+    return new Map(value)
+  }
+  return new Map(Object.entries(value))
+}
 
 const defaultMainFields = [
   MAIN_FIELD_BROWSER,
