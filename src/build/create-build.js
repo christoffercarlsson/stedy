@@ -7,7 +7,7 @@ import {
   OUTPUT_DIRECTORY,
   PLATFORM_BROWSER,
   PLATFORM_NEUTRAL,
-  TARGET_ESNEXT
+  TARGET_ES2020
 } from './constants.js'
 import { aliasPlugin } from './plugins.js'
 import {
@@ -105,7 +105,7 @@ export const createBuild =
     minify = false,
     outputDirectory = OUTPUT_DIRECTORY,
     sourceMaps = false,
-    target = TARGET_ESNEXT,
+    target = TARGET_ES2020,
     workingDirectory = cwd()
   } = {}) =>
   (
