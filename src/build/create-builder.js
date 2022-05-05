@@ -139,17 +139,15 @@ const ensureMap = (value) => {
   return new Map(Object.entries(value))
 }
 
-const defaultMainFields = [
-  MAIN_FIELD_BROWSER,
-  MAIN_FIELD_MODULE,
-  MAIN_FIELD_MAIN
-]
+const defaultMainFields = [MAIN_FIELD_MODULE]
 
 const ensureValidMainFields = (mainFields) => {
   const fields = ensureArray(mainFields)
   const isValidFields =
     fields.length > 0 &&
-    fields.every((field) => defaultMainFields.includes(field))
+    fields.every((field) =>
+      [MAIN_FIELD_BROWSER, MAIN_FIELD_MODULE, MAIN_FIELD_MAIN].includes(field)
+    )
   return isValidFields ? fields : defaultMainFields
 }
 

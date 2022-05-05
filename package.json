@@ -14,17 +14,14 @@
     "./test": "./dist/test.js",
     "./util": "./dist/util.js"
   },
-  "browser": {
-    "crypto": false
-  },
   "sideEffects": false,
   "dependencies": {
+    "@noble/ed25519": "^1.6.0",
     "esbuild": "^0.14.0"
   },
   "devDependencies": {
     "@christoffercarlsson/eslint-config": "^0.6.0",
     "@christoffercarlsson/prettier-config": "^0.6.1",
-    "@noble/ed25519": "^1.6.0",
     "assert-browserify": "^2.0.0",
     "esbuild-plugin-alias": "^0.2.1",
     "eslint": "^8.14.0",
