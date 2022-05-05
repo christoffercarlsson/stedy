@@ -5,6 +5,7 @@ import { cwd } from 'process'
 import { build as esbuild } from 'esbuild'
 import {
   OUTPUT_DIRECTORY,
+  PLATFORM_BROWSER,
   PLATFORM_NEUTRAL,
   TARGET_ESNEXT
 } from './constants.js'
@@ -32,8 +33,8 @@ const createDefine = (environment) =>
 const createEntryPoints = (entryPoints, inject) =>
   entryPoints.filter((entryPoint) => !inject.includes(entryPoint))
 
-const createExternal = (bundle, aliases) => {
-  if (!bundle) {
+const createExternal = (bundle, platform, aliases) => {
+  if (!bundle || platform === PLATFORM_BROWSER) {
     return undefined
   }
   return ['esbuild', ...nodeCoreModules.filter((name) => !aliases.has(name))]
@@ -86,7 +87,7 @@ const build = async (
     bundle,
     define: createDefine(environment),
     entryPoints: createEntryPoints(entryPoints, inject),
-    external: createExternal(bundle, aliases),
+    external: createExternal(bundle, platform, aliases),
     format: 'esm',
     inject: createInject(workingDirectory, inject),
     minify,
