@@ -1,14 +1,12 @@
-import { cwd, exit } from 'process'
+import { exit } from 'process'
 import { createRequire } from 'module'
 import { globby } from 'globby'
-import { build } from '../src/build.js'
+import { build, bundle } from '../src/build.js'
 
 const require = createRequire(import.meta.url)
-const workingDirectory = cwd()
 
 const findBuildFiles = async (excludeFiles) => {
   const files = await globby('src/**/*.js', {
-    cwd: workingDirectory,
     onlyFiles: true
   })
   return files.filter((path) => !excludeFiles.includes(path))
@@ -24,18 +22,16 @@ const run = async () => {
     'src/code/parsers/markdown.js',
     'src/code/prettier.js'
   ]
-  await build(workingDirectory, bundleFiles, {
+  await bundle(bundleFiles, {
     alias: {
       assert: require.resolve('assert-browserify'),
       path: require.resolve('path-browserify'),
       util: require.resolve('util/')
     },
-    mainFields: ['browser', 'main', 'module']
+    clean: true,
+    platform: 'browser'
   })
-  await build(workingDirectory, await findBuildFiles(bundleFiles), {
-    bundle: false,
-    clean: false
-  })
+  await build(await findBuildFiles(bundleFiles))
 }
 
 run().catch((error) => {

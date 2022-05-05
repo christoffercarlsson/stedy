@@ -1,6 +1,7 @@
 import {
-  FORMAT_CJS,
-  FORMAT_ESM,
+  PLATFORM_BROWSER,
+  PLATFORM_NEUTRAL,
+  PLATFORM_NODE,
   TARGET_ES2015,
   TARGET_ES2016,
   TARGET_ES2017,
@@ -11,13 +12,15 @@ import {
   TARGET_ES2022,
   TARGET_ESNEXT
 } from './build/constants.js'
-import createBuilder from './build/create-builder.js'
+import { createBuild, createBundle } from './build/create-build.js'
 
-const build = createBuilder()
+const build = createBuild()
+const bundle = createBundle()
 
 export {
-  FORMAT_CJS,
-  FORMAT_ESM,
+  PLATFORM_BROWSER,
+  PLATFORM_NEUTRAL,
+  PLATFORM_NODE,
   TARGET_ES2015,
   TARGET_ES2016,
   TARGET_ES2017,
@@ -27,6 +30,8 @@ export {
   TARGET_ES2021,
   TARGET_ES2022,
   TARGET_ESNEXT,
-  createBuilder,
-  build
+  createBuild,
+  createBundle,
+  build,
+  bundle
 }
