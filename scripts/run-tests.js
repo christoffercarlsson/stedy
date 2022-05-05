@@ -4,7 +4,7 @@ import { globby } from 'globby'
 import { run as runTests } from '../dist/test.js'
 
 const run = async () => {
-  const { summary } = await runTests(
+  const { summary, results } = await runTests(
     await globby('tests/**/*.test.js', { onlyFiles: true }),
     {
       concurrency: cpus().length,
@@ -24,9 +24,15 @@ const run = async () => {
     } seconds, ${numberOfPassedTests} passed, ${numberOfFailedTests} failed.\n`
   )
   if (errors.length > 0) {
-    errors.forEach((error) => {
-      console.error(error)
-    })
+    results
+      .filter((result) => !result.pass)
+      .map((result) => ({
+        ...result,
+        results: result.results.filter((r) => !r.pass)
+      }))
+      .forEach((result) => {
+        console.log(JSON.stringify(result, null, 2))
+      })
     exit(1)
   }
 }
