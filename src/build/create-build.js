@@ -53,6 +53,9 @@ const createInject = (workingDirectory, inject, entryPoints, jsxShim) => {
   return paths
 }
 
+const createPlatform = (platform, entryPoints) =>
+  hasJSXEntryPoint(entryPoints) ? PLATFORM_BROWSER : platform
+
 const createAliases = (workingDirectory, aliases) => {
   if (aliases.size === 0) {
     return {}
@@ -83,7 +86,7 @@ const build = async (
   inject,
   environment,
   target,
-  platform,
+  targetPlatform,
   [jsxFactory, jsxFragment, jsxShim],
   bundle,
   clean,
@@ -93,6 +96,7 @@ const build = async (
   if (clean) {
     await emptyDirectory(resolvePath(workingDirectory, outputDirectory))
   }
+  const platform = createPlatform(targetPlatform, entryPoints)
   return esbuild({
     absWorkingDir: workingDirectory,
     bundle,
