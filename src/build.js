@@ -1,4 +1,6 @@
 import {
+  JSX_PRESET_PREACT,
+  JSX_PRESET_REACT,
   PLATFORM_BROWSER,
   PLATFORM_NEUTRAL,
   PLATFORM_NODE,
@@ -18,6 +20,8 @@ const build = createBuild()
 const bundle = createBundle()
 
 export {
+  JSX_PRESET_PREACT,
+  JSX_PRESET_REACT,
   PLATFORM_BROWSER,
   PLATFORM_NEUTRAL,
   PLATFORM_NODE,

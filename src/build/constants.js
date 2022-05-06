@@ -1,3 +1,5 @@
+export const JSX_PRESET_PREACT = 'preact'
+export const JSX_PRESET_REACT = 'react'
 export const OUTPUT_DIRECTORY = 'dist'
 export const PLATFORM_BROWSER = 'browser'
 export const PLATFORM_NEUTRAL = 'neutral'

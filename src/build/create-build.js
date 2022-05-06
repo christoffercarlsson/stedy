@@ -4,6 +4,7 @@ import { resolve as resolvePath } from 'path/posix'
 import { cwd } from 'process'
 import { build as esbuild } from 'esbuild'
 import {
+  JSX_PRESET_REACT,
   OUTPUT_DIRECTORY,
   PLATFORM_BROWSER,
   PLATFORM_NEUTRAL,
@@ -13,6 +14,7 @@ import { aliasPlugin } from './plugins.js'
 import {
   ensureArray,
   ensureMap,
+  ensureValidJSX,
   ensureValidOutputDirectory,
   ensureValidPlatform,
   ensureValidTarget,
@@ -40,8 +42,16 @@ const createExternal = (bundle, platform, aliases) => {
   return ['esbuild', ...nodeCoreModules.filter((name) => !aliases.has(name))]
 }
 
-const createInject = (workingDirectory, inject) =>
-  inject.map((path) => resolvePath(workingDirectory, path))
+const hasJSXEntryPoint = (entryPoints) =>
+  entryPoints.some((entryPoint) => entryPoint.endsWith('.jsx'))
+
+const createInject = (workingDirectory, inject, entryPoints, jsxShim) => {
+  const paths = inject.map((path) => resolvePath(workingDirectory, path))
+  if (hasJSXEntryPoint(entryPoints)) {
+    return [...paths, resolvePath(workingDirectory, jsxShim)]
+  }
+  return paths
+}
 
 const createAliases = (workingDirectory, aliases) => {
   if (aliases.size === 0) {
@@ -74,6 +84,7 @@ const build = async (
   environment,
   target,
   platform,
+  [jsxFactory, jsxFragment, jsxShim],
   bundle,
   clean,
   minify,
@@ -89,7 +100,9 @@ const build = async (
     entryPoints: createEntryPoints(entryPoints, inject),
     external: createExternal(bundle, platform, aliases),
     format: 'esm',
-    inject: createInject(workingDirectory, inject),
+    inject: createInject(workingDirectory, inject, entryPoints, jsxShim),
+    jsxFactory,
+    jsxFragment,
     minify,
     outdir: outputDirectory,
     platform,
@@ -115,6 +128,7 @@ export const createBuild =
       clean = false,
       environment = {},
       inject = [],
+      jsx = JSX_PRESET_REACT,
       platform = PLATFORM_NEUTRAL
     } = {}
   ) =>
@@ -127,6 +141,7 @@ export const createBuild =
       ensureMap(environment),
       ensureValidTarget(target),
       ensureValidPlatform(platform),
+      ensureValidJSX(jsx),
       bundle === true,
       clean === true,
       minify === true,

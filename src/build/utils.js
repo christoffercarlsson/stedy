@@ -1,5 +1,8 @@
+import { createRequire } from 'module'
 import { isAbsolute as isAbsolutePath } from 'path/posix'
 import {
+  JSX_PRESET_PREACT,
+  JSX_PRESET_REACT,
   PLATFORM_BROWSER,
   PLATFORM_NEUTRAL,
   PLATFORM_NODE,
@@ -42,6 +45,30 @@ export const ensureValidEntryPoints = (entryPoints) => {
   return entryPoints
 }
 
+const require = createRequire(import.meta.url)
+
+const isValidJSX = (jsx) =>
+  Array.isArray(jsx) &&
+  jsx.length === 3 &&
+  jsx.every((item) => typeof item === 'string')
+
+export const ensureValidJSX = (jsx) => {
+  if (jsx === JSX_PRESET_REACT) {
+    return [
+      'React.createElement',
+      'React.Fragment',
+      require.resolve('./react-shim.js')
+    ]
+  }
+  if (jsx === JSX_PRESET_PREACT) {
+    return ['h', 'Fragment', require.resolve('./preact-shim.js')]
+  }
+  if (!isValidJSX(jsx)) {
+    throw new Error('Invalid JSX configuration')
+  }
+  return jsx
+}
+
 const isValidPlatform = (platform) =>
   [PLATFORM_BROWSER, PLATFORM_NEUTRAL, PLATFORM_NODE].includes(platform)
 
@@ -62,7 +89,7 @@ const isValidTarget = (target) =>
   ].includes(target)
 
 export const ensureValidTarget = (target) =>
-  isValidTarget(target) ? target : TARGET_ESNEXT
+  isValidTarget(target) ? target : TARGET_ES2020
 
 export const ensureValidOutputDirectory = (path) => {
   if (!isRelativePath(path)) {
