@@ -20,6 +20,7 @@ const run = async () => {
     'src/code/parsers/css.js',
     'src/code/parsers/html.js',
     'src/code/parsers/markdown.js',
+    'src/code/parsers/yaml.js',
     'src/code/prettier.js'
   ]
   await bundle(bundleFiles, {

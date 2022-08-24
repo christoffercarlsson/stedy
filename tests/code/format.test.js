@@ -25,5 +25,10 @@ export default describe('format', () => [
   it('should format Markdowm according to formatting rules', async () => {
     const result = await format('markdown', '# Hello World')
     expect(result).toEqual('# Hello World\n')
+  }),
+
+  it('should format YAML according to formatting rules', async () => {
+    const result = await format('yaml', 'key : value')
+    expect(result).toEqual('key: value\n')
   })
 ])

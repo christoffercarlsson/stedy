@@ -7,17 +7,20 @@ import {
   LANGUAGE_JSON,
   LANGUAGE_MARKDOWN,
   // LANGUAGE_TYPESCRIPT
+  LANGUAGE_YAML,
   PARSER_CSS,
   PARSER_HTML,
   PARSER_JAVASCRIPT,
   PARSER_JSON,
-  PARSER_MARKDOWN
+  PARSER_MARKDOWN,
   // PARSER_TYPESCRIPT
+  PARSER_YAML
 } from './language.js'
 import parserBabel from './parsers/babel.js'
 import parserCSS from './parsers/css.js'
 import parserHTML from './parsers/html.js'
 import parserMarkdown from './parsers/markdown.js'
+import parserYAML from './parsers/yaml.js'
 import prettier, { config as defaultOptions } from './prettier.js'
 
 const parsers = new Map([
@@ -27,15 +30,16 @@ const parsers = new Map([
     LANGUAGE_JAVASCRIPT,
     [PARSER_JAVASCRIPT, [parserBabel, parserCSS, parserHTML]]
   ],
-  // [
-  //   LANGUAGE_TYPESCRIPT,
-  //   [PARSER_TYPESCRIPT, [parserBabel, parserCSS, parserHTML]]
-  // ],
   [LANGUAGE_JSON, [PARSER_JSON, [parserBabel]]],
   [
     LANGUAGE_MARKDOWN,
     [PARSER_MARKDOWN, [parserBabel, parserCSS, parserHTML, parserMarkdown]]
-  ]
+  ],
+  // [
+  //   LANGUAGE_TYPESCRIPT,
+  //   [PARSER_TYPESCRIPT, [parserBabel, parserCSS, parserHTML]]
+  // ],
+  [LANGUAGE_YAML, [PARSER_YAML, [parserYAML]]]
 ])
 
 const formatSource = async (options, onError, language, source) => {
