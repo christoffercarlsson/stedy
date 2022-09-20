@@ -6,7 +6,6 @@
   "repository": "git://github.com/christoffercarlsson/stedy.git",
   "type": "module",
   "exports": {
-    "./autograph": "./dist/autograph.js",
     "./build": "./dist/build.js",
     "./chunk": "./dist/chunk.js",
     "./code": "./dist/code.js",
