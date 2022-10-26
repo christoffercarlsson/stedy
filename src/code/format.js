@@ -3,12 +3,14 @@ import {
   ensureSupportedLanguage,
   LANGUAGE_CSS,
   LANGUAGE_HTML,
+  LANGUAGE_GRAPHQL,
   LANGUAGE_JAVASCRIPT,
   LANGUAGE_JSON,
   LANGUAGE_MARKDOWN,
   // LANGUAGE_TYPESCRIPT
   LANGUAGE_YAML,
   PARSER_CSS,
+  PARSER_GRAPHQL,
   PARSER_HTML,
   PARSER_JAVASCRIPT,
   PARSER_JSON,
@@ -19,6 +21,7 @@ import {
 import parserBabel from './parsers/babel.js'
 import parserCSS from './parsers/css.js'
 import parserHTML from './parsers/html.js'
+import parserGraphQL from './parsers/graphql.js'
 import parserMarkdown from './parsers/markdown.js'
 import parserYAML from './parsers/yaml.js'
 import prettier, { config as defaultOptions } from './prettier.js'
@@ -26,6 +29,7 @@ import prettier, { config as defaultOptions } from './prettier.js'
 const parsers = new Map([
   [LANGUAGE_CSS, [PARSER_CSS, [parserCSS]]],
   [LANGUAGE_HTML, [PARSER_HTML, [parserBabel, parserCSS, parserHTML]]],
+  [LANGUAGE_GRAPHQL, [PARSER_GRAPHQL, [parserGraphQL]]],
   [
     LANGUAGE_JAVASCRIPT,
     [PARSER_JAVASCRIPT, [parserBabel, parserCSS, parserHTML]]

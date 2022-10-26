@@ -18,6 +18,7 @@ const run = async () => {
     'src/code/lint.js',
     'src/code/parsers/babel.js',
     'src/code/parsers/css.js',
+    'src/code/parsers/graphql.js',
     'src/code/parsers/html.js',
     'src/code/parsers/markdown.js',
     'src/code/parsers/yaml.js',

@@ -1,6 +1,7 @@
 import {
   ensureSupportedLanguage,
   LANGUAGE_CSS,
+  LANGUAGE_GRAPHQL,
   LANGUAGE_HTML,
   LANGUAGE_JAVASCRIPT,
   LANGUAGE_JSON,
@@ -8,6 +9,7 @@ import {
   // LANGUAGE_TYPESCRIPT,
   LANGUAGE_YAML,
   PARSER_CSS,
+  PARSER_GRAPHQL,
   PARSER_HTML,
   PARSER_JAVASCRIPT,
   PARSER_JSON,
@@ -17,6 +19,7 @@ import {
 } from './language.js'
 import parserBabel from './parsers/babel.js'
 import parserCSS from './parsers/css.js'
+import parserGraphQL from './parsers/graphql.js'
 import parserHTML from './parsers/html.js'
 import parserMarkdown from './parsers/markdown.js'
 import parserYAML from './parsers/yaml.js'
@@ -29,6 +32,7 @@ const getParser = (parser, name) => {
 
 const parsers = new Map([
   [LANGUAGE_CSS, getParser(parserCSS, PARSER_CSS)],
+  [LANGUAGE_GRAPHQL, getParser(parserGraphQL, PARSER_GRAPHQL)],
   [LANGUAGE_HTML, getParser(parserHTML, PARSER_HTML)],
   [LANGUAGE_JAVASCRIPT, getParser(parserBabel, PARSER_JAVASCRIPT)],
   [LANGUAGE_JSON, getParser(parserBabel, PARSER_JSON)],

@@ -3,6 +3,7 @@ import {
   getLanguages,
   isSupportedLanguage,
   LANGUAGE_CSS,
+  LANGUAGE_GRAPHQL,
   LANGUAGE_HTML,
   LANGUAGE_JAVASCRIPT,
   LANGUAGE_JSON,
@@ -13,6 +14,7 @@ import parse from './code/parse.js'
 
 export {
   LANGUAGE_CSS,
+  LANGUAGE_GRAPHQL,
   LANGUAGE_HTML,
   LANGUAGE_JAVASCRIPT,
   LANGUAGE_JSON,

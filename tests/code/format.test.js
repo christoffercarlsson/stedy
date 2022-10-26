@@ -17,6 +17,11 @@ export default describe('format', () => [
     expect(result).toEqual('{\n  "person": "Alice"\n}\n')
   }),
 
+  it('should format GraphQL according to formatting rules', async () => {
+    const result = await format('graphql', 'type Query { hello: String }')
+    expect(result).toEqual('type Query {\n  hello: String\n}\n')
+  }),
+
   it('should format HTML according to formatting rules', async () => {
     const result = await format('html', '<p>Hello</p>')
     expect(result).toEqual('<p>Hello</p>\n')
