@@ -7,7 +7,7 @@ import {
   removeKeyPrefix
 } from './utils/curve.js'
 import exportKeyPair from './utils/export-key-pair.js'
-import getSignAlgorithm from './utils/get-sign-algorithm.js'
+import { ensureValidSignature, getSignAlgorithm } from './utils/sign.js'
 import { ensureSupportedHash, getHashSize } from './utils/hash.js'
 import isWebEnvironment from './utils/is-web-environment.js'
 import {
@@ -27,6 +27,7 @@ export {
   ensureSupportedCurve,
   ensureSupportedHash,
   ensureSupportedKey,
+  ensureValidSignature,
   exportKeyPair,
   getCurves,
   getHashSize,
