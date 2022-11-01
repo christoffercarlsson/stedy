@@ -1,5 +1,5 @@
 import { mkdir as createPath, rm as removePath } from 'fs/promises'
-import { builtinModules as nodeCoreModules } from 'module'
+import { builtinModules as nodeCoreModules, createRequire } from 'module'
 import { resolve as resolvePath } from 'path/posix'
 import { cwd } from 'process'
 import { build as esbuild } from 'esbuild'
@@ -43,7 +43,9 @@ const createExternal = (bundle, platform, aliases) => {
 }
 
 const hasJSXEntryPoint = (entryPoints) =>
-  entryPoints.some((entryPoint) => entryPoint.endsWith('.jsx'))
+  entryPoints.some(
+    (entryPoint) => entryPoint.endsWith('.jsx') || entryPoint.endsWith('.tsx')
+  )
 
 const createInject = (workingDirectory, inject, entryPoints, jsxShim) => {
   const paths = inject.map((path) => resolvePath(workingDirectory, path))
@@ -112,7 +114,10 @@ const build = async (
     platform,
     plugins: createPlugins(workingDirectory, aliases),
     sourcemap: sourceMaps ? 'external' : false,
-    target
+    target,
+    tsconfig: createRequire(import.meta.url).resolve(
+      './typescript-esbuild.json'
+    )
   })
 }
 

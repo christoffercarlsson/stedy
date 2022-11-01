@@ -32,6 +32,11 @@ export default describe('format', () => [
     expect(result).toEqual('# Hello World\n')
   }),
 
+  it('should format TypeScript according to formatting rules', async () => {
+    const result = await format('typescript', 'const foo : boolean = true;')
+    expect(result).toEqual('const foo: boolean = true\n')
+  }),
+
   it('should format YAML according to formatting rules', async () => {
     const result = await format('yaml', 'key : value')
     expect(result).toEqual('key: value\n')

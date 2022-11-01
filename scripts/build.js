@@ -1,5 +1,6 @@
-import { exit } from 'process'
+import { copyFile } from 'fs/promises'
 import { createRequire } from 'module'
+import { exit } from 'process'
 import { globby } from 'globby'
 import { build, bundle } from '../src/build.js'
 
@@ -34,6 +35,10 @@ const run = async () => {
     platform: 'browser'
   })
   await build(await findBuildFiles(bundleFiles))
+  await copyFile(
+    'src/build/typescript-esbuild.json',
+    'dist/build/typescript-esbuild.json'
+  )
 }
 
 run().catch((error) => {

@@ -6,7 +6,7 @@ import {
   LANGUAGE_JAVASCRIPT,
   LANGUAGE_JSON,
   LANGUAGE_MARKDOWN,
-  // LANGUAGE_TYPESCRIPT,
+  LANGUAGE_TYPESCRIPT,
   LANGUAGE_YAML,
   PARSER_CSS,
   PARSER_GRAPHQL,
@@ -14,7 +14,7 @@ import {
   PARSER_JAVASCRIPT,
   PARSER_JSON,
   PARSER_MARKDOWN,
-  // PARSER_TYPESCRIPT,
+  PARSER_TYPESCRIPT,
   PARSER_YAML
 } from './language.js'
 import parserBabel from './parsers/babel.js'
@@ -37,7 +37,7 @@ const parsers = new Map([
   [LANGUAGE_JAVASCRIPT, getParser(parserBabel, PARSER_JAVASCRIPT)],
   [LANGUAGE_JSON, getParser(parserBabel, PARSER_JSON)],
   [LANGUAGE_MARKDOWN, getParser(parserMarkdown, PARSER_MARKDOWN)],
-  // [LANGUAGE_TYPESCRIPT, getParser(parserBabel, PARSER_TYPESCRIPT)],
+  [LANGUAGE_TYPESCRIPT, getParser(parserBabel, PARSER_TYPESCRIPT)],
   [LANGUAGE_YAML, getParser(parserYAML, PARSER_YAML)]
 ])
 
