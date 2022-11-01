@@ -2,7 +2,6 @@ import { memoizeFirst } from './util.js'
 import {
   CIPHER_AES128_GCM,
   CIPHER_AES256_GCM,
-  CURVE_CURVE448,
   CURVE_CURVE25519,
   CURVE_P256,
   CURVE_P384,
@@ -58,7 +57,6 @@ const verify = createFn(_verify)
 export {
   CIPHER_AES128_GCM,
   CIPHER_AES256_GCM,
-  CURVE_CURVE448,
   CURVE_CURVE25519,
   CURVE_P256,
   CURVE_P384,

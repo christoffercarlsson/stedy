@@ -1,10 +1,9 @@
 import { createFrom } from '../chunk.js'
-import { CURVE_CURVE25519 } from './constants.js'
+import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants.js'
 import { verifyMessage } from './curve25519.js'
 import {
   ensureSupportedKey,
   ensureValidSignature,
-  getSignAlgorithm,
   importSignPublicKey,
   removeKeyPrefix
 } from './utils.js'
@@ -18,7 +17,7 @@ const verify = async (crypto, message, publicKey, signature, hash) => {
     return verifyMessage(sig, msg, removeKeyPrefix(key))
   }
   return crypto.subtle.verify(
-    getSignAlgorithm(curve, hash),
+    { name: ALGORITHM_ECDSA, hash },
     await importSignPublicKey(crypto, curve, key),
     sig,
     msg

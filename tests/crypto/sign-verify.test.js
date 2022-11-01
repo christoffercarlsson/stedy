@@ -21,12 +21,10 @@ export default describe('sign/verify', () => {
     .flat()
 
   return tests.concat(
-    ['Curve448', 'Curve25519'].map((curve) =>
-      it(`should sign a given message using EdDSA with ${curve}`, async () => {
-        const { publicKey, privateKey } = await generateSignKeyPair(curve)
-        const signature = await sign(message, privateKey)
-        expect(await verify(message, publicKey, signature)).toBe(true)
-      })
-    )
+    it('should sign a given message using EdDSA with Curve25519', async () => {
+      const { publicKey, privateKey } = await generateSignKeyPair('Curve25519')
+      const signature = await sign(message, privateKey)
+      expect(await verify(message, publicKey, signature)).toBe(true)
+    })
   )
 })

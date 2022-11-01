@@ -4,12 +4,10 @@ import {
   ALGORITHM_ECDSA,
   ALGORITHM_EDDSA,
   CURVE_CURVE25519,
-  CURVE_CURVE448,
   CURVE_P256,
   CURVE_P384,
   CURVE_P521
 } from '../constants.js'
-import isWebEnvironment from './is-web-environment.js'
 
 const curves = [CURVE_P256, CURVE_P384, CURVE_P521, CURVE_CURVE25519]
 
@@ -74,20 +72,6 @@ const prefixes = [
       0, 35, 3, 129, 134, 0, 4
     ])
   ],
-  [
-    // X448 private key
-    CURVE_CURVE448,
-    [ALGORITHM_ECDH],
-    false,
-    Uint8Array.from([48, 70, 2, 1, 0, 48, 5, 6, 3, 43, 101, 111, 4, 58, 4, 56])
-  ],
-  // Ed448 private key
-  [
-    CURVE_CURVE448,
-    [ALGORITHM_EDDSA],
-    false,
-    Uint8Array.from([48, 71, 2, 1, 0, 48, 5, 6, 3, 43, 101, 113, 4, 59, 4, 57])
-  ],
   // X25519 private key
   [
     CURVE_CURVE25519,
@@ -101,20 +85,6 @@ const prefixes = [
     [ALGORITHM_EDDSA],
     false,
     Uint8Array.from([48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32])
-  ],
-  // X448 public key
-  [
-    CURVE_CURVE448,
-    [ALGORITHM_ECDH],
-    true,
-    Uint8Array.from([48, 66, 48, 5, 6, 3, 43, 101, 111, 3, 57, 0])
-  ],
-  // Ed448 public key
-  [
-    CURVE_CURVE448,
-    [ALGORITHM_EDDSA],
-    true,
-    Uint8Array.from([48, 67, 48, 5, 6, 3, 43, 101, 113, 3, 58, 0])
   ],
   // X25519 public key
   [
@@ -137,9 +107,7 @@ const findPrefix = (key) =>
 
 const getAlgorithm = (curve, isSigningKey) => {
   if (isSigningKey) {
-    return curve === CURVE_CURVE448 || curve === CURVE_CURVE25519
-      ? ALGORITHM_EDDSA
-      : ALGORITHM_ECDSA
+    return curve === CURVE_CURVE25519 ? ALGORITHM_EDDSA : ALGORITHM_ECDSA
   }
   return ALGORITHM_ECDH
 }
@@ -169,12 +137,7 @@ const identifyCurve = (key) => {
   return curve || ''
 }
 
-export const getCurves = () => {
-  if (isWebEnvironment()) {
-    return curves
-  }
-  return curves.concat([CURVE_CURVE448])
-}
+export const getCurves = () => curves
 
 const isSupportedCurve = (curve) => getCurves().includes(curve)
 

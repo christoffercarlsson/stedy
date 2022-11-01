@@ -1,9 +1,8 @@
 import { createFrom, ENCODING_PEM } from '../chunk.js'
-import { CURVE_CURVE25519 } from './constants.js'
+import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants.js'
 import { signMessage } from './curve25519.js'
 import {
   ensureSupportedKey,
-  getSignAlgorithm,
   importSignPrivateKey,
   removeKeyPrefix
 } from './utils.js'
@@ -17,7 +16,7 @@ const sign = async (crypto, message, privateKey, hash) => {
   }
   return createFrom(
     await crypto.subtle.sign(
-      await getSignAlgorithm(curve, hash),
+      { name: ALGORITHM_ECDSA, hash },
       await importSignPrivateKey(crypto, curve, key),
       msg
     )

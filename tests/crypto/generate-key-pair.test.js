@@ -3,7 +3,6 @@ import { generateKeyPair } from '../../dist/crypto.js'
 
 export default describe('generateKeyPair', () => {
   const curves = new Map([
-    ['Curve448', { publicKey: 68, privateKey: 72 }],
     ['Curve25519', { publicKey: 44, privateKey: 48 }],
     ['P-256', { publicKey: 91, privateKey: 138 }],
     ['P-384', { publicKey: 120, privateKey: 185 }],

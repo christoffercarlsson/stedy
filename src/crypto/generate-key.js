@@ -4,10 +4,7 @@ import { ensureSupportedCipher, getKeySize } from './utils.js'
 
 const generateKey = async (crypto, cipher) =>
   createFrom(
-    await generateRandomBytes(
-      crypto,
-      getKeySize(await ensureSupportedCipher(cipher))
-    )
+    generateRandomBytes(crypto, getKeySize(await ensureSupportedCipher(cipher)))
   )
 
 export default generateKey

@@ -7,7 +7,7 @@ import {
 } from '../../dist/crypto.js'
 
 export default describe('import/export-key', () => {
-  const curves = ['P-256', 'P-384', 'P-521', 'Curve448', 'Curve25519']
+  const curves = ['P-256', 'P-384', 'P-521', 'Curve25519']
 
   return curves
     .map((curve) => [
