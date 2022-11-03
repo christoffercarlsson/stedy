@@ -2,7 +2,7 @@ import { copyFile } from 'fs/promises'
 import { createRequire } from 'module'
 import { exit } from 'process'
 import { globby } from 'globby'
-import { build, bundle } from '../src/build.js'
+import { build, bundle, PLATFORM_BROWSER } from '../src/build.js'
 
 const require = createRequire(import.meta.url)
 
@@ -32,12 +32,12 @@ const run = async () => {
       util: require.resolve('util/')
     },
     clean: true,
-    platform: 'browser'
+    platform: PLATFORM_BROWSER
   })
   await build(await findBuildFiles(bundleFiles))
   await copyFile(
     'src/build/typescript-esbuild.json',
-    'dist/build/typescript-esbuild.json'
+    'dist/src/build/typescript-esbuild.json'
   )
 }
 

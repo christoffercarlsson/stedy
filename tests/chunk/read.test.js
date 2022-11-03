@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { createFrom, read } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { createFrom, read } from '../../src/chunk.js'
 
 export default describe('read', () => [
   it('should read data sequentially', () => {

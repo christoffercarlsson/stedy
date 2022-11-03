@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { hmac } from '../../dist/crypto.js'
+import { describe, it, expect } from '../../src/test.js'
+import { hmac } from '../../src/crypto.js'
 
 export default describe('hmac', () => {
   const message = Uint8Array.from([

@@ -1,5 +1,5 @@
-import { describe, it, expect, fn } from '../../dist/test.js'
-import { composeAsync } from '../../dist/util.js'
+import { describe, it, expect, fn } from '../../src/test.js'
+import { composeAsync } from '../../src/util.js'
 
 export default describe('composeAsync', () =>
   it('should compose a given list of functions that each might return a promise', async () => {

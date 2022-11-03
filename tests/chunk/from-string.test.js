@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { fromString } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { fromString } from '../../src/chunk.js'
 
 export default describe('fromString', () => [
   it('should decode Base 64 encoded strings correctly', () => {

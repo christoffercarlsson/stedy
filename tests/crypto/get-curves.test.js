@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { getCurves } from '../../dist/crypto.js'
+import { describe, it, expect } from '../../src/test.js'
+import { getCurves } from '../../src/crypto.js'
 
 export default describe('getCurves', () =>
   it('should return a list of supported elliptic curves', async () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { concat, createFrom, endsWith } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { concat, createFrom, endsWith } from '../../src/chunk.js'
 
 export default describe('endsWith', () =>
   it('should check to see if a chunk ends with a given chunk', () => {

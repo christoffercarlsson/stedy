@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { format } from '../../dist/code.js'
+import { describe, it, expect } from '../../src/test.js'
+import { format } from '../../src/code.js'
 
 export default describe('format', () => [
   it('should format JavaScript according to formatting rules', async () => {

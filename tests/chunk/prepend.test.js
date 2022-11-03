@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { createFrom, prepend } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { createFrom, prepend } from '../../src/chunk.js'
 
 export default describe('prepend', () =>
   it('should prepend the data from anohter chunk', () => {

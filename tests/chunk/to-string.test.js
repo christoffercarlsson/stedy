@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { toString } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { toString } from '../../src/chunk.js'
 
 export default describe('toString', () => [
   it('should produce a correct Base 64 representation of a given chunk', () => {

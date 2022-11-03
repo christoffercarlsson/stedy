@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { lint } from '../../dist/code.js'
+import { describe, it, expect } from '../../src/test.js'
+import { lint } from '../../src/code.js'
 
 export default describe('lint', () => [
   it('should verify a given JavaScript source code against linting rules', async () => {

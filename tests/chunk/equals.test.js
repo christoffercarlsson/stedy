@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { createFrom, equals } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { createFrom, equals } from '../../src/chunk.js'
 
 export default describe('equals', () =>
   it('should check to see if the chunk is equal to another chunk', () => {

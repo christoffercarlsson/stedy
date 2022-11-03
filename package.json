@@ -6,12 +6,12 @@
   "repository": "git://github.com/christoffercarlsson/stedy.git",
   "type": "module",
   "exports": {
-    "./build": "./dist/build.js",
-    "./chunk": "./dist/chunk.js",
-    "./code": "./dist/code.js",
-    "./crypto": "./dist/crypto.js",
-    "./test": "./dist/test.js",
-    "./util": "./dist/util.js"
+    "./build": "./dist/src/build.js",
+    "./chunk": "./dist/src/chunk.js",
+    "./code": "./dist/src/code.js",
+    "./crypto": "./dist/src/crypto.js",
+    "./test": "./dist/src/test.js",
+    "./util": "./dist/src/util.js"
   },
   "browser": {
     "crypto": false
@@ -19,28 +19,31 @@
   "sideEffects": false,
   "dependencies": {
     "@noble/ed25519": "^1.6.0",
-    "esbuild": "^0.15.12"
+    "esbuild": "^0.15.12",
+    "globby": "^13.1.1",
+    "istanbul-lib-coverage": "^3.2.0",
+    "istanbul-lib-report": "^3.0.0",
+    "istanbul-reports": "^3.1.5",
+    "v8-to-istanbul": "^9.0.1"
   },
   "devDependencies": {
-    "@christoffercarlsson/eslint-config": "^0.6.0",
-    "@christoffercarlsson/prettier-config": "^0.6.1",
+    "@christoffercarlsson/eslint-config": "^0.6.3",
+    "@christoffercarlsson/prettier-config": "^0.6.3",
     "assert-browserify": "^2.0.0",
     "esbuild-plugin-alias": "^0.2.1",
     "eslint": "^8.14.0",
-    "globby": "^13.1.1",
     "path-browserify": "^1.0.1",
     "prettier": "^2.6.2",
     "util": "^0.12.4"
   },
   "files": [
-    "dist/**/*.js",
-    "dist/build/typescript-esbuild.json"
+    "dist/**/*.{js,json}"
   ],
   "scripts": {
     "build": "node scripts/build.js",
     "format": "prettier --ignore-path .gitignore --loglevel silent --write .",
     "lint": "eslint --ignore-path .gitignore .",
     "prepack": "npm run build",
-    "test": "npm run build && node scripts/run-tests.js"
+    "test": "node scripts/run-tests.js"
   }
 }

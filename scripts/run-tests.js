@@ -1,16 +1,15 @@
 import { cwd, exit } from 'process'
 import { cpus } from 'os'
 import { globby } from 'globby'
-import { run as runTests } from '../dist/test.js'
+import { run as runTests } from '../src/test.js'
 
 const run = async () => {
-  const { summary, results } = await runTests(
-    await globby('tests/**/*.test.js', { onlyFiles: true }),
-    {
-      concurrency: cpus().length,
-      cwd: cwd()
-    }
-  )
+  const {
+    report: { summary, results }
+  } = await runTests(await globby('tests/**/*.test.js', { onlyFiles: true }), {
+    concurrency: cpus().length,
+    cwd: cwd()
+  })
   const {
     totalNumberOfTests,
     numberOfPassedTests,

@@ -110,6 +110,7 @@ const build = async (
     jsxFactory,
     jsxFragment,
     minify,
+    outbase: workingDirectory,
     outdir: outputDirectory,
     platform,
     plugins: createPlugins(workingDirectory, aliases),

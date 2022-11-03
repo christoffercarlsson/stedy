@@ -1,4 +1,4 @@
-import { memoizeFirst } from './util.js'
+import { isWebEnvironment, memoizeFirst } from './util.js'
 import {
   CIPHER_AES128_GCM,
   CIPHER_AES256_GCM,
@@ -24,7 +24,7 @@ import _hmac from './crypto/hmac.js'
 import importKey from './crypto/import-key.js'
 import _pbkdf2 from './crypto/pbkdf2.js'
 import _sign from './crypto/sign.js'
-import { getCurves, isWebEnvironment } from './crypto/utils.js'
+import { getCurves } from './crypto/utils.js'
 import _verify from './crypto/verify.js'
 
 const crypto = memoizeFirst(async () => {

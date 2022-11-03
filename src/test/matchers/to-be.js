@@ -1,3 +1,3 @@
-const toBe = (received, expected) => Object.is(received, expected);
+const toBe = (received, expected) => Object.is(received, expected)
 
-export default toBe;
+export default toBe

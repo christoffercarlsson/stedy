@@ -9,7 +9,6 @@ import {
 import exportKeyPair from './utils/export-key-pair.js'
 import ensureValidSignature from './utils/sign.js'
 import { ensureSupportedHash, getHashSize } from './utils/hash.js'
-import isWebEnvironment from './utils/is-web-environment.js'
 import {
   importHkdfKey,
   importHmacKey,
@@ -39,6 +38,5 @@ export {
   importPublicKey,
   importSignPrivateKey,
   importSignPublicKey,
-  isWebEnvironment,
   removeKeyPrefix
 }

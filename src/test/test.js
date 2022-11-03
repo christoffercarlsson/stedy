@@ -1,8 +1,8 @@
-import { ensureFunc } from './utils.js';
+import { ensureFunc } from './utils.js'
 
 export const test = (description, fn) => ({
   description: `${description}`,
   fn: ensureFunc(fn)
-});
+})
 
-export default test;
+export default test

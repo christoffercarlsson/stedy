@@ -1,10 +1,10 @@
-import { describe, it, expect } from '../../dist/test.js'
+import { describe, it, expect } from '../../src/test.js'
 import {
   exportKey,
   generateKeyPair,
   generateSignKeyPair,
   importKey
-} from '../../dist/crypto.js'
+} from '../../src/crypto.js'
 
 export default describe('import/export-key', () => {
   const curves = ['P-256', 'P-384', 'P-521', 'Curve25519']

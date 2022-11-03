@@ -1,5 +1,5 @@
-import { describe, it, expect, fn } from '../../dist/test.js'
-import { compose } from '../../dist/util.js'
+import { describe, it, expect, fn } from '../../src/test.js'
+import { compose } from '../../src/util.js'
 
 export default describe('compose', () =>
   it('should compose a given list of functions', () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { Chunk, createFrom } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { Chunk, createFrom } from '../../src/chunk.js'
 
 export default describe('Chunk', () => [
   it('should allocate a new zero-filled chunk with a given size', () => {

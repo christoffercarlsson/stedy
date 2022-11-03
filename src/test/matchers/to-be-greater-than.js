@@ -1,6 +1,6 @@
-import toBeNumeric from './to-be-numeric.js';
+import toBeNumeric from './to-be-numeric.js'
 
 const toBeGreaterThan = (received, expected) =>
-  toBeNumeric(received) && received > expected;
+  toBeNumeric(received) && received > expected
 
-export default toBeGreaterThan;
+export default toBeGreaterThan

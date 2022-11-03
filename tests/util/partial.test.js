@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { partial } from '../../dist/util.js'
+import { describe, it, expect } from '../../src/test.js'
+import { partial } from '../../src/util.js'
 
 export default describe('partial', () => {
   const greet = (greeting, name) => `${greeting}, ${name}!`

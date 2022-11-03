@@ -1,12 +1,22 @@
-import createReport from './create-report.js';
-import loadTests from './load-tests.js';
-import runTests from './run-tests.js';
+import { isWebEnvironment } from '../util.js'
+import runTests from './run-tests.js'
 
-const run = async (moduleNames, { concurrency, onProgress, cwd } = {}) => {
-  const start = new Date();
-  const [tests, results] = await loadTests(moduleNames, cwd);
-  await runTests(tests, concurrency, onProgress);
-  return createReport(cwd, results, start);
-};
+const createRunnerWithCoverage = (moduleNames, options) => async () => {
+  const { runTestsWithCoverage } = await import('./coverage.js')
+  return runTestsWithCoverage(moduleNames, options)
+}
 
-export default run;
+const createRunnerWithoutCoverage = (moduleNames, options) => async () => {
+  const report = await runTests(moduleNames, options)
+  return { report, coverage: null }
+}
+
+const createRunner = (moduleNames, options) => {
+  return options.collectCoverage === true && !isWebEnvironment()
+    ? createRunnerWithCoverage(moduleNames, options)
+    : createRunnerWithoutCoverage(moduleNames, options)
+}
+
+const run = (moduleNames, options = {}) => createRunner(moduleNames, options)()
+
+export default run

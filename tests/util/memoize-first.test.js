@@ -1,5 +1,5 @@
-import { describe, it, expect, spy } from '../../dist/test.js'
-import { memoizeFirst } from '../../dist/util.js'
+import { describe, it, expect, spy } from '../../src/test.js'
+import { memoizeFirst } from '../../src/util.js'
 
 export default describe('memoizeFirst', () =>
   it('should cache and always return the result of the first function call', () => {

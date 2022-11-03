@@ -1,14 +1,14 @@
-const getClassName = (object) => Object.prototype.toString.call(object);
+const getClassName = (object) => Object.prototype.toString.call(object)
 
 const getKeys = (object) => {
-  const names = Object.getOwnPropertyNames(object);
+  const names = Object.getOwnPropertyNames(object)
   if (object instanceof Error && object.stack) {
-    return names.filter((name) => name !== 'stack');
+    return names.filter((name) => name !== 'stack')
   }
-  return names;
-};
+  return names
+}
 
-const isPrimitive = (value) => value === null || typeof value !== 'object';
+const isPrimitive = (value) => value === null || typeof value !== 'object'
 
 const isPrimitiveWrapper = (className) =>
   [
@@ -18,27 +18,27 @@ const isPrimitiveWrapper = (className) =>
     '[object BigInt]',
     '[object Symbol]',
     '[object Date]'
-  ].includes(className);
+  ].includes(className)
 
 const toEqual = (a, b) => {
   if (isPrimitive(a) || isPrimitive(b)) {
-    return a === b;
+    return a === b
   }
-  const className = getClassName(a);
+  const className = getClassName(a)
   if (className !== getClassName(b)) {
-    return false;
+    return false
   }
   if (isPrimitiveWrapper(className)) {
-    return a.valueOf() === b.valueOf();
+    return a.valueOf() === b.valueOf()
   }
   if (className === '[object RegExp]') {
-    return a.source === b.source && a.flags === b.flags;
+    return a.source === b.source && a.flags === b.flags
   }
-  const keys = getKeys(a);
+  const keys = getKeys(a)
   if (keys.length !== getKeys(b).length) {
-    return false;
+    return false
   }
-  return keys.every((key) => toEqual(a[key], b[key]));
-};
+  return keys.every((key) => toEqual(a[key], b[key]))
+}
 
-export default toEqual;
+export default toEqual

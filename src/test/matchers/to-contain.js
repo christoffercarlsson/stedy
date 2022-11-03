@@ -1,8 +1,8 @@
 const toContain = (received, expected) => {
   if (Array.isArray(received) || typeof received === 'string') {
-    return received.includes(expected);
+    return received.includes(expected)
   }
-  return false;
-};
+  return false
+}
 
-export default toContain;
+export default toContain

@@ -1,5 +1,5 @@
-import toBe from './to-be.js';
+import toBe from './to-be.js'
 
-const toBeDefined = (received) => !toBe(received, undefined);
+const toBeDefined = (received) => !toBe(received, undefined)
 
-export default toBeDefined;
+export default toBeDefined

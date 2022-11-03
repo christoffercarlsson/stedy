@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { transcode } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { transcode } from '../../src/chunk.js'
 
 export default describe('transcode', () =>
   it('should re-encode a given chunk from one encoding to another', () => {

@@ -1,3 +1,3 @@
-const toBeTruthy = (received) => !!received;
+const toBeTruthy = (received) => !!received
 
-export default toBeTruthy;
+export default toBeTruthy

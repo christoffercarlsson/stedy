@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { generateKey } from '../../dist/crypto.js'
+import { describe, it, expect } from '../../src/test.js'
+import { generateKey } from '../../src/crypto.js'
 
 export default describe('generateKey', () => {
   const keySizes = [

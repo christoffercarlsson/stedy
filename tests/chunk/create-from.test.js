@@ -1,5 +1,5 @@
-import { describe, it, expect } from '../../dist/test.js'
-import { createFrom } from '../../dist/chunk.js'
+import { describe, it, expect } from '../../src/test.js'
+import { createFrom } from '../../src/chunk.js'
 
 export default describe('createFrom', () => [
   it('should create a new chunk from a typed array', () => {
