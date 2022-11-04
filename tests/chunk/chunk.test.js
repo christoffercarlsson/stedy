@@ -178,24 +178,24 @@ ${buffer.toString('base64')}
 
   it('should store a signed 8-bit integer value', () => {
     const value = 127
-    expect(Chunk.alloc(4).writeInt8(value).readInt8()).toEqual(value)
+    expect(Chunk.alloc(1).writeInt8(value).readInt8()).toEqual(value)
   }),
 
   it('should store an unsigned 8-bit integer value', () => {
     const value = 255
-    expect(Chunk.alloc(4).writeUint8(value).readUint8()).toEqual(value)
+    expect(Chunk.alloc(1).writeUint8(value).readUint8()).toEqual(value)
   }),
 
   it('should store a signed 16-bit integer value', () => {
     const value = 32767
-    expect(Chunk.alloc(4).writeInt16BE(value).readInt16BE()).toEqual(value)
-    expect(Chunk.alloc(4).writeInt16LE(value).readInt16LE()).toEqual(value)
+    expect(Chunk.alloc(2).writeInt16BE(value).readInt16BE()).toEqual(value)
+    expect(Chunk.alloc(2).writeInt16LE(value).readInt16LE()).toEqual(value)
   }),
 
   it('should store an unsigned 16-bit integer value', () => {
     const value = 65535
-    expect(Chunk.alloc(4).writeUint16BE(value).readUint16BE()).toEqual(value)
-    expect(Chunk.alloc(4).writeUint16LE(value).readUint16LE()).toEqual(value)
+    expect(Chunk.alloc(2).writeUint16BE(value).readUint16BE()).toEqual(value)
+    expect(Chunk.alloc(2).writeUint16LE(value).readUint16LE()).toEqual(value)
   }),
 
   it('should store a signed 32-bit integer value', () => {

@@ -71,7 +71,8 @@ const createAliases = (workingDirectory, aliases) => {
   )
 }
 
-const createPlugins = (workingDirectory, aliases) => [
+const createPlugins = (workingDirectory, plugins, aliases) => [
+  ...plugins,
   aliasPlugin(createAliases(workingDirectory, aliases))
 ]
 
@@ -80,9 +81,13 @@ const emptyDirectory = async (path) => {
   await createPath(path, { recursive: true })
 }
 
+const getTypeScriptConfigPath = () =>
+  createRequire(import.meta.url).resolve('./typescript-esbuild.json')
+
 const build = async (
   workingDirectory,
   outputDirectory,
+  plugins,
   entryPoints,
   aliases,
   inject,
@@ -113,12 +118,10 @@ const build = async (
     outbase: workingDirectory,
     outdir: outputDirectory,
     platform,
-    plugins: createPlugins(workingDirectory, aliases),
+    plugins: createPlugins(workingDirectory, plugins, aliases),
     sourcemap: sourceMaps ? 'external' : false,
     target,
-    tsconfig: createRequire(import.meta.url).resolve(
-      './typescript-esbuild.json'
-    )
+    tsconfig: getTypeScriptConfigPath()
   })
 }
 
@@ -127,7 +130,7 @@ export const createBuild =
     bundle = false,
     minify = false,
     outputDirectory = OUTPUT_DIRECTORY,
-    sourceMaps = false,
+    plugins = [],
     target = TARGET_ES2020,
     workingDirectory = cwd()
   } = {}) =>
@@ -139,12 +142,14 @@ export const createBuild =
       environment = {},
       inject = [],
       jsx = JSX_PRESET_REACT,
-      platform = PLATFORM_NEUTRAL
+      platform = PLATFORM_NEUTRAL,
+      sourceMaps = false
     } = {}
   ) =>
     build(
       ensureValidWorkingDirectory(workingDirectory),
       ensureValidOutputDirectory(outputDirectory),
+      ensureArray(plugins),
       ensureArray(entryPoints),
       ensureMap(alias),
       ensureArray(inject),
