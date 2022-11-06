@@ -1,5 +1,8 @@
 import { createRequire } from 'module'
-import { isAbsolute as isAbsolutePath } from 'path/posix'
+import {
+  isAbsolute as isAbsolutePath,
+  resolve as resolvePath
+} from 'path/posix'
 import {
   JSX_PRESET_PREACT,
   JSX_PRESET_REACT,
@@ -91,14 +94,8 @@ const isValidTarget = (target) =>
 export const ensureValidTarget = (target) =>
   isValidTarget(target) ? target : TARGET_ES2020
 
-export const ensureValidOutputDirectory = (path) => {
-  if (!isRelativePath(path)) {
-    throw new Error(
-      'The output directory must be relative to the working directory'
-    )
-  }
-  return path
-}
+export const ensureValidOutputDirectory = (workingDirectory, outputDirectory) =>
+  resolvePath(workingDirectory, outputDirectory)
 
 export const ensureValidWorkingDirectory = (path) => {
   if (!isAbsolutePath(path)) {

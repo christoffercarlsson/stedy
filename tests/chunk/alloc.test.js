@@ -1,5 +1,5 @@
 import { describe, it, expect } from '../../src/test.js'
-import { alloc } from '../../src/chunk.js'
+import { alloc } from '../../src/chunk'
 
 export default describe('alloc', () => [
   it('should allocate a new zero-filled chunk with a given size', () => {

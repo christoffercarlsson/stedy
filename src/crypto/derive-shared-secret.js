@@ -24,8 +24,9 @@ const deriveSharedSecret = async (
     Number.isInteger(size) && size > 0 ? size : SHARED_SECRET_DEFAULT_SIZE
   const curve = await ensureSupportedKey(privateKey)
   if (curve === CURVE_CURVE25519) {
-    return (
-      await scalarMult(removeKeyPrefix(privateKey), removeKeyPrefix(publicKey))
+    return scalarMult(
+      removeKeyPrefix(privateKey),
+      removeKeyPrefix(publicKey)
     ).subarray(0, outputSize)
   }
   return createFrom(

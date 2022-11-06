@@ -1,7 +1,7 @@
 import { mkdir as createPath, rm as removePath } from 'fs/promises'
 import { builtinModules as nodeCoreModules, createRequire } from 'module'
 import { resolve as resolvePath } from 'path/posix'
-import { cwd } from 'process'
+import { cwd as getCwd } from 'process'
 import { build as esbuild } from 'esbuild'
 import {
   JSX_PRESET_REACT,
@@ -101,7 +101,7 @@ const build = async (
   sourceMaps
 ) => {
   if (clean) {
-    await emptyDirectory(resolvePath(workingDirectory, outputDirectory))
+    await emptyDirectory(outputDirectory)
   }
   const platform = createPlatform(targetPlatform, entryPoints)
   return esbuild({
@@ -132,7 +132,7 @@ export const createBuild =
     outputDirectory = OUTPUT_DIRECTORY,
     plugins = [],
     target = TARGET_ES2020,
-    workingDirectory = cwd()
+    cwd = getCwd()
   } = {}) =>
   (
     entryPoints,
@@ -147,8 +147,8 @@ export const createBuild =
     } = {}
   ) =>
     build(
-      ensureValidWorkingDirectory(workingDirectory),
-      ensureValidOutputDirectory(outputDirectory),
+      ensureValidWorkingDirectory(cwd),
+      ensureValidOutputDirectory(cwd, outputDirectory),
       ensureArray(plugins),
       ensureArray(entryPoints),
       ensureMap(alias),

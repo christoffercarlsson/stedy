@@ -10,7 +10,6 @@
     "./chunk": "./dist/src/chunk.js",
     "./code": "./dist/src/code.js",
     "./crypto": "./dist/src/crypto.js",
-    "./test": "./dist/src/test.js",
     "./util": "./dist/src/util.js"
   },
   "browser": {

@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url)
 
 const findBuildFiles = async (excludeFiles) => {
   const files = await globby('src/**/*.js', {
+    gitignore: true,
     onlyFiles: true
   })
   return files.filter((path) => !excludeFiles.includes(path))
