@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { encode } from '../../src/chunk.js'
+import { encode } from '../../src/chunk'
 
-export default describe('encode', () => [
+describe('encode', () => {
   it('should produce a correct Base 64 representation of a given chunk', () => {
     expect(
       encode(
@@ -16,7 +15,7 @@ export default describe('encode', () => [
         112, 107, 47, 86, 65, 61, 61
       ])
     )
-  }),
+  })
 
   it('should produce a correct URL safe Base 64 representation of a given chunk', () => {
     expect(
@@ -32,7 +31,7 @@ export default describe('encode', () => [
         112, 107, 95, 86, 65
       ])
     )
-  }),
+  })
 
   it('should produce a correct hexadecimal representation of a given chunk', () => {
     expect(
@@ -46,7 +45,7 @@ export default describe('encode', () => [
         50, 54, 99, 54, 52
       ])
     )
-  }),
+  })
 
   it('should produce a correct JSON representation of a given chunk', () => {
     expect(
@@ -62,7 +61,7 @@ export default describe('encode', () => [
         49, 49, 49, 44, 49, 49, 52, 44, 49, 48, 56, 44, 49, 48, 48, 93, 125
       ])
     )
-  }),
+  })
 
   it('should produce a correct PEM representation of a given chunk', () => {
     expect(
@@ -79,14 +78,14 @@ export default describe('encode', () => [
         77, 89, 32, 77, 69, 83, 83, 65, 71, 69, 45, 45, 45, 45, 45
       ])
     )
-  }),
+  })
 
   it('should produce a correct UTF-8 representation of a given chunk', () => {
     const view = Uint8Array.from([
       64, 194, 128, 224, 160, 128, 240, 144, 128, 128
     ])
     expect(encode(view)).toEqual(view)
-  }),
+  })
 
   it('should handle invalid encodings gracefully', () => {
     expect(
@@ -96,4 +95,4 @@ export default describe('encode', () => [
       )
     ).toEqual(Uint8Array.from([]))
   })
-])
+})

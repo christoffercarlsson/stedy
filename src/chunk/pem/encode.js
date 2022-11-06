@@ -1,5 +1,5 @@
-import base64Encode from '../base64/encode.js'
-import { splitString } from '../utils.js'
+import base64Encode from '../base64/encode'
+import { splitString } from '../utils'
 
 const normalizeLabel = (label) =>
   String(label).replace('-', ' ').replace(/\s+/g, ' ').trim().toUpperCase()

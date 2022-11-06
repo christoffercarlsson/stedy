@@ -1,14 +1,14 @@
-import { createAead, ensureSupportedCipher, getKeySize } from './utils/aead.js'
+import { createAead, ensureSupportedCipher, getKeySize } from './utils/aead'
 import {
   addKeyPrefix,
   ensureSupportedCurve,
   ensureSupportedKey,
   getCurves,
   removeKeyPrefix
-} from './utils/curve.js'
-import exportKeyPair from './utils/export-key-pair.js'
-import ensureValidSignature from './utils/sign.js'
-import { ensureSupportedHash, getHashSize } from './utils/hash.js'
+} from './utils/curve'
+import exportKeyPair from './utils/export-key-pair'
+import ensureValidSignature from './utils/sign'
+import { ensureSupportedHash, getHashSize } from './utils/hash'
 import {
   importHkdfKey,
   importHmacKey,
@@ -17,7 +17,7 @@ import {
   importPublicKey,
   importSignPrivateKey,
   importSignPublicKey
-} from './utils/key-import.js'
+} from './utils/key-import'
 
 export {
   addKeyPrefix,

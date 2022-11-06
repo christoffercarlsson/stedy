@@ -1,8 +1,8 @@
-import { describe, it, expect } from '../../src/test.js'
-import { getCurves } from '../../src/crypto.js'
+import { getCurves } from '../../src/crypto'
 
-export default describe('getCurves', () =>
-  it('should return a list of supported elliptic curves', async () => {
+describe('getCurves', () => {
+  it('should return a list of supported elliptic curves', () => {
     const curves = ['P-256', 'P-384', 'P-521', 'Curve25519']
     expect(getCurves()).toEqual(curves)
-  }))
+  })
+})

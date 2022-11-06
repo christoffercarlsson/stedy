@@ -1,5 +1,5 @@
-import { createFrom } from '../chunk.js'
-import { addKeyPrefix, ensureSupportedCurve } from './utils.js'
+import { createFrom } from '../chunk'
+import { addKeyPrefix, ensureSupportedCurve } from './utils'
 
 const importKey = async (curve, isSigningKey, isPublicKey, key) =>
   addKeyPrefix(

@@ -1,7 +1,7 @@
-import alloc from './chunk/alloc.js'
-import append from './chunk/append.js'
-import Chunk from './chunk/chunk.js'
-import concat from './chunk/concat.js'
+import alloc from './chunk/alloc'
+import append from './chunk/append'
+import Chunk from './chunk/chunk'
+import concat from './chunk/concat'
 import {
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
@@ -9,16 +9,16 @@ import {
   ENCODING_JSON,
   ENCODING_PEM,
   ENCODING_UTF8
-} from './chunk/constants.js'
-import copy from './chunk/copy.js'
-import createFrom from './chunk/create-from.js'
-import getBytes from './chunk/get-bytes.js'
-import decode, { fromString } from './chunk/decode.js'
-import encode, { toString } from './chunk/encode.js'
-import endsWith from './chunk/ends-with.js'
-import equals from './chunk/equals.js'
-import hasSize from './chunk/has-size.js'
-import isEmpty from './chunk/is-empty.js'
+} from './chunk/constants'
+import copy from './chunk/copy'
+import createFrom from './chunk/create-from'
+import getBytes from './chunk/get-bytes'
+import decode, { fromString } from './chunk/decode'
+import encode, { toString } from './chunk/encode'
+import endsWith from './chunk/ends-with'
+import equals from './chunk/equals'
+import hasSize from './chunk/has-size'
+import isEmpty from './chunk/is-empty'
 import {
   readFloat32BE,
   readFloat32LE,
@@ -56,15 +56,15 @@ import {
   writeUint32LE,
   writeUint64BE,
   writeUint64LE
-} from './chunk/numbers.js'
-import { padLeft, padRight } from './chunk/pad.js'
-import prepend from './chunk/prepend.js'
-import read from './chunk/read.js'
-import split from './chunk/split.js'
-import startsWith from './chunk/starts-with.js'
-import transcode from './chunk/transcode.js'
-import { trimLeft, trimRight } from './chunk/trim.js'
-import xor from './chunk/xor.js'
+} from './chunk/numbers'
+import { padLeft, padRight } from './chunk/pad'
+import prepend from './chunk/prepend'
+import read from './chunk/read'
+import split from './chunk/split'
+import startsWith from './chunk/starts-with'
+import transcode from './chunk/transcode'
+import { trimLeft, trimRight } from './chunk/trim'
+import xor from './chunk/xor'
 
 export {
   ENCODING_BASE64,

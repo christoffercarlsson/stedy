@@ -11,7 +11,7 @@ import {
   KEY_USAGE_DERIVE_KEY,
   KEY_USAGE_SIGN,
   KEY_USAGE_VERIFY
-} from '../constants.js'
+} from '../constants'
 
 const getImportFormat = (isPublicKey) =>
   isPublicKey ? KEY_FORMAT_SPKI : KEY_FORMAT_PKCS8

@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { toString } from '../../src/chunk.js'
+import { toString } from '../../src/chunk'
 
-export default describe('toString', () => [
+describe('toString', () => {
   it('should produce a correct Base 64 representation of a given chunk', () => {
     expect(
       toString(
@@ -11,7 +10,7 @@ export default describe('toString', () => [
         'base64'
       )
     ).toEqual('HVn8UCmEQ6FRu5+lwpk/VA==')
-  }),
+  })
 
   it('should produce a correct URL safe Base 64 representation of a given chunk', () => {
     expect(
@@ -22,7 +21,7 @@ export default describe('toString', () => [
         'base64url'
       )
     ).toEqual('HVn8UCmEQ6FRu5-lwpk_VA')
-  }),
+  })
 
   it('should handle Base 64 padding correctly when encoding', () => {
     expect(
@@ -37,7 +36,7 @@ export default describe('toString', () => [
         'base64'
       )
     ).toEqual('SGVsbG8gV29ybA==')
-  }),
+  })
 
   it('should produce a correct hexadecimal representation of a given chunk', () => {
     expect(
@@ -46,14 +45,14 @@ export default describe('toString', () => [
         'hex'
       )
     ).toEqual('48656c6c6f20576f726c64')
-  }),
+  })
 
   it('should produce a correct JSON representation of a given chunk', () => {
     const bytes = [72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]
     expect(toString(Uint8Array.from(bytes), 'json')).toEqual(
       JSON.stringify(Buffer.from(bytes))
     )
-  }),
+  })
 
   it('should produce a correct PEM representation of a given chunk', () => {
     const view = Uint8Array.from([
@@ -69,7 +68,7 @@ export default describe('toString', () => [
 U3BpY3kgamFsYXBlbm8gYmFjb24gaXBzdW0gZG9sb3IgYW1ldCBmaWxldCBtaWdu
 b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
 -----END MY MESSAGE-----`)
-  }),
+  })
 
   it('should produce a correct UTF-8 representation of a given chunk', () => {
     expect(
@@ -77,7 +76,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
         Uint8Array.from([64, 194, 128, 224, 160, 128, 240, 144, 128, 128])
       )
     ).toEqual(String.fromCodePoint(64, 128, 2048, 65536))
-  }),
+  })
 
   it('should handle invalid input gracefully', () => {
     expect(toString(undefined, 'base64')).toEqual('')
@@ -89,7 +88,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
     expect(toString()).toEqual('')
     expect(toString('hubba')).toEqual('')
     expect(toString({})).toEqual('')
-  }),
+  })
 
   it('should handle invalid encodings gracefully', () => {
     expect(
@@ -99,4 +98,4 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
       )
     ).toEqual('')
   })
-])
+})

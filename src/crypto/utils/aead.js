@@ -1,4 +1,4 @@
-import { createFrom, hasSize } from '../../chunk.js'
+import { createFrom, hasSize } from '../../chunk'
 import {
   CIPHER_AES128_GCM,
   CIPHER_AES128_GCM_KEY_SIZE,
@@ -10,7 +10,7 @@ import {
   KEY_FORMAT_RAW,
   KEY_USAGE_DECRYPT,
   KEY_USAGE_ENCRYPT
-} from '../constants.js'
+} from '../constants'
 
 const cipherNames = new Map([
   [CIPHER_AES128_GCM, CIPHER_AES_GCM],

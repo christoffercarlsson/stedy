@@ -1,6 +1,6 @@
-import { createFrom } from '../chunk.js'
-import { ALGORITHM_PBKDF2, PBKDF2_DEFAULT_ITERATIONS } from './constants.js'
-import { ensureSupportedHash, getHashSize, importPbkdf2Key } from './utils.js'
+import { createFrom } from '../chunk'
+import { ALGORITHM_PBKDF2, PBKDF2_DEFAULT_ITERATIONS } from './constants'
+import { ensureSupportedHash, getHashSize, importPbkdf2Key } from './utils'
 
 const pbkdf2 = async (crypto, hash, password, salt, iterations, size) =>
   createFrom(

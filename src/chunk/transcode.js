@@ -1,5 +1,5 @@
-import decode from './decode.js'
-import encode from './encode.js'
+import decode from './decode'
+import encode from './encode'
 
 const transcode = (data, currentEncoding, targetEncoding) =>
   encode(decode(data, currentEncoding), targetEncoding)

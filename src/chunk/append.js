@@ -1,4 +1,4 @@
-import concat from './concat.js'
+import concat from './concat'
 
 const append = (a, b) => concat([a, b])
 

@@ -1,11 +1,11 @@
-import { createFrom, ENCODING_PEM } from '../chunk.js'
-import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants.js'
-import { signMessage } from './curve25519.js'
+import { createFrom, ENCODING_PEM } from '../chunk'
+import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants'
+import { signMessage } from './curve25519'
 import {
   ensureSupportedKey,
   importSignPrivateKey,
   removeKeyPrefix
-} from './utils.js'
+} from './utils'
 
 const sign = async (crypto, message, privateKey, hash) => {
   const key = createFrom(privateKey, ENCODING_PEM)

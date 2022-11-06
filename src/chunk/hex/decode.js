@@ -1,4 +1,4 @@
-import { splitString } from '../utils.js'
+import { splitString } from '../utils'
 
 const decode = (string) =>
   Uint8Array.from(

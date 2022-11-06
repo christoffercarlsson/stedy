@@ -1,5 +1,5 @@
-import { fromString } from './decode.js'
-import { ensureView } from './utils.js'
+import { fromString } from './decode'
+import { ensureView } from './utils'
 
 const createFrom = (value, encoding) => {
   if (typeof value === 'string') {

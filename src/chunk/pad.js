@@ -1,6 +1,6 @@
-import alloc from './alloc.js'
-import concat from './concat.js'
-import { ensureView } from './utils.js'
+import alloc from './alloc'
+import concat from './concat'
+import { ensureView } from './utils'
 
 const pad = (input, size, right) => {
   const view = ensureView(input)

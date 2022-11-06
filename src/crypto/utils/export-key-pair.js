@@ -1,5 +1,5 @@
-import { createFrom } from '../../chunk.js'
-import { KEY_FORMAT_PKCS8, KEY_FORMAT_SPKI } from '../constants.js'
+import { createFrom } from '../../chunk'
+import { KEY_FORMAT_PKCS8, KEY_FORMAT_SPKI } from '../constants'
 
 const exportKey = async (crypto, format, key) =>
   createFrom(await crypto.subtle.exportKey(format, key))

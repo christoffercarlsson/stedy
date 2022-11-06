@@ -1,8 +1,8 @@
-import { composeAsync, compose } from './util/compose.js'
-import equals from './util/equals.js'
-import isWebEnvironment from './util/is-web-environment.js'
-import { memoizeFirst, memoize } from './util/memoize.js'
-import partial from './util/partial.js'
+import { composeAsync, compose } from './util/compose'
+import equals from './util/equals'
+import isWebEnvironment from './util/is-web-environment'
+import { memoizeFirst, memoize } from './util/memoize'
+import partial from './util/partial'
 
 export {
   composeAsync,

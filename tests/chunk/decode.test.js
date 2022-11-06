@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { decode } from '../../src/chunk.js'
+import { decode } from '../../src/chunk'
 
-export default describe('decode', () => [
+describe('decode', () => {
   it('should decode Base 64 encoded chunks correctly', () => {
     expect(
       decode(
@@ -16,7 +15,7 @@ export default describe('decode', () => [
         29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
       ])
     )
-  }),
+  })
 
   it('should decode URL safe Base 64 encoded chunks correctly', () => {
     expect(
@@ -32,7 +31,7 @@ export default describe('decode', () => [
         29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
       ])
     )
-  }),
+  })
 
   it('should decode hexadecimal chunks correctly', () => {
     expect(
@@ -46,7 +45,7 @@ export default describe('decode', () => [
     ).toEqual(
       Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
     )
-  }),
+  })
 
   it('should decode JSON correctly', () => {
     expect(
@@ -63,7 +62,7 @@ export default describe('decode', () => [
     ).toEqual(
       Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
     )
-  }),
+  })
 
   it('should decode PEM encoded chunks correctly', () => {
     expect(
@@ -79,14 +78,14 @@ export default describe('decode', () => [
     ).toEqual(
       Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
     )
-  }),
+  })
 
   it('should decode UTF-8 chunks correctly', () => {
     const view = Uint8Array.from([
       64, 194, 128, 224, 160, 128, 240, 144, 128, 128
     ])
     expect(decode(view)).toEqual(view)
-  }),
+  })
 
   it('should decode strings correctly', () => {
     const view = Uint8Array.from([
@@ -110,7 +109,7 @@ export default describe('decode', () => [
       )
     ).toEqual(view)
     expect(decode('Hello World', 'utf8')).toEqual(view)
-  }),
+  })
 
   it('should handle invalid encodings gracefully', () => {
     expect(
@@ -120,4 +119,4 @@ export default describe('decode', () => [
       )
     ).toEqual(Uint8Array.from([]))
   })
-])
+})

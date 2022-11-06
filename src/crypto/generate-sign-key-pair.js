@@ -3,9 +3,9 @@ import {
   CURVE_CURVE25519,
   KEY_USAGE_SIGN,
   KEY_USAGE_VERIFY
-} from './constants.js'
-import { signKeyPair } from './curve25519.js'
-import { exportKeyPair, ensureSupportedCurve, addKeyPrefix } from './utils.js'
+} from './constants'
+import { signKeyPair } from './curve25519'
+import { exportKeyPair, ensureSupportedCurve, addKeyPrefix } from './utils'
 
 const generateSignKeyPair = async (crypto, curve) => {
   const namedCurve = await ensureSupportedCurve(curve)

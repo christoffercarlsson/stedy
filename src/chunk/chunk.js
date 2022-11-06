@@ -1,16 +1,16 @@
-import alloc from './alloc.js'
-import append from './append.js'
-import concat from './concat.js'
-import copy from './copy.js'
-import createFrom from './create-from.js'
-import decode from './decode.js'
-import encode, { toString } from './encode.js'
-import endsWith from './ends-with.js'
-import equals from './equals.js'
-import getBytes from './get-bytes.js'
-import hasSize from './has-size.js'
-import isEmpty from './is-empty.js'
-import { padLeft, padRight } from './pad.js'
+import alloc from './alloc'
+import append from './append'
+import concat from './concat'
+import copy from './copy'
+import createFrom from './create-from'
+import decode from './decode'
+import encode, { toString } from './encode'
+import endsWith from './ends-with'
+import equals from './equals'
+import getBytes from './get-bytes'
+import hasSize from './has-size'
+import isEmpty from './is-empty'
+import { padLeft, padRight } from './pad'
 import {
   readFloat32BE,
   readFloat32LE,
@@ -48,14 +48,14 @@ import {
   writeUint32LE,
   writeUint64BE,
   writeUint64LE
-} from './numbers.js'
-import prepend from './prepend.js'
-import read from './read.js'
-import split from './split.js'
-import startsWith from './starts-with.js'
-import { trimLeft, trimRight } from './trim.js'
-import { createJSONObject } from './utils.js'
-import xor from './xor.js'
+} from './numbers'
+import prepend from './prepend'
+import read from './read'
+import split from './split'
+import startsWith from './starts-with'
+import { trimLeft, trimRight } from './trim'
+import { createJSONObject } from './utils'
+import xor from './xor'
 
 class Chunk extends Uint8Array {
   static alloc(size) {

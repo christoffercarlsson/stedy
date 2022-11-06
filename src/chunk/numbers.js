@@ -1,5 +1,5 @@
-import copy from './copy.js'
-import { ensureView } from './utils.js'
+import copy from './copy'
+import { ensureView } from './utils'
 
 const toDataView = (view) =>
   new DataView(view.buffer, view.byteOffset, view.byteLength)

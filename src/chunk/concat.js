@@ -1,4 +1,4 @@
-import getBytes from './get-bytes.js'
+import getBytes from './get-bytes'
 
 const concat = (chunks) => {
   const views = Array.isArray(chunks) ? chunks : []

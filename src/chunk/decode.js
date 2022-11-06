@@ -1,4 +1,4 @@
-import base64Decode from './base64/decode.js'
+import base64Decode from './base64/decode'
 import {
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
@@ -6,13 +6,13 @@ import {
   ENCODING_JSON,
   ENCODING_PEM,
   ENCODING_UTF8
-} from './constants.js'
-import hexDecode from './hex/decode.js'
-import jsonDecode from './json/decode.js'
-import pemDecode from './pem/decode.js'
-import utf8Decode from './utf8/decode.js'
-import utf8Encode from './utf8/encode.js'
-import { ensureView } from './utils.js'
+} from './constants'
+import hexDecode from './hex/decode'
+import jsonDecode from './json/decode'
+import pemDecode from './pem/decode'
+import utf8Decode from './utf8/decode'
+import utf8Encode from './utf8/encode'
+import { ensureView } from './utils'
 
 export const fromString = (data, encoding = ENCODING_UTF8) => {
   const string = typeof data === 'string' ? data : ''

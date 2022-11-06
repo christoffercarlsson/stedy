@@ -1,6 +1,6 @@
-import { createFrom } from '../chunk.js'
-import generateRandomBytes from './generate-random-bytes.js'
-import { ensureSupportedCipher, getKeySize } from './utils.js'
+import { createFrom } from '../chunk'
+import generateRandomBytes from './generate-random-bytes'
+import { ensureSupportedCipher, getKeySize } from './utils'
 
 const generateKey = async (crypto, cipher) =>
   createFrom(

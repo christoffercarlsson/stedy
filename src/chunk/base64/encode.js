@@ -1,6 +1,6 @@
-import { getAlphabet } from './alphabet.js'
-import { removePadding } from './decode.js'
-import split from '../split.js'
+import { getAlphabet } from './alphabet'
+import { removePadding } from './decode'
+import split from '../split'
 
 const indicesToCharacters = (alphabet, indices) =>
   indices.map((index) => alphabet.charAt(index))

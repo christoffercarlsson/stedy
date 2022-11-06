@@ -1,8 +1,8 @@
-import alloc from './alloc.js'
-import concat from './concat.js'
-import { readUint32BE, writeUint32BE } from './numbers.js'
-import { padLeft } from './pad.js'
-import { ensureView } from './utils.js'
+import alloc from './alloc'
+import concat from './concat'
+import { readUint32BE, writeUint32BE } from './numbers'
+import { padLeft } from './pad'
+import { ensureView } from './utils'
 
 const ensureMultiple = (view, size) => {
   const remainder = view.byteLength % size

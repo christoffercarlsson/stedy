@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { concat, createFrom, endsWith } from '../../src/chunk.js'
+import { concat, createFrom, endsWith } from '../../src/chunk'
 
-export default describe('endsWith', () =>
+describe('endsWith', () => {
   it('should check to see if a chunk ends with a given chunk', () => {
     const a = createFrom('Hello')
     const b = createFrom(' World')
@@ -14,4 +13,5 @@ export default describe('endsWith', () =>
     expect(endsWith(view, c)).toBe(false)
     expect(endsWith(c)).toBe(true)
     expect(endsWith(view, view)).toBe(true)
-  }))
+  })
+})

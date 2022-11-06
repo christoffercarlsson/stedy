@@ -1,6 +1,6 @@
-import { createFrom } from '../chunk.js'
-import { ALGORITHM_HMAC } from './constants.js'
-import { ensureSupportedHash, importHmacKey } from './utils.js'
+import { createFrom } from '../chunk'
+import { ALGORITHM_HMAC } from './constants'
+import { ensureSupportedHash, importHmacKey } from './utils'
 
 const hmac = async (crypto, algorithm, key, message) =>
   createFrom(

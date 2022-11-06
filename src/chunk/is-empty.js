@@ -1,4 +1,4 @@
-import hasSize from './has-size.js'
+import hasSize from './has-size'
 
 const isEmpty = (view) => hasSize(view, 0)
 

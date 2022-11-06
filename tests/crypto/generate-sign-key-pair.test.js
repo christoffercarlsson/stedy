@@ -1,29 +1,26 @@
-import { describe, it, expect } from '../../src/test.js'
-import { generateSignKeyPair } from '../../src/crypto.js'
+import { generateSignKeyPair } from '../../src/crypto'
 
-export default describe('generateSignKeyPair', () => {
-  const curves = new Map([
-    ['Curve25519', { publicKey: 44, privateKey: 48 }],
-    ['P-256', { publicKey: 91, privateKey: 138 }],
-    ['P-384', { publicKey: 120, privateKey: 185 }],
-    ['P-521', { publicKey: 158, privateKey: 241 }]
-  ])
+describe('generateSignKeyPair', () => {
+  const curves = [
+    { curve: 'Curve25519', publicKeySize: 44, privateKeySize: 48 },
+    { curve: 'P-256', publicKeySize: 91, privateKeySize: 138 },
+    { curve: 'P-384', publicKeySize: 120, privateKeySize: 185 },
+    { curve: 'P-521', publicKeySize: 158, privateKeySize: 241 }
+  ]
 
-  const tests = [...curves].map(([curve, sizes]) =>
+  curves.forEach(({ curve, publicKeySize, privateKeySize }) => {
     it(`should generate a signing key pair for ${curve}`, async () => {
       const { publicKey, privateKey } = await generateSignKeyPair(curve)
       expect(publicKey).toBeInstanceOf(Uint8Array)
-      expect(publicKey.byteLength).toBe(sizes.publicKey)
+      expect(publicKey.byteLength).toBe(publicKeySize)
       expect(privateKey).toBeInstanceOf(Uint8Array)
-      expect(privateKey.byteLength).toBe(sizes.privateKey)
+      expect(privateKey.byteLength).toBe(privateKeySize)
     })
-  )
+  })
 
-  return tests.concat(
-    it('should throw an exception when trying to generate a signing key pair for an unsupported elliptic curve', async () => {
-      await expect(generateSignKeyPair('hubba')).toReject(
-        'Unsupported elliptic curve'
-      )
-    })
-  )
+  it('should throw an exception when trying to generate a signing key pair for an unsupported elliptic curve', async () => {
+    await expect(generateSignKeyPair('hubba')).rejects.toThrow(
+      'Unsupported elliptic curve'
+    )
+  })
 })

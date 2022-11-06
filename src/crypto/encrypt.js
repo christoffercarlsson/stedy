@@ -1,4 +1,4 @@
-import { createAead } from './utils.js'
+import { createAead } from './utils'
 
 const encrypt = (crypto, name, key, iv, tagLength, message, additionalData) =>
   crypto.subtle.encrypt(

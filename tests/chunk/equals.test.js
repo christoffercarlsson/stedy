@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { createFrom, equals } from '../../src/chunk.js'
+import { createFrom, equals } from '../../src/chunk'
 
-export default describe('equals', () =>
+describe('equals', () => {
   it('should check to see if the chunk is equal to another chunk', () => {
     const greeting = 'Hello World!'
     const view = createFrom(greeting)
@@ -11,4 +10,5 @@ export default describe('equals', () =>
     expect(equals(createFrom(), view)).toBe(false)
     expect(equals(view, createFrom())).toBe(false)
     expect(equals(createFrom(), createFrom())).toBe(true)
-  }))
+  })
+})

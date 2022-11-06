@@ -1,4 +1,4 @@
-import { ensureView, countChunks } from './utils.js'
+import { ensureView, countChunks } from './utils'
 
 const split = (chunk, size, appendRemainder = false) => {
   const view = ensureView(chunk)

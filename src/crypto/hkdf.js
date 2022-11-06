@@ -1,6 +1,6 @@
-import { createFrom } from '../chunk.js'
-import { ALGORITHM_HKDF } from './constants.js'
-import { ensureSupportedHash, getHashSize, importHkdfKey } from './utils.js'
+import { createFrom } from '../chunk'
+import { ALGORITHM_HKDF } from './constants'
+import { ensureSupportedHash, getHashSize, importHkdfKey } from './utils'
 
 const hkdf = async (crypto, hash, key, salt, info, size) =>
   createFrom(

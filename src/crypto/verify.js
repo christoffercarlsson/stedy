@@ -1,12 +1,12 @@
-import { createFrom } from '../chunk.js'
-import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants.js'
-import { verifyMessage } from './curve25519.js'
+import { createFrom } from '../chunk'
+import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants'
+import { verifyMessage } from './curve25519'
 import {
   ensureSupportedKey,
   ensureValidSignature,
   importSignPublicKey,
   removeKeyPrefix
-} from './utils.js'
+} from './utils'
 
 const verify = async (crypto, message, publicKey, signature, hash) => {
   const key = createFrom(publicKey)

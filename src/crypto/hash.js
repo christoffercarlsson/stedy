@@ -1,5 +1,5 @@
-import { createFrom } from '../chunk.js'
-import { ensureSupportedHash } from './utils.js'
+import { createFrom } from '../chunk'
+import { ensureSupportedHash } from './utils'
 
 const iterateHash = async (crypto, algorithm, message, iterations) => {
   const digest = await crypto.subtle.digest(algorithm, message)

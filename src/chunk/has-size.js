@@ -1,4 +1,4 @@
-import { ensureView } from './utils.js'
+import { ensureView } from './utils'
 
 const hasSize = (view, size) => ensureView(view).byteLength === size
 

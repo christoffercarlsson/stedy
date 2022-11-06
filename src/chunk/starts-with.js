@@ -1,5 +1,5 @@
-import equals from './equals.js'
-import { ensureView } from './utils.js'
+import equals from './equals'
+import { ensureView } from './utils'
 
 const startsWith = (view, start) => {
   const a = ensureView(view)

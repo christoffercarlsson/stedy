@@ -1,4 +1,4 @@
-import { createAead } from './utils.js'
+import { createAead } from './utils'
 
 const decrypt = (
   crypto,

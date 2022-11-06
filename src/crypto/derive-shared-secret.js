@@ -1,16 +1,16 @@
-import { createFrom } from '../chunk.js'
+import { createFrom } from '../chunk'
 import {
   ALGORITHM_ECDH,
   CURVE_CURVE25519,
   SHARED_SECRET_DEFAULT_SIZE
-} from './constants.js'
-import { scalarMult } from './curve25519.js'
+} from './constants'
+import { scalarMult } from './curve25519'
 import {
   ensureSupportedKey,
   importPrivateKey,
   importPublicKey,
   removeKeyPrefix
-} from './utils.js'
+} from './utils'
 
 const deriveSharedSecret = async (
   crypto,

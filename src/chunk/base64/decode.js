@@ -1,5 +1,5 @@
-import { getAlphabet, matchesAlphabet } from './alphabet.js'
-import { splitString } from '../utils.js'
+import { getAlphabet, matchesAlphabet } from './alphabet'
+import { splitString } from '../utils'
 
 const removeWhitespace = (string) => string.replace(/\s+/g, '')
 

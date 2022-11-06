@@ -5,7 +5,7 @@ import {
   HASH_SHA384_SIZE,
   HASH_SHA512,
   HASH_SHA512_SIZE
-} from '../constants.js'
+} from '../constants'
 
 const hashSizes = new Map([
   [HASH_SHA256, HASH_SHA256_SIZE],

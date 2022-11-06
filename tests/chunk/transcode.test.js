@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { transcode } from '../../src/chunk.js'
+import { transcode } from '../../src/chunk'
 
-export default describe('transcode', () =>
+describe('transcode', () => {
   it('should re-encode a given chunk from one encoding to another', () => {
     expect(
       transcode(
@@ -17,4 +16,5 @@ export default describe('transcode', () =>
         83, 71, 86, 115, 98, 71, 56, 103, 86, 50, 57, 121, 98, 71, 81
       ])
     )
-  }))
+  })
+})

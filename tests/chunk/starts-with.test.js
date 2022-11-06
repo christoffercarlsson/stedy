@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { concat, createFrom, startsWith } from '../../src/chunk.js'
+import { concat, createFrom, startsWith } from '../../src/chunk'
 
-export default describe('startsWith', () =>
+describe('startsWith', () => {
   it('should check to see if a chunk starts with a given chunk', () => {
     const a = createFrom('Hello')
     const b = createFrom(' World')
@@ -14,4 +13,5 @@ export default describe('startsWith', () =>
     expect(startsWith(view, c)).toBe(false)
     expect(startsWith(c, c)).toBe(true)
     expect(startsWith(view, view)).toBe(true)
-  }))
+  })
+})

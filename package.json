@@ -6,28 +6,44 @@
   "repository": "git://github.com/christoffercarlsson/stedy.git",
   "type": "module",
   "exports": {
-    "./chunk": "./src/chunk.js",
-    "./crypto": "./src/crypto.js",
-    "./util": "./src/util.js"
+    "./chunk": "./dist/src/chunk.js",
+    "./crypto": "./dist/src/crypto.js",
+    "./util": "./dist/src/util.js"
+  },
+  "files": [
+    "dist/src/**/*.{js,ts,map}"
+  ],
+  "devDependencies": {
+    "@jest/globals": "^29.2.2",
+    "@types/jest": "^29.2.2",
+    "@types/node": "^18.11.9",
+    "@typescript-eslint/eslint-plugin": "^5.42.0",
+    "@typescript-eslint/parser": "^5.42.0",
+    "eslint": "^8.26.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-import-resolver-typescript": "^3.5.2",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jest": "^27.1.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "jest": "^29.2.2",
+    "prettier": "^2.7.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.8.4"
+  },
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "format": "prettier --loglevel silent --write .",
+    "lint": "eslint .",
+    "prepack": "npm run build",
+    "test": "npm run build && rimraf coverage && NODE_OPTIONS='--experimental-vm-modules --no-warnings' npx jest"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^1.6.0"
   },
   "browser": {
     "crypto": false
   },
-  "sideEffects": false,
-  "dependencies": {
-    "@noble/ed25519": "^1.6.0"
-  },
-  "devDependencies": {
-    "@christoffercarlsson/eslint-config": "^0.6.3",
-    "@christoffercarlsson/prettier-config": "^0.6.3",
-    "eslint": "^8.14.0",
-    "prettier": "^2.6.2"
-  },
-  "files": [
-    "src/**/*.js"
-  ],
-  "scripts": {
-    "format": "prettier --ignore-path .gitignore --loglevel silent --write .",
-    "lint": "eslint --ignore-path .gitignore ."
-  }
+  "sideEffects": false
 }

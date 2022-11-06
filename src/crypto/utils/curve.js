@@ -1,4 +1,4 @@
-import { concat, startsWith } from '../../chunk.js'
+import { concat, startsWith } from '../../chunk'
 import {
   ALGORITHM_ECDH,
   ALGORITHM_ECDSA,
@@ -7,7 +7,7 @@ import {
   CURVE_P256,
   CURVE_P384,
   CURVE_P521
-} from '../constants.js'
+} from '../constants'
 
 const curves = [CURVE_P256, CURVE_P384, CURVE_P521, CURVE_CURVE25519]
 

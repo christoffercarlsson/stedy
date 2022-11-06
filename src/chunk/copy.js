@@ -1,5 +1,5 @@
-import createFrom from './create-from.js'
-import { ensureView } from './utils.js'
+import createFrom from './create-from'
+import { ensureView } from './utils'
 
 const copy = (view) => createFrom([...ensureView(view)])
 

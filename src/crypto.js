@@ -1,4 +1,4 @@
-import { isWebEnvironment, memoizeFirst } from './util.js'
+import { isWebEnvironment, memoizeFirst } from './util'
 import {
   CIPHER_AES128_GCM,
   CIPHER_AES256_GCM,
@@ -9,25 +9,26 @@ import {
   HASH_SHA256,
   HASH_SHA384,
   HASH_SHA512
-} from './crypto/constants.js'
-import _decrypt from './crypto/decrypt.js'
-import _deriveSharedSecret from './crypto/derive-shared-secret.js'
-import _encrypt from './crypto/encrypt.js'
-import exportKey from './crypto/export-key.js'
-import _generateKeyPair from './crypto/generate-key-pair.js'
-import _generateKey from './crypto/generate-key.js'
-import _generateRandomBytes from './crypto/generate-random-bytes.js'
-import _generateSignKeyPair from './crypto/generate-sign-key-pair.js'
-import _hash from './crypto/hash.js'
-import _hkdf from './crypto/hkdf.js'
-import _hmac from './crypto/hmac.js'
-import importKey from './crypto/import-key.js'
-import _pbkdf2 from './crypto/pbkdf2.js'
-import _sign from './crypto/sign.js'
-import { getCurves } from './crypto/utils.js'
-import _verify from './crypto/verify.js'
+} from './crypto/constants'
+import _decrypt from './crypto/decrypt'
+import _deriveSharedSecret from './crypto/derive-shared-secret'
+import _encrypt from './crypto/encrypt'
+import exportKey from './crypto/export-key'
+import _generateKeyPair from './crypto/generate-key-pair'
+import _generateKey from './crypto/generate-key'
+import _generateRandomBytes from './crypto/generate-random-bytes'
+import _generateSignKeyPair from './crypto/generate-sign-key-pair'
+import _hash from './crypto/hash'
+import _hkdf from './crypto/hkdf'
+import _hmac from './crypto/hmac'
+import importKey from './crypto/import-key'
+import _pbkdf2 from './crypto/pbkdf2'
+import _sign from './crypto/sign'
+import { getCurves } from './crypto/utils'
+import _verify from './crypto/verify'
 
 const crypto = memoizeFirst(async () => {
+  /* istanbul ignore next */
   if (isWebEnvironment()) {
     return window.crypto
   }

@@ -1,5 +1,5 @@
-import { createFrom } from '../../chunk.js'
-import { CURVE25519_SIGNATURE_SIZE, CURVE_CURVE25519 } from '../constants.js'
+import { createFrom } from '../../chunk'
+import { CURVE25519_SIGNATURE_SIZE, CURVE_CURVE25519 } from '../constants'
 
 const isValidSignature = (curve, signature) => {
   const sig = createFrom(signature)

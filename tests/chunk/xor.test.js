@@ -1,7 +1,6 @@
-import { describe, it, expect } from '../../src/test.js'
-import { xor } from '../../src/chunk.js'
+import { xor } from '../../src/chunk'
 
-export default describe('xor', () => [
+describe('xor', () => {
   it('should calculate the XOR of two given chunks of the same size', () => {
     const a = Uint8Array.from([
       0, 186, 88, 78, 141, 119, 241, 56, 159, 38, 140, 216
@@ -16,7 +15,7 @@ export default describe('xor', () => [
     expect(xor(b, a)).toEqual(result)
     expect(xor(result, b)).toEqual(a)
     expect(xor(result, a)).toEqual(b)
-  }),
+  })
 
   it('should calculate the XOR of two given chunks that are not the same size', () => {
     const a = Uint8Array.from([74, 48, 144, 63, 12, 153])
@@ -30,11 +29,11 @@ export default describe('xor', () => [
       Uint8Array.from([0, 0, 0, 0, 0].concat([...a]))
     )
     expect(xor(result, a)).toEqual(b)
-  }),
+  })
 
   it('should handle invalid input gracefully', () => {
     const view = Uint8Array.from([144, 162, 250, 128, 64, 42, 119, 120, 114])
     expect(xor(view)).toEqual(view)
     expect(xor()).toEqual(Uint8Array.from([]))
   })
-])
+})

@@ -1,4 +1,4 @@
-import { createJSONObject } from '../utils.js'
+import { createJSONObject } from '../utils'
 
 const encode = (view) => {
   if (view.byteLength === 0) {

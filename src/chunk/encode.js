@@ -1,4 +1,4 @@
-import base64Encode from './base64/encode.js'
+import base64Encode from './base64/encode'
 import {
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
@@ -6,13 +6,13 @@ import {
   ENCODING_JSON,
   ENCODING_PEM,
   ENCODING_UTF8
-} from './constants.js'
-import hexEncode from './hex/encode.js'
-import jsonEncode from './json/encode.js'
-import pemEncode from './pem/encode.js'
-import utf8Decode from './utf8/decode.js'
-import utf8Encode from './utf8/encode.js'
-import { ensureView } from './utils.js'
+} from './constants'
+import hexEncode from './hex/encode'
+import jsonEncode from './json/encode'
+import pemEncode from './pem/encode'
+import utf8Decode from './utf8/decode'
+import utf8Encode from './utf8/encode'
+import { ensureView } from './utils'
 
 export const toString = (data, encoding = ENCODING_UTF8, label = '') => {
   const view = ensureView(data)

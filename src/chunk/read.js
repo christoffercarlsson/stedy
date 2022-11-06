@@ -1,4 +1,4 @@
-import { ensureView } from './utils.js'
+import { ensureView } from './utils'
 
 const calculateSlices = (sizes) =>
   sizes.slice(1).reduce(

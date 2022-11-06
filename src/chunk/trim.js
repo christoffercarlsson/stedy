@@ -1,4 +1,4 @@
-import { ensureView } from './utils.js'
+import { ensureView } from './utils'
 
 const countLeadingBytes = (view, byte, right) => {
   const initialState = [0, true]

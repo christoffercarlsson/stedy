@@ -1,4 +1,4 @@
-import append from './append.js'
+import append from './append'
 
 const prepend = (a, b) => append(b, a)
 
