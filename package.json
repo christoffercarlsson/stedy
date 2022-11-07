@@ -11,8 +11,11 @@
     "./util": "./dist/src/util.js"
   },
   "files": [
-    "dist/src/**/*.{js,ts,map}"
+    "dist/src/**/*.{js,ts}"
   ],
+  "engines": {
+    "node": ">=16.13.0"
+  },
   "devDependencies": {
     "@jest/globals": "^29.2.2",
     "@types/jest": "^29.2.2",
@@ -37,7 +40,7 @@
     "format": "prettier --loglevel silent --write .",
     "lint": "eslint .",
     "prepack": "npm run build",
-    "test": "npm run build && rimraf coverage && NODE_OPTIONS='--experimental-vm-modules --no-warnings' npx jest"
+    "test": "npm run build && rimraf coverage && NODE_OPTIONS='--experimental-vm-modules --no-warnings' npx jest --no-cache"
   },
   "dependencies": {
     "@noble/ed25519": "^1.6.0"

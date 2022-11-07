@@ -3,7 +3,7 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['dist/src/**/*.js'],
   coverageDirectory: 'coverage',
-  coverageReporters: ['json', 'json-summary', 'lcov', 'text-summary'],
+  coverageReporters: ['json', 'json-summary', 'html', 'text-summary'],
   coverageThreshold: {
     global: {
       branches: 80,
