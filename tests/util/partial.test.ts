@@ -1,7 +1,7 @@
 import { partial } from '../../src/util'
 
 describe('partial', () => {
-  const greet = (greeting, name) => `${greeting}, ${name}!`
+  const greet = (greeting: string, name: string) => `${greeting}, ${name}!`
 
   it('should partially apply a given function', () => {
     const sayHiTo = partial(greet, 'Hi there')

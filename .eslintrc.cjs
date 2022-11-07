@@ -18,6 +18,15 @@ module.exports = {
     project: ['./tsconfig.json']
   },
   plugins: ['import', 'jest', 'node', 'promise', '@typescript-eslint'],
+  overrides: [
+    {
+      files: ['**/*.ts', '**/*.tsx'],
+      extends: [
+        'plugin:@typescript-eslint/recommended',
+        'plugin:@typescript-eslint/recommended-requiring-type-checking'
+      ]
+    }
+  ],
   extends: [
     'eslint:recommended',
     'plugin:node/recommended',
@@ -25,8 +34,6 @@ module.exports = {
     'plugin:import/typescript',
     'plugin:jest/recommended',
     'plugin:promise/recommended',
-    'plugin:@typescript-eslint/recommended',
-    'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'standard',
     'prettier'
   ],

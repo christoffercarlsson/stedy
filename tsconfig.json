@@ -4,7 +4,7 @@
     "checkJs": false,
     "declaration": true,
     "esModuleInterop": true,
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "DOM"],
     "module": "ES2020",
     "moduleResolution": "node",
     "noImplicitAny": true,
