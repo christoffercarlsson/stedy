@@ -2,7 +2,7 @@ import alloc from './alloc'
 import concat from './concat'
 import { readUint32BE, writeUint32BE } from './numbers'
 import { padLeft } from './pad'
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
 const ensureMultiple = (view: Uint8Array, size: number) => {
   const remainder = view.byteLength % size
@@ -12,7 +12,7 @@ const ensureMultiple = (view: Uint8Array, size: number) => {
   return padLeft(view, view.byteLength + (size - remainder))
 }
 
-const ensureValidInput = (input: ViewLike) => {
+const ensureValidInput = (input: ArrayBufferView) => {
   const view = ensureView(input)
   return view.byteLength === 0 ? alloc(4) : ensureMultiple(view, 4)
 }
@@ -37,7 +37,7 @@ const calculate = (a: Uint8Array, b: Uint8Array) => {
   )
 }
 
-const xor = (a: ViewLike, b: ViewLike) => {
+const xor = (a: ArrayBufferView, b: ArrayBufferView) => {
   const left = ensureView(a)
   const right = ensureView(b)
   const size = Math.max(left.byteLength, right.byteLength)

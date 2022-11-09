@@ -1,9 +1,8 @@
 import decode from './decode'
 import encode from './encode'
-import { ViewLike } from './utils'
 
 const transcode = (
-  data: string | ViewLike,
+  data: string | ArrayBufferView,
   currentEncoding: string,
   targetEncoding: string
 ) => encode(decode(data, currentEncoding), targetEncoding)

@@ -218,4 +218,11 @@ describe('deriveSharedSecret', () => {
       expect(aliceSecret).toEqual(bobSecret)
     })
   })
+
+  it(`should throw an exception when given an invalid key`, async () => {
+    const { alice, bob } = keys[0]
+    await expect(
+      deriveSharedSecret(alice.privateKey.subarray(2), bob.publicKey)
+    ).rejects.toThrow('Unsupported key')
+  })
 })

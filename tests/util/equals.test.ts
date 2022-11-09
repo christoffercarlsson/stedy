@@ -86,4 +86,12 @@ describe('equals', () => {
       equals(alice, { name, age, siblings: siblings.concat('Dave') })
     ).toBe(false)
   })
+
+  it('should check for equality of Error instances', () => {
+    const first = new Error('This is an error')
+    const second = new Error('This is an error')
+    const third = new Error('This is another error')
+    expect(equals(first, second)).toBe(true)
+    expect(equals(second, third)).toBe(false)
+  })
 })

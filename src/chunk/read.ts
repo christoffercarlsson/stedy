@@ -1,4 +1,4 @@
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
 const calculateSlices = (sizes: number[]) =>
   sizes.slice(1).reduce(
@@ -13,7 +13,7 @@ const calculateSlices = (sizes: number[]) =>
 const calculateEnd = (sizes: number[]) =>
   sizes.reduce((sum, size) => sum + size)
 
-const read = (chunk: ViewLike, ...sizes: number[]) => {
+const read = (chunk: ArrayBufferView, ...sizes: number[]) => {
   const view = ensureView(chunk)
   const views = calculateSlices(sizes).map(([begin, end]) =>
     view.subarray(begin, end)

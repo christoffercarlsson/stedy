@@ -12,7 +12,7 @@ import jsonDecode from './json/decode'
 import pemDecode from './pem/decode'
 import utf8Decode from './utf8/decode'
 import utf8Encode from './utf8/encode'
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
 export const fromString = (input: string, encoding = ENCODING_UTF8) => {
   const str = input || ''
@@ -37,14 +37,14 @@ export const fromString = (input: string, encoding = ENCODING_UTF8) => {
   return Uint8Array.from([])
 }
 
-const ensureString = (value: string | ViewLike) => {
+const ensureString = (value: string | ArrayBufferView) => {
   if (typeof value === 'string') {
     return value
   }
   return utf8Encode(ensureView(value))
 }
 
-const decode = (data: string | ViewLike, encoding?: string) =>
+const decode = (data: string | ArrayBufferView, encoding?: string) =>
   fromString(ensureString(data), encoding)
 
 export default decode

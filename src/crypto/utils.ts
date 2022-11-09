@@ -1,13 +1,14 @@
+import type { webcrypto } from 'crypto'
 import { createAead, ensureSupportedCipher, getKeySize } from './utils/aead'
 import {
   addKeyPrefix,
   ensureSupportedCurve,
   ensureSupportedKey,
   getCurves,
+  identifyCurve,
   removeKeyPrefix
 } from './utils/curve'
 import exportKeyPair from './utils/export-key-pair'
-import ensureValidSignature from './utils/sign'
 import { ensureSupportedHash, getHashSize } from './utils/hash'
 import {
   importHkdfKey,
@@ -19,6 +20,8 @@ import {
   importSignPublicKey
 } from './utils/key-import'
 
+export type WebCrypto = Crypto | webcrypto.Crypto
+
 export {
   addKeyPrefix,
   createAead,
@@ -26,11 +29,11 @@ export {
   ensureSupportedCurve,
   ensureSupportedHash,
   ensureSupportedKey,
-  ensureValidSignature,
   exportKeyPair,
   getCurves,
   getHashSize,
   getKeySize,
+  identifyCurve,
   importHkdfKey,
   importHmacKey,
   importPbkdf2Key,

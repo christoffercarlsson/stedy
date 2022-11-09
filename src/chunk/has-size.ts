@@ -1,6 +1,6 @@
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const hasSize = (view: ViewLike, size: number) =>
+const hasSize = (view: ArrayBufferView, size: number) =>
   ensureView(view).byteLength === size
 
 export default hasSize

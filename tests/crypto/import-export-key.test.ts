@@ -19,6 +19,12 @@ describe('import/export-key', () => {
       expect(await importKey(curve, false, false, rawPrivateKey)).toEqual(
         privateKey
       )
+      await expect(exportKey(publicKey.subarray(2))).rejects.toThrow(
+        'Unsupported key'
+      )
+      await expect(
+        importKey('hubba', true, true, rawPublicKey)
+      ).rejects.toThrow('Unsupported elliptic curve')
     })
 
     it(`should export and import a raw ${curve} signing key`, async () => {
@@ -31,6 +37,12 @@ describe('import/export-key', () => {
       expect(await importKey(curve, true, false, rawPrivateKey)).toEqual(
         privateKey
       )
+      await expect(exportKey(publicKey.subarray(2))).rejects.toThrow(
+        'Unsupported key'
+      )
+      await expect(
+        importKey('hubba', true, true, rawPublicKey)
+      ).rejects.toThrow('Unsupported elliptic curve')
     })
   })
 })

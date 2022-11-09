@@ -1,6 +1,10 @@
-import { ensureView, countChunks, ViewLike } from './utils'
+import { ensureView, countChunks } from './utils'
 
-const split = (chunk: ViewLike, size: number, appendRemainder = false) => {
+const split = (
+  chunk: ArrayBufferView,
+  size: number,
+  appendRemainder = false
+) => {
   const view = ensureView(chunk)
   const length = countChunks(view.byteLength, size, appendRemainder)
   return Array.from({ length }, (_, index) => {

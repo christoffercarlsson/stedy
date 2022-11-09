@@ -1,8 +1,20 @@
 import { createFrom } from '../chunk'
 import { ALGORITHM_HKDF } from './constants'
-import { ensureSupportedHash, getHashSize, importHkdfKey } from './utils'
+import {
+  ensureSupportedHash,
+  getHashSize,
+  importHkdfKey,
+  WebCrypto
+} from './utils'
 
-const hkdf = async (crypto, hash, key, salt, info, size) =>
+const hkdf = async (
+  crypto: WebCrypto,
+  hash: string,
+  key: BufferSource,
+  salt: BufferSource,
+  info?: BufferSource,
+  size?: number
+) =>
   createFrom(
     await crypto.subtle.deriveBits(
       {

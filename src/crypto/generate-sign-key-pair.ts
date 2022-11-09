@@ -5,9 +5,14 @@ import {
   KEY_USAGE_VERIFY
 } from './constants'
 import { signKeyPair } from './curve25519'
-import { exportKeyPair, ensureSupportedCurve, addKeyPrefix } from './utils'
+import {
+  exportKeyPair,
+  ensureSupportedCurve,
+  addKeyPrefix,
+  WebCrypto
+} from './utils'
 
-const generateSignKeyPair = async (crypto, curve) => {
+const generateSignKeyPair = async (crypto: WebCrypto, curve: string) => {
   const namedCurve = await ensureSupportedCurve(curve)
   if (namedCurve === CURVE_CURVE25519) {
     const { publicKey, privateKey } = await signKeyPair()

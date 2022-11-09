@@ -1,8 +1,7 @@
 import { fromString } from './decode'
-import { ensureView, ViewLike } from './utils'
 
 const createFrom = (
-  value?: string | ViewLike | Iterable<number>,
+  value?: string | Iterable<number> | BufferSource,
   encoding?: string
 ) => {
   if (typeof value === 'string') {
@@ -17,8 +16,11 @@ const createFrom = (
   ) {
     return Uint8Array.from(value)
   }
-  if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-    return ensureView(value)
+  if (value instanceof ArrayBuffer) {
+    return new Uint8Array(value)
+  }
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
   }
   return Uint8Array.from([])
 }

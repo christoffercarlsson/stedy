@@ -1,6 +1,6 @@
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const equals = (view: ViewLike, value: ViewLike) => {
+const equals = (view: ArrayBufferView, value: ArrayBufferView) => {
   const a = ensureView(view)
   const b = ensureView(value)
   return (

@@ -1,8 +1,8 @@
 import alloc from './alloc'
 import concat from './concat'
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const pad = (input: ViewLike, size: number, right: boolean) => {
+const pad = (input: ArrayBufferView, size: number, right: boolean) => {
   const view = ensureView(input)
   if (view.byteLength >= size) {
     return view
@@ -11,6 +11,8 @@ const pad = (input: ViewLike, size: number, right: boolean) => {
   return concat(right ? [view, padding] : [padding, view])
 }
 
-export const padLeft = (view: ViewLike, size: number) => pad(view, size, false)
+export const padLeft = (view: ArrayBufferView, size: number) =>
+  pad(view, size, false)
 
-export const padRight = (view: ViewLike, size: number) => pad(view, size, true)
+export const padRight = (view: ArrayBufferView, size: number) =>
+  pad(view, size, true)

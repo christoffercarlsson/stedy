@@ -2,14 +2,20 @@ import { createFrom, ENCODING_PEM } from '../chunk'
 import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants'
 import { signMessage } from './curve25519'
 import {
-  ensureSupportedKey,
+  identifyCurve,
   importSignPrivateKey,
-  removeKeyPrefix
+  removeKeyPrefix,
+  WebCrypto
 } from './utils'
 
-const sign = async (crypto, message, privateKey, hash) => {
+const sign = async (
+  crypto: WebCrypto,
+  message: BufferSource,
+  privateKey: BufferSource,
+  hash?: string
+) => {
   const key = createFrom(privateKey, ENCODING_PEM)
-  const curve = await ensureSupportedKey(key)
+  const curve = await identifyCurve(key)
   const msg = createFrom(message)
   if (curve === CURVE_CURVE25519) {
     return signMessage(msg, removeKeyPrefix(key))

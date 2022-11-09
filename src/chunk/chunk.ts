@@ -54,7 +54,7 @@ import read from './read'
 import split from './split'
 import startsWith from './starts-with'
 import { trimLeft, trimRight } from './trim'
-import { createJSONObject, ViewLike } from './utils'
+import { createJSONObject } from './utils'
 import xor from './xor'
 
 class Chunk extends Uint8Array {
@@ -62,20 +62,20 @@ class Chunk extends Uint8Array {
     return this.createFrom(alloc(size))
   }
 
-  static concat(views: ViewLike[]) {
+  static concat(views: ArrayBufferView[]) {
     return this.createFrom(concat(views))
   }
 
-  static copy(view: ViewLike) {
+  static copy(view: ArrayBufferView) {
     return this.createFrom(copy(view))
   }
 
-  static decode(value: string | ViewLike, encoding?: string) {
+  static decode(value: string | ArrayBufferView, encoding?: string) {
     return this.createFrom(decode(value, encoding))
   }
 
   static createFrom(
-    value?: string | ViewLike | Iterable<number>,
+    value?: string | ArrayBufferView | Iterable<number>,
     encoding?: string
   ) {
     const view = createFrom(value, encoding)
@@ -90,7 +90,7 @@ class Chunk extends Uint8Array {
     return this.byteLength
   }
 
-  append(view: ViewLike) {
+  append(view: ArrayBufferView) {
     return (this.constructor as typeof Chunk).createFrom(append(this, view))
   }
 
@@ -100,11 +100,11 @@ class Chunk extends Uint8Array {
     )
   }
 
-  endsWith(view: ViewLike) {
+  endsWith(view: ArrayBufferView) {
     return endsWith(this, view)
   }
 
-  equals(view: ViewLike) {
+  equals(view: ArrayBufferView) {
     return equals(this, view)
   }
 
@@ -128,12 +128,12 @@ class Chunk extends Uint8Array {
     return (this.constructor as typeof Chunk).createFrom(padRight(this, size))
   }
 
-  prepend(view: ViewLike) {
+  prepend(view: ArrayBufferView) {
     return (this.constructor as typeof Chunk).createFrom(prepend(this, view))
   }
 
   read(...sizes: number[]) {
-    return read(this, ...sizes).map((view: ViewLike) =>
+    return read(this, ...sizes).map((view: ArrayBufferView) =>
       (this.constructor as typeof Chunk).createFrom(view)
     )
   }
@@ -216,7 +216,7 @@ class Chunk extends Uint8Array {
     )
   }
 
-  startsWith(view: ViewLike) {
+  startsWith(view: ArrayBufferView) {
     return startsWith(this, view)
   }
 
@@ -344,7 +344,7 @@ class Chunk extends Uint8Array {
     )
   }
 
-  xor(view: ViewLike) {
+  xor(view: ArrayBufferView) {
     return (this.constructor as typeof Chunk).createFrom(xor(this, view))
   }
 }

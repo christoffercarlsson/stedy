@@ -13,12 +13,11 @@ const hashSizes = new Map([
   [HASH_SHA512, HASH_SHA512_SIZE]
 ])
 
-export const getHashSize = (hash) =>
-  hashSizes.has(hash) ? hashSizes.get(hash) : 0
+export const getHashSize = (hash: string) => hashSizes.get(hash)
 
-const isSupportedHash = (hash) => hashSizes.has(hash)
+const isSupportedHash = (hash: string) => hashSizes.has(hash)
 
-export const ensureSupportedHash = (hash) =>
+export const ensureSupportedHash = (hash: string) =>
   isSupportedHash(hash)
     ? Promise.resolve(hash)
     : Promise.reject(new Error('Unsupported hash algorithm'))

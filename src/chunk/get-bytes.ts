@@ -1,5 +1,5 @@
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const getBytes = (view: ViewLike) => [...ensureView(view)]
+const getBytes = (view: ArrayBufferView) => [...ensureView(view)]
 
 export default getBytes

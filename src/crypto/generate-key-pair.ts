@@ -5,9 +5,14 @@ import {
   KEY_USAGE_DERIVE_KEY
 } from './constants'
 import { keyPair } from './curve25519'
-import { exportKeyPair, ensureSupportedCurve, addKeyPrefix } from './utils'
+import {
+  exportKeyPair,
+  ensureSupportedCurve,
+  addKeyPrefix,
+  WebCrypto
+} from './utils'
 
-const generateKeyPair = async (crypto, curve) => {
+const generateKeyPair = async (crypto: WebCrypto, curve: string) => {
   const namedCurve = await ensureSupportedCurve(curve)
   if (namedCurve === CURVE_CURVE25519) {
     const { publicKey, privateKey } = keyPair()

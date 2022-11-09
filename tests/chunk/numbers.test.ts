@@ -144,4 +144,13 @@ describe('Numbers', () => {
     expect(readUint64BE(a, offset)).toEqual(BigInt(value)) // eslint-disable-line no-undef
     expect(readUint64LE(b, offset)).toEqual(BigInt(value)) // eslint-disable-line no-undef
   })
+
+  it('should read 64-bit integer values as regular numbers', () => {
+    const offset = 0
+    const value = 42n
+    const a = writeUint64BE(alloc(8), value, offset)
+    const b = writeUint64LE(alloc(8), value, offset)
+    expect(readUint64BE(a, offset, true)).toEqual(42)
+    expect(readUint64LE(b, offset, true)).toEqual(42)
+  })
 })

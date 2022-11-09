@@ -1,7 +1,7 @@
 import equals from './equals'
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const endsWith = (view: ViewLike, end: ViewLike) => {
+const endsWith = (view: ArrayBufferView, end: ArrayBufferView) => {
   const a = ensureView(view)
   const b = ensureView(end)
   return (

@@ -1,8 +1,20 @@
 import { createFrom } from '../chunk'
 import { ALGORITHM_PBKDF2, PBKDF2_DEFAULT_ITERATIONS } from './constants'
-import { ensureSupportedHash, getHashSize, importPbkdf2Key } from './utils'
+import {
+  ensureSupportedHash,
+  getHashSize,
+  importPbkdf2Key,
+  WebCrypto
+} from './utils'
 
-const pbkdf2 = async (crypto, hash, password, salt, iterations, size) =>
+const pbkdf2 = async (
+  crypto: WebCrypto,
+  hash: string,
+  password: BufferSource,
+  salt: BufferSource,
+  iterations?: number,
+  size?: number
+) =>
   createFrom(
     await crypto.subtle.deriveBits(
       {

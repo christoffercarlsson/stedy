@@ -1,7 +1,7 @@
 import equals from './equals'
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const startsWith = (view: ViewLike, start: ViewLike) => {
+const startsWith = (view: ArrayBufferView, start: ArrayBufferView) => {
   const a = ensureView(view)
   const b = ensureView(start)
   return (

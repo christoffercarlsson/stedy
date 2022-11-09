@@ -1,9 +1,7 @@
-export type ViewLike = ArrayBuffer | ArrayBufferView
-
 export const countChunks = (
   totalSize: number,
   chunkSize: number,
-  appendRemainder = false
+  appendRemainder: boolean
 ) => {
   if (totalSize === 0) {
     return 0
@@ -20,10 +18,7 @@ export const createJSONObject = (view: Uint8Array) => ({
   data: [...view]
 })
 
-export const ensureView = (view: ViewLike) => {
-  if (view instanceof ArrayBuffer) {
-    return new Uint8Array(view)
-  }
+export const ensureView = (view: ArrayBufferView) => {
   if (ArrayBuffer.isView(view)) {
     return new Uint8Array(view.buffer, view.byteOffset, view.byteLength)
   }

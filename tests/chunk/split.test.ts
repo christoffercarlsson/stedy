@@ -2,7 +2,7 @@ import { createFrom, toString, split } from '../../src/chunk'
 
 describe('split', () => {
   it('should split a chunk into smaller chunks', () => {
-    const views = split(createFrom('Hello'), 2)
+    const views = split(createFrom('Hello'), 2, false)
     expect(views.map((view) => toString(view))).toEqual(['He', 'll', 'o'])
   })
 

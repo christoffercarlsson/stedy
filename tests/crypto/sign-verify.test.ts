@@ -22,4 +22,12 @@ describe('sign/verify', () => {
     const signature = await sign(message, privateKey)
     expect(await verify(message, publicKey, signature)).toBe(true)
   })
+
+  it('should not verify invalid signatures using EdDSA with Curve25519', async () => {
+    const { publicKey, privateKey } = await generateSignKeyPair('Curve25519')
+    const signature = await sign(message, privateKey)
+    expect(await verify(message, publicKey, signature.subarray(0, 62))).toBe(
+      false
+    )
+  })
 })

@@ -1,8 +1,8 @@
 import { createFrom } from '../chunk'
 import generateRandomBytes from './generate-random-bytes'
-import { ensureSupportedCipher, getKeySize } from './utils'
+import { ensureSupportedCipher, getKeySize, WebCrypto } from './utils'
 
-const generateKey = async (crypto, cipher) =>
+const generateKey = async (crypto: WebCrypto, cipher: string) =>
   createFrom(
     generateRandomBytes(crypto, getKeySize(await ensureSupportedCipher(cipher)))
   )

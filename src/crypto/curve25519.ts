@@ -6,7 +6,7 @@ export const keyPair = () => {
   return { publicKey, privateKey }
 }
 
-export const scalarMult = (privateKey, publicKey) =>
+export const scalarMult = (privateKey: Uint8Array, publicKey: Uint8Array) =>
   curve25519.scalarMult(privateKey, publicKey)
 
 export const signKeyPair = async () => {
@@ -15,7 +15,11 @@ export const signKeyPair = async () => {
   return { publicKey, privateKey }
 }
 
-export const signMessage = (message, privateKey) => sign(message, privateKey)
+export const signMessage = (message: Uint8Array, privateKey: Uint8Array) =>
+  sign(message, privateKey)
 
-export const verifyMessage = (signature, message, publicKey) =>
-  verify(signature, message, publicKey)
+export const verifyMessage = (
+  signature: Uint8Array,
+  message: Uint8Array,
+  publicKey: Uint8Array
+) => verify(signature, message, publicKey)

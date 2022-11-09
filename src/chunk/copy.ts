@@ -1,6 +1,6 @@
 import createFrom from './create-from'
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
-const copy = (view: ViewLike) => createFrom([...ensureView(view)])
+const copy = (view: ArrayBufferView) => createFrom([...ensureView(view)])
 
 export default copy

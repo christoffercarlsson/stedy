@@ -1,7 +1,12 @@
 import { createFrom } from '../chunk'
-import { ensureSupportedHash } from './utils'
+import { ensureSupportedHash, WebCrypto } from './utils'
 
-const iterateHash = async (crypto, algorithm, message, iterations) => {
+const iterateHash = async (
+  crypto: WebCrypto,
+  algorithm: string,
+  message: BufferSource,
+  iterations: number
+): Promise<ArrayBuffer> => {
   const digest = await crypto.subtle.digest(algorithm, message)
   const iterationsLeft = iterations - 1
   if (iterationsLeft === 0) {
@@ -10,7 +15,12 @@ const iterateHash = async (crypto, algorithm, message, iterations) => {
   return iterateHash(crypto, algorithm, digest, iterationsLeft)
 }
 
-const hash = async (crypto, algorithm, message, iterations) =>
+const hash = async (
+  crypto: WebCrypto,
+  algorithm: string,
+  message: BufferSource,
+  iterations?: number
+) =>
   createFrom(
     await iterateHash(
       crypto,

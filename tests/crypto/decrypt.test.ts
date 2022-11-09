@@ -1,6 +1,6 @@
-import { encrypt } from '../../src/crypto'
+import { decrypt } from '../../src/crypto'
 
-describe('encrypt', () => {
+describe('decrypt', () => {
   const message = Uint8Array.from([
     72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100
   ])
@@ -17,7 +17,7 @@ describe('encrypt', () => {
         190, 93, 32, 212, 130, 193, 34, 170, 109, 219, 15, 43, 226, 223, 22, 84,
         64, 89, 253, 159, 8, 33, 214, 189, 27, 248, 228
       ]),
-      additionalData: Uint8Array.from([4, 3, 2, 1])
+      associatedData: Uint8Array.from([4, 3, 2, 1])
     },
     {
       cipher: 'AES-256-GCM',
@@ -33,45 +33,45 @@ describe('encrypt', () => {
         219, 10, 241, 174, 76, 151, 208, 220, 89, 31, 85, 44, 99, 39, 187, 231,
         120, 231, 67, 101, 50, 187, 148, 250, 16, 3, 190
       ]),
-      additionalData: Uint8Array.from([1, 2, 3, 4])
+      associatedData: Uint8Array.from([1, 2, 3, 4])
     }
   ]
 
-  ciphers.forEach(({ cipher, key, nonce, ciphertext, additionalData }) => {
-    it(`should encrypt using ${cipher}`, async () => {
+  ciphers.forEach(({ cipher, key, nonce, ciphertext, associatedData }) => {
+    it(`should decrypt using ${cipher}`, async () => {
       expect(
-        await encrypt(cipher, key, nonce, message, additionalData)
-      ).toEqual(ciphertext)
+        await decrypt(cipher, key, nonce, ciphertext, associatedData)
+      ).toEqual(message)
     })
 
     it(`should throw an exception for invalid ${cipher} keys`, async () => {
       await expect(
-        encrypt(
+        decrypt(
           cipher,
           key.subarray(0, key.byteLength - 2),
           nonce,
-          message,
-          additionalData
+          ciphertext,
+          associatedData
         )
       ).rejects.toThrow('Invalid key size')
     })
 
     it(`should throw an exception for invalid ${cipher} nonces`, async () => {
       await expect(
-        encrypt(
+        decrypt(
           cipher,
           key,
           nonce.subarray(0, nonce.byteLength - 2),
-          message,
-          additionalData
+          ciphertext,
+          associatedData
         )
       ).rejects.toThrow('Invalid nonce size')
     })
   })
 
   it('should throw an exception for unsupported ciphers', async () => {
-    const { key, nonce } = ciphers[1]
-    await expect(encrypt('hubba', key, nonce, message)).rejects.toThrow(
+    const { key, nonce, ciphertext } = ciphers[0]
+    await expect(decrypt('hubba', key, nonce, ciphertext)).rejects.toThrow(
       'Unsupported cipher'
     )
   })

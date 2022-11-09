@@ -6,23 +6,24 @@ import {
 } from './constants'
 import { scalarMult } from './curve25519'
 import {
-  ensureSupportedKey,
+  identifyCurve,
   importPrivateKey,
   importPublicKey,
-  removeKeyPrefix
+  removeKeyPrefix,
+  WebCrypto
 } from './utils'
 
 const deriveSharedSecret = async (
-  crypto,
-  ourPrivateKey,
-  theirPublicKey,
-  size
+  crypto: WebCrypto,
+  ourPrivateKey: BufferSource,
+  theirPublicKey: BufferSource,
+  size?: number
 ) => {
   const privateKey = createFrom(ourPrivateKey)
   const publicKey = createFrom(theirPublicKey)
   const outputSize =
     Number.isInteger(size) && size > 0 ? size : SHARED_SECRET_DEFAULT_SIZE
-  const curve = await ensureSupportedKey(privateKey)
+  const curve = await identifyCurve(privateKey)
   if (curve === CURVE_CURVE25519) {
     return scalarMult(
       removeKeyPrefix(privateKey),

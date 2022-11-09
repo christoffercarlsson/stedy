@@ -1,4 +1,4 @@
-import { ensureView, ViewLike } from './utils'
+import { ensureView } from './utils'
 
 type LeadingByteState = [number, boolean]
 
@@ -19,7 +19,7 @@ const countLeadingBytes = (view: Uint8Array, byte: number, right: boolean) => {
   return count
 }
 
-const trim = (input: ViewLike, byte: number, right: boolean) => {
+const trim = (input: ArrayBufferView, byte: number, right: boolean) => {
   const view = ensureView(input)
   const count = countLeadingBytes(
     view,
@@ -31,6 +31,8 @@ const trim = (input: ViewLike, byte: number, right: boolean) => {
     : view.subarray(count)
 }
 
-export const trimLeft = (view: ViewLike, byte = 0) => trim(view, byte, false)
+export const trimLeft = (view: ArrayBufferView, byte = 0) =>
+  trim(view, byte, false)
 
-export const trimRight = (view: ViewLike, byte = 0) => trim(view, byte, true)
+export const trimRight = (view: ArrayBufferView, byte = 0) =>
+  trim(view, byte, true)
