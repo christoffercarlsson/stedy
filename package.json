@@ -10,6 +10,13 @@
     "./crypto": "./dist/src/crypto.js",
     "./util": "./dist/src/util.js"
   },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/src/*"
+      ]
+    }
+  },
   "files": [
     "dist/src/**/*.{js,ts}"
   ],
