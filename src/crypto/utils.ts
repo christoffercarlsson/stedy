@@ -1,4 +1,5 @@
 import type { webcrypto } from 'crypto'
+import { isWebEnvironment, memoizeFirst } from '../util'
 import { createAead, ensureSupportedCipher, getKeySize } from './utils/aead'
 import {
   addKeyPrefix,
@@ -22,6 +23,16 @@ import {
 
 export type WebCrypto = Crypto | webcrypto.Crypto
 
+const getCrypto = memoizeFirst(async () => {
+  /* istanbul ignore next */
+  if (isWebEnvironment()) {
+    return window.crypto
+  }
+  // eslint-disable-next-line node/no-unsupported-features/es-syntax
+  const { webcrypto } = await import('crypto')
+  return webcrypto
+}) as () => Promise<WebCrypto>
+
 export {
   addKeyPrefix,
   createAead,
@@ -30,6 +41,7 @@ export {
   ensureSupportedHash,
   ensureSupportedKey,
   exportKeyPair,
+  getCrypto,
   getCurves,
   getHashSize,
   getKeySize,

@@ -13,7 +13,7 @@ import {
   WebCrypto
 } from './utils'
 
-const deriveSharedSecret = async (
+const diffieHellman = async (
   crypto: WebCrypto,
   ourPrivateKey: BufferSource,
   theirPublicKey: BufferSource,
@@ -42,4 +42,4 @@ const deriveSharedSecret = async (
   )
 }
 
-export default deriveSharedSecret
+export default diffieHellman

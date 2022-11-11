@@ -1,4 +1,3 @@
-import { isWebEnvironment } from './util'
 import {
   CIPHER_AES128_GCM,
   CIPHER_AES256_GCM,
@@ -11,7 +10,7 @@ import {
   HASH_SHA512
 } from './crypto/constants'
 import _decrypt from './crypto/decrypt'
-import _deriveSharedSecret from './crypto/derive-shared-secret'
+import _diffieHellman from './crypto/diffie-hellman'
 import _encrypt from './crypto/encrypt'
 import exportKey from './crypto/export-key'
 import _generateKeyPair from './crypto/generate-key-pair'
@@ -24,27 +23,8 @@ import _hmac from './crypto/hmac'
 import importKey from './crypto/import-key'
 import _pbkdf2 from './crypto/pbkdf2'
 import _sign from './crypto/sign'
-import { getCurves, WebCrypto } from './crypto/utils'
+import { getCrypto, getCurves } from './crypto/utils'
 import _verify from './crypto/verify'
-
-let crypto: WebCrypto = null
-
-const importCrypto = async () => {
-  /* istanbul ignore next */
-  if (isWebEnvironment()) {
-    return window.crypto
-  }
-  // eslint-disable-next-line node/no-unsupported-features/es-syntax
-  const { webcrypto } = await import('crypto')
-  return webcrypto
-}
-
-const getCrypto = async () => {
-  if (!crypto) {
-    crypto = await importCrypto()
-  }
-  return crypto
-}
 
 const decrypt = async (
   cipher: string,
@@ -54,11 +34,11 @@ const decrypt = async (
   associatedData?: BufferSource
 ) => _decrypt(await getCrypto(), cipher, key, nonce, ciphertext, associatedData)
 
-const deriveSharedSecret = async (
+const diffieHellman = async (
   ourPrivateKey: BufferSource,
   theirPublicKey: BufferSource,
   size?: number
-) => _deriveSharedSecret(await getCrypto(), ourPrivateKey, theirPublicKey, size)
+) => _diffieHellman(await getCrypto(), ourPrivateKey, theirPublicKey, size)
 
 const encrypt = async (
   cipher: string,
@@ -132,7 +112,7 @@ export {
   HASH_SHA384,
   HASH_SHA512,
   decrypt,
-  deriveSharedSecret,
+  diffieHellman,
   encrypt,
   exportKey,
   generateKeyPair,
