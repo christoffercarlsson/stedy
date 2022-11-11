@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-loss-of-precision */
 /* eslint-disable no-loss-of-precision */
-import { Chunk, createFrom } from '../../src/chunk'
+import { Chunk, createFrom } from '../../src/bytes'
 
 describe('Chunk', () => {
   it('should allocate a new zero-filled chunk with a given size', () => {

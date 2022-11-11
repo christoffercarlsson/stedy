@@ -1,4 +1,4 @@
-import { fromString } from '../../src/chunk'
+import { fromString } from '../../src/bytes'
 
 describe('fromString', () => {
   it('should decode Base 64 encoded strings correctly', () => {

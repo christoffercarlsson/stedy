@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import { addKeyPrefix, ensureSupportedCurve } from './utils'
 
 const importKey = async (

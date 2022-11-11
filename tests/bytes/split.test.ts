@@ -1,4 +1,4 @@
-import { createFrom, toString, split } from '../../src/chunk'
+import { createFrom, toString, split } from '../../src/bytes'
 
 describe('split', () => {
   it('should split a chunk into smaller chunks', () => {

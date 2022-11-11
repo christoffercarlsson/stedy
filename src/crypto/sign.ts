@@ -1,4 +1,4 @@
-import { createFrom, ENCODING_PEM } from '../chunk'
+import { createFrom, ENCODING_PEM } from '../bytes'
 import { ALGORITHM_ECDSA, CURVE_CURVE25519 } from './constants'
 import { signMessage } from './curve25519'
 import {

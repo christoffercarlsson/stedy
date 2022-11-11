@@ -1,4 +1,4 @@
-import { xor } from '../../src/chunk'
+import { xor } from '../../src/bytes'
 
 describe('xor', () => {
   it('should calculate the XOR of two given chunks of the same size', () => {

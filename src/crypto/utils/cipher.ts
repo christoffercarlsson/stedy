@@ -1,4 +1,4 @@
-import { createFrom, hasSize } from '../../chunk'
+import { createFrom, hasSize } from '../../bytes'
 import {
   CIPHER_AES128_CBC,
   CIPHER_AES128_GCM,

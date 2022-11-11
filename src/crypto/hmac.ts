@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import { ALGORITHM_HMAC } from './constants'
 import { ensureSupportedHash, importHmacKey, WebCrypto } from './utils'
 

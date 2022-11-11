@@ -1,4 +1,4 @@
-import { concat, createFrom, endsWith } from '../../src/chunk'
+import { concat, createFrom, endsWith } from '../../src/bytes'
 
 describe('endsWith', () => {
   it('should check to see if a chunk ends with a given chunk', () => {

@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import { ALGORITHM_HKDF } from './constants'
 import {
   ensureSupportedHash,

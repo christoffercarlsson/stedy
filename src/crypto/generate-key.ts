@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import generateRandomBytes from './generate-random-bytes'
 import { ensureSupportedCipher, getKeySize, WebCrypto } from './utils'
 

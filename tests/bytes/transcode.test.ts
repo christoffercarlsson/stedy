@@ -1,4 +1,4 @@
-import { transcode } from '../../src/chunk'
+import { transcode } from '../../src/bytes'
 
 describe('transcode', () => {
   it('should re-encode a given chunk from one encoding to another', () => {

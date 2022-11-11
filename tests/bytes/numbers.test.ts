@@ -38,7 +38,7 @@ import {
   writeUint32LE,
   writeUint64BE,
   writeUint64LE
-} from '../../src/chunk'
+} from '../../src/bytes'
 
 describe('Numbers', () => {
   it('should store a signed 32-bit floating-point value at the specified byte offset', () => {

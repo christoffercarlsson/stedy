@@ -1,4 +1,4 @@
-import { concat, createFrom, startsWith } from '../../chunk'
+import { concat, createFrom, startsWith } from '../../bytes'
 import {
   ALGORITHM_ECDH,
   ALGORITHM_ECDSA,

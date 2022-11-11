@@ -1,4 +1,4 @@
-import { createFrom, read } from '../../src/chunk'
+import { createFrom, read } from '../../src/bytes'
 
 describe('read', () => {
   it('should read data sequentially', () => {

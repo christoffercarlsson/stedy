@@ -6,7 +6,7 @@
   "repository": "git://github.com/christoffercarlsson/stedy.git",
   "type": "module",
   "exports": {
-    "./chunk": "./dist/src/chunk.js",
+    "./bytes": "./dist/src/bytes.js",
     "./crypto": "./dist/src/crypto.js"
   },
   "typesVersions": {

@@ -1,4 +1,4 @@
-import { createFrom, append } from '../../src/chunk'
+import { createFrom, append } from '../../src/bytes'
 
 describe('append', () => {
   it('should append the data from another chunk', () => {

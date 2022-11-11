@@ -1,4 +1,4 @@
-import { alloc, createFrom } from '../chunk'
+import { alloc, createFrom } from '../bytes'
 import { WebCrypto } from './utils'
 
 const generateRandomBytes = (crypto: WebCrypto, size: number) =>

@@ -1,4 +1,4 @@
-import { createFrom, hasSize } from '../../src/chunk'
+import { createFrom, hasSize } from '../../src/bytes'
 
 describe('hasSize', () => {
   it('should check to see if a chunk is of a given size', () => {

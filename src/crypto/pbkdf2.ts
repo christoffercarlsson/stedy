@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import { ALGORITHM_PBKDF2, PBKDF2_DEFAULT_ITERATIONS } from './constants'
 import {
   ensureSupportedHash,

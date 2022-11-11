@@ -1,7 +1,7 @@
-import alloc from './chunk/alloc'
-import append from './chunk/append'
-import Chunk from './chunk/chunk'
-import concat from './chunk/concat'
+import alloc from './bytes/alloc'
+import append from './bytes/append'
+import Chunk from './bytes/chunk'
+import concat from './bytes/concat'
 import {
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
@@ -9,16 +9,16 @@ import {
   ENCODING_JSON,
   ENCODING_PEM,
   ENCODING_UTF8
-} from './chunk/constants'
-import copy from './chunk/copy'
-import createFrom from './chunk/create-from'
-import getBytes from './chunk/get-bytes'
-import decode, { fromString } from './chunk/decode'
-import encode, { toString } from './chunk/encode'
-import endsWith from './chunk/ends-with'
-import equals from './chunk/equals'
-import hasSize from './chunk/has-size'
-import isEmpty from './chunk/is-empty'
+} from './bytes/constants'
+import copy from './bytes/copy'
+import createFrom from './bytes/create-from'
+import getBytes from './bytes/get-bytes'
+import decode, { fromString } from './bytes/decode'
+import encode, { toString } from './bytes/encode'
+import endsWith from './bytes/ends-with'
+import equals from './bytes/equals'
+import hasSize from './bytes/has-size'
+import isEmpty from './bytes/is-empty'
 import {
   readFloat32BE,
   readFloat32LE,
@@ -56,15 +56,15 @@ import {
   writeUint32LE,
   writeUint64BE,
   writeUint64LE
-} from './chunk/numbers'
-import { padLeft, padRight } from './chunk/pad'
-import prepend from './chunk/prepend'
-import read from './chunk/read'
-import split from './chunk/split'
-import startsWith from './chunk/starts-with'
-import transcode from './chunk/transcode'
-import { trimLeft, trimRight } from './chunk/trim'
-import xor from './chunk/xor'
+} from './bytes/numbers'
+import { padLeft, padRight } from './bytes/pad'
+import prepend from './bytes/prepend'
+import read from './bytes/read'
+import split from './bytes/split'
+import startsWith from './bytes/starts-with'
+import transcode from './bytes/transcode'
+import { trimLeft, trimRight } from './bytes/trim'
+import xor from './bytes/xor'
 
 export {
   ENCODING_BASE64,

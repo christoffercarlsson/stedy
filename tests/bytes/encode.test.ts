@@ -1,4 +1,4 @@
-import { encode } from '../../src/chunk'
+import { encode } from '../../src/bytes'
 
 describe('encode', () => {
   it('should produce a correct Base 64 representation of a given chunk', () => {

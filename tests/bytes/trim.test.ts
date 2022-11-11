@@ -1,4 +1,4 @@
-import { trimLeft, trimRight } from '../../src/chunk'
+import { trimLeft, trimRight } from '../../src/bytes'
 
 describe('trim', () => {
   const view = Uint8Array.from([1, 2, 3])

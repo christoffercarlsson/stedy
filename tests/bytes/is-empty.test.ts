@@ -1,4 +1,4 @@
-import { createFrom, isEmpty } from '../../src/chunk'
+import { createFrom, isEmpty } from '../../src/bytes'
 
 describe('isEmpty', () => {
   it('should check to see if the chunk is empty', () => {

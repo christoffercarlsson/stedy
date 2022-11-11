@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import {
   ALGORITHM_ECDH,
   CURVE_CURVE25519,

@@ -1,4 +1,4 @@
-import { padLeft, padRight } from '../../src/chunk'
+import { padLeft, padRight } from '../../src/bytes'
 
 describe('pad', () => {
   it('should pad a given chunk with zeroes on the left', () => {

@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import {
   ALGORITHM_ECDSA,
   CURVE25519_SIGNATURE_SIZE,

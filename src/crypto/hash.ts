@@ -1,4 +1,4 @@
-import { createFrom } from '../chunk'
+import { createFrom } from '../bytes'
 import { ensureSupportedHash, WebCrypto } from './utils'
 
 const iterateHash = async (

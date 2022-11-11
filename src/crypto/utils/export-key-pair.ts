@@ -1,4 +1,4 @@
-import { createFrom } from '../../chunk'
+import { createFrom } from '../../bytes'
 import { KEY_FORMAT_PKCS8, KEY_FORMAT_SPKI } from '../constants'
 import { WebCrypto } from '../utils'
 
