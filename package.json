@@ -7,8 +7,7 @@
   "type": "module",
   "exports": {
     "./chunk": "./dist/src/chunk.js",
-    "./crypto": "./dist/src/crypto.js",
-    "./util": "./dist/src/util.js"
+    "./crypto": "./dist/src/crypto.js"
   },
   "typesVersions": {
     "*": {
