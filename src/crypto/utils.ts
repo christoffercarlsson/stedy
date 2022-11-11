@@ -1,6 +1,11 @@
 import type { webcrypto } from 'crypto'
 import { isWebEnvironment, memoizeFirst } from '../util'
-import { createAead, ensureSupportedCipher, getKeySize } from './utils/aead'
+import {
+  createCipher,
+  ensureSupportedCipher,
+  getKeySize,
+  importCipherKey as importSecretKey
+} from './utils/cipher'
 import {
   addKeyPrefix,
   ensureSupportedCurve,
@@ -35,7 +40,7 @@ const getCrypto = memoizeFirst(async () => {
 
 export {
   addKeyPrefix,
-  createAead,
+  createCipher,
   ensureSupportedCipher,
   ensureSupportedCurve,
   ensureSupportedHash,
@@ -51,6 +56,7 @@ export {
   importPbkdf2Key,
   importPrivateKey,
   importPublicKey,
+  importSecretKey,
   importSignPrivateKey,
   importSignPublicKey,
   removeKeyPrefix

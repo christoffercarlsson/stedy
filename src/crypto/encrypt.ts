@@ -1,5 +1,5 @@
 import { createFrom } from '../chunk'
-import { createAead, WebCrypto } from './utils'
+import { createCipher, importSecretKey, WebCrypto } from './utils'
 
 const encrypt = async (
   crypto: WebCrypto,
@@ -9,20 +9,10 @@ const encrypt = async (
   message: BufferSource,
   associatedData?: BufferSource
 ) => {
-  const { name, iv, secretKey, tagLength } = await createAead(
-    crypto,
-    cipher,
-    key,
-    nonce
-  )
+  const params = await createCipher(cipher, nonce, associatedData)
   const ciphertext = await crypto.subtle.encrypt(
-    {
-      name,
-      iv,
-      additionalData: createFrom(associatedData),
-      tagLength
-    },
-    secretKey,
+    params,
+    await importSecretKey(crypto, cipher, key),
     createFrom(message)
   )
   return createFrom(ciphertext)

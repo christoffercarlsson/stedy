@@ -1,36 +1,39 @@
 import { createFrom, hasSize } from '../../chunk'
 import {
+  CIPHER_AES128_CBC,
   CIPHER_AES128_GCM,
-  CIPHER_AES128_GCM_KEY_SIZE,
+  CIPHER_AES128_KEY_SIZE,
+  CIPHER_AES256_CBC,
   CIPHER_AES256_GCM,
-  CIPHER_AES256_GCM_KEY_SIZE,
+  CIPHER_AES256_KEY_SIZE,
+  CIPHER_AES_CBC,
+  CIPHER_AES_CBC_NONCE_SIZE,
   CIPHER_AES_GCM,
   CIPHER_AES_GCM_NONCE_SIZE,
-  CIPHER_AES_GCM_TAG_SIZE,
-  KEY_FORMAT_RAW,
-  KEY_USAGE_DECRYPT,
-  KEY_USAGE_ENCRYPT
+  CIPHER_AES_GCM_TAG_SIZE
 } from '../constants'
 import { WebCrypto } from '../utils'
+import { importSecretKey } from './key-import'
 
 const cipherNames = new Map([
+  [CIPHER_AES128_CBC, CIPHER_AES_CBC],
+  [CIPHER_AES256_CBC, CIPHER_AES_CBC],
   [CIPHER_AES128_GCM, CIPHER_AES_GCM],
   [CIPHER_AES256_GCM, CIPHER_AES_GCM]
 ])
 
 const keySizes = new Map([
-  [CIPHER_AES128_GCM, CIPHER_AES128_GCM_KEY_SIZE],
-  [CIPHER_AES256_GCM, CIPHER_AES256_GCM_KEY_SIZE]
+  [CIPHER_AES128_CBC, CIPHER_AES128_KEY_SIZE],
+  [CIPHER_AES256_CBC, CIPHER_AES256_KEY_SIZE],
+  [CIPHER_AES128_GCM, CIPHER_AES128_KEY_SIZE],
+  [CIPHER_AES256_GCM, CIPHER_AES256_KEY_SIZE]
 ])
 
 const nonceSizes = new Map([
+  [CIPHER_AES128_CBC, CIPHER_AES_CBC_NONCE_SIZE],
+  [CIPHER_AES256_CBC, CIPHER_AES_CBC_NONCE_SIZE],
   [CIPHER_AES128_GCM, CIPHER_AES_GCM_NONCE_SIZE],
   [CIPHER_AES256_GCM, CIPHER_AES_GCM_NONCE_SIZE]
-])
-
-const tagSizes = new Map([
-  [CIPHER_AES128_GCM, CIPHER_AES_GCM_TAG_SIZE],
-  [CIPHER_AES256_GCM, CIPHER_AES_GCM_TAG_SIZE]
 ])
 
 const isSupportedCipher = (cipher: string) => cipherNames.has(cipher)
@@ -38,16 +41,6 @@ const isSupportedCipher = (cipher: string) => cipherNames.has(cipher)
 const getCipherName = (cipher: string) => cipherNames.get(cipher)
 
 export const getKeySize = (cipher: string) => keySizes.get(cipher)
-
-const importSecretKey = (
-  crypto: WebCrypto,
-  cipherName: string,
-  key: BufferSource
-) =>
-  crypto.subtle.importKey(KEY_FORMAT_RAW, key, cipherName, false, [
-    KEY_USAGE_ENCRYPT,
-    KEY_USAGE_DECRYPT
-  ])
 
 export const ensureSupportedCipher = (cipher: string) =>
   isSupportedCipher(cipher)
@@ -68,19 +61,31 @@ const ensureValidNonce = (cipher: string, value: BufferSource) => {
     : Promise.reject(new Error('Invalid nonce size'))
 }
 
-export const createAead = async (
+export const importCipherKey = async (
   crypto: WebCrypto,
   cipher: string,
-  key: BufferSource,
-  nonce: BufferSource
-) => {
-  const name = getCipherName(await ensureSupportedCipher(cipher))
-  const iv = await ensureValidNonce(cipher, nonce)
-  const secretKey = await importSecretKey(
+  key: BufferSource
+) =>
+  importSecretKey(
     crypto,
-    name,
+    getCipherName(cipher),
     await ensureValidKey(cipher, key)
   )
-  const tagLength = tagSizes.get(cipher) * 8
-  return { name, iv, secretKey, tagLength }
+
+export const createCipher = async (
+  cipher: string,
+  nonce: BufferSource,
+  associatedData?: BufferSource
+): Promise<AesCbcParams | AesGcmParams> => {
+  const name = getCipherName(await ensureSupportedCipher(cipher))
+  const iv = await ensureValidNonce(cipher, nonce)
+  if (name === CIPHER_AES_CBC) {
+    return { name, iv }
+  }
+  return {
+    name,
+    iv,
+    additionalData: createFrom(associatedData),
+    tagLength: CIPHER_AES_GCM_TAG_SIZE * 8
+  }
 }

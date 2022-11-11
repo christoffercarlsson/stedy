@@ -7,8 +7,10 @@ import {
   KEY_FORMAT_PKCS8,
   KEY_FORMAT_RAW,
   KEY_FORMAT_SPKI,
+  KEY_USAGE_DECRYPT,
   KEY_USAGE_DERIVE_BITS,
   KEY_USAGE_DERIVE_KEY,
+  KEY_USAGE_ENCRYPT,
   KEY_USAGE_SIGN,
   KEY_USAGE_VERIFY
 } from '../constants'
@@ -48,6 +50,13 @@ const importEcdhKey = (
     } as AlgorithmIdentifier,
     [KEY_USAGE_DERIVE_BITS]
   )
+
+export const importSecretKey = (
+  crypto: WebCrypto,
+  algorithm: string,
+  key: BufferSource
+) =>
+  importRawKey(crypto, key, algorithm, [KEY_USAGE_ENCRYPT, KEY_USAGE_DECRYPT])
 
 const importSignKey = (
   crypto: WebCrypto,

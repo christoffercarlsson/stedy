@@ -1,5 +1,7 @@
 import {
+  CIPHER_AES128_CBC,
   CIPHER_AES128_GCM,
+  CIPHER_AES256_CBC,
   CIPHER_AES256_GCM,
   CURVE_CURVE25519,
   CURVE_P256,
@@ -102,7 +104,9 @@ const verify = async (
 ) => _verify(await getCrypto(), message, publicKey, signature, hash)
 
 export {
+  CIPHER_AES128_CBC,
   CIPHER_AES128_GCM,
+  CIPHER_AES256_CBC,
   CIPHER_AES256_GCM,
   CURVE_CURVE25519,
   CURVE_P256,
