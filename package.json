@@ -6,8 +6,8 @@
   "repository": "git://github.com/christoffercarlsson/stedy.git",
   "type": "module",
   "exports": {
-    "./bytes": "./dist/src/bytes.js",
-    "./crypto": "./dist/src/crypto.js"
+    ".": "./dist/src/crypto.js",
+    "./bytes": "./dist/src/bytes.js"
   },
   "typesVersions": {
     "*": {
