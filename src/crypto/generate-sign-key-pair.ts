@@ -12,16 +12,16 @@ import {
   WebCrypto
 } from './utils'
 
-const generateSignKeyPair = async (crypto: WebCrypto, curve: string) => {
-  const namedCurve = await ensureSupportedCurve(curve)
-  if (namedCurve === CURVE_CURVE25519) {
-    const { publicKey, privateKey } = await signKeyPair()
-    return {
-      publicKey: addKeyPrefix(CURVE_CURVE25519, true, true, publicKey),
-      privateKey: addKeyPrefix(CURVE_CURVE25519, true, false, privateKey)
-    }
+const generateCurve25519 = async () => {
+  const { publicKey, privateKey } = await signKeyPair()
+  return {
+    publicKey: addKeyPrefix(CURVE_CURVE25519, true, true, publicKey),
+    privateKey: addKeyPrefix(CURVE_CURVE25519, true, false, privateKey)
   }
-  return exportKeyPair(
+}
+
+const generateECDSA = async (crypto: WebCrypto, namedCurve: string) =>
+  exportKeyPair(
     crypto,
     await crypto.subtle.generateKey(
       {
@@ -32,6 +32,12 @@ const generateSignKeyPair = async (crypto: WebCrypto, curve: string) => {
       [KEY_USAGE_SIGN, KEY_USAGE_VERIFY]
     )
   )
+
+const generateSignKeyPair = async (crypto: WebCrypto, curve: string) => {
+  const namedCurve = await ensureSupportedCurve(curve)
+  return namedCurve === CURVE_CURVE25519
+    ? generateCurve25519()
+    : generateECDSA(crypto, namedCurve)
 }
 
 export default generateSignKeyPair

@@ -13,6 +13,34 @@ import {
   WebCrypto
 } from './utils'
 
+const deriveCurve25519 = (
+  privateKey: Uint8Array,
+  publicKey: Uint8Array,
+  size: number
+) =>
+  scalarMult(removeKeyPrefix(privateKey), removeKeyPrefix(publicKey)).subarray(
+    0,
+    size
+  )
+
+const deriveECDH = async (
+  crypto: WebCrypto,
+  curve: string,
+  privateKey: Uint8Array,
+  publicKey: Uint8Array,
+  size: number
+) =>
+  createFrom(
+    await crypto.subtle.deriveBits(
+      {
+        name: ALGORITHM_ECDH,
+        public: await importPublicKey(crypto, curve, publicKey)
+      },
+      await importPrivateKey(crypto, curve, privateKey),
+      size * 8
+    )
+  )
+
 const diffieHellman = async (
   crypto: WebCrypto,
   ourPrivateKey: BufferSource,
@@ -24,22 +52,9 @@ const diffieHellman = async (
   const outputSize =
     Number.isInteger(size) && size > 0 ? size : SHARED_SECRET_DEFAULT_SIZE
   const curve = await identifyCurve(privateKey)
-  if (curve === CURVE_CURVE25519) {
-    return scalarMult(
-      removeKeyPrefix(privateKey),
-      removeKeyPrefix(publicKey)
-    ).subarray(0, outputSize)
-  }
-  return createFrom(
-    await crypto.subtle.deriveBits(
-      {
-        name: ALGORITHM_ECDH,
-        public: await importPublicKey(crypto, curve, publicKey)
-      },
-      await importPrivateKey(crypto, curve, privateKey),
-      outputSize * 8
-    )
-  )
+  return curve === CURVE_CURVE25519
+    ? deriveCurve25519(privateKey, publicKey, outputSize)
+    : deriveECDH(crypto, curve, privateKey, publicKey, outputSize)
 }
 
 export default diffieHellman
