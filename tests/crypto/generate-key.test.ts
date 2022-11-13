@@ -1,4 +1,4 @@
-import { generateKey } from '../../src/crypto'
+import { createCipher } from '../../src/crypto'
 
 describe('generateKey', () => {
   const keySizes = [
@@ -10,13 +10,15 @@ describe('generateKey', () => {
 
   keySizes.forEach(({ cipher, keySize }) => {
     it(`should generate a symmetric key of size ${keySize} bytes for use with ${cipher}`, async () => {
-      const key = await generateKey(cipher)
+      const { generateKey } = createCipher(cipher)
+      const key = await generateKey()
       expect(key).toBeInstanceOf(Uint8Array)
       expect(key.byteLength).toEqual(keySize)
     })
   })
 
   it('should throw an exception when trying to generate a key for an unsupported cipher', async () => {
-    await expect(generateKey('AES-CBC')).rejects.toThrow('Unsupported cipher')
+    const { generateKey } = createCipher('hubba')
+    await expect(generateKey()).rejects.toThrow('Unsupported cipher')
   })
 })

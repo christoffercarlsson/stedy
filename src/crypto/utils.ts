@@ -1,7 +1,8 @@
 import type { webcrypto } from 'crypto'
 import {
-  createCipher,
+  createCipherParams,
   ensureSupportedCipher,
+  getCiphers,
   getKeySize,
   importCipherKey as importSecretKey
 } from './utils/cipher'
@@ -10,11 +11,12 @@ import {
   ensureSupportedCurve,
   ensureSupportedKey,
   getCurves,
+  getHashForCurve,
   identifyCurve,
   removeKeyPrefix
 } from './utils/curve'
 import exportKeyPair from './utils/export-key-pair'
-import { ensureSupportedHash, getHashSize } from './utils/hash'
+import { ensureSupportedHash, getHashes, getHashSize } from './utils/hash'
 import {
   importHkdfKey,
   importHmacKey,
@@ -48,14 +50,17 @@ const getCrypto = async () => {
 
 export {
   addKeyPrefix,
-  createCipher,
+  createCipherParams,
   ensureSupportedCipher,
   ensureSupportedCurve,
   ensureSupportedHash,
   ensureSupportedKey,
   exportKeyPair,
+  getCiphers,
   getCrypto,
   getCurves,
+  getHashes,
+  getHashForCurve,
   getHashSize,
   getKeySize,
   identifyCurve,

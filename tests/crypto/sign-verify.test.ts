@@ -1,4 +1,4 @@
-import { generateSignKeyPair, sign, verify } from '../../src/crypto'
+import { createCurve } from '../../src/crypto'
 
 describe('sign/verify', () => {
   const message = Uint8Array.from([
@@ -10,22 +10,25 @@ describe('sign/verify', () => {
   curves.forEach((curve) => {
     hashes.forEach((hash) => {
       it(`should sign a given message using ECDSA with ${curve} and ${hash}`, async () => {
-        const { publicKey, privateKey } = await generateSignKeyPair(curve)
-        const signature = await sign(message, privateKey, hash)
-        expect(await verify(message, publicKey, signature, hash)).toBe(true)
+        const { generateSignKeyPair, sign, verify } = createCurve(curve, hash)
+        const { publicKey, privateKey } = await generateSignKeyPair()
+        const signature = await sign(privateKey, message)
+        expect(await verify(message, publicKey, signature)).toBe(true)
       })
     })
   })
 
   it('should sign a given message using EdDSA with Curve25519', async () => {
-    const { publicKey, privateKey } = await generateSignKeyPair('Curve25519')
-    const signature = await sign(message, privateKey)
+    const { generateSignKeyPair, sign, verify } = createCurve('Curve25519')
+    const { publicKey, privateKey } = await generateSignKeyPair()
+    const signature = await sign(privateKey, message)
     expect(await verify(message, publicKey, signature)).toBe(true)
   })
 
   it('should not verify invalid signatures using EdDSA with Curve25519', async () => {
-    const { publicKey, privateKey } = await generateSignKeyPair('Curve25519')
-    const signature = await sign(message, privateKey)
+    const { generateSignKeyPair, sign, verify } = createCurve('Curve25519')
+    const { publicKey, privateKey } = await generateSignKeyPair()
+    const signature = await sign(privateKey, message)
     expect(await verify(message, publicKey, signature.subarray(0, 62))).toBe(
       false
     )

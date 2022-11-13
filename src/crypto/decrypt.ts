@@ -1,5 +1,5 @@
 import { createFrom } from '../bytes'
-import { createCipher, importSecretKey, WebCrypto } from './utils'
+import { createCipherParams, importSecretKey, WebCrypto } from './utils'
 
 const decrypt = async (
   crypto: WebCrypto,
@@ -9,7 +9,7 @@ const decrypt = async (
   ciphertext: BufferSource,
   associatedData?: BufferSource
 ) => {
-  const params = await createCipher(cipher, nonce, associatedData)
+  const params = await createCipherParams(cipher, nonce, associatedData)
   const message = await crypto.subtle.decrypt(
     params,
     await importSecretKey(crypto, cipher, key),

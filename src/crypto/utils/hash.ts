@@ -21,3 +21,5 @@ export const ensureSupportedHash = (hash: string) =>
   isSupportedHash(hash)
     ? Promise.resolve(hash)
     : Promise.reject(new Error('Unsupported hash algorithm'))
+
+export const getHashes = () => [...hashSizes.keys()]

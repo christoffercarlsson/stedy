@@ -1,4 +1,4 @@
-import { encrypt } from '../../src/crypto'
+import { createCipher } from '../../src/crypto'
 
 describe('encrypt', () => {
   const message = Uint8Array.from([
@@ -68,16 +68,17 @@ describe('encrypt', () => {
   ]
 
   ciphers.forEach(({ cipher, key, nonce, ciphertext, associatedData }) => {
+    const { encrypt } = createCipher(cipher)
+
     it(`should encrypt using ${cipher}`, async () => {
-      expect(
-        await encrypt(cipher, key, nonce, message, associatedData)
-      ).toEqual(ciphertext)
+      expect(await encrypt(key, nonce, message, associatedData)).toEqual(
+        ciphertext
+      )
     })
 
     it(`should throw an exception for invalid ${cipher} keys`, async () => {
       await expect(
         encrypt(
-          cipher,
           key.subarray(0, key.byteLength - 2),
           nonce,
           message,
@@ -89,7 +90,6 @@ describe('encrypt', () => {
     it(`should throw an exception for invalid ${cipher} nonces`, async () => {
       await expect(
         encrypt(
-          cipher,
           key,
           nonce.subarray(0, nonce.byteLength - 2),
           message,
@@ -100,8 +100,9 @@ describe('encrypt', () => {
   })
 
   it('should throw an exception for unsupported ciphers', async () => {
+    const { encrypt } = createCipher('hubba')
     const { key, nonce } = ciphers[1]
-    await expect(encrypt('hubba', key, nonce, message)).rejects.toThrow(
+    await expect(encrypt(key, nonce, message)).rejects.toThrow(
       'Unsupported cipher'
     )
   })

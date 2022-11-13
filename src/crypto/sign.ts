@@ -9,14 +9,14 @@ import {
   WebCrypto
 } from './utils'
 
-const signCurve25519 = (message: Uint8Array, privateKey: Uint8Array) =>
+const signCurve25519 = (privateKey: Uint8Array, message: Uint8Array) =>
   signMessage(message, removeKeyPrefix(privateKey))
 
 const signECDSA = async (
   crypto: WebCrypto,
   curve: string,
-  message: Uint8Array,
   privateKey: Uint8Array,
+  message: Uint8Array,
   hash: string
 ) =>
   createFrom(
@@ -29,16 +29,16 @@ const signECDSA = async (
 
 const sign = async (
   crypto: WebCrypto,
-  message: BufferSource,
   privateKey: BufferSource,
+  message: BufferSource,
   hash?: string
 ) => {
   const key = createFrom(privateKey)
   const curve = await identifyCurve(key)
   const msg = createFrom(message)
   return curve === CURVE_CURVE25519
-    ? signCurve25519(msg, key)
-    : signECDSA(crypto, curve, msg, key, hash)
+    ? signCurve25519(key, msg)
+    : signECDSA(crypto, curve, key, msg, hash)
 }
 
 export default sign

@@ -72,7 +72,7 @@ export const importCipherKey = async (
     await ensureValidKey(cipher, key)
   )
 
-export const createCipher = async (
+export const createCipherParams = async (
   cipher: string,
   nonce: BufferSource,
   associatedData?: BufferSource
@@ -89,3 +89,5 @@ export const createCipher = async (
     tagLength: CIPHER_AES_GCM_TAG_SIZE * 8
   }
 }
+
+export const getCiphers = () => [...cipherNames.keys()]

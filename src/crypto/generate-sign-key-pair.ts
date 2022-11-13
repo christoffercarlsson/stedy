@@ -15,8 +15,8 @@ import {
 const generateCurve25519 = async () => {
   const { publicKey, privateKey } = await signKeyPair()
   return {
-    publicKey: addKeyPrefix(CURVE_CURVE25519, true, true, publicKey),
-    privateKey: addKeyPrefix(CURVE_CURVE25519, true, false, privateKey)
+    publicKey: addKeyPrefix(CURVE_CURVE25519, publicKey, true, true),
+    privateKey: addKeyPrefix(CURVE_CURVE25519, privateKey, true, false)
   }
 }
 

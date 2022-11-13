@@ -1,4 +1,4 @@
-import { hmac } from '../../src/crypto'
+import { createHash } from '../../src/crypto'
 
 describe('hmac', () => {
   const message = Uint8Array.from([
@@ -38,12 +38,14 @@ describe('hmac', () => {
 
   algorithms.forEach(({ algorithm, signature }) => {
     it(`should compute the HMAC digest of a message using ${algorithm} with a given key`, async () => {
-      expect(await hmac(algorithm, key, message)).toEqual(signature)
+      const { hmac } = createHash(algorithm)
+      expect(await hmac(key, message)).toEqual(signature)
     })
   })
 
   it('should throw an exception when trying to use an unsupported hash algorithm', async () => {
-    await expect(hmac('hubba', key, message)).rejects.toThrow(
+    const { hmac } = createHash('hubba')
+    await expect(hmac(key, message)).rejects.toThrow(
       'Unsupported hash algorithm'
     )
   })

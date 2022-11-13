@@ -1,4 +1,4 @@
-import { hkdf } from '../../src/crypto'
+import { createHash } from '../../src/crypto'
 
 describe('hkdf', () => {
   const ikm = Uint8Array.from([
@@ -46,19 +46,20 @@ describe('hkdf', () => {
 
   algorithms.forEach(({ algorithm, okm }) =>
     it(`should derive new a key using HKDF with ${algorithm}`, async () => {
-      expect(await hkdf(algorithm, ikm, salt, info, okm.byteLength)).toEqual(
-        okm
-      )
+      const { hkdf } = createHash(algorithm)
+      expect(await hkdf(ikm, salt, info, okm.byteLength)).toEqual(okm)
     })
   )
 
   it('should derive a key with the size of the given hash function when the last argument is omitted', async () => {
     const { algorithm, okm } = algorithms[2]
-    expect(await hkdf(algorithm, ikm, salt, info)).toEqual(okm.subarray(0, 64))
+    const { hkdf } = createHash(algorithm)
+    expect(await hkdf(ikm, salt, info)).toEqual(okm.subarray(0, 64))
   })
 
   it('should throw an exception when trying to use an unsupported hash algorithm', async () => {
-    await expect(hkdf('hubba', ikm, salt, info)).rejects.toThrow(
+    const { hkdf } = createHash('hubba')
+    await expect(hkdf(ikm, salt, info)).rejects.toThrow(
       'Unsupported hash algorithm'
     )
   })

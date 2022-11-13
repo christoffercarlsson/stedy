@@ -15,8 +15,8 @@ import {
 const generateCurve25519 = () => {
   const { publicKey, privateKey } = keyPair()
   return {
-    publicKey: addKeyPrefix(CURVE_CURVE25519, false, true, publicKey),
-    privateKey: addKeyPrefix(CURVE_CURVE25519, false, false, privateKey)
+    publicKey: addKeyPrefix(CURVE_CURVE25519, publicKey, false, true),
+    privateKey: addKeyPrefix(CURVE_CURVE25519, privateKey, false, false)
   }
 }
 

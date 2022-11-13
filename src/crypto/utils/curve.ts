@@ -6,7 +6,10 @@ import {
   CURVE_CURVE25519,
   CURVE_P256,
   CURVE_P384,
-  CURVE_P521
+  CURVE_P521,
+  HASH_SHA256,
+  HASH_SHA384,
+  HASH_SHA512
 } from '../constants'
 
 type KeyPrefix = {
@@ -15,6 +18,12 @@ type KeyPrefix = {
   isPublic: boolean
   prefix: Uint8Array
 }
+
+const curveHashes = new Map([
+  [CURVE_P256, HASH_SHA256],
+  [CURVE_P384, HASH_SHA384],
+  [CURVE_P521, HASH_SHA512]
+])
 
 const curves = [CURVE_P256, CURVE_P384, CURVE_P521, CURVE_CURVE25519]
 
@@ -150,9 +159,9 @@ const getAlgorithm = (curve: string, isSigningKey: boolean) => {
 
 export const addKeyPrefix = (
   curve: string,
+  key: Uint8Array,
   isSigningKey: boolean,
-  isPublicKey: boolean,
-  key: Uint8Array
+  isPublicKey: boolean
 ) => {
   const { prefix } = findPrefix(curve, isSigningKey, isPublicKey)
   return concat([prefix, key])
@@ -171,6 +180,8 @@ export const identifyCurve = (key: BufferSource) => {
 }
 
 export const getCurves = () => curves
+
+export const getHashForCurve = (curve: string) => curveHashes.get(curve)
 
 const isSupportedCurve = (curve: string) => getCurves().includes(curve)
 

@@ -1,4 +1,4 @@
-import { hash } from '../../src/crypto'
+import { createHash } from '../../src/crypto'
 
 describe('hash', () => {
   const message = Uint8Array.from([
@@ -36,13 +36,13 @@ describe('hash', () => {
 
   algorithms.forEach(({ algorithm, digest, iterations }) => {
     it(`should produce the ${algorithm} digest of a given message`, async () => {
-      expect(await hash(algorithm, message, iterations)).toEqual(digest)
+      const { hash } = createHash(algorithm)
+      expect(await hash(message, iterations)).toEqual(digest)
     })
   })
 
   it('should throw an exception when trying to use an unsupported hash algorithm', async () => {
-    await expect(hash('hubba', message)).rejects.toThrow(
-      'Unsupported hash algorithm'
-    )
+    const { hash } = createHash('hubba')
+    await expect(hash(message)).rejects.toThrow('Unsupported hash algorithm')
   })
 })

@@ -3,15 +3,15 @@ import { addKeyPrefix, ensureSupportedCurve } from './utils'
 
 const importKey = async (
   curve: string,
+  key: BufferSource,
   isSigningKey: boolean,
-  isPublicKey: boolean,
-  key: BufferSource
+  isPublicKey: boolean
 ) =>
   addKeyPrefix(
     await ensureSupportedCurve(curve),
+    createFrom(key),
     isSigningKey === true,
-    isPublicKey === true,
-    createFrom(key)
+    isPublicKey === true
   )
 
 export default importKey

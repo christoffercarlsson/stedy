@@ -1,4 +1,4 @@
-import { generateKeyPair } from '../../src/crypto'
+import { createCurve } from '../../src/crypto'
 
 describe('generateKeyPair', () => {
   const curves = [
@@ -10,7 +10,8 @@ describe('generateKeyPair', () => {
 
   curves.forEach(({ curve, publicKeySize, privateKeySize }) => {
     it(`should generate a key pair for ${curve}`, async () => {
-      const { publicKey, privateKey } = await generateKeyPair(curve)
+      const { generateKeyPair } = createCurve(curve)
+      const { publicKey, privateKey } = await generateKeyPair()
       expect(publicKey).toBeInstanceOf(Uint8Array)
       expect(publicKey.byteLength).toBe(publicKeySize)
       expect(privateKey).toBeInstanceOf(Uint8Array)
@@ -19,7 +20,8 @@ describe('generateKeyPair', () => {
   })
 
   it('should throw an exception when trying to generate a key pair for an unsupported elliptic curve', async () => {
-    await expect(generateKeyPair('hubba')).rejects.toThrow(
+    const { generateKeyPair } = createCurve('hubba')
+    await expect(generateKeyPair()).rejects.toThrow(
       'Unsupported elliptic curve'
     )
   })

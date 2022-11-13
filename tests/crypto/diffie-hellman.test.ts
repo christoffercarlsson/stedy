@@ -1,4 +1,4 @@
-import { diffieHellman } from '../../src/crypto'
+import { createCurve } from '../../src/crypto'
 
 describe('diffieHellman', () => {
   const keys = [
@@ -203,6 +203,7 @@ describe('diffieHellman', () => {
 
   keys.forEach(({ curve, alice, bob, size }) => {
     it(`should derive a shared secret for ${curve}`, async () => {
+      const { diffieHellman } = createCurve(curve)
       const aliceSecret = await diffieHellman(
         alice.privateKey,
         bob.publicKey,
@@ -220,7 +221,8 @@ describe('diffieHellman', () => {
   })
 
   it(`should throw an exception when given an invalid key`, async () => {
-    const { alice, bob } = keys[0]
+    const { curve, alice, bob } = keys[0]
+    const { diffieHellman } = createCurve(curve)
     await expect(
       diffieHellman(alice.privateKey.subarray(2), bob.publicKey)
     ).rejects.toThrow('Unsupported key')
