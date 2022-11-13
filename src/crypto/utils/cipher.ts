@@ -1,13 +1,18 @@
 import { createFrom, hasSize } from '../../bytes'
 import {
   CIPHER_AES128_CBC,
+  CIPHER_AES128_CTR,
   CIPHER_AES128_GCM,
   CIPHER_AES128_KEY_SIZE,
   CIPHER_AES256_CBC,
+  CIPHER_AES256_CTR,
   CIPHER_AES256_GCM,
   CIPHER_AES256_KEY_SIZE,
   CIPHER_AES_CBC,
   CIPHER_AES_CBC_NONCE_SIZE,
+  CIPHER_AES_CTR,
+  CIPHER_AES_CTR_COUNTER_BITS,
+  CIPHER_AES_CTR_NONCE_SIZE,
   CIPHER_AES_GCM,
   CIPHER_AES_GCM_NONCE_SIZE,
   CIPHER_AES_GCM_TAG_SIZE
@@ -18,6 +23,8 @@ import { importSecretKey } from './key-import'
 const cipherNames = new Map([
   [CIPHER_AES128_CBC, CIPHER_AES_CBC],
   [CIPHER_AES256_CBC, CIPHER_AES_CBC],
+  [CIPHER_AES128_CTR, CIPHER_AES_CTR],
+  [CIPHER_AES256_CTR, CIPHER_AES_CTR],
   [CIPHER_AES128_GCM, CIPHER_AES_GCM],
   [CIPHER_AES256_GCM, CIPHER_AES_GCM]
 ])
@@ -25,6 +32,8 @@ const cipherNames = new Map([
 const keySizes = new Map([
   [CIPHER_AES128_CBC, CIPHER_AES128_KEY_SIZE],
   [CIPHER_AES256_CBC, CIPHER_AES256_KEY_SIZE],
+  [CIPHER_AES128_CTR, CIPHER_AES128_KEY_SIZE],
+  [CIPHER_AES256_CTR, CIPHER_AES256_KEY_SIZE],
   [CIPHER_AES128_GCM, CIPHER_AES128_KEY_SIZE],
   [CIPHER_AES256_GCM, CIPHER_AES256_KEY_SIZE]
 ])
@@ -32,6 +41,8 @@ const keySizes = new Map([
 const nonceSizes = new Map([
   [CIPHER_AES128_CBC, CIPHER_AES_CBC_NONCE_SIZE],
   [CIPHER_AES256_CBC, CIPHER_AES_CBC_NONCE_SIZE],
+  [CIPHER_AES128_CTR, CIPHER_AES_CTR_NONCE_SIZE],
+  [CIPHER_AES256_CTR, CIPHER_AES_CTR_NONCE_SIZE],
   [CIPHER_AES128_GCM, CIPHER_AES_GCM_NONCE_SIZE],
   [CIPHER_AES256_GCM, CIPHER_AES_GCM_NONCE_SIZE]
 ])
@@ -76,11 +87,14 @@ export const createCipherParams = async (
   cipher: string,
   nonce: BufferSource,
   associatedData?: BufferSource
-): Promise<AesCbcParams | AesGcmParams> => {
+): Promise<AesCbcParams | AesCtrParams | AesGcmParams> => {
   const name = getCipherName(await ensureSupportedCipher(cipher))
   const iv = await ensureValidNonce(cipher, nonce)
   if (name === CIPHER_AES_CBC) {
     return { name, iv }
+  }
+  if (name === CIPHER_AES_CTR) {
+    return { name, counter: iv, length: CIPHER_AES_CTR_COUNTER_BITS }
   }
   return {
     name,

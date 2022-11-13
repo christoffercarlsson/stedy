@@ -3,8 +3,10 @@ import { createCipher } from '../../src/crypto'
 describe('generateKey', () => {
   const keySizes = [
     { cipher: 'AES-128-CBC', keySize: 16 },
+    { cipher: 'AES-128-CTR', keySize: 16 },
     { cipher: 'AES-128-GCM', keySize: 16 },
     { cipher: 'AES-256-CBC', keySize: 32 },
+    { cipher: 'AES-256-CTR', keySize: 32 },
     { cipher: 'AES-256-GCM', keySize: 32 }
   ]
 
