@@ -4,10 +4,13 @@ describe('Support', () => {
   it('should return a list of supported ciphers', () => {
     const ciphers = [
       'AES-128-CBC',
-      'AES-256-CBC',
       'AES-128-CTR',
-      'AES-256-CTR',
       'AES-128-GCM',
+      'AES-192-CBC',
+      'AES-192-CTR',
+      'AES-192-GCM',
+      'AES-256-CBC',
+      'AES-256-CTR',
       'AES-256-GCM'
     ]
     expect(getCiphers()).toEqual(ciphers)
