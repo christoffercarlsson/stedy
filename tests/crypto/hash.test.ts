@@ -1,4 +1,4 @@
-import { createHash } from '../../src/crypto'
+import { createHash } from '../../src'
 
 describe('hash', () => {
   const message = Uint8Array.from([

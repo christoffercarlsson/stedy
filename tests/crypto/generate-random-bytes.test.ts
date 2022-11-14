@@ -1,4 +1,4 @@
-import { generateRandomBytes } from '../../src/crypto'
+import { generateRandomBytes } from '../../src'
 
 describe('generateRandomBytes', () => {
   it('should generate a set of psuedo-random bytes of a given size', async () => {

@@ -1,4 +1,4 @@
-import { createCurve } from '../../src/crypto'
+import { createCurve } from '../../src'
 
 describe('diffieHellman', () => {
   const keys = [

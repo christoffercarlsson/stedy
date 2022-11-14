@@ -1,4 +1,4 @@
-import { getCiphers, getCurves, getHashes } from '../../src/crypto'
+import { getCiphers, getCurves, getHashes } from '../../src'
 
 describe('Support', () => {
   it('should return a list of supported ciphers', () => {

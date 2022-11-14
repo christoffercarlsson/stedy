@@ -1,4 +1,4 @@
-import { createHash } from '../../src/crypto'
+import { createHash } from '../../src'
 
 describe('hkdf', () => {
   const ikm = Uint8Array.from([

@@ -1,4 +1,4 @@
-import { createCurve, exportKey } from '../../src/crypto'
+import { createCurve, exportKey } from '../../src'
 
 describe('key import/export', () => {
   const curves = ['P-256', 'P-384', 'P-521', 'Curve25519']

@@ -1,4 +1,4 @@
-import { createCipher } from '../../src/crypto'
+import { createCipher } from '../../src'
 
 describe('generateKey', () => {
   const keySizes = [

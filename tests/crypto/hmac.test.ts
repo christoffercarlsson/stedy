@@ -1,4 +1,4 @@
-import { createHash } from '../../src/crypto'
+import { createHash } from '../../src'
 
 describe('hmac', () => {
   const message = Uint8Array.from([

@@ -1,4 +1,4 @@
-import { createHash } from '../../src/crypto'
+import { createHash } from '../../src'
 
 describe('pbkdf2', () => {
   const password = Uint8Array.from([
