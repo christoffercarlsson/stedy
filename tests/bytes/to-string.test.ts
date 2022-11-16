@@ -1,4 +1,4 @@
-import { createFrom, toString } from '../../src/bytes'
+import { toString } from '../../src/bytes'
 
 describe('toString', () => {
   it('should produce a correct Base 64 representation of a given chunk', () => {

@@ -1,5 +1,5 @@
 import { createFrom } from '../bytes'
-import generateRandomBytes from './generate-random-bytes'
+import generateRandomBytes from './random-bytes'
 import { ensureSupportedCipher, getKeySize, WebCrypto } from './utils'
 
 const generateKey = async (crypto: WebCrypto, cipher: string) =>
