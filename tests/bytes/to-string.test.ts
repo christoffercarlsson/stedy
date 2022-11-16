@@ -1,4 +1,4 @@
-import { toString } from '../../src/bytes'
+import { createFrom, toString } from '../../src/bytes'
 
 describe('toString', () => {
   it('should produce a correct Base 64 representation of a given chunk', () => {
@@ -41,10 +41,13 @@ describe('toString', () => {
   it('should produce a correct hexadecimal representation of a given chunk', () => {
     expect(
       toString(
-        Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]),
+        Uint8Array.from([
+          10, 137, 184, 253, 161, 109, 6, 54, 134, 118, 246, 227, 130, 46, 84,
+          55
+        ]),
         'hex'
       )
-    ).toEqual('48656c6c6f20576f726c64')
+    ).toEqual('0a89b8fda16d06368676f6e3822e5437')
   })
 
   it('should produce a correct JSON representation of a given chunk', () => {

@@ -63,8 +63,10 @@ describe('fromString', () => {
   })
 
   it('should decode hexadecimal strings correctly', () => {
-    expect(fromString('48656c6c6f20576f726c64', 'hex')).toEqual(
-      Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
+    expect(fromString('0a89b8fda16d06368676f6e3822e5437', 'hex')).toEqual(
+      Uint8Array.from([
+        10, 137, 184, 253, 161, 109, 6, 54, 134, 118, 246, 227, 130, 46, 84, 55
+      ])
     )
   })
 
