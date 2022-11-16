@@ -2,25 +2,15 @@
   "name": "stedy",
   "version": "0.12.2",
   "description": "",
-  "license": "Unlicense",
-  "repository": "git://github.com/christoffercarlsson/stedy.git",
-  "type": "module",
-  "exports": {
-    ".": "./dist/src/index.js",
-    "./bytes": "./dist/src/bytes.js"
+  "author": "Christoffer Carlsson <cc@christofferc.com>",
+  "browser": {
+    "crypto": false
   },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "dist/src/*"
-      ]
-    }
+  "bugs": {
+    "url": "https://github.com/christoffercarlsson/stedy/issues"
   },
-  "files": [
-    "dist/src/**/*.{js,ts}"
-  ],
-  "engines": {
-    "node": ">=16.13.0"
+  "dependencies": {
+    "@noble/ed25519": "^1.6.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.2.2",
@@ -41,6 +31,22 @@
     "rimraf": "^3.0.2",
     "typescript": "^4.8.4"
   },
+  "engines": {
+    "node": ">=16.13.0"
+  },
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./bytes": "./dist/src/bytes.js"
+  },
+  "files": [
+    "dist/src/**/*.{js,ts}"
+  ],
+  "homepage": "https://github.com/christoffercarlsson/stedy#readme",
+  "license": "Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christoffercarlsson/stedy.git"
+  },
   "scripts": {
     "build": "rimraf dist && tsc",
     "format": "prettier --loglevel silent --write .",
@@ -48,11 +54,13 @@
     "prepack": "npm run build",
     "test": "npm run build && rimraf coverage && NODE_OPTIONS='--experimental-vm-modules --no-warnings' npx jest --no-cache"
   },
-  "dependencies": {
-    "@noble/ed25519": "^1.6.0"
-  },
-  "browser": {
-    "crypto": false
-  },
-  "sideEffects": false
+  "sideEffects": false,
+  "type": "module",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/src/*"
+      ]
+    }
+  }
 }
