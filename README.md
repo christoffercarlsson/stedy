@@ -106,7 +106,7 @@ import { fromString, toString } from 'stedy/bytes'
 
 const password = fromString('horse-correct-battery-staple')
 const salt = await randomBytes(64)
-const key = await hkdf(pbkdf2, salt)
+const key = await pbkdf2(password, salt)
 console.log({ key: toString(key, 'hex') })
 // { key: '080a510327619...7e4eb' }
 ```

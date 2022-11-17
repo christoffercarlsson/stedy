@@ -56,6 +56,7 @@ import startsWith from './starts-with'
 import { trimLeft, trimRight } from './trim'
 import { createJSONObject } from './utils'
 import xor from './xor'
+import transcode from './transcode'
 
 class Chunk extends Uint8Array {
   static alloc(size: number) {
@@ -75,7 +76,7 @@ class Chunk extends Uint8Array {
   }
 
   static createFrom(
-    value?: string | ArrayBufferView | Iterable<number>,
+    value?: string | Iterable<number> | BufferSource,
     encoding?: string
   ) {
     const view = createFrom(value, encoding)
@@ -226,6 +227,12 @@ class Chunk extends Uint8Array {
 
   toString(encoding?: string, label?: string) {
     return toString(this, encoding, label)
+  }
+
+  transcode(currentEncoding: string, targetEncoding: string) {
+    return (this.constructor as typeof Chunk).createFrom(
+      transcode(this, currentEncoding, targetEncoding)
+    )
   }
 
   trimLeft(byte?: number) {

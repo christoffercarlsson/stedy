@@ -245,6 +245,19 @@ ${buffer.toString('base64')}
     )
   })
 
+  it('should re-encode a given chunk from one encoding to another', () => {
+    expect(
+      Chunk.createFrom([
+        52, 56, 54, 53, 54, 99, 54, 99, 54, 102, 50, 48, 53, 55, 54, 102, 55,
+        50, 54, 99, 54, 52
+      ]).transcode('hex', 'base64url')
+    ).toEqual(
+      Chunk.createFrom([
+        83, 71, 86, 115, 98, 71, 56, 103, 86, 50, 57, 121, 98, 71, 81
+      ])
+    )
+  })
+
   it('should trim leading zeroes', () => {
     expect(Chunk.createFrom([0, 0, 0, 1, 2, 3]).trimLeft()).toEqual(
       Chunk.createFrom([1, 2, 3])
@@ -268,5 +281,10 @@ ${buffer.toString('base64')}
       214, 59, 217, 196, 115, 132, 29, 219, 205, 233, 134, 27
     ])
     expect(a.xor(b)).toEqual(result)
+  })
+
+  it('should be considered a view', () => {
+    const chunk = Chunk.createFrom([1, 2, 3, 4])
+    expect(ArrayBuffer.isView(chunk)).toBe(true)
   })
 })
