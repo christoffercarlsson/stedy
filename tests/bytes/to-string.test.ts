@@ -1,38 +1,30 @@
-import { toString } from '../../src/bytes'
+import { Chunk, createFrom } from '../../src/bytes'
 
 describe('toString', () => {
   it('should produce a correct Base 64 representation of a given chunk', () => {
     expect(
-      toString(
-        Uint8Array.from([
-          29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
-        ]),
-        'base64'
-      )
+      Chunk.from([
+        29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
+      ]).toString('base64')
     ).toEqual('HVn8UCmEQ6FRu5+lwpk/VA==')
   })
 
   it('should produce a correct URL safe Base 64 representation of a given chunk', () => {
     expect(
-      toString(
-        Uint8Array.from([
-          29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
-        ]),
-        'base64url'
-      )
+      Chunk.from([
+        29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
+      ]).toString('base64url')
     ).toEqual('HVn8UCmEQ6FRu5-lwpk_VA')
   })
 
   it('should handle Base 64 padding correctly when encoding', () => {
     expect(
-      toString(
-        Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]),
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
         'base64'
       )
     ).toEqual('SGVsbG8gV29ybGQ=')
     expect(
-      toString(
-        Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108]),
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108]).toString(
         'base64'
       )
     ).toEqual('SGVsbG8gV29ybA==')
@@ -40,25 +32,21 @@ describe('toString', () => {
 
   it('should produce a correct hexadecimal representation of a given chunk', () => {
     expect(
-      toString(
-        Uint8Array.from([
-          10, 137, 184, 253, 161, 109, 6, 54, 134, 118, 246, 227, 130, 46, 84,
-          55
-        ]),
-        'hex'
-      )
+      Chunk.from([
+        10, 137, 184, 253, 161, 109, 6, 54, 134, 118, 246, 227, 130, 46, 84, 55
+      ]).toString('hex')
     ).toEqual('0a89b8fda16d06368676f6e3822e5437')
   })
 
   it('should produce a correct JSON representation of a given chunk', () => {
     const bytes = [72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]
-    expect(toString(Uint8Array.from(bytes), 'json')).toEqual(
+    expect(Chunk.from(bytes).toString('json')).toEqual(
       JSON.stringify(Buffer.from(bytes))
     )
   })
 
   it('should produce a correct PEM representation of a given chunk', () => {
-    const view = Uint8Array.from([
+    const view = Chunk.from([
       83, 112, 105, 99, 121, 32, 106, 97, 108, 97, 112, 101, 110, 111, 32, 98,
       97, 99, 111, 110, 32, 105, 112, 115, 117, 109, 32, 100, 111, 108, 111,
       114, 32, 97, 109, 101, 116, 32, 102, 105, 108, 101, 116, 32, 109, 105,
@@ -66,7 +54,7 @@ describe('toString', () => {
       32, 115, 104, 111, 114, 116, 32, 108, 111, 105, 110, 32, 115, 104, 111,
       117, 108, 100, 101, 114, 32, 109, 101, 97, 116, 98, 97, 108, 108
     ])
-    expect(toString(view, 'pem', 'my-message'))
+    expect(view.toString('pem', 'my-message'))
       .toEqual(`-----BEGIN MY MESSAGE-----
 U3BpY3kgamFsYXBlbm8gYmFjb24gaXBzdW0gZG9sb3IgYW1ldCBmaWxldCBtaWdu
 b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
@@ -75,27 +63,24 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
 
   it('should produce a correct UTF-8 representation of a given chunk', () => {
     expect(
-      toString(
-        Uint8Array.from([64, 194, 128, 224, 160, 128, 240, 144, 128, 128])
-      )
+      Chunk.from([64, 194, 128, 224, 160, 128, 240, 144, 128, 128]).toString()
     ).toEqual(String.fromCodePoint(64, 128, 2048, 65536))
   })
 
   it('should handle invalid input gracefully', () => {
-    expect(toString(undefined, 'base64')).toEqual('')
-    expect(toString(undefined, 'base64url')).toEqual('')
-    expect(toString(undefined, 'json')).toEqual('')
-    expect(toString(undefined, 'hex')).toEqual('')
-    expect(toString(undefined, 'pem')).toEqual('')
-    expect(toString(undefined, 'utf8')).toEqual('')
-    expect(toString(undefined)).toEqual('')
-    expect(toString(null)).toEqual('')
+    expect(createFrom(undefined).toString('base64')).toEqual('')
+    expect(createFrom(undefined).toString('base64url')).toEqual('')
+    expect(createFrom(undefined).toString('json')).toEqual('')
+    expect(createFrom(undefined).toString('hex')).toEqual('')
+    expect(createFrom(undefined).toString('pem')).toEqual('')
+    expect(createFrom(undefined).toString('utf8')).toEqual('')
+    expect(createFrom(undefined).toString()).toEqual('')
+    expect(createFrom(null).toString()).toEqual('')
   })
 
   it('should handle invalid encodings gracefully', () => {
     expect(
-      toString(
-        Uint8Array.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]),
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
         'hubba'
       )
     ).toEqual('')

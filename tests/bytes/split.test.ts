@@ -1,18 +1,18 @@
-import { createFrom, toString, split } from '../../src/bytes'
+import { createFrom } from '../../src/bytes'
 
 describe('split', () => {
   it('should split a chunk into smaller chunks', () => {
-    const views = split(createFrom('Hello'), 2, false)
-    expect(views.map((view) => toString(view))).toEqual(['He', 'll', 'o'])
+    const views = createFrom('Hello').split(2, false)
+    expect(views.map((view) => view.toString())).toEqual(['He', 'll', 'o'])
   })
 
   it('should split a chunk that is smaller than the given size', () => {
-    const views = split(createFrom('Hel'), 4)
-    expect(views.map((view) => toString(view))).toEqual(['Hel'])
+    const views = createFrom('Hel').split(4)
+    expect(views.map((view) => view.toString())).toEqual(['Hel'])
   })
 
   it('should append the remainder to the last element if the chunk cannot be split evenly and appendRemainder is set to true', () => {
-    const views = split(createFrom('Hello'), 2, true)
-    expect(views.map((view) => toString(view))).toEqual(['He', 'llo'])
+    const views = createFrom('Hello').split(2, true)
+    expect(views.map((view) => view.toString())).toEqual(['He', 'llo'])
   })
 })

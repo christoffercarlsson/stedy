@@ -18,9 +18,11 @@ const deriveCurve25519 = (
   publicKey: Uint8Array,
   size: number
 ) =>
-  scalarMult(removeKeyPrefix(privateKey), removeKeyPrefix(publicKey)).subarray(
-    0,
-    size
+  createFrom(
+    scalarMult(
+      removeKeyPrefix(privateKey),
+      removeKeyPrefix(publicKey)
+    ).subarray(0, size)
   )
 
 const deriveECDH = async (

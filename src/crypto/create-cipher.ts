@@ -1,3 +1,4 @@
+import { Chunk } from '../bytes'
 import decrypt from './decrypt'
 import encrypt from './encrypt'
 import generateKey from './generate-key'
@@ -8,16 +9,16 @@ export type DecryptFunction = (
   nonce: BufferSource,
   ciphertext: BufferSource,
   associatedData?: BufferSource
-) => Promise<Uint8Array>
+) => Promise<Chunk>
 
 export type EncryptFunction = (
   key: BufferSource,
   nonce: BufferSource,
   message: BufferSource,
   associatedData?: BufferSource
-) => Promise<Uint8Array>
+) => Promise<Chunk>
 
-export type GenerateKeyFunction = () => Promise<Uint8Array>
+export type GenerateKeyFunction = () => Promise<Chunk>
 
 export type CipherFunctions = {
   decrypt: DecryptFunction

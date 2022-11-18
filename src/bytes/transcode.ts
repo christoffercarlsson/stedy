@@ -2,9 +2,9 @@ import decode from './decode'
 import encode from './encode'
 
 const transcode = (
-  data: string | ArrayBufferView,
+  view: ArrayBufferView,
   currentEncoding: string,
   targetEncoding: string
-) => encode(decode(data, currentEncoding), targetEncoding)
+) => encode(decode(view, currentEncoding), targetEncoding)
 
 export default transcode

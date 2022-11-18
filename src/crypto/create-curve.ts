@@ -1,3 +1,4 @@
+import { Chunk } from '../bytes'
 import diffieHellman from './diffie-hellman'
 import generateKeyPair from './generate-key-pair'
 import generateSignKeyPair from './generate-sign-key-pair'
@@ -10,23 +11,23 @@ export type DiffieHellmanFunction = (
   ourPrivateKey: BufferSource,
   theirPublicKey: BufferSource,
   size?: number
-) => Promise<Uint8Array>
+) => Promise<Chunk>
 
 export type GenerateKeyPairFunction = () => Promise<{
-  publicKey: Uint8Array
-  privateKey: Uint8Array
+  publicKey: Chunk
+  privateKey: Chunk
 }>
 
 export type ImportKeyFunction = (
   key: BufferSource,
   isSigningKey: boolean,
   isPublicKey: boolean
-) => Promise<Uint8Array>
+) => Promise<Chunk>
 
 export type SignFunction = (
   privateKey: BufferSource,
   message: BufferSource
-) => Promise<Uint8Array>
+) => Promise<Chunk>
 
 export type VerifyFunction = (
   message: BufferSource,

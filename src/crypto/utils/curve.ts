@@ -1,4 +1,4 @@
-import { concat, createFrom, startsWith } from '../../bytes'
+import { concat, createFrom, Chunk } from '../../bytes'
 import {
   ALGORITHM_ECDH,
   ALGORITHM_ECDSA,
@@ -33,7 +33,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_P256,
     algorithms: [ALGORITHM_ECDH, ALGORITHM_ECDSA],
     isPublic: false,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 129, 135, 2, 1, 0, 48, 19, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 8, 42,
       134, 72, 206, 61, 3, 1, 7, 4, 109, 48, 107, 2, 1, 1, 4, 32
     ])
@@ -43,7 +43,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_P384,
     algorithms: [ALGORITHM_ECDH, ALGORITHM_ECDSA],
     isPublic: false,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 129, 182, 2, 1, 0, 48, 16, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 5, 43,
       129, 4, 0, 34, 4, 129, 158, 48, 129, 155, 2, 1, 1, 4, 48
     ])
@@ -53,7 +53,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_P521,
     algorithms: [ALGORITHM_ECDH, ALGORITHM_ECDSA],
     isPublic: false,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 129, 238, 2, 1, 0, 48, 16, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 5, 43,
       129, 4, 0, 35, 4, 129, 214, 48, 129, 211, 2, 1, 1, 4, 66
     ])
@@ -63,7 +63,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_P256,
     algorithms: [ALGORITHM_ECDH, ALGORITHM_ECDSA],
     isPublic: true,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 89, 48, 19, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 8, 42, 134, 72, 206,
       61, 3, 1, 7, 3, 66, 0, 4
     ])
@@ -73,7 +73,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_P384,
     algorithms: [ALGORITHM_ECDH, ALGORITHM_ECDSA],
     isPublic: true,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 118, 48, 16, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 5, 43, 129, 4, 0,
       34, 3, 98, 0, 4
     ])
@@ -83,7 +83,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_P521,
     algorithms: [ALGORITHM_ECDH, ALGORITHM_ECDSA],
     isPublic: true,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 129, 155, 48, 16, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 5, 43, 129, 4,
       0, 35, 3, 129, 134, 0, 4
     ])
@@ -93,7 +93,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_CURVE25519,
     algorithms: [ALGORITHM_ECDH],
     isPublic: false,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 110, 4, 34, 4, 32
     ])
   },
@@ -102,7 +102,7 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_CURVE25519,
     algorithms: [ALGORITHM_EDDSA],
     isPublic: false,
-    prefix: Uint8Array.from([
+    prefix: Chunk.from([
       48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32
     ])
   },
@@ -111,14 +111,14 @@ const prefixes: KeyPrefix[] = [
     curve: CURVE_CURVE25519,
     algorithms: [ALGORITHM_ECDH],
     isPublic: true,
-    prefix: Uint8Array.from([48, 42, 48, 5, 6, 3, 43, 101, 110, 3, 33, 0])
+    prefix: Chunk.from([48, 42, 48, 5, 6, 3, 43, 101, 110, 3, 33, 0])
   },
   {
     // Ed25519 public key
     curve: CURVE_CURVE25519,
     algorithms: [ALGORITHM_EDDSA],
     isPublic: true,
-    prefix: Uint8Array.from([48, 42, 48, 5, 6, 3, 43, 101, 112, 3, 33, 0])
+    prefix: Chunk.from([48, 42, 48, 5, 6, 3, 43, 101, 112, 3, 33, 0])
   }
 ]
 
@@ -126,11 +126,12 @@ const emptyPrefix: KeyPrefix = {
   curve: '',
   algorithms: [],
   isPublic: true,
-  prefix: Uint8Array.from([])
+  prefix: Chunk.from([])
 }
 
-const findKeyPrefix = (key: Uint8Array) => {
-  const index = prefixes.findIndex(({ prefix }) => startsWith(key, prefix))
+const findKeyPrefix = (prefixedKey: Uint8Array) => {
+  const key = createFrom(prefixedKey)
+  const index = prefixes.findIndex(({ prefix }) => key.startsWith(prefix))
   return index >= 0 ? prefixes[index] : { ...emptyPrefix }
 }
 

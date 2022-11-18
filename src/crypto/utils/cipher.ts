@@ -1,4 +1,4 @@
-import { createFrom, hasSize } from '../../bytes'
+import { createFrom } from '../../bytes'
 import {
   CIPHER_AES128_CBC,
   CIPHER_AES128_CTR,
@@ -73,14 +73,14 @@ export const ensureSupportedCipher = (cipher: string) =>
 
 const ensureValidKey = (cipher: string, value: BufferSource) => {
   const key = createFrom(value)
-  return hasSize(key, keySizes.get(cipher))
+  return key.hasSize(keySizes.get(cipher))
     ? Promise.resolve(key)
     : Promise.reject(new Error('Invalid key size'))
 }
 
 const ensureValidNonce = (cipher: string, value: BufferSource) => {
   const nonce = createFrom(value)
-  return hasSize(nonce, nonceSizes.get(cipher))
+  return nonce.hasSize(nonceSizes.get(cipher))
     ? Promise.resolve(nonce)
     : Promise.reject(new Error('Invalid nonce size'))
 }

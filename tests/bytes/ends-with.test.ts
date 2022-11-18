@@ -1,4 +1,4 @@
-import { concat, createFrom, endsWith } from '../../src/bytes'
+import { concat, createFrom } from '../../src/bytes'
 
 describe('endsWith', () => {
   it('should check to see if a chunk ends with a given chunk', () => {
@@ -6,12 +6,12 @@ describe('endsWith', () => {
     const b = createFrom(' World')
     const c = createFrom()
     const view = concat([a, b])
-    expect(endsWith(view, b)).toBe(true)
-    expect(endsWith(view, a)).toBe(false)
-    expect(endsWith(b, view)).toBe(false)
-    expect(endsWith(c, view)).toBe(false)
-    expect(endsWith(view, c)).toBe(false)
-    expect(endsWith(c, c)).toBe(true)
-    expect(endsWith(view, view)).toBe(true)
+    expect(view.endsWith(b)).toBe(true)
+    expect(view.endsWith(a)).toBe(false)
+    expect(b.endsWith(view)).toBe(false)
+    expect(view.endsWith(c)).toBe(false)
+    expect(c.endsWith(view)).toBe(false)
+    expect(c.endsWith(c)).toBe(true)
+    expect(view.endsWith(view)).toBe(true)
   })
 })

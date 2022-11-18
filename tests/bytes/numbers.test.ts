@@ -1,156 +1,70 @@
-/* eslint-disable @typescript-eslint/no-loss-of-precision */
-/* eslint-disable no-loss-of-precision */
-import {
-  alloc,
-  readFloat32BE,
-  readFloat32LE,
-  readFloat64BE,
-  readFloat64LE,
-  readInt8,
-  readInt16BE,
-  readInt16LE,
-  readInt32BE,
-  readInt32LE,
-  readInt64BE,
-  readInt64LE,
-  readUint8,
-  readUint16BE,
-  readUint16LE,
-  readUint32BE,
-  readUint32LE,
-  readUint64BE,
-  readUint64LE,
-  writeFloat32BE,
-  writeFloat32LE,
-  writeFloat64BE,
-  writeFloat64LE,
-  writeInt8,
-  writeInt16BE,
-  writeInt16LE,
-  writeInt32BE,
-  writeInt32LE,
-  writeInt64BE,
-  writeInt64LE,
-  writeUint8,
-  writeUint16BE,
-  writeUint16LE,
-  writeUint32BE,
-  writeUint32LE,
-  writeUint64BE,
-  writeUint64LE
-} from '../../src/bytes'
+import { alloc } from '../../src/bytes'
 
 describe('Numbers', () => {
-  it('should store a signed 32-bit floating-point value at the specified byte offset', () => {
-    const offset = 0
+  it('should store a signed 32-bit floating-point value', () => {
     const value = 1.2345
-    const a = writeFloat32BE(alloc(4), value, offset)
-    const b = writeFloat32LE(alloc(4), value, offset)
-    expect(readFloat32BE(a, offset)).toBeCloseTo(value)
-    expect(readFloat32LE(b, offset)).toBeCloseTo(value)
+    expect(alloc(4).writeFloat32BE(value).readFloat32BE()).toBeCloseTo(value)
+    expect(alloc(4).writeFloat32LE(value).readFloat32LE()).toBeCloseTo(value)
   })
 
-  it('should store a signed 64-bit floating-point value at the specified byte offset', () => {
-    const offset = 0
+  it('should store a signed 64-bit floating-point value', () => {
     const value = 5.4321
-    const a = writeFloat64BE(alloc(8), value, offset)
-    const b = writeFloat64LE(alloc(8), value, offset)
-    expect(readFloat64BE(a, offset)).toBeCloseTo(value)
-    expect(readFloat64LE(b, offset)).toBeCloseTo(value)
+    expect(alloc(8).writeFloat64BE(value).readFloat64BE()).toBeCloseTo(value)
+    expect(alloc(8).writeFloat64LE(value).readFloat64LE()).toBeCloseTo(value)
   })
 
-  it('should store a signed 8-bit integer value at the specified byte offset', () => {
-    const offset = 2
+  it('should store a signed 8-bit integer value', () => {
     const value = 127
-    const view = writeInt8(alloc(4), value, offset)
-    expect(readInt8(view, offset)).toEqual(value)
+    expect(alloc(1).writeInt8(value).readInt8()).toEqual(value)
   })
 
-  it('should store an unsigned 8-bit integer value at the specified byte offset', () => {
-    const offset = 0
+  it('should store an unsigned 8-bit integer value', () => {
     const value = 255
-    const view = writeUint8(alloc(4), value, offset)
-    expect(readUint8(view, offset)).toEqual(value)
+    expect(alloc(1).writeUint8(value).readUint8()).toEqual(value)
   })
 
-  it('should store a signed 16-bit integer value at the specified byte offset', () => {
-    const offset = 2
+  it('should store a signed 16-bit integer value', () => {
     const value = 32767
-    const a = writeInt16BE(alloc(4), value, offset)
-    const b = writeInt16LE(alloc(4), value, offset)
-    expect(readInt16BE(a, offset)).toEqual(value)
-    expect(readInt16LE(b, offset)).toEqual(value)
+    expect(alloc(2).writeInt16BE(value).readInt16BE()).toEqual(value)
+    expect(alloc(2).writeInt16LE(value).readInt16LE()).toEqual(value)
   })
 
-  it('should store an unsigned 16-bit integer value at the specified byte offset', () => {
-    const offset = 2
+  it('should store an unsigned 16-bit integer value', () => {
     const value = 65535
-    const a = writeUint16BE(alloc(4), value, offset)
-    const b = writeUint16LE(alloc(4), value, offset)
-    expect(readUint16BE(a, offset)).toEqual(value)
-    expect(readUint16LE(b, offset)).toEqual(value)
+    expect(alloc(2).writeUint16BE(value).readUint16BE()).toEqual(value)
+    expect(alloc(2).writeUint16LE(value).readUint16LE()).toEqual(value)
   })
 
-  it('should store a signed 32-bit integer value at the specified byte offset', () => {
-    const offset = 0
+  it('should store a signed 32-bit integer value', () => {
     const value = 2147483647
-    const a = writeInt32BE(alloc(4), value, offset)
-    const b = writeInt32LE(alloc(4), value, offset)
-    expect(readInt32BE(a, offset)).toEqual(value)
-    expect(readInt32LE(b, offset)).toEqual(value)
+    expect(alloc(4).writeInt32BE(value).readInt32BE()).toEqual(value)
+    expect(alloc(4).writeInt32LE(value).readInt32LE()).toEqual(value)
   })
 
-  it('should store an unsigned 32-bit integer value at the specified byte offset', () => {
-    const offset = 0
+  it('should store an unsigned 32-bit integer value', () => {
     const value = 4294967295
-    const a = writeUint32BE(alloc(4), value, offset)
-    const b = writeUint32LE(alloc(4), value, offset)
-    expect(readUint32BE(a, offset)).toEqual(value)
-    expect(readUint32LE(b, offset)).toEqual(value)
+    expect(alloc(4).writeUint32BE(value).readUint32BE()).toEqual(value)
+    expect(alloc(4).writeUint32LE(value).readUint32LE()).toEqual(value)
   })
 
-  it('should store a signed 64-bit integer value at the specified byte offset', () => {
-    const offset = 0
+  it('should store a signed 64-bit integer value', () => {
     const value = 9223372036854775807n
-    const a = writeInt64BE(alloc(8), value, offset)
-    const b = writeInt64LE(alloc(8), value, offset)
-    expect(readInt64BE(a, offset)).toEqual(value)
-    expect(readInt64LE(b, offset)).toEqual(value)
+    expect(alloc(8).writeInt64BE(value).readInt64BE()).toEqual(value)
+    expect(alloc(8).writeInt64LE(value).readInt64LE()).toEqual(value)
   })
 
-  it('should store an unsigned 64-bit integer value at the specified byte offset', () => {
-    const offset = 0
+  it('should store an unsigned 64-bit integer value', () => {
     const value = 18446744073709551615n
-    const a = writeUint64BE(alloc(8), value, offset)
-    const b = writeUint64LE(alloc(8), value, offset)
-    expect(readUint64BE(a, offset)).toEqual(value)
-    expect(readUint64LE(b, offset)).toEqual(value)
-  })
-
-  it('should handle signed 64-bit integer values gracefully', () => {
-    const offset = 0
-    const value = -42
-    const a = writeInt64BE(alloc(8), value, offset)
-    const b = writeInt64LE(alloc(8), value, offset)
-    expect(readInt64BE(a, offset)).toEqual(BigInt(value)) // eslint-disable-line no-undef
-    expect(readInt64LE(b, offset)).toEqual(BigInt(value)) // eslint-disable-line no-undef
-  })
-
-  it('should handle unsigned 64-bit integer values gracefully', () => {
-    const offset = 0
-    const value = 42
-    const a = writeUint64BE(alloc(8), value, offset)
-    const b = writeUint64LE(alloc(8), value, offset)
-    expect(readUint64BE(a, offset)).toEqual(BigInt(value)) // eslint-disable-line no-undef
-    expect(readUint64LE(b, offset)).toEqual(BigInt(value)) // eslint-disable-line no-undef
+    expect(alloc(8).writeUint64BE(value).readUint64BE()).toEqual(value)
+    expect(alloc(8).writeUint64LE(value).readUint64LE()).toEqual(value)
   })
 
   it('should read 64-bit integer values as regular numbers', () => {
     const offset = 0
     const value = 42n
-    const a = writeUint64BE(alloc(8), value, offset)
-    const b = writeUint64LE(alloc(8), value, offset)
-    expect(readUint64BE(a, offset, true)).toEqual(42)
-    expect(readUint64LE(b, offset, true)).toEqual(42)
+    const a = alloc(8).writeUint64BE(value, offset)
+    const b = alloc(8).writeUint64LE(value, offset)
+    expect(a.readUint64BE(offset, true)).toEqual(42)
+    expect(b.readUint64LE(offset, true)).toEqual(42)
   })
 })

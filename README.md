@@ -3,7 +3,7 @@
 ## Installation
 
 ```console
-npm i --save stedy
+$ npm i --save stedy
 ```
 
 ## Basic usage
@@ -21,12 +21,12 @@ const bob = await generateKeyPair()
 const aliceSecret = await diffieHellman(alice.privateKey, bob.publicKey)
 const bobSecret = await diffieHellman(bob.privateKey, alice.publicKey)
 console.log({
-  aliceSecret: toString(aliceSecret, 'hex'),
-  bobSecret: toString(bobSecret, 'hex')
+  aliceSecret: aliceSecret.toString('base64'),
+  bobSecret: bobSecret.toString('base64')
 })
 // {
-//   aliceSecret: '0d570a1dcb741cf17a...16a8b2843b3c07aa56b4f2f',
-//   bobSecret: '0d570a1dcb741cf17a...16a8b2843b3c07aa56b4f2f'
+//   aliceSecret: 'XJiXa0+XxscFfpud483+SQWdru48LNfZRxum2h4vEV8=',
+//   bobSecret: 'XJiXa0+XxscFfpud483+SQWdru48LNfZRxum2h4vEV8='
 // }
 ```
 
@@ -48,65 +48,65 @@ console.log({ verified })
 
 ```ts
 import { decrypt, encrypt, generateKey, randomBytes } from 'stedy'
-import { fromString, toString } from 'stedy/bytes'
+import { fromString } from 'stedy/bytes'
 
 const message = fromString('Hello World')
 const key = await generateKey()
 const nonce = await randomBytes(12)
 const ciphertext = await encrypt(key, nonce, message)
 const decrypted = await decrypt(key, nonce, ciphertext)
-console.log({ decrypted: toString(decrypted) })
-// { decrypted: 'Hello World' }
+console.log(decrypted.toString())
+// Hello World
 ```
 
 ### Hash digests
 
 ```ts
 import { hash } from 'stedy'
-import { fromString, toString } from 'stedy/bytes'
+import { fromString } from 'stedy/bytes'
 
 const message = fromString('Hello World')
 const digest = await hash(message)
-console.log({ digest: toString(digest, 'hex') })
-// { digest: '2c74fd17edafd80e8447b0d...fb1447f459b' }
+console.log(digest.toString('base64'))
+// LHT9F+2v2A6ER7DUZ0HuJDt+t03SFJoKsbkkb7MDgvJ+hT2FhXGeDmfL2g2qj1FnEGRhXWRa4nrLFb+xRH9Fmw==
 ```
 
 ### Cryptographic HMAC digests
 
 ```ts
 import { hmac } from 'stedy'
-import { fromString, toString } from 'stedy/bytes'
+import { fromString } from 'stedy/bytes'
 
 const message = fromString('Hello World')
 const key = fromString('secret')
 const digest = await hmac(message, key)
-console.log({ digest: toString(digest, 'hex') })
-// { digest: '080a510327619446...9d7d7e4eb' }
+console.log(digest.toString('base64'))
+// CApRAydhlEam2xp19WEr2wM8jI66+E7uBbh/Z6VpvgmBACFtfVFX5VMtXh/e6lu75Tq5JAlI5jndeI4p19fk6w==
 ```
 
 ### HMAC Key Derivation Function (HKDF)
 
 ```ts
 import { hkdf, randomBytes } from 'stedy'
-import { fromString, toString } from 'stedy/bytes'
+import { fromString } from 'stedy/bytes'
 
 const inputKey = fromString('secret')
 const salt = await randomBytes(64)
 const info = fromString('my-app')
 const outputKey = await hkdf(inputKey, salt, info)
-console.log({ outputKey: toString(outputKey, 'hex') })
-// { outputKey: '080a5103276...d7d7e4eb' }
+console.log(outputKey.toString('base64'))
+// AT0yteGs4wtCRyeP9i76mK20YMfhXlhWO2E83eWQ6YGmPXjWZ92XZX6KfXKXF2DUb1EvYcJ82qHTssQmrJdunw==
 ```
 
 ### Password-Based Key Derivation Function (PBKDF2)
 
 ```ts
 import { pbkdf2, randomBytes } from 'stedy'
-import { fromString, toString } from 'stedy/bytes'
+import { fromString } from 'stedy/bytes'
 
 const password = fromString('horse-correct-battery-staple')
 const salt = await randomBytes(64)
 const key = await pbkdf2(password, salt)
-console.log({ key: toString(key, 'hex') })
-// { key: '080a510327619...7e4eb' }
+console.log(key.toString('base64'))
+// xj4Rmi25dnoOX7Lf0zj/3bwE9PniTQsASu42bjZ96lEcwzo1UjCbTseifzDG6ShB4u1QRJUgFWlUYn6qfcf2XA==
 ```

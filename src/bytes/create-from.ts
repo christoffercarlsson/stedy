@@ -7,6 +7,12 @@ const createFrom = (
   if (typeof value === 'string') {
     return fromString(value, encoding)
   }
+  if (ArrayBuffer.isView(value)) {
+    return value
+  }
+  if (value instanceof ArrayBuffer) {
+    return new Uint8Array(value)
+  }
   if (
     value !== undefined &&
     value !== null &&
@@ -15,12 +21,6 @@ const createFrom = (
     typeof value[Symbol.iterator] === 'function'
   ) {
     return Uint8Array.from(value)
-  }
-  if (value instanceof ArrayBuffer) {
-    return new Uint8Array(value)
-  }
-  if (ArrayBuffer.isView(value)) {
-    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
   }
   return Uint8Array.from([])
 }

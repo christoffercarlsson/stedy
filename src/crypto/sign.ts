@@ -9,8 +9,8 @@ import {
   WebCrypto
 } from './utils'
 
-const signCurve25519 = (privateKey: Uint8Array, message: Uint8Array) =>
-  signMessage(message, removeKeyPrefix(privateKey))
+const signCurve25519 = async (privateKey: Uint8Array, message: Uint8Array) =>
+  createFrom(await signMessage(message, removeKeyPrefix(privateKey)))
 
 const signECDSA = async (
   crypto: WebCrypto,

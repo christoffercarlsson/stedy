@@ -1,6 +1,5 @@
-import createFrom from './create-from'
-import { ensureView } from './utils'
+import getBytes from './get-bytes'
 
-const copy = (view: ArrayBufferView) => createFrom([...ensureView(view)])
+const copy = (view: ArrayBufferView) => Uint8Array.from(getBytes(view))
 
 export default copy
