@@ -1,8 +1,8 @@
 import { Chunk } from '../bytes'
 import diffieHellman from './diffie-hellman'
-import generateKeyPair from './generate-key-pair'
-import generateSignKeyPair from './generate-sign-key-pair'
 import importKey from './import-key'
+import keyPair from './key-pair'
+import signKeyPair from './sign-key-pair'
 import sign from './sign'
 import { getCrypto, getHashForCurve } from './utils'
 import verify from './verify'
@@ -13,7 +13,7 @@ export type DiffieHellmanFunction = (
   size?: number
 ) => Promise<Chunk>
 
-export type GenerateKeyPairFunction = () => Promise<{
+export type KeyPairFunction = () => Promise<{
   publicKey: Chunk
   privateKey: Chunk
 }>
@@ -37,8 +37,8 @@ export type VerifyFunction = (
 
 export type CurveFunctions = {
   diffieHellman: DiffieHellmanFunction
-  generateKeyPair: GenerateKeyPairFunction
-  generateSignKeyPair: GenerateKeyPairFunction
+  keyPair: KeyPairFunction
+  signKeyPair: KeyPairFunction
   importKey: ImportKeyFunction
   sign: SignFunction
   verify: VerifyFunction
@@ -53,10 +53,9 @@ const createCurve = (curve: string, hash?: string): CurveFunctions => {
       size?: number
     ) => diffieHellman(await getCrypto(), ourPrivateKey, theirPublicKey, size),
 
-    generateKeyPair: async () => generateKeyPair(await getCrypto(), curve),
+    keyPair: async () => keyPair(await getCrypto(), curve),
 
-    generateSignKeyPair: async () =>
-      generateSignKeyPair(await getCrypto(), curve),
+    signKeyPair: async () => signKeyPair(await getCrypto(), curve),
 
     importKey: (
       key: BufferSource,

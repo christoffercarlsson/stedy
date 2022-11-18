@@ -6,8 +6,8 @@ describe('key import/export', () => {
 
   curves.forEach((curve) => {
     it(`should export and import a raw ${curve} key`, async () => {
-      const { generateKeyPair, importKey } = createCurve(curve)
-      const { publicKey, privateKey } = await generateKeyPair()
+      const { keyPair, importKey } = createCurve(curve)
+      const { publicKey, privateKey } = await keyPair()
       const rawPublicKey = await exportKey(publicKey)
       const rawPrivateKey = await exportKey(privateKey)
       expect(await importKey(rawPublicKey, false, true)).toEqual(publicKey)
@@ -15,8 +15,8 @@ describe('key import/export', () => {
     })
 
     it(`should export and import a raw ${curve} signing key`, async () => {
-      const { generateSignKeyPair, importKey } = createCurve(curve)
-      const { publicKey, privateKey } = await generateSignKeyPair()
+      const { signKeyPair, importKey } = createCurve(curve)
+      const { publicKey, privateKey } = await signKeyPair()
       const rawPublicKey = await exportKey(publicKey)
       const rawPrivateKey = await exportKey(privateKey)
       expect(await importKey(rawPublicKey, true, true)).toEqual(publicKey)

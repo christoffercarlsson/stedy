@@ -11,8 +11,8 @@ describe('sign/verify', () => {
   curves.forEach((curve) => {
     hashes.forEach((hash) => {
       it(`should sign a given message using ECDSA with ${curve} and ${hash}`, async () => {
-        const { generateSignKeyPair, sign, verify } = createCurve(curve, hash)
-        const { publicKey, privateKey } = await generateSignKeyPair()
+        const { signKeyPair, sign, verify } = createCurve(curve, hash)
+        const { publicKey, privateKey } = await signKeyPair()
         const signature = await sign(privateKey, message)
         expect(await verify(message, publicKey, signature)).toBe(true)
       })
@@ -20,15 +20,15 @@ describe('sign/verify', () => {
   })
 
   it('should sign a given message using EdDSA with Curve25519', async () => {
-    const { generateSignKeyPair, sign, verify } = createCurve('Curve25519')
-    const { publicKey, privateKey } = await generateSignKeyPair()
+    const { signKeyPair, sign, verify } = createCurve('Curve25519')
+    const { publicKey, privateKey } = await signKeyPair()
     const signature = await sign(privateKey, message)
     expect(await verify(message, publicKey, signature)).toBe(true)
   })
 
   it('should not verify invalid signatures using EdDSA with Curve25519', async () => {
-    const { generateSignKeyPair, sign, verify } = createCurve('Curve25519')
-    const { publicKey, privateKey } = await generateSignKeyPair()
+    const { signKeyPair, sign, verify } = createCurve('Curve25519')
+    const { publicKey, privateKey } = await signKeyPair()
     const signature = await sign(privateKey, message)
     expect(await verify(message, publicKey, signature.subarray(0, 62))).toBe(
       false

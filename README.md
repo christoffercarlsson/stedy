@@ -13,11 +13,11 @@ $ npm i --save stedy
 #### Deriving shared secrets
 
 ```ts
-import { diffieHellman, generateKeyPair } from 'stedy'
+import { diffieHellman, keyPair } from 'stedy'
 import { toString } from 'stedy/bytes'
 
-const alice = await generateKeyPair()
-const bob = await generateKeyPair()
+const alice = await keyPair()
+const bob = await keyPair()
 const aliceSecret = await diffieHellman(alice.privateKey, bob.publicKey)
 const bobSecret = await diffieHellman(bob.privateKey, alice.publicKey)
 console.log({
@@ -33,10 +33,10 @@ console.log({
 #### Verifying signatures
 
 ```ts
-import { sign, verify, generateSignKeyPair } from 'stedy'
+import { sign, signKeyPair, verify } from 'stedy'
 import { fromString } from 'stedy/bytes'
 
-const { privateKey, publicKey } = await generateSignKeyPair()
+const { privateKey, publicKey } = await signKeyPair()
 const message = fromString('Hello World')
 const signature = await sign(message, privateKey)
 const verified = await verify(message, publicKey, signature)
