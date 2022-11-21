@@ -53,12 +53,12 @@ console.log(verified)
 Encrypt a message using AES in Galois/Counter Mode (GCM) with a 256-bit key.
 
 ```ts
-import { decrypt, encrypt, generateKey, randomBytes } from 'stedy'
+import { decrypt, encrypt, generateKey, generateRandomBytes } from 'stedy'
 import { fromString } from 'stedy/bytes'
 
 const message = fromString('Hello World')
 const key = await generateKey()
-const nonce = await randomBytes(12)
+const nonce = await generateRandomBytes(12)
 const ciphertext = await encrypt(key, nonce, message)
 const decrypted = await decrypt(key, nonce, ciphertext)
 console.log(decrypted.toString())
@@ -99,11 +99,11 @@ console.log(digest.toString('base64'))
 Derive a key using the HKDF algorithm with SHA-512.
 
 ```ts
-import { hkdf, randomBytes } from 'stedy'
+import { hkdf, generateRandomBytes } from 'stedy'
 import { fromString } from 'stedy/bytes'
 
 const inputKey = fromString('secret')
-const salt = await randomBytes(64)
+const salt = await generateRandomBytes(64)
 const info = fromString('my-app')
 const outputKey = await hkdf(inputKey, salt, info)
 console.log(outputKey.toString('base64'))
@@ -115,11 +115,11 @@ console.log(outputKey.toString('base64'))
 Derive a key from a given password using PBKDF2 with SHA-512.
 
 ```ts
-import { pbkdf2, randomBytes } from 'stedy'
+import { pbkdf2, generateRandomBytes } from 'stedy'
 import { fromString } from 'stedy/bytes'
 
 const password = fromString('horse-correct-battery-staple')
-const salt = await randomBytes(64)
+const salt = await generateRandomBytes(64)
 const key = await pbkdf2(password, salt)
 console.log(key.toString('base64'))
 // xj4Rmi25dnoOX7Lf0zj/3bwE9PniTQsASu42bjZ96lEcwzo1UjCbTseifzDG6ShB4u1QRJUgFWlUYn6qfcf2XA==
@@ -141,7 +141,7 @@ const { diffieHellman, generateKeyPair, sign, generateSignKeyPair, verify } =
 ```ts
 import { createCipher } from 'stedy'
 
-const { decrypt, encrypt, generateKey } = createCipher('AES-256-CBC')
+const { decrypt, encrypt, generateKey } = createCipher('AES-192-CBC')
 ```
 
 ### Hash-based functions
@@ -149,5 +149,5 @@ const { decrypt, encrypt, generateKey } = createCipher('AES-256-CBC')
 ```ts
 import { createHash } from 'stedy'
 
-const { hash, hkdf, hmac, pbkdf2 } = createHash('SHA-256')
+const { hash, hkdf, hmac, pbkdf2 } = createHash('SHA-384')
 ```
