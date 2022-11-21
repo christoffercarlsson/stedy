@@ -14,7 +14,6 @@ $ npm i --save stedy
 
 ```ts
 import { diffieHellman, keyPair } from 'stedy'
-import { toString } from 'stedy/bytes'
 
 const alice = await keyPair()
 const bob = await keyPair()
@@ -40,8 +39,8 @@ const { privateKey, publicKey } = await signKeyPair()
 const message = fromString('Hello World')
 const signature = await sign(message, privateKey)
 const verified = await verify(message, publicKey, signature)
-console.log({ verified })
-// { verified: true }
+console.log(verified)
+// true
 ```
 
 ### Secret key cryptography
