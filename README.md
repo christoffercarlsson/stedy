@@ -13,10 +13,10 @@ $ npm i --save stedy
 #### Deriving shared secrets
 
 ```ts
-import { diffieHellman, keyPair } from 'stedy'
+import { diffieHellman, generateKeyPair } from 'stedy'
 
-const alice = await keyPair()
-const bob = await keyPair()
+const alice = await generateKeyPair()
+const bob = await generateKeyPair()
 const aliceSecret = await diffieHellman(alice.privateKey, bob.publicKey)
 const bobSecret = await diffieHellman(bob.privateKey, alice.publicKey)
 console.log({
@@ -32,10 +32,10 @@ console.log({
 #### Verifying signatures
 
 ```ts
-import { sign, signKeyPair, verify } from 'stedy'
+import { sign, generateSignKeyPair, verify } from 'stedy'
 import { fromString } from 'stedy/bytes'
 
-const { privateKey, publicKey } = await signKeyPair()
+const { privateKey, publicKey } = await generateSignKeyPair()
 const message = fromString('Hello World')
 const signature = await sign(message, privateKey)
 const verified = await verify(message, publicKey, signature)
@@ -117,10 +117,8 @@ console.log(key.toString('base64'))
 ```ts
 import { createCurve } from 'stedy'
 
-const { diffieHellman, keyPair, sign, signKeyPair, verify } = createCurve(
-  'P-256',
-  'SHA-256'
-)
+const { diffieHellman, generateKeyPair, sign, generateSignKeyPair, verify } =
+  createCurve('P-256', 'SHA-256')
 ```
 
 ### Secret key cryptography

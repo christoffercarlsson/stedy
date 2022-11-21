@@ -33,11 +33,11 @@ const generateECDSA = async (crypto: WebCrypto, namedCurve: string) =>
     )
   )
 
-const signKeyPair = async (crypto: WebCrypto, curve: string) => {
+const generateSignKeyPair = async (crypto: WebCrypto, curve: string) => {
   const namedCurve = await ensureSupportedCurve(curve)
   return namedCurve === CURVE_CURVE25519
     ? generateCurve25519()
     : generateECDSA(crypto, namedCurve)
 }
 
-export default signKeyPair
+export default generateSignKeyPair

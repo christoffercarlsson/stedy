@@ -33,11 +33,11 @@ const generateECDH = async (crypto: WebCrypto, namedCurve: string) =>
     )
   )
 
-const keyPair = async (crypto: WebCrypto, curve: string) => {
+const generateKeyPair = async (crypto: WebCrypto, curve: string) => {
   const namedCurve = await ensureSupportedCurve(curve)
   return namedCurve === CURVE_CURVE25519
     ? generateCurve25519()
     : generateECDH(crypto, namedCurve)
 }
 
-export default keyPair
+export default generateKeyPair

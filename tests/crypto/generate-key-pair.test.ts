@@ -1,6 +1,6 @@
 import { createCurve } from '../../src'
 
-describe('signKeyPair', () => {
+describe('generateKeyPair', () => {
   const curves = [
     { curve: 'Curve25519', publicKeySize: 44, privateKeySize: 48 },
     { curve: 'P-256', publicKeySize: 91, privateKeySize: 138 },
@@ -9,9 +9,9 @@ describe('signKeyPair', () => {
   ]
 
   curves.forEach(({ curve, publicKeySize, privateKeySize }) => {
-    it(`should generate a signing key pair for ${curve}`, async () => {
-      const { signKeyPair } = createCurve(curve)
-      const { publicKey, privateKey } = await signKeyPair()
+    it(`should generate a key pair for ${curve}`, async () => {
+      const { generateKeyPair } = createCurve(curve)
+      const { publicKey, privateKey } = await generateKeyPair()
       expect(publicKey).toBeInstanceOf(Uint8Array)
       expect(publicKey.byteLength).toBe(publicKeySize)
       expect(privateKey).toBeInstanceOf(Uint8Array)
@@ -19,8 +19,10 @@ describe('signKeyPair', () => {
     })
   })
 
-  it('should throw an exception when trying to generate a signing key pair for an unsupported elliptic curve', async () => {
-    const { signKeyPair } = createCurve('hubba')
-    await expect(signKeyPair()).rejects.toThrow('Unsupported elliptic curve')
+  it('should throw an exception when trying to generate a key pair for an unsupported elliptic curve', async () => {
+    const { generateKeyPair } = createCurve('hubba')
+    await expect(generateKeyPair()).rejects.toThrow(
+      'Unsupported elliptic curve'
+    )
   })
 })

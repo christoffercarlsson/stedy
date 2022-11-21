@@ -12,7 +12,7 @@ import createCipher, {
 import createCurve, {
   CurveFunctions,
   DiffieHellmanFunction,
-  KeyPairFunction,
+  GenerateKeyPairFunction,
   ImportKeyFunction,
   SignFunction,
   VerifyFunction
@@ -25,16 +25,22 @@ import createHash, {
   PBKDF2Function
 } from './crypto/create-hash'
 import exportKey from './crypto/export-key'
-import _randomBytes from './crypto/random-bytes'
+import _generateRandomBytes from './crypto/generate-random-bytes'
 import { getCiphers, getCrypto, getCurves, getHashes } from './crypto/utils'
 
 const { decrypt, encrypt, generateKey } = createCipher(CIPHER_AES256_GCM)
-const { diffieHellman, keyPair, signKeyPair, importKey, sign, verify } =
-  createCurve(CURVE_CURVE25519)
+const {
+  diffieHellman,
+  generateKeyPair,
+  generateSignKeyPair,
+  importKey,
+  sign,
+  verify
+} = createCurve(CURVE_CURVE25519)
 const { hash, hkdf, hmac, pbkdf2 } = createHash(HASH_SHA512)
 
-const randomBytes = async (size: number) =>
-  _randomBytes(await getCrypto(), size)
+const generateRandomBytes = async (size: number) =>
+  _generateRandomBytes(await getCrypto(), size)
 
 export {
   CipherFunctions,
@@ -43,7 +49,7 @@ export {
   DiffieHellmanFunction,
   EncryptFunction,
   GenerateKeyFunction,
-  KeyPairFunction,
+  GenerateKeyPairFunction,
   HashFunctions,
   HashFunction,
   HKDFFunction,
@@ -60,6 +66,9 @@ export {
   encrypt,
   exportKey,
   generateKey,
+  generateKeyPair,
+  generateRandomBytes,
+  generateSignKeyPair,
   getCiphers,
   getCurves,
   getHashes,
@@ -67,10 +76,7 @@ export {
   hkdf,
   hmac,
   importKey,
-  keyPair,
   pbkdf2,
-  randomBytes,
   sign,
-  signKeyPair,
   verify
 }
