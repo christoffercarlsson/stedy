@@ -207,6 +207,10 @@ class Chunk extends Uint8Array {
     return readUint64LE(this, byteOffset, asRegularNumber)
   }
 
+  slice(start?: number, end?: number) {
+    return this.subarray(start, end)
+  }
+
   split(size: number, appendRemainder?: boolean) {
     return split(this, size, appendRemainder).map((view) =>
       (this.constructor as typeof Chunk).fromView(view)
@@ -215,6 +219,12 @@ class Chunk extends Uint8Array {
 
   startsWith(view: ArrayBufferView) {
     return startsWith(this, view)
+  }
+
+  subarray(begin?: number, end?: number) {
+    return (this.constructor as typeof Chunk).fromView(
+      super.subarray(begin, end)
+    )
   }
 
   toJSON() {

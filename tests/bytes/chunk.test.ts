@@ -7,8 +7,10 @@ describe('Chunk', () => {
       yield 2
       yield 3
     }
-    const chunk = Chunk.from(generateBytes(), (byte) => byte * 2)
-    expect(chunk.getBytes()).toEqual([2, 4, 6])
+    const a = Chunk.from(generateBytes())
+    const b = Chunk.from(generateBytes(), (byte) => byte * 2)
+    expect(a.getBytes()).toEqual([1, 2, 3])
+    expect(b.getBytes()).toEqual([2, 4, 6])
   })
 
   it('should stringify a chunk into a correct JSON representation', () => {
@@ -26,5 +28,14 @@ describe('Chunk', () => {
   it('should be considered a view', () => {
     const chunk = createFrom([1, 2, 3, 4])
     expect(ArrayBuffer.isView(chunk)).toBe(true)
+  })
+
+  it('should handle subarray and slice correctly', () => {
+    const chunk = createFrom([1, 2, 3, 4])
+    const a = chunk.subarray(1, 3)
+    const b = chunk.slice(1, 3)
+    expect(a).toBeInstanceOf(Chunk)
+    expect(b).toBeInstanceOf(Chunk)
+    expect(a).toEqual(b)
   })
 })
