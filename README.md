@@ -12,6 +12,8 @@ $ npm i --save stedy
 
 #### Deriving shared secrets
 
+Perform a key exchange using the X25519 Elliptic Curve Diffie-Hellman function.
+
 ```ts
 import { diffieHellman, generateKeyPair } from 'stedy'
 
@@ -31,6 +33,9 @@ console.log({
 
 #### Verifying signatures
 
+Create and verify Ed25519 signatures using the Edwards-curve Digital Signature
+Algorithm.
+
 ```ts
 import { sign, generateSignKeyPair, verify } from 'stedy'
 import { fromString } from 'stedy/bytes'
@@ -44,6 +49,8 @@ console.log(verified)
 ```
 
 ### Secret key cryptography
+
+Encrypt a message using AES in Galois/Counter Mode (GCM) with a 256-bit key.
 
 ```ts
 import { decrypt, encrypt, generateKey, randomBytes } from 'stedy'
@@ -60,6 +67,8 @@ console.log(decrypted.toString())
 
 ### Hash digests
 
+Compute the SHA-512 digest of a given message.
+
 ```ts
 import { hash } from 'stedy'
 import { fromString } from 'stedy/bytes'
@@ -72,6 +81,8 @@ console.log(digest.toString('base64'))
 
 ### Cryptographic HMAC digests
 
+Generate a cryptographic HMAC hash using SHA-512.
+
 ```ts
 import { hmac } from 'stedy'
 import { fromString } from 'stedy/bytes'
@@ -83,7 +94,9 @@ console.log(digest.toString('base64'))
 // CApRAydhlEam2xp19WEr2wM8jI66+E7uBbh/Z6VpvgmBACFtfVFX5VMtXh/e6lu75Tq5JAlI5jndeI4p19fk6w==
 ```
 
-### HMAC Key Derivation Function (HKDF)
+### HMAC-based Key Derivation Function (HKDF)
+
+Derive a key using the HKDF algorithm with SHA-512.
 
 ```ts
 import { hkdf, randomBytes } from 'stedy'
@@ -98,6 +111,8 @@ console.log(outputKey.toString('base64'))
 ```
 
 ### Password-Based Key Derivation Function (PBKDF2)
+
+Derive a key from a given password using PBKDF2 with SHA-512.
 
 ```ts
 import { pbkdf2, randomBytes } from 'stedy'
@@ -129,7 +144,7 @@ import { createCipher } from 'stedy'
 const { decrypt, encrypt, generateKey } = createCipher('AES-256-CBC')
 ```
 
-### Hash
+### Hash-based functions
 
 ```ts
 import { createHash } from 'stedy'
