@@ -1,4 +1,4 @@
-# Stedy
+# Stedy (Beta)
 
 ## Installation
 
@@ -108,4 +108,33 @@ const salt = await randomBytes(64)
 const key = await pbkdf2(password, salt)
 console.log(key.toString('base64'))
 // xj4Rmi25dnoOX7Lf0zj/3bwE9PniTQsASu42bjZ96lEcwzo1UjCbTseifzDG6ShB4u1QRJUgFWlUYn6qfcf2XA==
+```
+
+## Advanced usage
+
+### Elliptic curve cryptography
+
+```ts
+import { createCurve } from 'stedy'
+
+const { diffieHellman, keyPair, sign, signKeyPair, verify } = createCurve(
+  'P-256',
+  'SHA-256'
+)
+```
+
+### Secret key cryptography
+
+```ts
+import { createCipher } from 'stedy'
+
+const { decrypt, encrypt, generateKey } = createCipher('AES-256-CBC')
+```
+
+### Hash
+
+```ts
+import { createHash } from 'stedy'
+
+const { hash, hkdf, hmac, pbkdf2 } = createHash('SHA-256')
 ```
