@@ -42,7 +42,7 @@ const { hash, hkdf, hmac, pbkdf2 } = createHash(HASH_SHA512)
 const generateRandomBytes = async (size: number) =>
   _generateRandomBytes(await getCrypto(), size)
 
-export {
+export type {
   CipherFunctions,
   CurveFunctions,
   DecryptFunction,
@@ -57,7 +57,10 @@ export {
   ImportKeyFunction,
   PBKDF2Function,
   SignFunction,
-  VerifyFunction,
+  VerifyFunction
+}
+
+export {
   createCipher,
   createCurve,
   createHash,
