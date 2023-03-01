@@ -11,15 +11,18 @@ import {
 } from './bytes/constants'
 import _createFrom from './bytes/create-from'
 import { fromString as _fromString } from './bytes/decode'
+import { fromInteger as _fromInteger } from './bytes/numbers'
 
 const alloc = (size: number) => Chunk.fromView(_alloc(size))
 
 const concat = (views: ArrayBufferView[]) => Chunk.fromView(_concat(views))
 
 const createFrom = (
-  value?: string | Iterable<number> | BufferSource,
+  value?: string | number | Iterable<number> | BufferSource,
   encoding?: string
 ) => Chunk.fromView(_createFrom(value, encoding))
+
+const fromInteger = (value: number) => Chunk.fromView(_fromInteger(value))
 
 const fromString = (input: string, encoding?: string) =>
   Chunk.fromView(_fromString(input, encoding))
@@ -35,5 +38,6 @@ export {
   concat,
   Chunk,
   createFrom,
+  fromInteger,
   fromString
 }

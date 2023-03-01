@@ -1,3 +1,4 @@
+import alloc from './alloc'
 import copy from './copy'
 import { ensureView } from './utils'
 
@@ -332,3 +333,8 @@ export const writeUint64LE = (
   value: number | bigint,
   byteOffset = 0
 ) => writeUint64(chunk, value, byteOffset, true)
+
+export const fromInteger = (value: number) => {
+  const chunk = alloc(4)
+  return value < 0 ? writeInt32BE(chunk, value) : writeUint32BE(chunk, value)
+}

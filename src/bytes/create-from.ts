@@ -1,11 +1,15 @@
 import { fromString } from './decode'
+import { fromInteger } from './numbers'
 
 const createFrom = (
-  value?: string | Iterable<number> | BufferSource,
+  value?: string | number | Iterable<number> | BufferSource,
   encoding?: string
 ) => {
   if (typeof value === 'string') {
     return fromString(value, encoding)
+  }
+  if (typeof value === 'number') {
+    return fromInteger(value)
   }
   if (ArrayBuffer.isView(value)) {
     return value
