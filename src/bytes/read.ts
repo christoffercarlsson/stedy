@@ -13,7 +13,7 @@ const calculateSlices = (sizes: number[]) =>
 const calculateEnd = (sizes: number[]) =>
   sizes.reduce((sum, size) => sum + size)
 
-const read = (chunk: ArrayBufferView, ...sizes: number[]) => {
+const read = (chunk: BufferSource, ...sizes: number[]) => {
   const view = ensureView(chunk)
   const views = calculateSlices(sizes).map(([begin, end]) =>
     view.subarray(begin, end)

@@ -1,6 +1,6 @@
 import { ensureView } from './utils'
 
-const equals = (view: ArrayBufferView, value: ArrayBufferView) => {
+const equals = (view: BufferSource, value: BufferSource) => {
   const a = ensureView(view)
   const b = ensureView(value)
   return (

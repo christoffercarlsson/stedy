@@ -1,5 +1,5 @@
 import concat from './concat'
 
-const append = (a: ArrayBufferView, b: ArrayBufferView) => concat([a, b])
+const append = (a: BufferSource, b: BufferSource) => concat([a, b])
 
 export default append

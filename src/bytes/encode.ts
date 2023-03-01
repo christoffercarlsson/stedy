@@ -15,7 +15,7 @@ import utf8Encode from './utf8/encode'
 import { ensureView } from './utils'
 
 export const toString = (
-  data: ArrayBufferView,
+  data: BufferSource,
   encoding = ENCODING_UTF8,
   label = ''
 ) => {
@@ -41,7 +41,7 @@ export const toString = (
   return ''
 }
 
-const encode = (data: ArrayBufferView, encoding?: string, label?: string) =>
+const encode = (data: BufferSource, encoding?: string, label?: string) =>
   utf8Decode(toString(data, encoding, label))
 
 export default encode

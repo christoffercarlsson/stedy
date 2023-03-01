@@ -15,7 +15,7 @@ import { fromInteger as _fromInteger } from './bytes/numbers'
 
 const alloc = (size: number) => Chunk.fromView(_alloc(size))
 
-const concat = (views: ArrayBufferView[]) => Chunk.fromView(_concat(views))
+const concat = (views: BufferSource[]) => Chunk.fromView(_concat(views))
 
 const createFrom = (
   value?: string | number | Iterable<number> | BufferSource,

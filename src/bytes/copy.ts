@@ -1,5 +1,5 @@
 import getBytes from './get-bytes'
 
-const copy = (view: ArrayBufferView) => Uint8Array.from(getBytes(view))
+const copy = (view: BufferSource) => Uint8Array.from(getBytes(view))
 
 export default copy

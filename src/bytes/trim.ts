@@ -19,7 +19,7 @@ const countLeadingBytes = (view: Uint8Array, byte: number, right: boolean) => {
   return count
 }
 
-const trim = (input: ArrayBufferView, byte: number, right: boolean) => {
+const trim = (input: BufferSource, byte: number, right: boolean) => {
   const view = ensureView(input)
   const count = countLeadingBytes(
     view,
@@ -31,8 +31,8 @@ const trim = (input: ArrayBufferView, byte: number, right: boolean) => {
     : view.subarray(count)
 }
 
-export const trimLeft = (view: ArrayBufferView, byte = 0) =>
+export const trimLeft = (view: BufferSource, byte = 0) =>
   trim(view, byte, false)
 
-export const trimRight = (view: ArrayBufferView, byte = 0) =>
+export const trimRight = (view: BufferSource, byte = 0) =>
   trim(view, byte, true)

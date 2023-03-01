@@ -18,9 +18,12 @@ export const createJSONObject = (view: Uint8Array) => ({
   data: [...view]
 })
 
-export const ensureView = (view: ArrayBufferView) => {
-  if (ArrayBuffer.isView(view)) {
-    return new Uint8Array(view.buffer, view.byteOffset, view.byteLength)
+export const ensureView = (value: BufferSource) => {
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+  }
+  if (value instanceof ArrayBuffer) {
+    return new Uint8Array(value)
   }
   return Uint8Array.from([])
 }

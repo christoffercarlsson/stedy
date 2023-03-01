@@ -1,7 +1,7 @@
 import equals from './equals'
 import { ensureView } from './utils'
 
-const endsWith = (view: ArrayBufferView, end: ArrayBufferView) => {
+const endsWith = (view: BufferSource, end: BufferSource) => {
   const a = ensureView(view)
   const b = ensureView(end)
   return (

@@ -79,7 +79,7 @@ class Chunk extends Uint8Array {
     return this.byteLength
   }
 
-  append(view: ArrayBufferView) {
+  append(view: BufferSource) {
     return (this.constructor as typeof Chunk).fromView(append(this, view))
   }
 
@@ -97,11 +97,11 @@ class Chunk extends Uint8Array {
     )
   }
 
-  endsWith(view: ArrayBufferView) {
+  endsWith(view: BufferSource) {
     return endsWith(this, view)
   }
 
-  equals(view: ArrayBufferView) {
+  equals(view: BufferSource) {
     return equals(this, view)
   }
 
@@ -125,12 +125,12 @@ class Chunk extends Uint8Array {
     return (this.constructor as typeof Chunk).fromView(padRight(this, size))
   }
 
-  prepend(view: ArrayBufferView) {
+  prepend(view: BufferSource) {
     return (this.constructor as typeof Chunk).fromView(prepend(this, view))
   }
 
   read(...sizes: number[]) {
-    return read(this, ...sizes).map((view: ArrayBufferView) =>
+    return read(this, ...sizes).map((view: Uint8Array) =>
       (this.constructor as typeof Chunk).fromView(view)
     )
   }
@@ -217,7 +217,7 @@ class Chunk extends Uint8Array {
     )
   }
 
-  startsWith(view: ArrayBufferView) {
+  startsWith(view: BufferSource) {
     return startsWith(this, view)
   }
 
@@ -357,7 +357,7 @@ class Chunk extends Uint8Array {
     )
   }
 
-  xor(view: ArrayBufferView) {
+  xor(view: BufferSource) {
     return (this.constructor as typeof Chunk).fromView(xor(this, view))
   }
 }

@@ -1,5 +1,5 @@
 import append from './append'
 
-const prepend = (a: ArrayBufferView, b: ArrayBufferView) => append(b, a)
+const prepend = (a: BufferSource, b: BufferSource) => append(b, a)
 
 export default prepend

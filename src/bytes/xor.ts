@@ -12,7 +12,7 @@ const ensureMultiple = (view: Uint8Array, size: number) => {
   return padLeft(view, view.byteLength + (size - remainder))
 }
 
-const ensureValidInput = (input: ArrayBufferView) => {
+const ensureValidInput = (input: BufferSource) => {
   const view = ensureView(input)
   return view.byteLength === 0 ? alloc(4) : ensureMultiple(view, 4)
 }
@@ -37,7 +37,7 @@ const calculate = (a: Uint8Array, b: Uint8Array) => {
   )
 }
 
-const xor = (a: ArrayBufferView, b: ArrayBufferView) => {
+const xor = (a: BufferSource, b: BufferSource) => {
   const left = ensureView(a)
   const right = ensureView(b)
   const size = Math.max(left.byteLength, right.byteLength)

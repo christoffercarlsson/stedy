@@ -37,7 +37,7 @@ export const fromString = (input: string, encoding = ENCODING_UTF8) => {
   return Uint8Array.from([])
 }
 
-const decode = (view: ArrayBufferView, encoding?: string) => {
+const decode = (view: BufferSource, encoding?: string) => {
   const str = utf8Encode(ensureView(view))
   return fromString(str, encoding)
 }

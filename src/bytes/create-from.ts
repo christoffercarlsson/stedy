@@ -12,7 +12,7 @@ const createFrom = (
     return fromInteger(value)
   }
   if (ArrayBuffer.isView(value)) {
-    return value
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
   }
   if (value instanceof ArrayBuffer) {
     return new Uint8Array(value)
