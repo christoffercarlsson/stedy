@@ -66,6 +66,8 @@ const getCipherName = (cipher: string) => cipherNames.get(cipher)
 
 export const getKeySize = (cipher: string) => keySizes.get(cipher)
 
+export const getNonceSize = (cipher: string) => nonceSizes.get(cipher)
+
 export const ensureSupportedCipher = (cipher: string) =>
   isSupportedCipher(cipher)
     ? Promise.resolve(cipher)
@@ -78,7 +80,7 @@ const ensureValidKey = (cipher: string, value: BufferSource) => {
     : Promise.reject(new Error('Invalid key size'))
 }
 
-const ensureValidNonce = (cipher: string, value: BufferSource) => {
+export const ensureValidNonce = (cipher: string, value: BufferSource) => {
   const nonce = createFrom(value)
   return nonce.hasSize(nonceSizes.get(cipher))
     ? Promise.resolve(nonce)

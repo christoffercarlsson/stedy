@@ -7,7 +7,8 @@ import createCipher, {
   CipherFunctions,
   DecryptFunction,
   EncryptFunction,
-  GenerateKeyFunction
+  GenerateKeyFunction,
+  GenerateNonceFunction
 } from './crypto/create-cipher'
 import createCurve, {
   CurveFunctions,
@@ -28,7 +29,8 @@ import exportKey from './crypto/export-key'
 import _generateRandomBytes from './crypto/generate-random-bytes'
 import { getCiphers, getCrypto, getCurves, getHashes } from './crypto/utils'
 
-const { decrypt, encrypt, generateKey } = createCipher(CIPHER_AES256_GCM)
+const { decrypt, encrypt, generateKey, generateNonce } =
+  createCipher(CIPHER_AES256_GCM)
 const {
   diffieHellman,
   generateKeyPair,
@@ -50,6 +52,7 @@ export type {
   EncryptFunction,
   GenerateKeyFunction,
   GenerateKeyPairFunction,
+  GenerateNonceFunction,
   HashFunctions,
   HashFunction,
   HKDFFunction,
@@ -70,6 +73,7 @@ export {
   exportKey,
   generateKey,
   generateKeyPair,
+  generateNonce,
   generateRandomBytes,
   generateSignKeyPair,
   getCiphers,

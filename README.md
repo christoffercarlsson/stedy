@@ -53,12 +53,12 @@ console.log(verified)
 Encrypt a message using AES in Galois/Counter Mode (GCM) with a 256-bit key.
 
 ```ts
-import { decrypt, encrypt, generateKey, generateRandomBytes } from 'stedy'
+import { decrypt, encrypt, generateKey, generateNonce } from 'stedy'
 import { fromString } from 'stedy/bytes'
 
 const message = fromString('Hello World')
 const key = await generateKey()
-const nonce = await generateRandomBytes(12)
+const nonce = await generateNonce()
 const ciphertext = await encrypt(key, nonce, message)
 const decrypted = await decrypt(key, nonce, ciphertext)
 console.log(decrypted.toString())
@@ -141,7 +141,8 @@ const { diffieHellman, generateKeyPair, sign, generateSignKeyPair, verify } =
 ```ts
 import { createCipher } from 'stedy'
 
-const { decrypt, encrypt, generateKey } = createCipher('AES-192-CBC')
+const { decrypt, encrypt, generateKey, generateNonce } =
+  createCipher('AES-192-CBC')
 ```
 
 ### Hash-based functions

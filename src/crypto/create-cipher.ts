@@ -2,7 +2,9 @@ import { Chunk } from '../bytes'
 import decrypt from './decrypt'
 import encrypt from './encrypt'
 import generateKey from './generate-key'
+import generateRandomBytes from './generate-random-bytes'
 import { getCrypto } from './utils'
+import { ensureValidNonce, getNonceSize } from './utils/cipher'
 
 export type DecryptFunction = (
   key: BufferSource,
@@ -20,10 +22,13 @@ export type EncryptFunction = (
 
 export type GenerateKeyFunction = () => Promise<Chunk>
 
+export type GenerateNonceFunction = () => Promise<Chunk>
+
 export type CipherFunctions = {
   decrypt: DecryptFunction
   encrypt: EncryptFunction
   generateKey: GenerateKeyFunction
+  generateNonce: GenerateNonceFunction
 }
 
 const createCipher = (cipher: string): CipherFunctions => ({
@@ -42,7 +47,13 @@ const createCipher = (cipher: string): CipherFunctions => ({
     associatedData?: BufferSource
   ) => encrypt(await getCrypto(), cipher, key, nonce, message, associatedData),
 
-  generateKey: async () => generateKey(await getCrypto(), cipher)
+  generateKey: async () => generateKey(await getCrypto(), cipher),
+
+  generateNonce: async () =>
+    ensureValidNonce(
+      cipher,
+      generateRandomBytes(await getCrypto(), getNonceSize(cipher))
+    )
 })
 
 export default createCipher
