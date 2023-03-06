@@ -10,6 +10,13 @@ describe('hmac', () => {
   ])
   const algorithms = [
     {
+      algorithm: 'SHA-1',
+      signature: Chunk.from([
+        96, 231, 161, 158, 20, 30, 191, 183, 133, 191, 169, 86, 192, 145, 42,
+        102, 42, 23, 227, 254
+      ])
+    },
+    {
       algorithm: 'SHA-256',
       signature: Chunk.from([
         234, 255, 249, 237, 0, 148, 11, 229, 219, 130, 86, 17, 38, 0, 148, 77,

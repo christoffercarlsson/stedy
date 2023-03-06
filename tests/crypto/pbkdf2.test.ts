@@ -12,6 +12,13 @@ describe('pbkdf2', () => {
   const iterations = 10000
   const hashes = [
     {
+      algorithm: 'SHA-1',
+      key: Chunk.from([
+        19, 45, 56, 62, 114, 87, 152, 110, 208, 62, 23, 139, 45, 33, 120, 31,
+        166, 56, 242, 177
+      ])
+    },
+    {
       algorithm: 'SHA-256',
       key: Chunk.from([
         246, 218, 7, 160, 8, 64, 130, 244, 215, 249, 39, 67, 144, 142, 188, 155,

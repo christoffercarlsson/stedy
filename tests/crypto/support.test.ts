@@ -22,7 +22,7 @@ describe('Support', () => {
   })
 
   it('should return a list of supported hash algorithms', () => {
-    const hashes = ['SHA-256', 'SHA-384', 'SHA-512']
+    const hashes = ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512']
     expect(getHashes()).toEqual(hashes)
   })
 })

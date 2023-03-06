@@ -1,4 +1,6 @@
 import {
+  HASH_SHA1,
+  HASH_SHA1_SIZE,
   HASH_SHA256,
   HASH_SHA256_SIZE,
   HASH_SHA384,
@@ -8,6 +10,7 @@ import {
 } from '../constants'
 
 const hashSizes = new Map([
+  [HASH_SHA1, HASH_SHA1_SIZE],
   [HASH_SHA256, HASH_SHA256_SIZE],
   [HASH_SHA384, HASH_SHA384_SIZE],
   [HASH_SHA512, HASH_SHA512_SIZE]
