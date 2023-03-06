@@ -1,5 +1,6 @@
-import base64Decode from './base64/decode'
+import { base32Decode, base64Decode } from './base/decode'
 import {
+  ENCODING_BASE32,
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
   ENCODING_HEX,
@@ -16,6 +17,9 @@ import { ensureView } from './utils'
 
 export const fromString = (input: string, encoding = ENCODING_UTF8) => {
   const str = input || ''
+  if (encoding === ENCODING_BASE32) {
+    return base32Decode(str)
+  }
   if (encoding === ENCODING_BASE64) {
     return base64Decode(str, false)
   }

@@ -1,6 +1,23 @@
 import { Chunk, createFrom } from '../../src/bytes'
 
 describe('toString', () => {
+  it('should produce a correct Base 32 representation of a given chunk', () => {
+    expect(
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
+        'base32'
+      )
+    ).toEqual('JBSWY3DPEBLW64TMMQ======')
+    expect(Chunk.from([102]).toString('base32')).toEqual('MY======')
+    expect(Chunk.from([102, 111]).toString('base32')).toEqual('MZXQ====')
+    expect(Chunk.from([102, 111, 111]).toString('base32')).toEqual('MZXW6===')
+    expect(Chunk.from([102, 111, 111, 98]).toString('base32')).toEqual(
+      'MZXW6YQ='
+    )
+    expect(Chunk.from([102, 111, 111, 98, 97]).toString('base32')).toEqual(
+      'MZXW6YTB'
+    )
+  })
+
   it('should produce a correct Base 64 representation of a given chunk', () => {
     expect(
       Chunk.from([

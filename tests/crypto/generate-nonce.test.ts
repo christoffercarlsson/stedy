@@ -1,4 +1,4 @@
-import { createCipher, generateNonce } from '../../src'
+import { createCipher } from '../../src'
 
 describe('generateNonce', () => {
   const keySizes = [

@@ -1,6 +1,14 @@
 import { Chunk } from '../../src/bytes'
 
 describe('decode', () => {
+  it('should decode Base 32 encoded chunks correctly', () => {
+    expect(
+      Chunk.from([
+        77, 90, 88, 87, 54, 89, 84, 66, 79, 73, 61, 61, 61, 61, 61, 61
+      ]).decode('base32')
+    ).toEqual(Chunk.from([102, 111, 111, 98, 97, 114]))
+  })
+
   it('should decode Base 64 encoded chunks correctly', () => {
     expect(
       Chunk.from([

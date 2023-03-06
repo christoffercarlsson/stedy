@@ -1,6 +1,19 @@
 import { Chunk } from '../../src/bytes'
 
 describe('encode', () => {
+  it('should produce a correct Base 32 representation of a given chunk', () => {
+    expect(
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).encode(
+        'base32'
+      )
+    ).toEqual(
+      Chunk.from([
+        74, 66, 83, 87, 89, 51, 68, 80, 69, 66, 76, 87, 54, 52, 84, 77, 77, 81,
+        61, 61, 61, 61, 61, 61
+      ])
+    )
+  })
+
   it('should produce a correct Base 64 representation of a given chunk', () => {
     expect(
       Chunk.from([

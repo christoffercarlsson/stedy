@@ -42,6 +42,7 @@ describe('createFrom', () => {
     const view = Chunk.from([
       72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100
     ])
+    expect(createFrom('JBSWY3DPEBLW64TMMQ======', 'base32')).toEqual(view)
     expect(createFrom('SGVsbG8gV29ybGQ=', 'base64')).toEqual(view)
     expect(createFrom('SGVsbG8gV29ybGQ', 'base64url')).toEqual(view)
     expect(createFrom('48656c6c6f20576f726c64', 'hex')).toEqual(view)

@@ -2,6 +2,7 @@ import _alloc from './bytes/alloc'
 import Chunk from './bytes/chunk'
 import _concat from './bytes/concat'
 import {
+  ENCODING_BASE32,
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
   ENCODING_HEX,
@@ -28,6 +29,7 @@ const fromString = (input: string, encoding?: string) =>
   Chunk.fromView(_fromString(input, encoding))
 
 export {
+  ENCODING_BASE32,
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
   ENCODING_HEX,

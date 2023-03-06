@@ -1,5 +1,6 @@
-import base64Encode from './base64/encode'
+import { base32Encode, base64Encode } from './base/encode'
 import {
+  ENCODING_BASE32,
   ENCODING_BASE64,
   ENCODING_BASE64_URLSAFE,
   ENCODING_HEX,
@@ -20,6 +21,9 @@ export const toString = (
   label = ''
 ) => {
   const view = ensureView(data)
+  if (encoding === ENCODING_BASE32) {
+    return base32Encode(view)
+  }
   if (encoding === ENCODING_BASE64) {
     return base64Encode(view, false)
   }

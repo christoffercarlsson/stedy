@@ -1,4 +1,4 @@
-import base64Encode from '../base64/encode'
+import { base64Encode } from '../base/encode'
 import { splitString } from '../utils'
 
 const normalizeLabel = (label: string) =>

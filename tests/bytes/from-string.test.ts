@@ -1,6 +1,22 @@
 import { Chunk, fromString } from '../../src/bytes'
 
 describe('fromString', () => {
+  it('should decode Base 32 encoded strings correctly', () => {
+    expect(fromString('JBSWY3DPEBLW64TMMQ======', 'base32')).toEqual(
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
+    )
+  })
+
+  it('should reject invalid Base 32 encoded strings', () => {
+    expect(fromString('JB=SWY3DPEBLW64TMMQ=====', 'base32')).toEqual(
+      Chunk.from([])
+    )
+    expect(fromString('HVn8UCmEQ6FRu5-lwpk_VA==', 'base32')).toEqual(
+      Chunk.from([])
+    )
+    expect(fromString('Hej och hå', 'base32')).toEqual(Chunk.from([]))
+    expect(fromString('SGVsbG8gV29yb', 'base32')).toEqual(Chunk.from([]))
+  })
   it('should decode Base 64 encoded strings correctly', () => {
     expect(fromString('HVn8UCmEQ6FRu5+lwpk/VA==', 'base64')).toEqual(
       Chunk.from([
@@ -28,12 +44,29 @@ describe('fromString', () => {
     expect(fromString('SGVsbG8gV29yb', 'base64url')).toEqual(Chunk.from([]))
   })
 
+  it('should handle padding correctly when decoding Base 32 strings', () => {
+    expect(fromString('MY======', 'base32')).toEqual(Chunk.from([102]))
+    expect(fromString('MZXQ====', 'base32')).toEqual(Chunk.from([102, 111]))
+    expect(fromString('MZXW6===', 'base32')).toEqual(
+      Chunk.from([102, 111, 111])
+    )
+    expect(fromString('MZXW6YQ=', 'base32')).toEqual(
+      Chunk.from([102, 111, 111, 98])
+    )
+  })
+
   it('should handle padding correctly when decoding Base 64 strings', () => {
     expect(fromString('SGVsbG8gV29ybGQ=', 'base64')).toEqual(
       Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
     )
     expect(fromString('SGVsbG8gV29ybA==', 'base64')).toEqual(
       Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108])
+    )
+  })
+
+  it('should handle unpadded Base 32 strings gracefully', () => {
+    expect(fromString('JBSWY3DPEBLW64TMMQ', 'base32')).toEqual(
+      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100])
     )
   })
 
@@ -108,6 +141,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
   })
 
   it('should handle invalid input gracefully', () => {
+    expect(fromString(undefined, 'base32')).toEqual(Chunk.from([]))
     expect(fromString(undefined, 'base64')).toEqual(Chunk.from([]))
     expect(fromString(undefined, 'base64url')).toEqual(Chunk.from([]))
     expect(fromString(undefined, 'hex')).toEqual(Chunk.from([]))

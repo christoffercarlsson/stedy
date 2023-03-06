@@ -1,4 +1,4 @@
-import base64Decode from '../base64/decode'
+import { base64Decode } from '../base/decode'
 
 const decode = (str: string) =>
   base64Decode(str.replace(/-{5}(BEGIN|END) [^-]+-{5}/gim, ''))
