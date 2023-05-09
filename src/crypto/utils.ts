@@ -1,6 +1,8 @@
 import type { webcrypto } from 'crypto'
 import {
   createCipherParams,
+  createNodeCipher,
+  createNodeDecipher,
   ensureSupportedCipher,
   getCiphers,
   getKeySize,
@@ -51,6 +53,8 @@ const getCrypto = async () => {
 export {
   addKeyPrefix,
   createCipherParams,
+  createNodeCipher,
+  createNodeDecipher,
   ensureSupportedCipher,
   ensureSupportedCurve,
   ensureSupportedHash,

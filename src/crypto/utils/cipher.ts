@@ -1,3 +1,4 @@
+import type { Cipher, Decipher } from 'crypto'
 import { createFrom } from '../../bytes'
 import {
   CIPHER_AES128_CBC,
@@ -19,7 +20,11 @@ import {
   CIPHER_AES_CTR_NONCE_SIZE,
   CIPHER_AES_GCM,
   CIPHER_AES_GCM_NONCE_SIZE,
-  CIPHER_AES_GCM_TAG_SIZE
+  CIPHER_AES_GCM_TAG_SIZE,
+  CIPHER_CHACHA20_POLY1305,
+  CIPHER_CHACHA20_POLY1305_KEY_SIZE,
+  CIPHER_CHACHA20_POLY1305_NAME,
+  CIPHER_CHACHA20_POLY1305_NONCE_SIZE
 } from '../constants'
 import { WebCrypto } from '../utils'
 import { importSecretKey } from './key-import'
@@ -33,7 +38,8 @@ const cipherNames = new Map([
   [CIPHER_AES192_GCM, CIPHER_AES_GCM],
   [CIPHER_AES256_CBC, CIPHER_AES_CBC],
   [CIPHER_AES256_CTR, CIPHER_AES_CTR],
-  [CIPHER_AES256_GCM, CIPHER_AES_GCM]
+  [CIPHER_AES256_GCM, CIPHER_AES_GCM],
+  [CIPHER_CHACHA20_POLY1305, CIPHER_CHACHA20_POLY1305_NAME]
 ])
 
 const keySizes = new Map([
@@ -45,7 +51,8 @@ const keySizes = new Map([
   [CIPHER_AES192_GCM, CIPHER_AES192_KEY_SIZE],
   [CIPHER_AES256_CBC, CIPHER_AES256_KEY_SIZE],
   [CIPHER_AES256_CTR, CIPHER_AES256_KEY_SIZE],
-  [CIPHER_AES256_GCM, CIPHER_AES256_KEY_SIZE]
+  [CIPHER_AES256_GCM, CIPHER_AES256_KEY_SIZE],
+  [CIPHER_CHACHA20_POLY1305, CIPHER_CHACHA20_POLY1305_KEY_SIZE]
 ])
 
 const nonceSizes = new Map([
@@ -57,10 +64,18 @@ const nonceSizes = new Map([
   [CIPHER_AES192_GCM, CIPHER_AES_GCM_NONCE_SIZE],
   [CIPHER_AES256_CBC, CIPHER_AES_CBC_NONCE_SIZE],
   [CIPHER_AES256_CTR, CIPHER_AES_CTR_NONCE_SIZE],
-  [CIPHER_AES256_GCM, CIPHER_AES_GCM_NONCE_SIZE]
+  [CIPHER_AES256_GCM, CIPHER_AES_GCM_NONCE_SIZE],
+  [CIPHER_CHACHA20_POLY1305, CIPHER_CHACHA20_POLY1305_NONCE_SIZE]
 ])
 
-const isSupportedCipher = (cipher: string) => cipherNames.has(cipher)
+export const getCiphers = () => {
+  const isWebEnv = typeof window === 'object'
+  return [...cipherNames.keys()].filter(
+    (cipher) => !(isWebEnv && cipher === CIPHER_CHACHA20_POLY1305)
+  )
+}
+
+const isSupportedCipher = (cipher: string) => getCiphers().includes(cipher)
 
 const getCipherName = (cipher: string) => cipherNames.get(cipher)
 
@@ -72,6 +87,16 @@ export const ensureSupportedCipher = (cipher: string) =>
   isSupportedCipher(cipher)
     ? Promise.resolve(cipher)
     : Promise.reject(new Error('Unsupported cipher'))
+
+const ensureValidCipherParams = async (
+  cipher: string,
+  key?: BufferSource,
+  nonce?: BufferSource
+) => ({
+  name: getCipherName(await ensureSupportedCipher(cipher)),
+  key: await ensureValidKey(cipher, key),
+  nonce: await ensureValidNonce(cipher, nonce)
+})
 
 const ensureValidKey = (cipher: string, value: BufferSource) => {
   const key = createFrom(value)
@@ -119,4 +144,32 @@ export const createCipherParams = async (
   }
 }
 
-export const getCiphers = () => [...cipherNames.keys()]
+export const createNodeCipher = async (
+  cipherName: string,
+  key: BufferSource,
+  nonce: BufferSource,
+  associatedData?: BufferSource
+) => {
+  const params = await ensureValidCipherParams(cipherName, key, nonce)
+  const { createCipheriv } = await import('crypto')
+  const cipher = createCipheriv(params.name, params.key, params.nonce)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return cipher.setAAD(createFrom(associatedData)) as Cipher
+}
+
+export const createNodeDecipher = async (
+  cipherName: string,
+  key: BufferSource,
+  nonce: BufferSource,
+  associatedData?: BufferSource
+) => {
+  const params = await ensureValidCipherParams(cipherName, key, nonce)
+  const { createDecipheriv } = await import('crypto')
+  const decipher = createDecipheriv(params.name, params.key, params.nonce)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return decipher.setAAD(createFrom(associatedData)) as Decipher
+}

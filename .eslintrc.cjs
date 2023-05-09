@@ -51,6 +51,7 @@ module.exports = {
     'no-bitwise': 'off',
     'no-restricted-syntax': 'off',
     'node/no-missing-import': 'off',
+    'node/no-unsupported-features/es-syntax': 'off',
     'promise/always-return': 'off'
   }
 }
