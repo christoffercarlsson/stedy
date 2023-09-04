@@ -1,26 +1,26 @@
-import { Chunk, createFrom } from '../../src/bytes'
+import { Bytes, createFrom } from '../../src/bytes'
 
 describe('toString', () => {
   it('should produce a correct Base 32 representation of a given chunk', () => {
     expect(
-      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
+      Bytes.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
         'base32'
       )
     ).toEqual('JBSWY3DPEBLW64TMMQ======')
-    expect(Chunk.from([102]).toString('base32')).toEqual('MY======')
-    expect(Chunk.from([102, 111]).toString('base32')).toEqual('MZXQ====')
-    expect(Chunk.from([102, 111, 111]).toString('base32')).toEqual('MZXW6===')
-    expect(Chunk.from([102, 111, 111, 98]).toString('base32')).toEqual(
+    expect(Bytes.from([102]).toString('base32')).toEqual('MY======')
+    expect(Bytes.from([102, 111]).toString('base32')).toEqual('MZXQ====')
+    expect(Bytes.from([102, 111, 111]).toString('base32')).toEqual('MZXW6===')
+    expect(Bytes.from([102, 111, 111, 98]).toString('base32')).toEqual(
       'MZXW6YQ='
     )
-    expect(Chunk.from([102, 111, 111, 98, 97]).toString('base32')).toEqual(
+    expect(Bytes.from([102, 111, 111, 98, 97]).toString('base32')).toEqual(
       'MZXW6YTB'
     )
   })
 
   it('should produce a correct Base 64 representation of a given chunk', () => {
     expect(
-      Chunk.from([
+      Bytes.from([
         29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
       ]).toString('base64')
     ).toEqual('HVn8UCmEQ6FRu5+lwpk/VA==')
@@ -28,7 +28,7 @@ describe('toString', () => {
 
   it('should produce a correct URL safe Base 64 representation of a given chunk', () => {
     expect(
-      Chunk.from([
+      Bytes.from([
         29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
       ]).toString('base64url')
     ).toEqual('HVn8UCmEQ6FRu5-lwpk_VA')
@@ -36,12 +36,12 @@ describe('toString', () => {
 
   it('should handle Base 64 padding correctly when encoding', () => {
     expect(
-      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
+      Bytes.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
         'base64'
       )
     ).toEqual('SGVsbG8gV29ybGQ=')
     expect(
-      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108]).toString(
+      Bytes.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108]).toString(
         'base64'
       )
     ).toEqual('SGVsbG8gV29ybA==')
@@ -49,7 +49,7 @@ describe('toString', () => {
 
   it('should produce a correct hexadecimal representation of a given chunk', () => {
     expect(
-      Chunk.from([
+      Bytes.from([
         10, 137, 184, 253, 161, 109, 6, 54, 134, 118, 246, 227, 130, 46, 84, 55
       ]).toString('hex')
     ).toEqual('0a89b8fda16d06368676f6e3822e5437')
@@ -57,13 +57,13 @@ describe('toString', () => {
 
   it('should produce a correct JSON representation of a given chunk', () => {
     const bytes = [72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]
-    expect(Chunk.from(bytes).toString('json')).toEqual(
+    expect(Bytes.from(bytes).toString('json')).toEqual(
       JSON.stringify(Buffer.from(bytes))
     )
   })
 
   it('should produce a correct PEM representation of a given chunk', () => {
-    const view = Chunk.from([
+    const view = Bytes.from([
       83, 112, 105, 99, 121, 32, 106, 97, 108, 97, 112, 101, 110, 111, 32, 98,
       97, 99, 111, 110, 32, 105, 112, 115, 117, 109, 32, 100, 111, 108, 111,
       114, 32, 97, 109, 101, 116, 32, 102, 105, 108, 101, 116, 32, 109, 105,
@@ -80,7 +80,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
 
   it('should produce a correct UTF-8 representation of a given chunk', () => {
     expect(
-      Chunk.from([64, 194, 128, 224, 160, 128, 240, 144, 128, 128]).toString()
+      Bytes.from([64, 194, 128, 224, 160, 128, 240, 144, 128, 128]).toString()
     ).toEqual(String.fromCodePoint(64, 128, 2048, 65536))
   })
 
@@ -97,7 +97,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
 
   it('should handle invalid encodings gracefully', () => {
     expect(
-      Chunk.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
+      Bytes.from([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100]).toString(
         'hubba'
       )
     ).toEqual('')

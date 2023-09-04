@@ -55,13 +55,13 @@ import { createJSONObject } from './utils'
 import xor from './xor'
 import transcode from './transcode'
 
-class Chunk extends Uint8Array {
+class Bytes extends Uint8Array {
   static fromView(view: ArrayBufferView) {
     return Reflect.construct(this, [
       view.buffer,
       view.byteOffset,
       view.byteLength
-    ]) as Chunk
+    ]) as Bytes
   }
 
   static from(
@@ -80,19 +80,19 @@ class Chunk extends Uint8Array {
   }
 
   append(view: BufferSource) {
-    return (this.constructor as typeof Chunk).fromView(append(this, view))
+    return (this.constructor as typeof Bytes).fromView(append(this, view))
   }
 
   copy() {
-    return (this.constructor as typeof Chunk).fromView(copy(this))
+    return (this.constructor as typeof Bytes).fromView(copy(this))
   }
 
   decode(encoding?: string) {
-    return (this.constructor as typeof Chunk).fromView(decode(this, encoding))
+    return (this.constructor as typeof Bytes).fromView(decode(this, encoding))
   }
 
   encode(encoding?: string, label?: string) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       encode(this, encoding, label)
     )
   }
@@ -118,20 +118,20 @@ class Chunk extends Uint8Array {
   }
 
   padLeft(size: number) {
-    return (this.constructor as typeof Chunk).fromView(padLeft(this, size))
+    return (this.constructor as typeof Bytes).fromView(padLeft(this, size))
   }
 
   padRight(size: number) {
-    return (this.constructor as typeof Chunk).fromView(padRight(this, size))
+    return (this.constructor as typeof Bytes).fromView(padRight(this, size))
   }
 
   prepend(view: BufferSource) {
-    return (this.constructor as typeof Chunk).fromView(prepend(this, view))
+    return (this.constructor as typeof Bytes).fromView(prepend(this, view))
   }
 
   read(...sizes: number[]) {
     return read(this, ...sizes).map((view: Uint8Array) =>
-      (this.constructor as typeof Chunk).fromView(view)
+      (this.constructor as typeof Bytes).fromView(view)
     )
   }
 
@@ -213,7 +213,7 @@ class Chunk extends Uint8Array {
 
   split(size: number, appendRemainder?: boolean) {
     return split(this, size, appendRemainder).map((view) =>
-      (this.constructor as typeof Chunk).fromView(view)
+      (this.constructor as typeof Bytes).fromView(view)
     )
   }
 
@@ -222,7 +222,7 @@ class Chunk extends Uint8Array {
   }
 
   subarray(begin?: number, end?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       super.subarray(begin, end)
     )
   }
@@ -236,130 +236,130 @@ class Chunk extends Uint8Array {
   }
 
   transcode(currentEncoding: string, targetEncoding: string) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       transcode(this, currentEncoding, targetEncoding)
     )
   }
 
   trimLeft(byte?: number) {
-    return (this.constructor as typeof Chunk).fromView(trimLeft(this, byte))
+    return (this.constructor as typeof Bytes).fromView(trimLeft(this, byte))
   }
 
   trimRight(byte?: number) {
-    return (this.constructor as typeof Chunk).fromView(trimRight(this, byte))
+    return (this.constructor as typeof Bytes).fromView(trimRight(this, byte))
   }
 
   writeFloat32BE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeFloat32BE(this, value, byteOffset)
     )
   }
 
   writeFloat32LE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeFloat32LE(this, value, byteOffset)
     )
   }
 
   writeFloat64BE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeFloat64BE(this, value, byteOffset)
     )
   }
 
   writeFloat64LE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeFloat64LE(this, value, byteOffset)
     )
   }
 
   writeInt8(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt8(this, value, byteOffset)
     )
   }
 
   writeInt16BE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt16BE(this, value, byteOffset)
     )
   }
 
   writeInt16LE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt16LE(this, value, byteOffset)
     )
   }
 
   writeInt32BE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt32BE(this, value, byteOffset)
     )
   }
 
   writeInt32LE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt32LE(this, value, byteOffset)
     )
   }
 
   writeInt64BE(value: number | bigint, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt64BE(this, value, byteOffset)
     )
   }
 
   writeInt64LE(value: number | bigint, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeInt64LE(this, value, byteOffset)
     )
   }
 
   writeUint8(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint8(this, value, byteOffset)
     )
   }
 
   writeUint16BE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint16BE(this, value, byteOffset)
     )
   }
 
   writeUint16LE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint16LE(this, value, byteOffset)
     )
   }
 
   writeUint32BE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint32BE(this, value, byteOffset)
     )
   }
 
   writeUint32LE(value: number, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint32LE(this, value, byteOffset)
     )
   }
 
   writeUint64BE(value: number | bigint, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint64BE(this, value, byteOffset)
     )
   }
 
   writeUint64LE(value: number | bigint, byteOffset?: number) {
-    return (this.constructor as typeof Chunk).fromView(
+    return (this.constructor as typeof Bytes).fromView(
       writeUint64LE(this, value, byteOffset)
     )
   }
 
   xor(view: BufferSource) {
-    return (this.constructor as typeof Chunk).fromView(xor(this, view))
+    return (this.constructor as typeof Bytes).fromView(xor(this, view))
   }
 }
 
-export default Chunk
+export default Bytes

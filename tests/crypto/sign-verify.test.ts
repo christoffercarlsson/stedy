@@ -1,8 +1,8 @@
 import { createCurve } from '../../src'
-import { Chunk } from '../../src/bytes'
+import { Bytes } from '../../src/bytes'
 
 describe('sign/verify', () => {
-  const message = Chunk.from([
+  const message = Bytes.from([
     72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100
   ])
   const curves = ['P-256', 'P-384', 'P-521']

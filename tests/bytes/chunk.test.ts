@@ -1,14 +1,14 @@
-import { Chunk, createFrom } from '../../src/bytes'
+import { Bytes, createFrom } from '../../src/bytes'
 
-describe('Chunk', () => {
+describe('Bytes', () => {
   it('should create a new chunk from an iterable', () => {
     function* generateBytes() {
       yield 1
       yield 2
       yield 3
     }
-    const a = Chunk.from(generateBytes())
-    const b = Chunk.from(generateBytes(), (byte) => byte * 2)
+    const a = Bytes.from(generateBytes())
+    const b = Bytes.from(generateBytes(), (byte) => byte * 2)
     expect(a.getBytes()).toEqual([1, 2, 3])
     expect(b.getBytes()).toEqual([2, 4, 6])
   })
@@ -34,8 +34,8 @@ describe('Chunk', () => {
     const chunk = createFrom([1, 2, 3, 4])
     const a = chunk.subarray(1, 3)
     const b = chunk.slice(1, 3)
-    expect(a).toBeInstanceOf(Chunk)
-    expect(b).toBeInstanceOf(Chunk)
+    expect(a).toBeInstanceOf(Bytes)
+    expect(b).toBeInstanceOf(Bytes)
     expect(a).toEqual(b)
   })
 })

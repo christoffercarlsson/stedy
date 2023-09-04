@@ -1,4 +1,4 @@
-import { Chunk } from '../bytes'
+import { Bytes } from '../bytes'
 import hash from './hash'
 import hkdf from './hkdf'
 import hmac from './hmac'
@@ -8,26 +8,26 @@ import { getCrypto } from './utils'
 export type HashFunction = (
   message: BufferSource,
   iterations?: number
-) => Promise<Chunk>
+) => Promise<Bytes>
 
 export type HKDFFunction = (
   message: BufferSource,
   salt: BufferSource,
   info?: BufferSource,
   size?: number
-) => Promise<Chunk>
+) => Promise<Bytes>
 
 export type HMACFunction = (
   key: BufferSource,
   message: BufferSource
-) => Promise<Chunk>
+) => Promise<Bytes>
 
 export type PBKDF2Function = (
   password: BufferSource,
   salt: BufferSource,
   iterations?: number,
   size?: number
-) => Promise<Chunk>
+) => Promise<Bytes>
 
 export type HashFunctions = {
   hash: HashFunction

@@ -1,5 +1,5 @@
 import _alloc from './bytes/alloc'
-import Chunk from './bytes/chunk'
+import Bytes from './bytes/bytes'
 import _concat from './bytes/concat'
 import {
   ENCODING_BASE32,
@@ -14,19 +14,19 @@ import _createFrom from './bytes/create-from'
 import { fromString as _fromString } from './bytes/decode'
 import { fromInteger as _fromInteger } from './bytes/numbers'
 
-const alloc = (size: number) => Chunk.fromView(_alloc(size))
+const alloc = (size: number) => Bytes.fromView(_alloc(size))
 
-const concat = (views: BufferSource[]) => Chunk.fromView(_concat(views))
+const concat = (views: BufferSource[]) => Bytes.fromView(_concat(views))
 
 const createFrom = (
   value?: string | number | Iterable<number> | BufferSource,
   encoding?: string
-) => Chunk.fromView(_createFrom(value, encoding))
+) => Bytes.fromView(_createFrom(value, encoding))
 
-const fromInteger = (value: number) => Chunk.fromView(_fromInteger(value))
+const fromInteger = (value: number) => Bytes.fromView(_fromInteger(value))
 
 const fromString = (input: string, encoding?: string) =>
-  Chunk.fromView(_fromString(input, encoding))
+  Bytes.fromView(_fromString(input, encoding))
 
 export {
   ENCODING_BASE32,
@@ -38,7 +38,7 @@ export {
   ENCODING_UTF8,
   alloc,
   concat,
-  Chunk,
+  Bytes,
   createFrom,
   fromInteger,
   fromString
