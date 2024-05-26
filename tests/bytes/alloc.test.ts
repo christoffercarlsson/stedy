@@ -1,4 +1,4 @@
-import { alloc, Bytes } from '../../src/bytes'
+import { alloc, Bytes } from '../../src'
 
 describe('alloc', () => {
   it('should allocate a new zero-filled chunk with a given size', () => {

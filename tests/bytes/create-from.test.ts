@@ -1,4 +1,4 @@
-import { Bytes, createFrom } from '../../src/bytes'
+import { Bytes, createFrom } from '../../src'
 
 describe('createFrom', () => {
   it('should create a new chunk from a typed array', () => {

@@ -1,4 +1,4 @@
-import { Bytes, concat } from '../../src/bytes'
+import { Bytes, concat } from '../../src'
 
 describe('concat', () => {
   it('should create a new chunk by concatenating all the chunks in a given list together', () => {

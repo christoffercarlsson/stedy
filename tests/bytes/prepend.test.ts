@@ -1,4 +1,4 @@
-import { createFrom } from '../../src/bytes'
+import { createFrom } from '../../src'
 
 describe('prepend', () => {
   it('should prepend the data from anohter chunk', () => {

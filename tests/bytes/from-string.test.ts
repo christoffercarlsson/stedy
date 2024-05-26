@@ -1,4 +1,4 @@
-import { Bytes, fromString } from '../../src/bytes'
+import { Bytes, fromString } from '../../src'
 
 describe('fromString', () => {
   it('should decode Base 32 encoded strings correctly', () => {

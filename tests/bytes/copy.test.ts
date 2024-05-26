@@ -1,4 +1,4 @@
-import { Bytes } from '../../src/bytes'
+import { Bytes } from '../../src'
 
 describe('copy', () => {
   it('should create a copy of a given chunk', () => {

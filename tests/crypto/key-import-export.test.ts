@@ -1,5 +1,4 @@
-import { createCurve, exportKey } from '../../src'
-import { Bytes } from '../../src/bytes'
+import { createCurve, exportKey, Bytes } from '../../src'
 
 describe('key import/export', () => {
   const curves = ['P-256', 'P-384', 'P-521', 'Curve25519']

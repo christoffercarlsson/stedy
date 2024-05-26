@@ -15,7 +15,7 @@ const run = async () => {
   }
   await build({
     ...sharedOptions,
-    entryPoints: ['src/bytes.ts', 'src/index.ts'],
+    entryPoints: ['src/index.ts'],
     bundle: true,
     splitting: true
   })

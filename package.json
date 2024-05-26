@@ -35,10 +35,7 @@
   "engines": {
     "node": ">=16.13.0"
   },
-  "exports": {
-    ".": "./dist/src/index.js",
-    "./bytes": "./dist/src/bytes.js"
-  },
+  "exports": "./dist/src/index.js",
   "files": [
     "dist/src/**/*.{js,ts}"
   ],

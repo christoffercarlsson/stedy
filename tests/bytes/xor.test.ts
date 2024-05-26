@@ -1,4 +1,4 @@
-import { Bytes } from '../../src/bytes'
+import { Bytes } from '../../src'
 
 describe('xor', () => {
   it('should calculate the XOR of two given chunks of the same size', () => {

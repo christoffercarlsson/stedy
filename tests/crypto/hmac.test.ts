@@ -1,5 +1,4 @@
-import { createHash } from '../../src'
-import { Bytes } from '../../src/bytes'
+import { createHash, Bytes } from '../../src'
 
 describe('hmac', () => {
   const message = Bytes.from([

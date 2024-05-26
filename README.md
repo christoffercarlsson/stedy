@@ -1,5 +1,10 @@
 # Stedy (Beta)
 
+> [!WARNING]\
+> The security of this library has yet to be independently audited. Make your own
+> judgement on whether or not the current state of this project is a good fit for
+> you.
+
 ## Installation
 
 ```console

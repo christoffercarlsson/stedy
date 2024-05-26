@@ -1,4 +1,4 @@
-import { Bytes } from '../../src/bytes'
+import { Bytes } from '../../src'
 
 describe('encode', () => {
   it('should produce a correct Base 32 representation of a given chunk', () => {

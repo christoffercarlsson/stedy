@@ -28,6 +28,21 @@ import createHash, {
 import exportKey from './crypto/export-key'
 import _generateRandomBytes from './crypto/generate-random-bytes'
 import { getCiphers, getCrypto, getCurves, getHashes } from './crypto/utils'
+import {
+  ENCODING_BASE32,
+  ENCODING_BASE64,
+  ENCODING_BASE64_URLSAFE,
+  ENCODING_HEX,
+  ENCODING_JSON,
+  ENCODING_PEM,
+  ENCODING_UTF8,
+  alloc,
+  concat,
+  Bytes,
+  createFrom,
+  fromInteger,
+  fromString
+} from './bytes'
 
 const { decrypt, encrypt, generateKey, generateNonce } =
   createCipher(CIPHER_AES256_GCM)
@@ -64,13 +79,26 @@ export type {
 }
 
 export {
+  ENCODING_BASE32,
+  ENCODING_BASE64,
+  ENCODING_BASE64_URLSAFE,
+  ENCODING_HEX,
+  ENCODING_JSON,
+  ENCODING_PEM,
+  ENCODING_UTF8,
+  alloc,
+  concat,
+  Bytes,
   createCipher,
   createCurve,
+  createFrom,
   createHash,
   decrypt,
   diffieHellman,
   encrypt,
   exportKey,
+  fromInteger,
+  fromString,
   generateKey,
   generateKeyPair,
   generateNonce,

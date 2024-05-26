@@ -1,4 +1,4 @@
-import { concat, createFrom } from '../../src/bytes'
+import { concat, createFrom } from '../../src'
 
 describe('startsWith', () => {
   it('should check to see if a chunk starts with a given chunk', () => {

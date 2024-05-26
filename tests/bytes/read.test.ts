@@ -1,4 +1,4 @@
-import { createFrom } from '../../src/bytes'
+import { createFrom } from '../../src'
 
 describe('read', () => {
   it('should read data sequentially', () => {

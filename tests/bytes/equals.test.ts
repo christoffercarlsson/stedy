@@ -1,4 +1,4 @@
-import { createFrom } from '../../src/bytes'
+import { createFrom } from '../../src'
 
 describe('equals', () => {
   it('should check to see if the chunk is equal to another chunk', () => {

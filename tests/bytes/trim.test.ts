@@ -1,4 +1,4 @@
-import { Bytes } from '../../src/bytes'
+import { Bytes } from '../../src'
 
 describe('trim', () => {
   const view = Bytes.from([1, 2, 3])

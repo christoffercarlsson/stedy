@@ -1,5 +1,4 @@
-import { createCipher } from '../../src'
-import { Bytes } from '../../src/bytes'
+import { createCipher, Bytes } from '../../src'
 
 describe('encrypt', () => {
   const message = Bytes.from([

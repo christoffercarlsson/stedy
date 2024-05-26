@@ -1,4 +1,4 @@
-import { alloc } from '../../src/bytes'
+import { alloc } from '../../src'
 
 describe('Numbers', () => {
   it('should store a signed 32-bit floating-point value', () => {

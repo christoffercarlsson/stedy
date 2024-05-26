@@ -1,5 +1,4 @@
-import { createCurve } from '../../src'
-import { Bytes } from '../../src/bytes'
+import { createCurve, Bytes } from '../../src'
 
 describe('sign/verify', () => {
   const message = Bytes.from([

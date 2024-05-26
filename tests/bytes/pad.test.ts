@@ -1,4 +1,4 @@
-import { Bytes } from '../../src/bytes'
+import { Bytes } from '../../src'
 
 describe('pad', () => {
   it('should pad a given chunk with zeroes on the left', () => {
