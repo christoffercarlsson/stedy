@@ -36,8 +36,9 @@
     "node": ">=16.13.0"
   },
   "exports": "./dist/src/index.js",
+  "main": "./dist/src/index.cjs",
   "files": [
-    "dist/src/**/*.{js,ts}"
+    "dist/src/**/*.{cjs,js,ts}"
   ],
   "homepage": "https://github.com/christoffercarlsson/stedy#readme",
   "license": "Unlicense",

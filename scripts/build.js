@@ -21,6 +21,13 @@ const run = async () => {
   })
   await build({
     ...sharedOptions,
+    entryPoints: ['src/index.ts'],
+    bundle: true,
+    format: 'cjs',
+    outExtension: { '.js': '.cjs' }
+  })
+  await build({
+    ...sharedOptions,
     entryPoints: await globby('tests/**/*.test.ts')
   })
 }
