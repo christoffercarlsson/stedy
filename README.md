@@ -42,8 +42,7 @@ Create and verify Ed25519 signatures using the Edwards-curve Digital Signature
 Algorithm.
 
 ```ts
-import { sign, generateSignKeyPair, verify } from 'stedy'
-import { fromString } from 'stedy/bytes'
+import { sign, generateSignKeyPair, verify, fromString } from 'stedy'
 
 const { privateKey, publicKey } = await generateSignKeyPair()
 const message = fromString('Hello World')
@@ -58,8 +57,7 @@ console.log(verified)
 Encrypt a message using AES in Galois/Counter Mode (GCM) with a 256-bit key.
 
 ```ts
-import { decrypt, encrypt, generateKey, generateNonce } from 'stedy'
-import { fromString } from 'stedy/bytes'
+import { decrypt, encrypt, generateKey, generateNonce, fromString } from 'stedy'
 
 const message = fromString('Hello World')
 const key = await generateKey()
@@ -75,8 +73,7 @@ console.log(decrypted.toString())
 Compute the SHA-512 digest of a given message.
 
 ```ts
-import { hash } from 'stedy'
-import { fromString } from 'stedy/bytes'
+import { hash, fromString } from 'stedy'
 
 const message = fromString('Hello World')
 const digest = await hash(message)
@@ -89,8 +86,7 @@ console.log(digest.toString('base64'))
 Generate a cryptographic HMAC hash using SHA-512.
 
 ```ts
-import { hmac } from 'stedy'
-import { fromString } from 'stedy/bytes'
+import { hmac, fromString } from 'stedy'
 
 const message = fromString('Hello World')
 const key = fromString('secret')
@@ -104,8 +100,7 @@ console.log(digest.toString('base64'))
 Derive a key using the HKDF algorithm with SHA-512.
 
 ```ts
-import { hkdf, generateRandomBytes } from 'stedy'
-import { fromString } from 'stedy/bytes'
+import { hkdf, generateRandomBytes, fromString } from 'stedy'
 
 const inputKey = fromString('secret')
 const salt = await generateRandomBytes(64)
@@ -120,8 +115,7 @@ console.log(outputKey.toString('base64'))
 Derive a key from a given password using PBKDF2 with SHA-512.
 
 ```ts
-import { pbkdf2, generateRandomBytes } from 'stedy'
-import { fromString } from 'stedy/bytes'
+import { pbkdf2, generateRandomBytes, fromString } from 'stedy'
 
 const password = fromString('horse-correct-battery-staple')
 const salt = await generateRandomBytes(64)
