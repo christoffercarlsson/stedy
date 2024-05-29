@@ -55,6 +55,7 @@
   },
   "sideEffects": false,
   "type": "module",
+  "types": "dist/src/index.d.ts",
   "typesVersions": {
     "*": {
       "*": [
