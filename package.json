@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.2.2",
-    "@noble/curves": "^1.0.0",
+    "@noble/curves": "^1.4.0",
     "@types/jest": "^29.2.2",
     "@types/node": "^20.1.1",
     "@typescript-eslint/eslint-plugin": "^5.42.0",
@@ -33,7 +33,7 @@
     "typescript": "^5.0.4"
   },
   "engines": {
-    "node": ">=16.13.0"
+    "node": ">=20.14.0"
   },
   "exports": "./dist/src/index.js",
   "main": "./dist/src/index.cjs",
