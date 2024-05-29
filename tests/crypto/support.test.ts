@@ -11,8 +11,7 @@ describe('Support', () => {
       'AES-192-GCM',
       'AES-256-CBC',
       'AES-256-CTR',
-      'AES-256-GCM',
-      'ChaCha20-Poly1305'
+      'AES-256-GCM'
     ]
     expect(getCiphers()).toEqual(ciphers)
   })

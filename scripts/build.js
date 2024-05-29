@@ -9,7 +9,7 @@ const run = async () => {
     format: 'esm',
     outbase: '.',
     outdir: 'dist',
-    platform: 'node',
+    platform: 'browser',
     plugins: [sourceMapPlugin],
     sourcemap: true
   }

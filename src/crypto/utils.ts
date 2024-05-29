@@ -1,8 +1,6 @@
 import type { webcrypto } from 'crypto'
 import {
   createCipherParams,
-  createNodeCipher,
-  createNodeDecipher,
   ensureSupportedCipher,
   getCiphers,
   getKeySize,
@@ -31,14 +29,12 @@ import {
 
 export type WebCrypto = Crypto | webcrypto.Crypto
 
-const importCrypto = async () => {
+const importCrypto = () => {
   /* istanbul ignore next */
-  if (typeof window === 'object') {
-    return window.crypto
+  if (typeof globalThis === 'object' && 'crypto' in globalThis) {
+    return Promise.resolve(globalThis.crypto)
   }
-  // eslint-disable-next-line node/no-unsupported-features/es-syntax
-  const { webcrypto } = await import('crypto')
-  return webcrypto
+  return Promise.reject(new Error('Unable to find crypto'))
 }
 
 let crypto: WebCrypto = null
@@ -53,8 +49,6 @@ const getCrypto = async () => {
 export {
   addKeyPrefix,
   createCipherParams,
-  createNodeCipher,
-  createNodeDecipher,
   ensureSupportedCipher,
   ensureSupportedCurve,
   ensureSupportedHash,

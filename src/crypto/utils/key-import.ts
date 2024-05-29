@@ -48,7 +48,7 @@ const importEcdhKey = (
       name: ALGORITHM_ECDH,
       namedCurve
     } as AlgorithmIdentifier,
-    [KEY_USAGE_DERIVE_BITS]
+    isPublicKey ? [] : [KEY_USAGE_DERIVE_BITS]
   )
 
 export const importSecretKey = (
