@@ -13,5 +13,5 @@
     "sourceMap": true,
     "target": "ES2020"
   },
-  "include": ["./scripts/**/*", "./src/**/*", "./tests/**/*"]
+  "include": ["./scripts/**/*", "./src/**/*", "./tests/**/*", "./stedy.d.ts"]
 }

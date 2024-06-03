@@ -38,7 +38,8 @@
   "exports": "./dist/src/index.js",
   "main": "./dist/src/index.cjs",
   "files": [
-    "dist/src/**/*.{cjs,js,ts}"
+    "dist/src/**/*.{cjs,js}",
+    "stedy.d.ts"
   ],
   "homepage": "https://github.com/christoffercarlsson/stedy#readme",
   "license": "Unlicense",
@@ -47,7 +48,7 @@
     "url": "git+https://github.com/christoffercarlsson/stedy.git"
   },
   "scripts": {
-    "build": "rimraf dist && node scripts/build.js && tsc --project tsconfig.typegen.json",
+    "build": "rimraf dist && node scripts/build.js",
     "format": "prettier --loglevel silent --write .",
     "lint": "eslint .",
     "prepack": "npm run build",
@@ -55,12 +56,5 @@
   },
   "sideEffects": false,
   "type": "module",
-  "types": "dist/src/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "*": [
-        "dist/src/*"
-      ]
-    }
-  }
+  "types": "stedy.d.ts"
 }
