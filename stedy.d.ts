@@ -279,7 +279,7 @@ declare const concat: (views: BufferSource[]) => Uint8Array
 declare const createFrom: (
   value?: string | number | Iterable<number> | BufferSource,
   encoding?: string
-) => Uint8Array
+) => Bytes
 
 declare const exportKey: (key: BufferSource) => Promise<Bytes>
 
