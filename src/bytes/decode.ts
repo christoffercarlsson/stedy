@@ -2,7 +2,9 @@ import { base32Decode, base64Decode } from './base/decode'
 import {
   ENCODING_BASE32,
   ENCODING_BASE64,
-  ENCODING_BASE64_URLSAFE,
+  ENCODING_BASE64_UNPADDED,
+  ENCODING_BASE64_URL,
+  ENCODING_BASE64_URL_UNPADDED,
   ENCODING_HEX,
   ENCODING_JSON,
   ENCODING_PEM,
@@ -20,10 +22,13 @@ export const fromString = (input: string, encoding = ENCODING_UTF8) => {
   if (encoding === ENCODING_BASE32) {
     return base32Decode(str)
   }
-  if (encoding === ENCODING_BASE64) {
+  if (encoding === ENCODING_BASE64 || encoding === ENCODING_BASE64_UNPADDED) {
     return base64Decode(str, false)
   }
-  if (encoding === ENCODING_BASE64_URLSAFE) {
+  if (
+    encoding === ENCODING_BASE64_URL ||
+    encoding === ENCODING_BASE64_URL_UNPADDED
+  ) {
     return base64Decode(str, true)
   }
   if (encoding === ENCODING_HEX) {

@@ -31,7 +31,7 @@ describe('encode', () => {
     expect(
       Bytes.from([
         29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
-      ]).encode('base64url')
+      ]).encode('base64_url_unpadded')
     ).toEqual(
       Bytes.from([
         72, 86, 110, 56, 85, 67, 109, 69, 81, 54, 70, 82, 117, 53, 45, 108, 119,

@@ -2,7 +2,9 @@ import { base32Encode, base64Encode } from './base/encode'
 import {
   ENCODING_BASE32,
   ENCODING_BASE64,
-  ENCODING_BASE64_URLSAFE,
+  ENCODING_BASE64_UNPADDED,
+  ENCODING_BASE64_URL,
+  ENCODING_BASE64_URL_UNPADDED,
   ENCODING_HEX,
   ENCODING_JSON,
   ENCODING_PEM,
@@ -25,10 +27,16 @@ export const toString = (
     return base32Encode(view)
   }
   if (encoding === ENCODING_BASE64) {
-    return base64Encode(view, false)
+    return base64Encode(view, false, true)
   }
-  if (encoding === ENCODING_BASE64_URLSAFE) {
-    return base64Encode(view, true)
+  if (encoding === ENCODING_BASE64_UNPADDED) {
+    return base64Encode(view, false, false)
+  }
+  if (encoding === ENCODING_BASE64_URL) {
+    return base64Encode(view, true, true)
+  }
+  if (encoding === ENCODING_BASE64_URL_UNPADDED) {
+    return base64Encode(view, true, false)
   }
   if (encoding === ENCODING_HEX) {
     return hexEncode(view)

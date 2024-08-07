@@ -29,19 +29,19 @@ describe('fromString', () => {
     expect(fromString('HVn8UCmEQ6FRu5-lwpk_VA==', 'base64')).toEqual(
       Bytes.from([])
     )
-    expect(fromString('HVn8UCmEQ6FRu5+lwpk/VA==', 'base64url')).toEqual(
+    expect(fromString('HVn8UCmEQ6FRu5+lwpk/VA==', 'base64_url')).toEqual(
       Bytes.from([])
     )
     expect(fromString('HVn8U=CmEQ6FRu5+lwpk/VA==', 'base64')).toEqual(
       Bytes.from([])
     )
-    expect(fromString('HVn8U=CmEQ6FRu5-lwpk_VA==', 'base64url')).toEqual(
+    expect(fromString('HVn8U=CmEQ6FRu5-lwpk_VA==', 'base64_url')).toEqual(
       Bytes.from([])
     )
     expect(fromString('Hej och hå', 'base64')).toEqual(Bytes.from([]))
-    expect(fromString('Hej och hå', 'base64url')).toEqual(Bytes.from([]))
+    expect(fromString('Hej och hå', 'base64_url')).toEqual(Bytes.from([]))
     expect(fromString('SGVsbG8gV29yb', 'base64')).toEqual(Bytes.from([]))
-    expect(fromString('SGVsbG8gV29yb', 'base64url')).toEqual(Bytes.from([]))
+    expect(fromString('SGVsbG8gV29yb', 'base64_url')).toEqual(Bytes.from([]))
   })
 
   it('should handle padding correctly when decoding Base 32 strings', () => {
@@ -89,8 +89,10 @@ describe('fromString', () => {
     const view = Bytes.from([
       29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
     ])
-    expect(fromString('HVn8UCmEQ6FRu5-lwpk_VA==', 'base64url')).toEqual(view)
-    expect(fromString('HVn8UCmEQ6FRu5-lwpk_VA', 'base64url')).toEqual(view)
+    expect(fromString('HVn8UCmEQ6FRu5-lwpk_VA==', 'base64_url')).toEqual(view)
+    expect(fromString('HVn8UCmEQ6FRu5-lwpk_VA', 'base64_url_unpadded')).toEqual(
+      view
+    )
   })
 
   it('should decode hexadecimal strings correctly', () => {
@@ -143,7 +145,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
   it('should handle invalid input gracefully', () => {
     expect(fromString(undefined, 'base32')).toEqual(Bytes.from([]))
     expect(fromString(undefined, 'base64')).toEqual(Bytes.from([]))
-    expect(fromString(undefined, 'base64url')).toEqual(Bytes.from([]))
+    expect(fromString(undefined, 'base64_url')).toEqual(Bytes.from([]))
     expect(fromString(undefined, 'hex')).toEqual(Bytes.from([]))
     expect(fromString(undefined, 'json')).toEqual(Bytes.from([]))
     expect(fromString(undefined, 'pem')).toEqual(Bytes.from([]))

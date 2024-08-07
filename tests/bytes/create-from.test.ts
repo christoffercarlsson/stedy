@@ -44,7 +44,7 @@ describe('createFrom', () => {
     ])
     expect(createFrom('JBSWY3DPEBLW64TMMQ======', 'base32')).toEqual(view)
     expect(createFrom('SGVsbG8gV29ybGQ=', 'base64')).toEqual(view)
-    expect(createFrom('SGVsbG8gV29ybGQ', 'base64url')).toEqual(view)
+    expect(createFrom('SGVsbG8gV29ybGQ', 'base64_url_unpadded')).toEqual(view)
     expect(createFrom('48656c6c6f20576f726c64', 'hex')).toEqual(view)
     expect(
       createFrom(

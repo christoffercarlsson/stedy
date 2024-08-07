@@ -9,19 +9,19 @@ const indicesToCharacters = (alphabet: string, indices: number[]) =>
 const encode = (
   view: Uint8Array,
   chunkSize: number,
-  urlSafe: boolean,
+  withPadding: boolean,
   bytesToCharacters: (chunk: Uint8Array) => string[]
 ) => {
   const result = split(view, chunkSize)
     .map((chunk) => bytesToCharacters(chunk))
     .flat()
     .join('')
-  return urlSafe === true ? removePadding(result) : result
+  return withPadding === true ? result : removePadding(result)
 }
 
 export const base32Encode = (view: Uint8Array) => {
   const alphabet = getBase32Alphabet()
-  return encode(view, BASE32_CHUNK_SIZE_BYTES, false, (chunk) => {
+  return encode(view, BASE32_CHUNK_SIZE_BYTES, true, (chunk) => {
     const [firstByte, secondByte, thirdByte, fourthByte, fifthByte] = chunk
     if (Number.isInteger(fifthByte)) {
       return indicesToCharacters(alphabet, [
@@ -84,9 +84,13 @@ export const base32Encode = (view: Uint8Array) => {
   })
 }
 
-export const base64Encode = (view: Uint8Array, urlSafe = false) => {
+export const base64Encode = (
+  view: Uint8Array,
+  urlSafe = false,
+  withPadding = true
+) => {
   const alphabet = getBase64Alphabet(urlSafe)
-  return encode(view, BASE64_CHUNK_SIZE_BYTES, urlSafe, (chunk) => {
+  return encode(view, BASE64_CHUNK_SIZE_BYTES, withPadding, (chunk) => {
     const [firstByte, secondByte, thirdByte] = chunk
     if (Number.isInteger(thirdByte)) {
       return indicesToCharacters(alphabet, [

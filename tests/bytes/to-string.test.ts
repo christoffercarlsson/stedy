@@ -30,7 +30,7 @@ describe('toString', () => {
     expect(
       Bytes.from([
         29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84
-      ]).toString('base64url')
+      ]).toString('base64_url_unpadded')
     ).toEqual('HVn8UCmEQ6FRu5-lwpk_VA')
   })
 
@@ -86,7 +86,7 @@ b24gcGlnIHRvbmd1ZSBzaG9ydCBsb2luIHNob3VsZGVyIG1lYXRiYWxs
 
   it('should handle invalid input gracefully', () => {
     expect(createFrom(undefined).toString('base64')).toEqual('')
-    expect(createFrom(undefined).toString('base64url')).toEqual('')
+    expect(createFrom(undefined).toString('base64_url')).toEqual('')
     expect(createFrom(undefined).toString('json')).toEqual('')
     expect(createFrom(undefined).toString('hex')).toEqual('')
     expect(createFrom(undefined).toString('pem')).toEqual('')
