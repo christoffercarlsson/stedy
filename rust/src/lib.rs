@@ -61,7 +61,6 @@ mod encode;
 mod hash;
 mod kdf;
 mod key_exchange;
-mod key_pair;
 mod mac;
 mod numbers;
 mod pad;
@@ -82,9 +81,8 @@ pub use aead::{
     CHACHA20_POLY1305_KEY_SIZE, CHACHA20_POLY1305_NONCE_SIZE, CHACHA20_POLY1305_TAG_SIZE,
 };
 pub use crypto_box::{
-    x25519_decrypt, x25519_encrypt, x25519_generate_key_pair, x25519_get_private_key,
-    x25519_get_public_key, xchacha20poly1305_generate_nonce, X25519KeyPair, X25519PrivateKey,
-    X25519PublicKey, XChaCha20Poly1305Nonce, X25519_KEY_PAIR_SIZE, X25519_PRIVATE_KEY_SIZE,
+    x25519_decrypt, x25519_encrypt, x25519_generate_key_pair, xchacha20poly1305_generate_nonce,
+    X25519PrivateKey, X25519PublicKey, XChaCha20Poly1305Nonce, X25519_PRIVATE_KEY_SIZE,
     X25519_PUBLIC_KEY_SIZE, XCHACHA20_POLY1305_NONCE_SIZE,
 };
 pub use decode::decode;
@@ -117,10 +115,8 @@ pub use shamir::{
     ShamirShare, SHAMIR_SECRET_SIZE, SHAMIR_SHARE_SIZE,
 };
 pub use sign::{
-    ed25519_generate_key_pair, ed25519_get_private_key, ed25519_get_public_key, ed25519_sign,
-    ed25519_verify, Ed25519KeyPair, Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature,
-    ED25519_KEY_PAIR_SIZE, ED25519_PRIVATE_KEY_SIZE, ED25519_PUBLIC_KEY_SIZE,
-    ED25519_SIGNATURE_SIZE,
+    ed25519_generate_key_pair, ed25519_sign, ed25519_verify, Ed25519PrivateKey, Ed25519PublicKey,
+    Ed25519Signature, ED25519_PRIVATE_KEY_SIZE, ED25519_PUBLIC_KEY_SIZE, ED25519_SIGNATURE_SIZE,
 };
 pub use transcode::transcode;
 #[cfg(feature = "web")]
