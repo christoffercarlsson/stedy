@@ -1,6 +1,17 @@
 [package]
 name = "stedy"
-version = "0.1.0"
+description = "Easy-to-use primitives for modern cryptographic protocols"
+version = "0.25.0"
+license = "Unlicense"
+authors = ["Christoffer Carlsson <cc@christoffercarlsson.se>"]
 edition = "2021"
+keywords = [
+    "cryptography",
+    "primitives",
+    "encryption",
+    "signatures",
+    "hashing"
+  ]
+repository = "https://github.com/christoffercarlsson/stedy"
 
 [dependencies]
