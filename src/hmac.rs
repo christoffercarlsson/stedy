@@ -62,7 +62,7 @@ impl HmacSha512 {
         if key.len() > 128 {
             let mut hasher = Sha512::new();
             hasher.update(key);
-            hasher.finalize_into(&mut k[..32].try_into().unwrap());
+            hasher.finalize_into(&mut k[..64].try_into().unwrap());
         } else {
             k[..key.len()].copy_from_slice(key);
         }
