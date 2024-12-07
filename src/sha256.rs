@@ -147,9 +147,8 @@ impl Sha256 {
         self.h7 = self.h7.wrapping_add(h);
     }
 
-    pub fn finalize(mut self) -> [u8; 32] {
+    pub fn finalize_into(mut self, digest: &mut [u8; 32]) {
         self.pad();
-        let mut digest = [0u8; 32];
         digest[0..4].copy_from_slice(&self.h0.to_be_bytes());
         digest[4..8].copy_from_slice(&self.h1.to_be_bytes());
         digest[8..12].copy_from_slice(&self.h2.to_be_bytes());
@@ -158,6 +157,11 @@ impl Sha256 {
         digest[20..24].copy_from_slice(&self.h5.to_be_bytes());
         digest[24..28].copy_from_slice(&self.h6.to_be_bytes());
         digest[28..32].copy_from_slice(&self.h7.to_be_bytes());
+    }
+
+    pub fn finalize(self) -> [u8; 32] {
+        let mut digest = [0u8; 32];
+        self.finalize_into(&mut digest);
         digest
     }
 
