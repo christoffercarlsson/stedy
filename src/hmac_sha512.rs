@@ -8,8 +8,8 @@ pub struct HmacSha512 {
 impl HmacSha512 {
     pub fn new(key: &[u8]) -> Self {
         let mut k = [0; 128];
-        let ipad = [54; 128];
-        let opad = [92; 128];
+        let inner_pad = [54; 128];
+        let outer_pad = [92; 128];
         if key.len() > 128 {
             let mut hasher = Sha512::new();
             hasher.update(key);
@@ -20,8 +20,8 @@ impl HmacSha512 {
         }
         let mut inner_key = [0; 128];
         let mut outer_key = [0; 128];
-        xor(&k, &ipad, &mut inner_key);
-        xor(&k, &opad, &mut outer_key);
+        xor(&k, &inner_pad, &mut inner_key);
+        xor(&k, &outer_pad, &mut outer_key);
         let mut inner = Sha512::new();
         let mut outer = Sha512::new();
         inner.update(&inner_key);
