@@ -8,12 +8,13 @@ pub struct HmacSha256 {
 impl HmacSha256 {
     pub fn new(key: &[u8]) -> Self {
         let mut k = [0; 64];
-        let ipad = [0; 64];
+        let ipad = [54; 64];
         let opad = [92; 64];
         if key.len() > 64 {
             let mut hasher = Sha256::new();
             hasher.update(key);
-            hasher.finalize_into(&mut k[..32].try_into().unwrap());
+            let key_digest = hasher.finalize();
+            k[..32].copy_from_slice(&key_digest);
         } else {
             k[..key.len()].copy_from_slice(key);
         }

@@ -8,12 +8,13 @@ pub struct HmacSha512 {
 impl HmacSha512 {
     pub fn new(key: &[u8]) -> Self {
         let mut k = [0; 128];
-        let ipad = [0; 128];
+        let ipad = [54; 128];
         let opad = [92; 128];
         if key.len() > 128 {
             let mut hasher = Sha512::new();
             hasher.update(key);
-            hasher.finalize_into(&mut k[..64].try_into().unwrap());
+            let key_digest = hasher.finalize();
+            k[..64].copy_from_slice(&key_digest);
         } else {
             k[..key.len()].copy_from_slice(key);
         }
