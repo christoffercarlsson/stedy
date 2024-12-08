@@ -1,3 +1,4 @@
+mod chacha20;
 mod hkdf_sha256;
 mod hkdf_sha512;
 mod hmac_sha256;
