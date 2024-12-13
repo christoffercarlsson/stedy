@@ -1,3 +1,5 @@
+use crate::Error;
+
 const SIGMA: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
 pub struct ChaCha<const ROUNDS: u8> {
@@ -13,7 +15,10 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         Self { state }
     }
 
-    pub fn next(&mut self) -> [u32; 16] {
+    pub fn next(&mut self) -> Result<[u32; 16], Error> {
+        if self.state[12] == u32::MAX {
+            return Err(Error::LimitExceeded);
+        }
         let mut block = self.state;
         for _ in (0..ROUNDS).step_by(2) {
             quarter_round(0, 4, 8, 12, &mut block);
@@ -29,7 +34,7 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
             *b = b.wrapping_add(self.state[i]);
         }
         self.state[12] += 1;
-        block
+        Ok(block)
     }
 }
 

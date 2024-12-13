@@ -3,6 +3,7 @@ mod hkdf_sha256;
 mod hkdf_sha512;
 mod hmac_sha256;
 mod hmac_sha512;
+mod poly1305;
 mod sha256;
 mod sha512;
 mod verify;
@@ -11,6 +12,7 @@ mod xor;
 #[derive(Debug)]
 pub enum Error {
     InvalidInput,
+    LimitExceeded,
     Verification,
 }
 
