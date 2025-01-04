@@ -33,7 +33,7 @@ pub fn chacha20poly1305_decrypt(
 }
 
 fn encrypt(key: &[u8; 32], nonce: &[u8; 12], input: &[u8], output: &mut [u8]) -> Poly1305 {
-    let mut cipher = create_cipher(key, nonce);
+    let mut cipher = ChaCha20::from(key, nonce);
     let mac = create_mac(&mut cipher);
     let mut block = ChaCha20Block::new();
     let (head, tail) = block.blocks(input);
@@ -56,25 +56,6 @@ fn encrypt(key: &[u8; 32], nonce: &[u8; 12], input: &[u8], output: &mut [u8]) ->
     mac
 }
 
-fn create_cipher(key: &[u8; 32], nonce: &[u8; 12]) -> ChaCha20 {
-    let k = [
-        u32::from_le_bytes(key[0..4].try_into().unwrap()),
-        u32::from_le_bytes(key[4..8].try_into().unwrap()),
-        u32::from_le_bytes(key[8..12].try_into().unwrap()),
-        u32::from_le_bytes(key[12..16].try_into().unwrap()),
-        u32::from_le_bytes(key[16..20].try_into().unwrap()),
-        u32::from_le_bytes(key[20..24].try_into().unwrap()),
-        u32::from_le_bytes(key[24..28].try_into().unwrap()),
-        u32::from_le_bytes(key[28..32].try_into().unwrap()),
-    ];
-    let n = [
-        u32::from_le_bytes(nonce[0..4].try_into().unwrap()),
-        u32::from_le_bytes(nonce[4..8].try_into().unwrap()),
-        u32::from_le_bytes(nonce[8..12].try_into().unwrap()),
-    ];
-    ChaCha20::new(&k, &n)
-}
-
 fn create_mac(cipher: &mut ChaCha20) -> Poly1305 {
     let mut key = [0u8; 32];
     let block = cipher.next();
@@ -87,17 +68,8 @@ fn create_mac(cipher: &mut ChaCha20) -> Poly1305 {
 }
 
 fn apply_keystream(cipher: &mut ChaCha20, input: &[u8], output: &mut [u8]) {
-    let mut keystream = [0u8; 64];
-    let block = cipher.next();
-    for (i, n) in block.iter().enumerate() {
-        let begin = i * 4;
-        let end = begin + 4;
-        keystream[begin..end].copy_from_slice(&n.to_le_bytes());
-    }
     output.copy_from_slice(input);
-    for (i, byte) in output.iter_mut().enumerate() {
-        *byte ^= keystream[i];
-    }
+    cipher.apply_keystream(output);
 }
 
 fn calculate_tag(mut mac: Poly1305, aad: Option<&[u8]>, ciphertext: &[u8]) -> [u8; 16] {

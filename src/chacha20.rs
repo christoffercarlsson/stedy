@@ -13,6 +13,25 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         Self { state }
     }
 
+    pub fn from(key: &[u8; 32], nonce: &[u8; 12]) -> Self {
+        let k = [
+            u32::from_le_bytes(key[0..4].try_into().unwrap()),
+            u32::from_le_bytes(key[4..8].try_into().unwrap()),
+            u32::from_le_bytes(key[8..12].try_into().unwrap()),
+            u32::from_le_bytes(key[12..16].try_into().unwrap()),
+            u32::from_le_bytes(key[16..20].try_into().unwrap()),
+            u32::from_le_bytes(key[20..24].try_into().unwrap()),
+            u32::from_le_bytes(key[24..28].try_into().unwrap()),
+            u32::from_le_bytes(key[28..32].try_into().unwrap()),
+        ];
+        let n = [
+            u32::from_le_bytes(nonce[0..4].try_into().unwrap()),
+            u32::from_le_bytes(nonce[4..8].try_into().unwrap()),
+            u32::from_le_bytes(nonce[8..12].try_into().unwrap()),
+        ];
+        Self::new(&k, &n)
+    }
+
     pub fn next(&mut self) -> [u32; 16] {
         let mut block = self.state;
         for _ in (0..ROUNDS).step_by(2) {
@@ -30,6 +49,19 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         }
         self.state[12] = self.state[12].wrapping_add(1);
         block
+    }
+
+    pub fn apply_keystream(&mut self, bytes: &mut [u8]) {
+        let mut keystream = [0u8; 64];
+        let block = self.next();
+        for (i, n) in block.iter().enumerate() {
+            let begin = i * 4;
+            let end = begin + 4;
+            keystream[begin..end].copy_from_slice(&n.to_le_bytes());
+        }
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            *byte ^= keystream[i];
+        }
     }
 }
 
