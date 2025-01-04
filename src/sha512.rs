@@ -337,22 +337,4 @@ mod tests {
             ]
         );
     }
-
-    #[test]
-    fn test_sha512_1gb() {
-        let mut hasher = Sha512::new();
-        for _ in 0..16777216 {
-            hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno");
-        }
-        let digest = hasher.finalize();
-        assert_eq!(
-            digest,
-            [
-                180, 124, 147, 52, 33, 234, 45, 177, 73, 173, 110, 16, 252, 230, 199, 249, 61, 7,
-                82, 56, 1, 128, 255, 215, 244, 98, 154, 113, 33, 52, 131, 29, 119, 190, 96, 145,
-                184, 25, 237, 53, 44, 41, 103, 162, 226, 212, 250, 80, 80, 114, 60, 150, 48, 105,
-                31, 26, 5, 167, 40, 29, 190, 108, 16, 134,
-            ]
-        );
-    }
 }

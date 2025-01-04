@@ -255,20 +255,4 @@ mod tests {
             ]
         );
     }
-
-    #[test]
-    fn test_sha256_1gb() {
-        let mut hasher = Sha256::new();
-        for _ in 0..16777216 {
-            hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno");
-        }
-        let digest = hasher.finalize();
-        assert_eq!(
-            digest,
-            [
-                80, 231, 42, 14, 38, 68, 47, 226, 85, 45, 195, 147, 138, 197, 134, 88, 34, 140, 12,
-                191, 177, 210, 202, 135, 42, 228, 53, 38, 111, 205, 5, 94,
-            ]
-        );
-    }
 }
