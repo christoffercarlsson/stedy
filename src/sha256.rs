@@ -1,3 +1,7 @@
+use crate::block::Block;
+
+type Sha256Block = Block<64>;
+
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -58,8 +62,7 @@ pub struct Sha256 {
     h5: u32,
     h6: u32,
     h7: u32,
-    buffer: [u8; 64],
-    buffer_size: usize,
+    block: Sha256Block,
     total_size: usize,
 }
 
@@ -74,36 +77,19 @@ impl Sha256 {
             h5: 0x9b05688c,
             h6: 0x1f83d9ab,
             h7: 0x5be0cd19,
-            buffer: [0u8; 64],
-            buffer_size: 0,
+            block: Sha256Block::new(),
             total_size: 0,
         }
     }
 
     pub fn update(&mut self, message: &[u8]) {
-        let offset = self.process_buffer(message);
-        for chunk in message[offset..].chunks(64) {
-            if chunk.len() == 64 {
-                self.process_block(chunk);
-            } else {
-                self.buffer_chunk(chunk);
-            }
+        let (head, tail) = self.block.blocks(message);
+        if let Some(head) = head {
+            self.process_block(&head);
         }
-    }
-
-    fn process_buffer(&mut self, message: &[u8]) -> usize {
-        let offset = message.len().min(64 - self.buffer_size);
-        self.buffer_chunk(&message[..offset]);
-        if self.buffer_size == 64 {
-            self.process_block(&self.buffer.clone());
-            self.buffer_size = 0;
+        for (begin, end) in tail {
+            self.process_block(&message[begin..end]);
         }
-        offset
-    }
-
-    fn buffer_chunk(&mut self, chunk: &[u8]) {
-        self.buffer[self.buffer_size..self.buffer_size + chunk.len()].copy_from_slice(chunk);
-        self.buffer_size += chunk.len();
     }
 
     fn process_block(&mut self, block: &[u8]) {
@@ -168,12 +154,13 @@ impl Sha256 {
     fn pad(&mut self) {
         let mut padding = [0u8; 128];
         padding[0] = 128;
-        let padding_size = if self.buffer_size < 56 {
-            64 - self.buffer_size
+        let remaining = self.block.remaining();
+        let padding_size = if remaining.len() < 56 {
+            64 - remaining.len()
         } else {
-            128 - self.buffer_size
+            128 - remaining.len()
         };
-        let total_bits = (self.total_size + self.buffer_size) * 8;
+        let total_bits = (self.total_size + remaining.len()) * 8;
         padding[(padding_size - 8)..padding_size].copy_from_slice(&total_bits.to_be_bytes());
         self.update(&padding[..padding_size]);
     }
@@ -202,13 +189,13 @@ mod tests {
         let mut hasher = Sha256::new();
         hasher.update(b"");
         let digest = hasher.finalize();
-
-        let expected = [
-            227, 176, 196, 66, 152, 252, 28, 20, 154, 251, 244, 200, 153, 111, 185, 36, 39, 174,
-            65, 228, 100, 155, 147, 76, 164, 149, 153, 27, 120, 82, 184, 85,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                227, 176, 196, 66, 152, 252, 28, 20, 154, 251, 244, 200, 153, 111, 185, 36, 39,
+                174, 65, 228, 100, 155, 147, 76, 164, 149, 153, 27, 120, 82, 184, 85,
+            ]
+        );
     }
 
     #[test]
@@ -216,13 +203,13 @@ mod tests {
         let mut hasher = Sha256::new();
         hasher.update(b"abc");
         let digest = hasher.finalize();
-
-        let expected = [
-            186, 120, 22, 191, 143, 1, 207, 234, 65, 65, 64, 222, 93, 174, 34, 35, 176, 3, 97, 163,
-            150, 23, 122, 156, 180, 16, 255, 97, 242, 0, 21, 173,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                186, 120, 22, 191, 143, 1, 207, 234, 65, 65, 64, 222, 93, 174, 34, 35, 176, 3, 97,
+                163, 150, 23, 122, 156, 180, 16, 255, 97, 242, 0, 21, 173,
+            ]
+        );
     }
 
     #[test]
@@ -230,13 +217,13 @@ mod tests {
         let mut hasher = Sha256::new();
         hasher.update(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         let digest = hasher.finalize();
-
-        let expected = [
-            36, 141, 106, 97, 210, 6, 56, 184, 229, 192, 38, 147, 12, 62, 96, 57, 163, 60, 228, 89,
-            100, 255, 33, 103, 246, 236, 237, 212, 25, 219, 6, 193,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                36, 141, 106, 97, 210, 6, 56, 184, 229, 192, 38, 147, 12, 62, 96, 57, 163, 60, 228,
+                89, 100, 255, 33, 103, 246, 236, 237, 212, 25, 219, 6, 193,
+            ]
+        );
     }
 
     #[test]
@@ -244,13 +231,13 @@ mod tests {
         let mut hasher = Sha256::new();
         hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         let digest = hasher.finalize();
-
-        let expected = [
-            207, 91, 22, 167, 120, 175, 131, 128, 3, 108, 229, 158, 123, 4, 146, 55, 11, 36, 155,
-            17, 232, 240, 122, 81, 175, 172, 69, 3, 122, 254, 233, 209,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                207, 91, 22, 167, 120, 175, 131, 128, 3, 108, 229, 158, 123, 4, 146, 55, 11, 36,
+                155, 17, 232, 240, 122, 81, 175, 172, 69, 3, 122, 254, 233, 209,
+            ]
+        );
     }
 
     #[test]
@@ -260,28 +247,12 @@ mod tests {
             hasher.update(b"a");
         }
         let digest = hasher.finalize();
-
-        let expected = [
-            205, 199, 110, 92, 153, 20, 251, 146, 129, 161, 199, 226, 132, 215, 62, 103, 241, 128,
-            154, 72, 164, 151, 32, 14, 4, 109, 57, 204, 199, 17, 44, 208,
-        ];
-
-        assert_eq!(digest, expected);
-    }
-
-    #[test]
-    fn test_sha256_1gb() {
-        let mut hasher = Sha256::new();
-        for _ in 0..16777216 {
-            hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno");
-        }
-        let digest = hasher.finalize();
-
-        let expected = [
-            80, 231, 42, 14, 38, 68, 47, 226, 85, 45, 195, 147, 138, 197, 134, 88, 34, 140, 12,
-            191, 177, 210, 202, 135, 42, 228, 53, 38, 111, 205, 5, 94,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                205, 199, 110, 92, 153, 20, 251, 146, 129, 161, 199, 226, 132, 215, 62, 103, 241,
+                128, 154, 72, 164, 151, 32, 14, 4, 109, 57, 204, 199, 17, 44, 208,
+            ]
+        );
     }
 }

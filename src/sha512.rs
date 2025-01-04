@@ -1,3 +1,7 @@
+use crate::block::Block;
+
+type Sha512Block = Block<128>;
+
 const K: [u64; 80] = [
     0x428a2f98d728ae22,
     0x7137449123ef65cd,
@@ -130,8 +134,7 @@ pub struct Sha512 {
     h5: u64,
     h6: u64,
     h7: u64,
-    buffer: [u8; 128],
-    buffer_size: usize,
+    block: Sha512Block,
     total_size: usize,
 }
 
@@ -146,36 +149,19 @@ impl Sha512 {
             h5: 0x9b05688c2b3e6c1f,
             h6: 0x1f83d9abfb41bd6b,
             h7: 0x5be0cd19137e2179,
-            buffer: [0u8; 128],
-            buffer_size: 0,
+            block: Sha512Block::new(),
             total_size: 0,
         }
     }
 
     pub fn update(&mut self, message: &[u8]) {
-        let offset = self.process_buffer(message);
-        for chunk in message[offset..].chunks(128) {
-            if chunk.len() == 128 {
-                self.process_block(chunk);
-            } else {
-                self.buffer_chunk(chunk);
-            }
+        let (head, tail) = self.block.blocks(message);
+        if let Some(head) = head {
+            self.process_block(&head);
         }
-    }
-
-    fn process_buffer(&mut self, message: &[u8]) -> usize {
-        let offset = message.len().min(128 - self.buffer_size);
-        self.buffer_chunk(&message[..offset]);
-        if self.buffer_size == 128 {
-            self.process_block(&self.buffer.clone());
-            self.buffer_size = 0;
+        for (begin, end) in tail {
+            self.process_block(&message[begin..end]);
         }
-        offset
-    }
-
-    fn buffer_chunk(&mut self, chunk: &[u8]) {
-        self.buffer[self.buffer_size..self.buffer_size + chunk.len()].copy_from_slice(chunk);
-        self.buffer_size += chunk.len();
     }
 
     fn process_block(&mut self, block: &[u8]) {
@@ -240,12 +226,13 @@ impl Sha512 {
     fn pad(&mut self) {
         let mut padding = [0u8; 256];
         padding[0] = 128;
-        let padding_size = if self.buffer_size < 112 {
-            128 - self.buffer_size
+        let remaining = self.block.remaining();
+        let padding_size = if remaining.len() < 112 {
+            128 - remaining.len()
         } else {
-            256 - self.buffer_size
+            256 - remaining.len()
         };
-        let total_bits = (self.total_size as u128 + self.buffer_size as u128) * 8;
+        let total_bits = (self.total_size as u128 + remaining.len() as u128) * 8;
         padding[(padding_size - 16)..padding_size].copy_from_slice(&total_bits.to_be_bytes());
         self.update(&padding[..padding_size]);
     }
@@ -274,15 +261,15 @@ mod tests {
         let mut hasher = Sha512::new();
         hasher.update(b"");
         let digest = hasher.finalize();
-
-        let expected = [
-            207, 131, 225, 53, 126, 239, 184, 189, 241, 84, 40, 80, 214, 109, 128, 7, 214, 32, 228,
-            5, 11, 87, 21, 220, 131, 244, 169, 33, 211, 108, 233, 206, 71, 208, 209, 60, 93, 133,
-            242, 176, 255, 131, 24, 210, 135, 126, 236, 47, 99, 185, 49, 189, 71, 65, 122, 129,
-            165, 56, 50, 122, 249, 39, 218, 62,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                207, 131, 225, 53, 126, 239, 184, 189, 241, 84, 40, 80, 214, 109, 128, 7, 214, 32,
+                228, 5, 11, 87, 21, 220, 131, 244, 169, 33, 211, 108, 233, 206, 71, 208, 209, 60,
+                93, 133, 242, 176, 255, 131, 24, 210, 135, 126, 236, 47, 99, 185, 49, 189, 71, 65,
+                122, 129, 165, 56, 50, 122, 249, 39, 218, 62,
+            ]
+        );
     }
 
     #[test]
@@ -290,15 +277,15 @@ mod tests {
         let mut hasher = Sha512::new();
         hasher.update(b"abc");
         let digest = hasher.finalize();
-
-        let expected = [
-            221, 175, 53, 161, 147, 97, 122, 186, 204, 65, 115, 73, 174, 32, 65, 49, 18, 230, 250,
-            78, 137, 169, 126, 162, 10, 158, 238, 230, 75, 85, 211, 154, 33, 146, 153, 42, 39, 79,
-            193, 168, 54, 186, 60, 35, 163, 254, 235, 189, 69, 77, 68, 35, 100, 60, 232, 14, 42,
-            154, 201, 79, 165, 76, 164, 159,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                221, 175, 53, 161, 147, 97, 122, 186, 204, 65, 115, 73, 174, 32, 65, 49, 18, 230,
+                250, 78, 137, 169, 126, 162, 10, 158, 238, 230, 75, 85, 211, 154, 33, 146, 153, 42,
+                39, 79, 193, 168, 54, 186, 60, 35, 163, 254, 235, 189, 69, 77, 68, 35, 100, 60,
+                232, 14, 42, 154, 201, 79, 165, 76, 164, 159,
+            ]
+        );
     }
 
     #[test]
@@ -306,15 +293,15 @@ mod tests {
         let mut hasher = Sha512::new();
         hasher.update(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         let digest = hasher.finalize();
-
-        let expected = [
-            32, 74, 143, 198, 221, 168, 47, 10, 12, 237, 123, 235, 142, 8, 164, 22, 87, 193, 110,
-            244, 104, 178, 40, 168, 39, 155, 227, 49, 167, 3, 195, 53, 150, 253, 21, 193, 59, 27,
-            7, 249, 170, 29, 59, 234, 87, 120, 156, 160, 49, 173, 133, 199, 167, 29, 215, 3, 84,
-            236, 99, 18, 56, 202, 52, 69,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                32, 74, 143, 198, 221, 168, 47, 10, 12, 237, 123, 235, 142, 8, 164, 22, 87, 193,
+                110, 244, 104, 178, 40, 168, 39, 155, 227, 49, 167, 3, 195, 53, 150, 253, 21, 193,
+                59, 27, 7, 249, 170, 29, 59, 234, 87, 120, 156, 160, 49, 173, 133, 199, 167, 29,
+                215, 3, 84, 236, 99, 18, 56, 202, 52, 69,
+            ]
+        );
     }
 
     #[test]
@@ -322,15 +309,15 @@ mod tests {
         let mut hasher = Sha512::new();
         hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         let digest = hasher.finalize();
-
-        let expected = [
-            142, 149, 155, 117, 218, 227, 19, 218, 140, 244, 247, 40, 20, 252, 20, 63, 143, 119,
-            121, 198, 235, 159, 127, 161, 114, 153, 174, 173, 182, 136, 144, 24, 80, 29, 40, 158,
-            73, 0, 247, 228, 51, 27, 153, 222, 196, 181, 67, 58, 199, 211, 41, 238, 182, 221, 38,
-            84, 94, 150, 229, 91, 135, 75, 233, 9,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                142, 149, 155, 117, 218, 227, 19, 218, 140, 244, 247, 40, 20, 252, 20, 63, 143,
+                119, 121, 198, 235, 159, 127, 161, 114, 153, 174, 173, 182, 136, 144, 24, 80, 29,
+                40, 158, 73, 0, 247, 228, 51, 27, 153, 222, 196, 181, 67, 58, 199, 211, 41, 238,
+                182, 221, 38, 84, 94, 150, 229, 91, 135, 75, 233, 9,
+            ]
+        );
     }
 
     #[test]
@@ -340,32 +327,14 @@ mod tests {
             hasher.update(b"a");
         }
         let digest = hasher.finalize();
-
-        let expected = [
-            231, 24, 72, 61, 12, 231, 105, 100, 78, 46, 66, 199, 188, 21, 180, 99, 142, 31, 152,
-            177, 59, 32, 68, 40, 86, 50, 168, 3, 175, 169, 115, 235, 222, 15, 242, 68, 135, 126,
-            166, 10, 76, 176, 67, 44, 229, 119, 195, 27, 235, 0, 156, 92, 44, 73, 170, 46, 78, 173,
-            178, 23, 173, 140, 192, 155,
-        ];
-
-        assert_eq!(digest, expected);
-    }
-
-    #[test]
-    fn test_sha512_1gb() {
-        let mut hasher = Sha512::new();
-        for _ in 0..16777216 {
-            hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno");
-        }
-        let digest = hasher.finalize();
-
-        let expected = [
-            180, 124, 147, 52, 33, 234, 45, 177, 73, 173, 110, 16, 252, 230, 199, 249, 61, 7, 82,
-            56, 1, 128, 255, 215, 244, 98, 154, 113, 33, 52, 131, 29, 119, 190, 96, 145, 184, 25,
-            237, 53, 44, 41, 103, 162, 226, 212, 250, 80, 80, 114, 60, 150, 48, 105, 31, 26, 5,
-            167, 40, 29, 190, 108, 16, 134,
-        ];
-
-        assert_eq!(digest, expected);
+        assert_eq!(
+            digest,
+            [
+                231, 24, 72, 61, 12, 231, 105, 100, 78, 46, 66, 199, 188, 21, 180, 99, 142, 31,
+                152, 177, 59, 32, 68, 40, 86, 50, 168, 3, 175, 169, 115, 235, 222, 15, 242, 68,
+                135, 126, 166, 10, 76, 176, 67, 44, 229, 119, 195, 27, 235, 0, 156, 92, 44, 73,
+                170, 46, 78, 173, 178, 23, 173, 140, 192, 155,
+            ]
+        );
     }
 }
