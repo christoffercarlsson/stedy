@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub struct Block<const BLOCK_SIZE: usize> {
     buffer: [u8; BLOCK_SIZE],
     buffer_size: usize,

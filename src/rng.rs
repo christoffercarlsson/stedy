@@ -1,4 +1,4 @@
-use crate::chacha20::ChaCha20;
+use crate::chacha::ChaCha20;
 
 pub struct Rng {
     cipher: ChaCha20,

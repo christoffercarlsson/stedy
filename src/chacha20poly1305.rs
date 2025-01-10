@@ -1,4 +1,4 @@
-use crate::{block::Block, chacha20::ChaCha20, poly1305::Poly1305, verify::verify, Error};
+use crate::{block::Block, chacha::ChaCha20, poly1305::Poly1305, verify::verify, Error};
 
 type ChaCha20Block = Block<64>;
 
