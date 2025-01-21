@@ -1,5 +1,8 @@
 use crate::chacha::ChaCha20;
 
+#[cfg(feature = "getrandom")]
+use crate::Error;
+
 pub struct Rng {
     cipher: ChaCha20,
     buffer: [u8; 64],
@@ -7,12 +10,16 @@ pub struct Rng {
 }
 
 impl Rng {
-    pub fn from(seed: [u8; 32]) -> Self {
-        Self {
-            cipher: ChaCha20::from(&seed, &[0u8; 12]),
-            buffer: [0u8; 64],
-            index: 64,
-        }
+    #[cfg(feature = "getrandom")]
+    pub fn new() -> Result<Self, Error> {
+        let mut seed = [0u8; 32];
+        getrandom::getrandom(&mut seed).or(Err(Error::Entropy))?;
+        Ok(Self::from(seed))
+    }
+
+    #[cfg(not(feature = "getrandom"))]
+    pub fn new(seed: [u8; 32]) -> Self {
+        Self::from(seed)
     }
 
     fn refill_buffer(&mut self) {
@@ -50,6 +57,22 @@ impl Rng {
             chunk.copy_from_slice(&self.buffer[self.index..self.index + size]);
             self.index += size;
         }
+    }
+}
+
+impl From<&[u8; 32]> for Rng {
+    fn from(value: &[u8; 32]) -> Self {
+        Self {
+            cipher: ChaCha20::from(value, &[0u8; 12]),
+            buffer: [0u8; 64],
+            index: 64,
+        }
+    }
+}
+
+impl From<[u8; 32]> for Rng {
+    fn from(value: [u8; 32]) -> Self {
+        Self::from(&value)
     }
 }
 
@@ -103,6 +126,21 @@ mod tests {
                 24, 161, 28, 195, 135, 182, 105, 178, 238, 101, 134, 233, 191, 7, 19, 245, 160, 5,
                 234, 216, 231, 253, 153, 32, 171, 181, 37, 118, 221, 48, 24, 232, 110, 136, 115,
                 186, 240, 188, 242, 185, 153, 119, 42
+            ]
+        );
+    }
+
+    #[test]
+    fn test_getrandom_fill() {
+        let mut rng = Rng::new().unwrap();
+        let mut bytes = [0u8; 32];
+        rng.fill(&mut bytes);
+        assert_ne!(bytes, [0; 32]);
+        assert_ne!(
+            bytes,
+            [
+                118, 184, 224, 173, 160, 241, 61, 144, 64, 93, 106, 229, 83, 134, 189, 40, 189,
+                210, 25, 184, 160, 141, 237, 26, 168, 54, 239, 204, 139, 119, 13, 199,
             ]
         );
     }
