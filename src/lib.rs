@@ -1,7 +1,10 @@
 #![no_std]
 
+#[cfg(feature = "getrandom")]
+extern crate getrandom;
+
 mod block;
-mod chacha20;
+mod chacha;
 mod chacha20poly1305;
 mod hkdf_sha256;
 mod hkdf_sha512;
@@ -16,6 +19,7 @@ mod xor;
 
 #[derive(Debug)]
 pub enum Error {
+    Entropy,
     Decryption,
     Encryption,
     InvalidInput,
