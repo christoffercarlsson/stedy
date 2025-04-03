@@ -6,39 +6,33 @@ pub fn chacha20poly1305_encrypt(
     key: &[u8; 32],
     nonce: &[u8; 12],
     aad: Option<&[u8]>,
-    plaintext: &[u8],
-    ciphertext: &mut [u8],
-) -> Result<[u8; 16], Error> {
-    if plaintext.is_empty() || plaintext.len() != ciphertext.len() {
-        return Err(Error::Encryption);
-    }
-    let mac = encrypt(key, nonce, plaintext, ciphertext);
-    let tag = calculate_tag(mac, aad, ciphertext);
-    Ok(tag)
+    message: &mut [u8],
+) -> [u8; 16] {
+    let mut cipher = ChaCha20::from(key, nonce);
+    let mac = create_mac(&mut cipher);
+    encrypt(&mut cipher, message);
+    calculate_tag(mac, aad, message)
 }
 
 pub fn chacha20poly1305_decrypt(
     key: &[u8; 32],
     nonce: &[u8; 12],
     aad: Option<&[u8]>,
-    ciphertext: &[u8],
+    message: &mut [u8],
     tag: &[u8; 16],
-    plaintext: &mut [u8],
 ) -> Result<(), Error> {
-    if ciphertext.is_empty() || ciphertext.len() != plaintext.len() {
-        return Err(Error::Decryption);
-    }
-    let mac = encrypt(key, nonce, ciphertext, plaintext);
-    verify_tag(mac, aad, ciphertext, tag).or(Err(Error::Decryption))
-}
-
-fn encrypt(key: &[u8; 32], nonce: &[u8; 12], input: &[u8], output: &mut [u8]) -> Poly1305 {
     let mut cipher = ChaCha20::from(key, nonce);
     let mac = create_mac(&mut cipher);
+    let t = calculate_tag(mac, aad, message);
+    encrypt(&mut cipher, message);
+    verify(tag, &t).or(Err(Error::Decryption))
+}
+
+fn encrypt(cipher: &mut ChaCha20, message: &mut [u8]) {
     let mut block = ChaCha20Block::new();
-    let (head, tail) = block.blocks(input);
-    let offset = if let Some(head) = head {
-        apply_keystream(&mut cipher, &head, &mut output[0..64]);
+    let (head, tail) = block.blocks(message);
+    let offset = if head.is_some() {
+        cipher.apply_keystream(&mut message[..64]);
         64
     } else {
         0
@@ -46,14 +40,13 @@ fn encrypt(key: &[u8; 32], nonce: &[u8; 12], input: &[u8], output: &mut [u8]) ->
     for (begin, end) in tail {
         let begin = offset + begin;
         let end = offset + end;
-        apply_keystream(&mut cipher, &input[begin..end], &mut output[begin..end]);
+        cipher.apply_keystream(&mut message[begin..end]);
     }
     let remaining = block.remaining();
     if !remaining.is_empty() {
-        let offset = output.len() - remaining.len();
-        apply_keystream(&mut cipher, remaining, &mut output[offset..]);
+        let offset = message.len() - remaining.len();
+        cipher.apply_keystream(&mut message[offset..]);
     }
-    mac
 }
 
 fn create_mac(cipher: &mut ChaCha20) -> Poly1305 {
@@ -67,11 +60,6 @@ fn create_mac(cipher: &mut ChaCha20) -> Poly1305 {
     Poly1305::new(&key)
 }
 
-fn apply_keystream(cipher: &mut ChaCha20, input: &[u8], output: &mut [u8]) {
-    output.copy_from_slice(input);
-    cipher.apply_keystream(output);
-}
-
 fn calculate_tag(mut mac: Poly1305, aad: Option<&[u8]>, ciphertext: &[u8]) -> [u8; 16] {
     let aad = aad.unwrap_or(&[]);
     mac.update_padded(aad);
@@ -79,15 +67,6 @@ fn calculate_tag(mut mac: Poly1305, aad: Option<&[u8]>, ciphertext: &[u8]) -> [u
     mac.update(&(aad.len() as u64).to_le_bytes());
     mac.update(&(ciphertext.len() as u64).to_le_bytes());
     mac.finalize()
-}
-
-fn verify_tag(
-    mac: Poly1305,
-    aad: Option<&[u8]>,
-    ciphertext: &[u8],
-    tag: &[u8; 16],
-) -> Result<(), Error> {
-    verify(tag, &calculate_tag(mac, aad, ciphertext))
 }
 
 #[cfg(test)]
@@ -102,23 +81,22 @@ mod tests {
         ];
         let nonce = [145, 131, 205, 243, 168, 186, 115, 151, 182, 178, 213, 213];
         let aad = [179, 52, 55, 84, 21, 246, 33, 92, 11, 248, 154, 154];
-        let message = [
+        let mut message = [
             149, 130, 149, 97, 156, 241, 179, 111, 11, 71, 70, 99, 192, 188, 121, 235,
         ];
-        let mut plaintext = [0u8; 16];
-        let mut ciphertext = [0u8; 16];
-        let tag =
-            chacha20poly1305_encrypt(&key, &nonce, Some(&aad), &message, &mut ciphertext).unwrap();
+        let tag = chacha20poly1305_encrypt(&key, &nonce, Some(&aad), &mut message);
         assert_eq!(
-            ciphertext,
+            message,
             [133, 44, 20, 27, 66, 57, 163, 31, 238, 218, 3, 85, 13, 112, 162, 190]
         );
         assert_eq!(
             tag,
             [95, 197, 146, 135, 185, 45, 63, 207, 125, 102, 241, 61, 239, 177, 27, 13]
         );
-        chacha20poly1305_decrypt(&key, &nonce, Some(&aad), &ciphertext, &tag, &mut plaintext)
-            .unwrap();
-        assert_eq!(plaintext, message);
+        chacha20poly1305_decrypt(&key, &nonce, Some(&aad), &mut message, &tag).unwrap();
+        assert_eq!(
+            message,
+            [149, 130, 149, 97, 156, 241, 179, 111, 11, 71, 70, 99, 192, 188, 121, 235]
+        );
     }
 }
