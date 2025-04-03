@@ -1,11 +1,6 @@
-use crate::{hmac_sha512, Error, HmacSha512};
+use crate::{hmac_sha512, HmacSha512};
 
-pub fn hkdf_sha512(
-    ikm: &[u8],
-    salt: Option<&[u8]>,
-    info: Option<&[u8]>,
-    okm: &mut [u8],
-) -> Result<(), Error> {
+pub fn hkdf_sha512(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
     let prk = extract(salt, ikm);
     expand(&prk, info, okm)
 }
@@ -14,13 +9,10 @@ fn extract(salt: Option<&[u8]>, ikm: &[u8]) -> [u8; 64] {
     hmac_sha512(salt.unwrap_or(&[0u8; 64]), ikm)
 }
 
-fn expand(prk: &[u8; 64], info: Option<&[u8]>, okm: &mut [u8]) -> Result<(), Error> {
-    if okm.is_empty() || okm.len() > 255 * 64 {
-        return Err(Error::InvalidInput);
-    }
+fn expand(prk: &[u8; 64], info: Option<&[u8]>, okm: &mut [u8]) {
     let info = info.unwrap_or(&[]);
     let mut t = [0u8; 64];
-    for (i, chunk) in okm.chunks_mut(64).enumerate() {
+    for (i, chunk) in okm.chunks_mut(64).take(255).enumerate() {
         let mut hmac = HmacSha512::new(prk);
         if i > 0 {
             hmac.update(&t);
@@ -30,7 +22,6 @@ fn expand(prk: &[u8; 64], info: Option<&[u8]>, okm: &mut [u8]) -> Result<(), Err
         hmac.finalize_into(&mut t);
         chunk.copy_from_slice(&t[..chunk.len()]);
     }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -45,7 +36,7 @@ mod tests {
         let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let info = [240, 241, 242, 243, 244, 245, 246, 247, 248, 249];
         let mut okm = [0; 42];
-        hkdf_sha512(&ikm, Some(&salt), Some(&info), &mut okm).unwrap();
+        hkdf_sha512(&ikm, Some(&salt), Some(&info), &mut okm);
         assert_eq!(
             okm,
             [
@@ -62,7 +53,7 @@ mod tests {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
         ];
         let mut okm = [0; 42];
-        hkdf_sha512(&ikm, None, None, &mut okm).unwrap();
+        hkdf_sha512(&ikm, None, None, &mut okm);
         assert_eq!(
             okm,
             [

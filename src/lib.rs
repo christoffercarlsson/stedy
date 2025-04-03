@@ -21,7 +21,6 @@ mod xor;
 pub enum Error {
     Entropy,
     Decryption,
-    InvalidInput,
     Verification,
 }
 
