@@ -16,6 +16,7 @@ mod rng;
 mod sha256;
 mod sha512;
 mod verify;
+mod x25519;
 mod xor;
 
 #[derive(Debug)]
@@ -35,5 +36,6 @@ pub use crate::{
     rng::Rng,
     sha256::{sha256, Sha256},
     sha512::{sha512, Sha512},
+    x25519::{x25519_key_exchange, x25519_public_key},
     xor::xor,
 };
