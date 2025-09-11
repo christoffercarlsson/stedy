@@ -170,7 +170,6 @@ impl<const LIMBS: usize, const BITS: usize, const Z: u64> FieldElement<LIMBS, BI
         self.mul(rhs.invert())
     }
 
-    #[inline(always)]
     fn invert(self) -> Self {
         let exponent = Self {
             state: Self::INVERSE,
@@ -178,7 +177,6 @@ impl<const LIMBS: usize, const BITS: usize, const Z: u64> FieldElement<LIMBS, BI
         self.pow(exponent)
     }
 
-    #[inline(always)]
     fn reduce(&mut self) {
         let mut carry = 0u64;
         for i in 0..LIMBS {
@@ -226,7 +224,6 @@ impl<const LIMBS: usize, const BITS: usize, const Z: u64> FieldElement<LIMBS, BI
         bytes
     }
 
-    #[inline(always)]
     fn canonical(self) -> Self {
         let mut reduced = Self::zero();
         let mut borrow = 0u64;
