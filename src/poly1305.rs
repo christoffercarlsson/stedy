@@ -1,6 +1,8 @@
-use crate::{block::Block, field::Poly1305Field};
+use crate::{block::Block, field::Poly1305 as Poly1305Field};
 
-const R: u128 = 0x0ffffffc0ffffffc0ffffffc0fffffff;
+const R: [u8; 16] = [
+    255, 255, 255, 15, 252, 255, 255, 15, 252, 255, 255, 15, 252, 255, 255, 15,
+];
 
 pub struct Poly1305 {
     a: Poly1305Field,
@@ -12,7 +14,7 @@ pub struct Poly1305 {
 impl Poly1305 {
     pub fn new(key: &[u8; 32]) -> Self {
         let mut r = Poly1305Field::from(&key[0..16]);
-        r &= Poly1305Field::from(R);
+        r &= Poly1305Field::from(&R);
         Self {
             a: Poly1305Field::zero(),
             r,
@@ -42,7 +44,7 @@ impl Poly1305 {
         let mut bytes = [0u8; 17];
         bytes[..block.len()].copy_from_slice(block);
         bytes[block.len()] = 1;
-        self.a += Poly1305Field::from(bytes);
+        self.a += Poly1305Field::from(&bytes);
         self.a *= self.r;
     }
 
