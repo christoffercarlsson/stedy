@@ -32,7 +32,8 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         Self::new(&k, &n)
     }
 
-    pub fn next(&mut self) -> [u32; 16] {
+    #[inline(always)]
+    fn block(&mut self) -> [u32; 16] {
         let mut block = self.state;
         for _ in (0..ROUNDS).step_by(2) {
             quarter_round(0, 4, 8, 12, &mut block);
@@ -51,16 +52,23 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         block
     }
 
-    pub fn apply_keystream(&mut self, bytes: &mut [u8]) {
+    #[inline(always)]
+    fn next(&mut self) -> [u8; 64] {
         let mut keystream = [0u8; 64];
-        let block = self.next();
-        for (i, n) in block.iter().enumerate() {
+        for (i, word) in self.block().iter().enumerate() {
             let begin = i * 4;
             let end = begin + 4;
-            keystream[begin..end].copy_from_slice(&n.to_le_bytes());
+            keystream[begin..end].copy_from_slice(&word.to_le_bytes());
         }
-        for (i, byte) in bytes.iter_mut().enumerate() {
-            *byte ^= keystream[i];
+        keystream
+    }
+
+    pub fn apply_keystream(&mut self, bytes: &mut [u8]) {
+        for chunk in bytes.chunks_mut(64) {
+            let keystream = self.next();
+            for (i, byte) in chunk.iter_mut().enumerate() {
+                *byte ^= keystream[i];
+            }
         }
     }
 }
