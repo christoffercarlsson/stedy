@@ -1,12 +1,7 @@
-use crate::field::Curve25519;
+use crate::curve25519::Curve25519;
 
-const A24: [u8; 32] = [
-    65, 219, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0,
-];
-const BASE_POINT: [u8; 32] = [
-    9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-];
+const A24: u64 = 121665;
+const BASE_POINT: u64 = 9;
 
 pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
     let public_point = Curve25519::from(public_key);
@@ -14,12 +9,12 @@ pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8
 }
 
 pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    let base_point = Curve25519::from(&BASE_POINT);
+    let base_point = Curve25519::from(BASE_POINT);
     scalar_mult(private_key, base_point)
 }
 
 fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
-    let a24 = Curve25519::from(&A24);
+    let a24 = Curve25519::from(A24);
     let mut scalar = *k;
     scalar[0] &= 248;
     scalar[31] &= 127;
@@ -106,8 +101,8 @@ mod tests {
 
     #[test]
     fn test_x25519_iter() {
-        let k = BASE_POINT;
-        let u = BASE_POINT;
+        let k: [u8; 32] = Curve25519::from(BASE_POINT).into();
+        let u: [u8; 32] = Curve25519::from(BASE_POINT).into();
         let result = x25519_key_exchange(&k, &u);
         assert_eq!(
             result,
@@ -120,8 +115,8 @@ mod tests {
 
     #[test]
     fn test_x25519_iter_1k() {
-        let mut k = BASE_POINT;
-        let mut u = BASE_POINT;
+        let mut k: [u8; 32] = Curve25519::from(BASE_POINT).into();
+        let mut u: [u8; 32] = Curve25519::from(BASE_POINT).into();
         for _ in 0..1000 {
             let result = x25519_key_exchange(&k, &u);
             u = k;
@@ -136,23 +131,23 @@ mod tests {
         );
     }
 
-    //     #[test]
-    //     fn test_x25519_iter_1m() {
-    //         let mut k = BASE_POINT;
-    //         let mut u = BASE_POINT;
-    //         for _ in 0..1000000 {
-    //             let result = x25519_key_exchange(&k, &u);
-    //             u = k;
-    //             k = result;
-    //         }
-    //         assert_eq!(
-    //             k,
-    //             [
-    //                 124, 57, 17, 224, 171, 37, 134, 253, 134, 68, 151, 41, 126, 87, 94, 111, 59, 198,
-    //                 1, 192, 136, 60, 48, 223, 95, 77, 210, 210, 79, 102, 84, 36,
-    //             ]
-    //         );
+    // #[test]
+    // fn test_x25519_iter_1m() {
+    //     let mut k: [u8; 32] = Curve25519::from(BASE_POINT).into();
+    //     let mut u: [u8; 32] = Curve25519::from(BASE_POINT).into();
+    //     for _ in 0..1000000 {
+    //         let result = x25519_key_exchange(&k, &u);
+    //         u = k;
+    //         k = result;
     //     }
+    //     assert_eq!(
+    //         k,
+    //         [
+    //             124, 57, 17, 224, 171, 37, 134, 253, 134, 68, 151, 41, 126, 87, 94, 111, 59, 198,
+    //             1, 192, 136, 60, 48, 223, 95, 77, 210, 210, 79, 102, 84, 36,
+    //         ]
+    //     );
+    // }
 
     #[test]
     fn test_x25519() {
