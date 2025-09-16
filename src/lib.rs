@@ -17,12 +17,6 @@ mod verify;
 mod x25519;
 mod xor;
 
-#[derive(Debug)]
-pub enum Error {
-    Decryption,
-    Verification,
-}
-
 pub use crate::{
     chacha20poly1305::{chacha20poly1305_decrypt, chacha20poly1305_encrypt},
     hkdf_sha256::hkdf_sha256,

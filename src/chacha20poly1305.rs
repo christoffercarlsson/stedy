@@ -1,4 +1,4 @@
-use crate::{chacha::ChaCha20, poly1305::Poly1305, verify::verify, Error};
+use crate::{chacha::ChaCha20, poly1305::Poly1305, verify::verify};
 
 pub fn chacha20poly1305_encrypt(
     key: &[u8; 32],
@@ -18,12 +18,12 @@ pub fn chacha20poly1305_decrypt(
     aad: Option<&[u8]>,
     message: &mut [u8],
     tag: &[u8; 16],
-) -> Result<(), Error> {
+) -> bool {
     let mut cipher = ChaCha20::from(key, nonce);
     let mac = create_mac(&mut cipher);
     let t = calculate_tag(mac, aad, message);
     encrypt(&mut cipher, message);
-    verify(tag, &t).or(Err(Error::Decryption))
+    verify(tag, &t)
 }
 
 fn encrypt(cipher: &mut ChaCha20, message: &mut [u8]) {
@@ -83,7 +83,8 @@ mod tests {
             tag,
             [26, 225, 11, 89, 79, 9, 226, 106, 126, 144, 46, 203, 208, 96, 6, 145]
         );
-        chacha20poly1305_decrypt(&key, &nonce, Some(&aad), &mut message, &tag).unwrap();
+        let verified = chacha20poly1305_decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
+        assert!(verified);
         assert_eq!(
             message,
             [
