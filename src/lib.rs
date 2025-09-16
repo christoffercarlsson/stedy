@@ -15,6 +15,7 @@ mod poly1305;
 mod rng;
 mod sha256;
 mod sha512;
+mod sss;
 mod verify;
 mod x25519;
 mod xor;
@@ -35,6 +36,7 @@ pub use crate::{
     rng::Rng,
     sha256::{sha256, Sha256},
     sha512::{sha512, Sha512},
+    sss::{sss_combine, sss_split},
     x25519::{x25519_key_exchange, x25519_public_key},
     xor::xor,
 };
