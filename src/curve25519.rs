@@ -1,4 +1,4 @@
-use core::ops::{Add, Div, Mul, Sub};
+use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Sub};
 
 #[derive(Clone, Copy)]
 pub struct Curve25519([u64; 5]);
@@ -203,6 +203,12 @@ impl Add for Curve25519 {
     }
 }
 
+impl AddAssign for Curve25519 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.add(rhs);
+    }
+}
+
 impl Div for Curve25519 {
     type Output = Self;
 
@@ -216,6 +222,12 @@ impl Mul for Curve25519 {
 
     fn mul(self, rhs: Self) -> Self::Output {
         self.mul(rhs)
+    }
+}
+
+impl MulAssign for Curve25519 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = self.mul(rhs);
     }
 }
 
@@ -265,6 +277,12 @@ impl From<u64> for Curve25519 {
     }
 }
 
+impl From<u32> for Curve25519 {
+    fn from(value: u32) -> Self {
+        Self::from(value as u64)
+    }
+}
+
 impl From<[u64; 4]> for Curve25519 {
     fn from(value: [u64; 4]) -> Self {
         let mut result = Self::zero();
@@ -278,14 +296,20 @@ impl From<[u64; 4]> for Curve25519 {
     }
 }
 
-impl From<&[u8; 32]> for Curve25519 {
-    fn from(value: &[u8; 32]) -> Self {
+impl From<&[u8]> for Curve25519 {
+    fn from(value: &[u8]) -> Self {
         Self::from([
             u64::from_le_bytes(value[0..8].try_into().unwrap()),
             u64::from_le_bytes(value[8..16].try_into().unwrap()),
             u64::from_le_bytes(value[16..24].try_into().unwrap()),
             u64::from_le_bytes(value[24..32].try_into().unwrap()),
         ])
+    }
+}
+
+impl From<&[u8; 32]> for Curve25519 {
+    fn from(value: &[u8; 32]) -> Self {
+        Self::from(value.as_slice())
     }
 }
 

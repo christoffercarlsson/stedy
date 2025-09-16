@@ -16,9 +16,7 @@ pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
 fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
     let a24 = Curve25519::from(A24);
     let mut scalar = *k;
-    scalar[0] &= 248;
-    scalar[31] &= 127;
-    scalar[31] |= 64;
+    clamp(&mut scalar);
     let x1 = u;
     let mut x2 = Curve25519::one();
     let mut z2 = Curve25519::zero();
@@ -51,6 +49,12 @@ fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
     Curve25519::swap(&mut z2, &mut z3, swap);
     let result = x2 / z2;
     result.into()
+}
+
+pub fn clamp(scalar: &mut [u8; 32]) {
+    scalar[0] &= 248;
+    scalar[31] &= 127;
+    scalar[31] |= 64;
 }
 
 #[cfg(test)]

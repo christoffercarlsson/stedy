@@ -7,6 +7,7 @@ mod hmac_sha256;
 mod hmac_sha512;
 mod sha256;
 mod sha512;
+mod sss;
 mod x25519;
 mod xor;
 
@@ -19,6 +20,7 @@ criterion_group!(
     hmac_sha512::bench,
     sha256::bench,
     sha512::bench,
+    sss::bench,
     x25519::bench,
     xor::bench,
 );
