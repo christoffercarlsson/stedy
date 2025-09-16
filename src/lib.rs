@@ -1,8 +1,5 @@
 #![no_std]
 
-#[cfg(feature = "getrandom")]
-extern crate getrandom;
-
 mod block;
 mod chacha;
 mod chacha20poly1305;
@@ -22,7 +19,6 @@ mod xor;
 
 #[derive(Debug)]
 pub enum Error {
-    Entropy,
     Decryption,
     Verification,
 }

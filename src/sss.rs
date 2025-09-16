@@ -1,25 +1,11 @@
 use crate::{curve25519::Curve25519, rng::Rng, x25519::clamp};
 
-#[cfg(feature = "getrandom")]
-pub fn sss_split<const N: usize, const K: usize>(secret: &[u8; 32]) -> [[u8; 36]; N] {
-    let mut rng = Rng::new().unwrap();
-    generate_shares::<N, K>(&mut rng, secret)
-}
-
-#[cfg(not(feature = "getrandom"))]
 pub fn sss_split<const N: usize, const K: usize>(
     seed: [u8; 32],
     secret: &[u8; 32],
 ) -> [[u8; 36]; N] {
     let mut rng = Rng::from(seed);
-    generate_shares::<N, K>(&mut rng, secret)
-}
-
-fn generate_shares<const N: usize, const K: usize>(
-    rng: &mut Rng,
-    secret: &[u8; 32],
-) -> [[u8; 36]; N] {
-    let c = calculate_coefficients(rng, *secret);
+    let c = calculate_coefficients(&mut rng, *secret);
     let mut shares = [[0u8; 36]; N];
     for i in 0..N {
         let x = (i + 1) as u32;
@@ -84,11 +70,12 @@ mod tests {
 
     #[test]
     fn test_sss() {
+        let seed = [0u8; 32];
         let secret = [
             136, 216, 83, 226, 72, 2, 31, 41, 30, 4, 133, 24, 79, 9, 12, 64, 255, 15, 234, 195, 20,
             214, 37, 199, 82, 42, 190, 148, 35, 201, 11, 121,
         ];
-        let shares = sss_split::<3, 2>(&secret);
+        let shares = sss_split::<3, 2>(seed, &secret);
         let result = sss_combine(&[shares[2], shares[1]]);
         assert_eq!(result, secret);
     }
@@ -103,8 +90,9 @@ mod tests {
             23, 51, 74, 39, 79, 208, 23, 47, 213, 82, 102, 99, 53, 126, 217, 31, 31, 242, 86, 195,
             1, 22, 177, 188, 230, 120, 233, 205, 44, 141, 43, 13,
         ];
+        let seed = [0u8; 32];
         let shared_secret = x25519_key_exchange(&private_key, &public_key);
-        let shares = sss_split::<6, 3>(&private_key);
+        let shares = sss_split::<6, 3>(seed, &private_key);
         let key = sss_combine(&[shares[2], shares[1], shares[3]]);
         let secret = x25519_key_exchange(&key, &public_key);
         assert_ne!(key, private_key);
