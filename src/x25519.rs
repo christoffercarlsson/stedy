@@ -1,16 +1,24 @@
-use crate::curve25519::Curve25519;
+use crate::{curve25519::Curve25519, rng::Rng};
 
 const A24: u64 = 121665;
 const BASE_POINT: u64 = 9;
 
-pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
-    let public_point = Curve25519::from(public_key);
-    scalar_mult(private_key, public_point)
+pub fn x25519_generate_key_pair(seed: [u8; 32]) -> ([u8; 32], [u8; 32]) {
+    let mut rng = Rng::from(seed);
+    let mut private_key = [0u8; 32];
+    rng.fill(&mut private_key);
+    let public_key = x25519_public_key(&private_key);
+    (private_key, public_key)
 }
 
 pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
     let base_point = Curve25519::from(BASE_POINT);
     scalar_mult(private_key, base_point)
+}
+
+pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
+    let public_point = Curve25519::from(public_key);
+    scalar_mult(private_key, public_point)
 }
 
 fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
