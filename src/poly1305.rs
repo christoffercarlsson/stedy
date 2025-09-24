@@ -70,7 +70,6 @@ impl FieldElement {
         Self([0u64; 5])
     }
 
-    #[inline(always)]
     fn reduce(&mut self) {
         let carry = self[4] >> 26;
         self.mask();
@@ -81,7 +80,6 @@ impl FieldElement {
         self[1] &= Self::MASK;
     }
 
-    #[inline(always)]
     fn carry(&mut self) {
         self[1] += self[0] >> 26;
         self[2] += self[1] >> 26;
@@ -89,7 +87,6 @@ impl FieldElement {
         self[4] += self[3] >> 26;
     }
 
-    #[inline(always)]
     fn mask(&mut self) {
         self[0] &= Self::MASK;
         self[1] &= Self::MASK;
@@ -98,7 +95,6 @@ impl FieldElement {
         self[4] &= Self::MASK;
     }
 
-    #[inline(always)]
     fn canonical(&mut self) {
         let mut reduced = self.clone();
         reduced[0] += 5;
@@ -109,7 +105,6 @@ impl FieldElement {
         *self = Self::select(&reduced, &self, borrow);
     }
 
-    #[inline(always)]
     fn select(a: &Self, b: &Self, condition: u64) -> Self {
         let mask = ((condition != 0) as u64).wrapping_neg();
         Self([

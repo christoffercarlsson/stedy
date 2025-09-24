@@ -144,7 +144,6 @@ impl Curve25519 {
         (r, valid)
     }
 
-    #[inline(always)]
     fn invert(self) -> Self {
         let a = self.pow22523();
         let b = a.pow2n(3);
@@ -152,7 +151,6 @@ impl Curve25519 {
         b * c
     }
 
-    #[inline(always)]
     fn pow22523(self) -> Self {
         let mut a = self.square();
         let mut b = a.square();
@@ -178,7 +176,6 @@ impl Curve25519 {
         self * b
     }
 
-    #[inline(always)]
     fn pow2n(self, n: usize) -> Self {
         let mut x = self.square();
         for _ in 1..n {
@@ -187,7 +184,6 @@ impl Curve25519 {
         x
     }
 
-    #[inline(always)]
     fn reduce(&mut self) {
         let carry = self[4] >> 51;
         self.mask();
@@ -198,7 +194,6 @@ impl Curve25519 {
         self[1] &= Self::MASK;
     }
 
-    #[inline(always)]
     fn carry(&mut self) {
         self[1] += self[0] >> 51;
         self[2] += self[1] >> 51;
@@ -206,7 +201,6 @@ impl Curve25519 {
         self[4] += self[3] >> 51;
     }
 
-    #[inline(always)]
     fn mask(&mut self) {
         self[0] &= Self::MASK;
         self[1] &= Self::MASK;
@@ -215,7 +209,6 @@ impl Curve25519 {
         self[4] &= Self::MASK;
     }
 
-    #[inline(always)]
     fn canonical(&mut self) {
         let mut reduced = self.clone();
         reduced[0] += 19;
@@ -227,7 +220,6 @@ impl Curve25519 {
     }
 }
 
-#[inline(always)]
 fn m(x: u64, y: u64) -> u128 {
     (x as u128) * (y as u128)
 }

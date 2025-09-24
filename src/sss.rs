@@ -52,13 +52,11 @@ pub fn sss_combine<const K: usize>(shares: &[[u8; 36]; K]) -> [u8; 32] {
     secret.into()
 }
 
-#[inline(always)]
 fn read_index(share: &[u8; 36]) -> Curve25519 {
     let index = u32::from_be_bytes([share[0], share[1], share[2], share[3]]);
     Curve25519::from(index)
 }
 
-#[inline(always)]
 fn read_bytes(share: &[u8; 36]) -> Curve25519 {
     Curve25519::from(&share[4..36])
 }

@@ -32,7 +32,6 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         Self::new(&k, &n)
     }
 
-    #[inline(always)]
     fn block(&mut self) -> [u32; 16] {
         let mut block = self.state;
         for _ in (0..ROUNDS).step_by(2) {
@@ -52,7 +51,6 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
         block
     }
 
-    #[inline(always)]
     fn next(&mut self) -> [u8; 64] {
         let mut keystream = [0u8; 64];
         for (i, word) in self.block().iter().enumerate() {
@@ -73,7 +71,6 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     }
 }
 
-#[inline(always)]
 fn quarter_round(a: usize, b: usize, c: usize, d: usize, block: &mut [u32; 16]) {
     block[a] = block[a].wrapping_add(block[b]);
     block[d] = (block[d] ^ block[a]).rotate_left(16);
