@@ -14,6 +14,9 @@ keywords = [
   ]
 repository = "https://github.com/christoffercarlsson/stedy"
 
+[lib]
+name = "stedy"
+
 [[bench]]
 name = "stedy"
 harness = false

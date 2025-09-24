@@ -2,6 +2,7 @@ use criterion::Criterion;
 use stedy::{sss_combine, sss_split};
 
 pub fn bench(c: &mut Criterion) {
+    let seed = [0u8; 32];
     let secret = [
         119, 7, 109, 10, 115, 24, 165, 125, 60, 22, 193, 114, 81, 178, 102, 69, 223, 76, 47, 135,
         235, 192, 153, 42, 177, 119, 251, 165, 29, 185, 44, 42,
@@ -21,7 +22,7 @@ pub fn bench(c: &mut Criterion) {
         ],
     ];
 
-    c.bench_function("sss_split", |b| b.iter(|| sss_split::<6, 3>(&secret)));
+    c.bench_function("sss_split", |b| b.iter(|| sss_split::<6, 3>(seed, &secret)));
 
     c.bench_function("sss_combine", |b| b.iter(|| sss_combine(&shares)));
 }
