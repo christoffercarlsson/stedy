@@ -1,7 +1,7 @@
 use crate::{curve25519::Curve25519, rng::Rng};
 
-const A24: u64 = 121665;
-const BASE_POINT: u64 = 9;
+const A24: Curve25519 = Curve25519([121665, 0, 0, 0, 0]);
+const BASE_POINT: Curve25519 = Curve25519([9, 0, 0, 0, 0]);
 
 pub fn x25519_generate_key_pair(seed: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     let mut rng = Rng::from(seed);
@@ -12,8 +12,7 @@ pub fn x25519_generate_key_pair(seed: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 }
 
 pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    let base_point = Curve25519::from(BASE_POINT);
-    scalar_mult(private_key, base_point)
+    scalar_mult(private_key, BASE_POINT)
 }
 
 pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
@@ -22,14 +21,13 @@ pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8
 }
 
 fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
-    let a24 = Curve25519::from(A24);
     let mut scalar = *k;
     clamp(&mut scalar);
     let x1 = u;
-    let mut x2 = Curve25519::one();
-    let mut z2 = Curve25519::zero();
+    let mut x2 = Curve25519::ONE;
+    let mut z2 = Curve25519::ZERO;
     let mut x3 = u;
-    let mut z3 = Curve25519::one();
+    let mut z3 = Curve25519::ONE;
     let mut swap = 0u64;
     for i in (0..255).rev() {
         let byte_index = i / 8;
@@ -51,7 +49,7 @@ fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
         x3 = (da + cb).square();
         z3 = x1 * (da - cb).square();
         x2 = aa * bb;
-        z2 = e * (aa + a24 * e);
+        z2 = e * (aa + A24 * e);
     }
     Curve25519::swap(&mut x2, &mut x3, swap);
     Curve25519::swap(&mut z2, &mut z3, swap);

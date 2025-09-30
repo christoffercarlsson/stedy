@@ -15,13 +15,13 @@ pub fn ed25519_generate_key_pair(seed: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 }
 
 pub fn ed25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    let g = EdwardsPoint::base_point();
+    let g = EdwardsPoint::BASE_POINT;
     let (a, _) = expand(private_key);
     (g * a).compress()
 }
 
 pub fn ed25519_sign(private_key: &[u8; 32], message: &[u8]) -> [u8; 64] {
-    let g = EdwardsPoint::base_point();
+    let g = EdwardsPoint::BASE_POINT;
     let (a, prefix) = expand(private_key);
     let ga = (g * a).compress();
     let mut state = Sha512::new();
@@ -48,7 +48,7 @@ pub fn ed25519_verify(message: &[u8], public_key: &[u8; 32], signature: &[u8; 64
     s.copy_from_slice(&signature[32..64]);
     let (a, valid_a) = EdwardsPoint::decompress(public_key);
     let (r, valid_r) = EdwardsPoint::decompress(&gr);
-    let g = EdwardsPoint::base_point();
+    let g = EdwardsPoint::BASE_POINT;
     let gs = g * s;
     let mut state = Sha512::new();
     state.update(&gr);
@@ -79,64 +79,78 @@ struct EdwardsPoint {
 }
 
 impl EdwardsPoint {
-    const BASE_X: [u8; 32] = [
-        26, 213, 37, 143, 96, 45, 86, 201, 178, 167, 37, 149, 96, 199, 44, 105, 92, 220, 214, 253,
-        49, 226, 164, 192, 254, 83, 110, 205, 211, 54, 105, 33,
-    ];
-    const BASE_Y: [u8; 32] = [
-        88, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102,
-        102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102,
-    ];
-    const D: [u8; 32] = [
-        163, 120, 89, 19, 202, 77, 235, 117, 171, 216, 65, 65, 77, 10, 112, 0, 152, 232, 121, 119,
-        121, 64, 199, 140, 115, 254, 111, 43, 238, 108, 3, 82,
-    ];
-    const D2: [u8; 32] = [
-        89, 241, 178, 38, 148, 155, 214, 235, 86, 177, 131, 130, 154, 20, 224, 0, 48, 209, 243,
-        238, 242, 128, 142, 25, 231, 252, 223, 86, 220, 217, 6, 36,
-    ];
-
-    fn base_point() -> Self {
-        let x = Curve25519::from(&Self::BASE_X);
-        let y = Curve25519::from(&Self::BASE_Y);
-        let t = x * y;
-        let z = Curve25519::one();
-        Self { x, y, t, z }
-    }
-
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        Self {
-            x: Curve25519::select(&a.x, &b.x, condition),
-            y: Curve25519::select(&a.y, &b.y, condition),
-            t: Curve25519::select(&a.t, &b.t, condition),
-            z: Curve25519::select(&a.z, &b.z, condition),
-        }
-    }
+    const BASE_POINT: Self = Self {
+        x: Curve25519([
+            1738742601995546,
+            1146398526822698,
+            2070867633025821,
+            562264141797630,
+            587772402128613,
+        ]),
+        y: Curve25519([
+            1801439850948184,
+            1351079888211148,
+            450359962737049,
+            900719925474099,
+            1801439850948198,
+        ]),
+        z: Curve25519::ONE,
+        t: Curve25519([
+            1841354044333475,
+            16398895984059,
+            755974180946558,
+            900171276175154,
+            1821297809914039,
+        ]),
+    };
+    const D: Curve25519 = Curve25519([
+        929955233495203,
+        466365720129213,
+        1662059464998953,
+        2033849074728123,
+        1442794654840575,
+    ]);
+    const D2: Curve25519 = Curve25519([
+        1859910466990425,
+        932731440258426,
+        1072319116312658,
+        1815898335770999,
+        633789495995903,
+    ]);
+    const IDENTITY: Self = Self {
+        x: Curve25519::ZERO,
+        y: Curve25519::ONE,
+        z: Curve25519::ONE,
+        t: Curve25519::ZERO,
+    };
 
     fn decompress(scalar: &[u8; 32]) -> (Self, u64) {
         let sign = (scalar[31] >> 7) as u64;
         let mut bytes = *scalar;
         bytes[31] &= 127;
-        let zero = Curve25519::zero();
-        let one = Curve25519::one();
         let y = Curve25519::from(&bytes);
-        let d = Curve25519::from(&Self::D);
         let y2 = y.square();
-        let u = y2 - one;
-        let v = d * y2 + one;
+        let u = y2 - Curve25519::ONE;
+        let v = Self::D * y2 + Curve25519::ONE;
         let (mut x, mut valid) = u.sqrt(v);
-        let is_zero = (x == zero) as u64;
+        let is_zero = (x == Curve25519::ZERO) as u64;
         valid &= (is_zero & sign) ^ 1;
         let xs: [u8; 32] = x.into();
         let negate = (xs[0] as u64 & 1) ^ sign;
         x = Curve25519::select(&x, &x.neg(), negate);
-        let t = x * y;
-        (Self { x, y, t, z: one }, valid)
+        let point = Self {
+            x,
+            y,
+            t: x * y,
+            z: Curve25519::ONE,
+        };
+        (point, valid)
     }
 
     fn compress(self) -> [u8; 32] {
-        let x = self.x / self.z;
-        let y = self.y / self.z;
+        let zi = self.z.invert();
+        let x = self.x * zi;
+        let y = self.y * zi;
         let xs: [u8; 32] = x.into();
         let mut ys: [u8; 32] = y.into();
         let sign = xs[0] & 1;
@@ -146,12 +160,7 @@ impl EdwardsPoint {
     }
 
     fn mul(self, rhs: [u8; 32]) -> Self {
-        let mut q = EdwardsPoint {
-            x: Curve25519::zero(),
-            y: Curve25519::one(),
-            z: Curve25519::one(),
-            t: Curve25519::zero(),
-        };
+        let mut q = Self::IDENTITY;
         for i in (0..256).rev() {
             let bit = ((rhs[i / 8] >> (i % 8)) & 1) as u64;
             q = q.double();
@@ -161,10 +170,9 @@ impl EdwardsPoint {
     }
 
     fn add(self, rhs: Self) -> Self {
-        let d2 = Curve25519::from(&Self::D2);
         let a = (self.y - self.x) * (rhs.y - rhs.x);
         let b = (self.y + self.x) * (rhs.y + rhs.x);
-        let c = self.t * d2 * rhs.t;
+        let c = self.t * Self::D2 * rhs.t;
         let d = (self.z + self.z) * rhs.z;
         let e = b - a;
         let f = d - c;
@@ -185,12 +193,21 @@ impl EdwardsPoint {
         let e = (self.x + self.y).square() - a - b;
         let g = b - a;
         let f = g - c;
-        let h = Curve25519::zero() - (a + b);
+        let h = Curve25519::ZERO - (a + b);
         let x = e * f;
         let y = g * h;
         let t = e * h;
         let z = f * g;
         Self { x, y, t, z }
+    }
+
+    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+        Self {
+            x: Curve25519::select(&a.x, &b.x, condition),
+            y: Curve25519::select(&a.y, &b.y, condition),
+            t: Curve25519::select(&a.t, &b.t, condition),
+            z: Curve25519::select(&a.z, &b.z, condition),
+        }
     }
 }
 
@@ -227,297 +244,133 @@ impl Mul<Scalar> for EdwardsPoint {
 }
 
 #[derive(Clone, Copy)]
-struct Scalar([i64; 24]);
+struct Scalar([u64; 5]);
 
 impl Scalar {
-    const MASK: i64 = (1i64 << 21) - 1;
-
-    fn zero() -> Self {
-        Self([0; 24])
-    }
+    const L: Self = Self([
+        671914833335277,
+        3916664325105025,
+        1367801,
+        0,
+        17592186044416,
+    ]);
+    const LFACTOR: u64 = 0x51da312547e1b;
+    const MASK: u64 = (1 << 52) - 1;
+    const TOP_MASK: u64 = (1 << 48) - 1;
+    const R: Self = Self([
+        4302102966953709,
+        1049714374468698,
+        4503599278581019,
+        4503599627370495,
+        17592186044415,
+    ]);
+    const R2: Self = Self([
+        2764609938444603,
+        3768881411696287,
+        1616719297148420,
+        1087343033131391,
+        10175238647962,
+    ]);
+    const ZERO: Self = Self([0; 5]);
 
     fn add(self, rhs: Self) -> Self {
-        let mut r = Self::zero();
-        r[0] = self[0] + rhs[0];
-        r[1] = self[1] + rhs[1];
-        r[2] = self[2] + rhs[2];
-        r[3] = self[3] + rhs[3];
-        r[4] = self[4] + rhs[4];
-        r[5] = self[5] + rhs[5];
-        r[6] = self[6] + rhs[6];
-        r[7] = self[7] + rhs[7];
-        r[8] = self[8] + rhs[8];
-        r[9] = self[9] + rhs[9];
-        r[10] = self[10] + rhs[10];
-        r[11] = self[11] + rhs[11];
-        r.reduce();
-        r
+        let mut s = Self::ZERO;
+        s[0] = self[0] + rhs[0];
+        s[1] = self[1] + rhs[1];
+        s[2] = self[2] + rhs[2];
+        s[3] = self[3] + rhs[3];
+        s[4] = self[4] + rhs[4];
+        s[1] += s[0] >> 52;
+        s[2] += s[1] >> 52;
+        s[3] += s[2] >> 52;
+        s[4] += s[3] >> 52;
+        s.mask();
+        s.reduce();
+        s
     }
 
-    fn mul(self, rhs: Self) -> Self {
-        let mut r = Self::zero();
-        r[0] += self[0] * rhs[0];
-        r[1] += self[0] * rhs[1];
-        r[1] += self[1] * rhs[0];
-        r[2] += self[0] * rhs[2];
-        r[2] += self[1] * rhs[1];
-        r[2] += self[2] * rhs[0];
-        r[3] += self[0] * rhs[3];
-        r[3] += self[1] * rhs[2];
-        r[3] += self[2] * rhs[1];
-        r[3] += self[3] * rhs[0];
-        r[4] += self[0] * rhs[4];
-        r[4] += self[1] * rhs[3];
-        r[4] += self[2] * rhs[2];
-        r[4] += self[3] * rhs[1];
-        r[4] += self[4] * rhs[0];
-        r[5] += self[0] * rhs[5];
-        r[5] += self[1] * rhs[4];
-        r[5] += self[2] * rhs[3];
-        r[5] += self[3] * rhs[2];
-        r[5] += self[4] * rhs[1];
-        r[5] += self[5] * rhs[0];
-        r[6] += self[0] * rhs[6];
-        r[6] += self[1] * rhs[5];
-        r[6] += self[2] * rhs[4];
-        r[6] += self[3] * rhs[3];
-        r[6] += self[4] * rhs[2];
-        r[6] += self[5] * rhs[1];
-        r[6] += self[6] * rhs[0];
-        r[7] += self[0] * rhs[7];
-        r[7] += self[1] * rhs[6];
-        r[7] += self[2] * rhs[5];
-        r[7] += self[3] * rhs[4];
-        r[7] += self[4] * rhs[3];
-        r[7] += self[5] * rhs[2];
-        r[7] += self[6] * rhs[1];
-        r[7] += self[7] * rhs[0];
-        r[8] += self[0] * rhs[8];
-        r[8] += self[1] * rhs[7];
-        r[8] += self[2] * rhs[6];
-        r[8] += self[3] * rhs[5];
-        r[8] += self[4] * rhs[4];
-        r[8] += self[5] * rhs[3];
-        r[8] += self[6] * rhs[2];
-        r[8] += self[7] * rhs[1];
-        r[8] += self[8] * rhs[0];
-        r[9] += self[0] * rhs[9];
-        r[9] += self[1] * rhs[8];
-        r[9] += self[2] * rhs[7];
-        r[9] += self[3] * rhs[6];
-        r[9] += self[4] * rhs[5];
-        r[9] += self[5] * rhs[4];
-        r[9] += self[6] * rhs[3];
-        r[9] += self[7] * rhs[2];
-        r[9] += self[8] * rhs[1];
-        r[9] += self[9] * rhs[0];
-        r[10] += self[0] * rhs[10];
-        r[10] += self[1] * rhs[9];
-        r[10] += self[2] * rhs[8];
-        r[10] += self[3] * rhs[7];
-        r[10] += self[4] * rhs[6];
-        r[10] += self[5] * rhs[5];
-        r[10] += self[6] * rhs[4];
-        r[10] += self[7] * rhs[3];
-        r[10] += self[8] * rhs[2];
-        r[10] += self[9] * rhs[1];
-        r[10] += self[10] * rhs[0];
-        r[11] += self[0] * rhs[11];
-        r[11] += self[1] * rhs[10];
-        r[11] += self[2] * rhs[9];
-        r[11] += self[3] * rhs[8];
-        r[11] += self[4] * rhs[7];
-        r[11] += self[5] * rhs[6];
-        r[11] += self[6] * rhs[5];
-        r[11] += self[7] * rhs[4];
-        r[11] += self[8] * rhs[3];
-        r[11] += self[9] * rhs[2];
-        r[11] += self[10] * rhs[1];
-        r[11] += self[11] * rhs[0];
-        r[12] += self[1] * rhs[11];
-        r[12] += self[2] * rhs[10];
-        r[12] += self[3] * rhs[9];
-        r[12] += self[4] * rhs[8];
-        r[12] += self[5] * rhs[7];
-        r[12] += self[6] * rhs[6];
-        r[12] += self[7] * rhs[5];
-        r[12] += self[8] * rhs[4];
-        r[12] += self[9] * rhs[3];
-        r[12] += self[10] * rhs[2];
-        r[12] += self[11] * rhs[1];
-        r[13] += self[2] * rhs[11];
-        r[13] += self[3] * rhs[10];
-        r[13] += self[4] * rhs[9];
-        r[13] += self[5] * rhs[8];
-        r[13] += self[6] * rhs[7];
-        r[13] += self[7] * rhs[6];
-        r[13] += self[8] * rhs[5];
-        r[13] += self[9] * rhs[4];
-        r[13] += self[10] * rhs[3];
-        r[13] += self[11] * rhs[2];
-        r[14] += self[3] * rhs[11];
-        r[14] += self[4] * rhs[10];
-        r[14] += self[5] * rhs[9];
-        r[14] += self[6] * rhs[8];
-        r[14] += self[7] * rhs[7];
-        r[14] += self[8] * rhs[6];
-        r[14] += self[9] * rhs[5];
-        r[14] += self[10] * rhs[4];
-        r[14] += self[11] * rhs[3];
-        r[15] += self[4] * rhs[11];
-        r[15] += self[5] * rhs[10];
-        r[15] += self[6] * rhs[9];
-        r[15] += self[7] * rhs[8];
-        r[15] += self[8] * rhs[7];
-        r[15] += self[9] * rhs[6];
-        r[15] += self[10] * rhs[5];
-        r[15] += self[11] * rhs[4];
-        r[16] += self[5] * rhs[11];
-        r[16] += self[6] * rhs[10];
-        r[16] += self[7] * rhs[9];
-        r[16] += self[8] * rhs[8];
-        r[16] += self[9] * rhs[7];
-        r[16] += self[10] * rhs[6];
-        r[16] += self[11] * rhs[5];
-        r[17] += self[6] * rhs[11];
-        r[17] += self[7] * rhs[10];
-        r[17] += self[8] * rhs[9];
-        r[17] += self[9] * rhs[8];
-        r[17] += self[10] * rhs[7];
-        r[17] += self[11] * rhs[6];
-        r[18] += self[7] * rhs[11];
-        r[18] += self[8] * rhs[10];
-        r[18] += self[9] * rhs[9];
-        r[18] += self[10] * rhs[8];
-        r[18] += self[11] * rhs[7];
-        r[19] += self[8] * rhs[11];
-        r[19] += self[9] * rhs[10];
-        r[19] += self[10] * rhs[9];
-        r[19] += self[11] * rhs[8];
-        r[20] += self[9] * rhs[11];
-        r[20] += self[10] * rhs[10];
-        r[20] += self[11] * rhs[9];
-        r[21] += self[10] * rhs[11];
-        r[21] += self[11] * rhs[10];
-        r[22] += self[11] * rhs[11];
-        r.carry_balanced(0);
-        r.carry_balanced(2);
-        r.carry_balanced(4);
-        r.carry_balanced(6);
-        r.carry_balanced(8);
-        r.carry_balanced(10);
-        r.carry_balanced(12);
-        r.carry_balanced(14);
-        r.carry_balanced(16);
-        r.carry_balanced(18);
-        r.carry_balanced(20);
-        r.carry_balanced(22);
-        r.carry_balanced(1);
-        r.carry_balanced(3);
-        r.carry_balanced(5);
-        r.carry_balanced(7);
-        r.carry_balanced(9);
-        r.carry_balanced(11);
-        r.carry_balanced(13);
-        r.carry_balanced(15);
-        r.carry_balanced(17);
-        r.carry_balanced(19);
-        r.carry_balanced(21);
-        r.reduce();
-        r
+    fn mask(&mut self) {
+        self[0] &= Self::MASK;
+        self[1] &= Self::MASK;
+        self[2] &= Self::MASK;
+        self[3] &= Self::MASK;
+        self[4] &= Self::MASK;
+    }
+
+    fn montgomery_mul(self, rhs: Self) -> Self {
+        fn m(x: u64, y: u64) -> u128 {
+            (x as u128) * (y as u128)
+        }
+        let mut t = [0u128; 10];
+        t[0] = m(self[0], rhs[0]);
+        t[1] = m(self[0], rhs[1]) + m(self[1], rhs[0]);
+        t[2] = m(self[0], rhs[2]) + m(self[1], rhs[1]) + m(self[2], rhs[0]);
+        t[3] = m(self[0], rhs[3]) + m(self[1], rhs[2]) + m(self[2], rhs[1]) + m(self[3], rhs[0]);
+        t[4] = m(self[0], rhs[4])
+            + m(self[1], rhs[3])
+            + m(self[2], rhs[2])
+            + m(self[3], rhs[1])
+            + m(self[4], rhs[0]);
+        t[5] = m(self[1], rhs[4]) + m(self[2], rhs[3]) + m(self[3], rhs[2]) + m(self[4], rhs[1]);
+        t[6] = m(self[2], rhs[4]) + m(self[3], rhs[3]) + m(self[4], rhs[2]);
+        t[7] = m(self[3], rhs[4]) + m(self[4], rhs[3]);
+        t[8] = m(self[4], rhs[4]);
+        Self::round(&mut t, 0);
+        Self::round(&mut t, 1);
+        Self::round(&mut t, 2);
+        Self::round(&mut t, 3);
+        Self::round(&mut t, 4);
+        t[6] += t[5] >> 52;
+        t[7] += t[6] >> 52;
+        t[8] += t[7] >> 52;
+        t[9] += t[8] >> 52;
+        let mut s = Self([
+            t[5] as u64,
+            t[6] as u64,
+            t[7] as u64,
+            t[8] as u64,
+            t[9] as u64,
+        ]);
+        s.mask();
+        s.reduce();
+        s
+    }
+
+    fn round(t: &mut [u128; 10], i: usize) {
+        let x = ((t[i] as u64).wrapping_mul(Self::LFACTOR) & Self::MASK) as u128;
+        t[i] += x * Self::L[0] as u128;
+        t[i + 1] += x * Self::L[1] as u128;
+        t[i + 2] += x * Self::L[2] as u128;
+        t[i + 4] += x * Self::L[4] as u128;
+        t[i + 1] += t[i] >> 52;
     }
 
     fn reduce(&mut self) {
-        self.fold(23);
-        self.fold(22);
-        self.fold(21);
-        self.fold(20);
-        self.fold(19);
-        self.fold(18);
-        self.carry_balanced(6);
-        self.carry_balanced(8);
-        self.carry_balanced(10);
-        self.carry_balanced(12);
-        self.carry_balanced(14);
-        self.carry_balanced(16);
-        self.carry_balanced(7);
-        self.carry_balanced(9);
-        self.carry_balanced(11);
-        self.carry_balanced(13);
-        self.carry_balanced(15);
-        self.fold(17);
-        self.fold(16);
-        self.fold(15);
-        self.fold(14);
-        self.fold(13);
-        self.fold(12);
-        self.carry_balanced(0);
-        self.carry_balanced(2);
-        self.carry_balanced(4);
-        self.carry_balanced(6);
-        self.carry_balanced(8);
-        self.carry_balanced(10);
-        self.carry_balanced(1);
-        self.carry_balanced(3);
-        self.carry_balanced(5);
-        self.carry_balanced(7);
-        self.carry_balanced(9);
-        self.carry_balanced(11);
-        self.fold(12);
+        let mut diff = Self::ZERO;
+        let mut borrow = 0u64;
+        for i in 0..5 {
+            let (d1, b1) = self[i].overflowing_sub(Self::L[i]);
+            let (d2, b2) = d1.overflowing_sub(borrow);
+            diff[i] = d2 & Self::MASK;
+            borrow = (b1 | b2) as u64;
+        }
+        *self = Self::select(&diff, &self, borrow);
     }
 
-    fn canonical(&mut self) {
-        self.carry(0);
-        self.carry(1);
-        self.carry(2);
-        self.carry(3);
-        self.carry(4);
-        self.carry(5);
-        self.carry(6);
-        self.carry(7);
-        self.carry(8);
-        self.carry(9);
-        self.carry(10);
-        self.carry(11);
-        self.fold(12);
-        self.carry(0);
-        self.carry(1);
-        self.carry(2);
-        self.carry(3);
-        self.carry(4);
-        self.carry(5);
-        self.carry(6);
-        self.carry(7);
-        self.carry(8);
-        self.carry(9);
-        self.carry(10);
-    }
-
-    fn fold(&mut self, i: usize) {
-        self[i - 12] += self[i] * 666643;
-        self[i - 11] += self[i] * 470296;
-        self[i - 10] += self[i] * 654183;
-        self[i - 9] -= self[i] * 997805;
-        self[i - 8] += self[i] * 136657;
-        self[i - 7] -= self[i] * 683901;
-        self[i] = 0;
-    }
-
-    fn carry_balanced(&mut self, i: usize) {
-        let carry = (self[i] + (1 << 20)) >> 21;
-        self[i + 1] += carry;
-        self[i] -= carry << 21;
-    }
-
-    fn carry(&mut self, i: usize) {
-        let carry = self[i] >> 21;
-        self[i + 1] += carry;
-        self[i] -= carry << 21;
+    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+        let mask = ((condition != 0) as u64).wrapping_neg();
+        Self([
+            a[0] & !mask | b[0] & mask,
+            a[1] & !mask | b[1] & mask,
+            a[2] & !mask | b[2] & mask,
+            a[3] & !mask | b[3] & mask,
+            a[4] & !mask | b[4] & mask,
+        ])
     }
 }
 
 impl Index<usize> for Scalar {
-    type Output = i64;
+    type Output = u64;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
@@ -542,7 +395,8 @@ impl Mul for Scalar {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        self.mul(rhs)
+        let ar = self.montgomery_mul(Self::R2);
+        ar.montgomery_mul(rhs)
     }
 }
 
@@ -564,93 +418,88 @@ impl Mul<EdwardsPoint> for Scalar {
 
 impl From<[u8; 32]> for Scalar {
     fn from(value: [u8; 32]) -> Self {
-        let mut r = Self::zero();
-        r[0] = load3(&value, 0) & Self::MASK;
-        r[1] = (load4(&value, 2) >> 5) & Self::MASK;
-        r[2] = (load3(&value, 5) >> 2) & Self::MASK;
-        r[3] = (load4(&value, 7) >> 7) & Self::MASK;
-        r[4] = (load4(&value, 10) >> 4) & Self::MASK;
-        r[5] = (load3(&value, 13) >> 1) & Self::MASK;
-        r[6] = (load4(&value, 15) >> 6) & Self::MASK;
-        r[7] = (load3(&value, 18) >> 3) & Self::MASK;
-        r[8] = load3(&value, 21) & Self::MASK;
-        r[9] = (load4(&value, 23) >> 5) & Self::MASK;
-        r[10] = (load3(&value, 26) >> 2) & Self::MASK;
-        r[11] = load4(&value, 28) >> 7;
-        r.reduce();
-        r
+        let words = [
+            u64::from_le_bytes(value[0..8].try_into().unwrap()),
+            u64::from_le_bytes(value[8..16].try_into().unwrap()),
+            u64::from_le_bytes(value[16..24].try_into().unwrap()),
+            u64::from_le_bytes(value[24..32].try_into().unwrap()),
+        ];
+        let mut s = Self::ZERO;
+        s[0] = words[0] & Self::MASK;
+        s[1] = ((words[0] >> 52) | (words[1] << 12)) & Self::MASK;
+        s[2] = ((words[1] >> 40) | (words[2] << 24)) & Self::MASK;
+        s[3] = ((words[2] >> 28) | (words[3] << 36)) & Self::MASK;
+        s[4] = (words[3] >> 16) & Self::TOP_MASK;
+        s
     }
-}
-
-fn load3(s: &[u8], i: usize) -> i64 {
-    (s[i] as i64) | ((s[i + 1] as i64) << 8) | ((s[i + 2] as i64) << 16)
-}
-
-fn load4(s: &[u8], i: usize) -> i64 {
-    (s[i] as i64) | ((s[i + 1] as i64) << 8) | ((s[i + 2] as i64) << 16) | ((s[i + 3] as i64) << 24)
 }
 
 impl From<[u8; 64]> for Scalar {
     fn from(value: [u8; 64]) -> Self {
-        let mut r = Self::zero();
-        r[0] = load3(&value, 0) & Self::MASK;
-        r[1] = (load4(&value, 2) >> 5) & Self::MASK;
-        r[2] = (load3(&value, 5) >> 2) & Self::MASK;
-        r[3] = (load4(&value, 7) >> 7) & Self::MASK;
-        r[4] = (load4(&value, 10) >> 4) & Self::MASK;
-        r[5] = (load3(&value, 13) >> 1) & Self::MASK;
-        r[6] = (load4(&value, 15) >> 6) & Self::MASK;
-        r[7] = (load3(&value, 18) >> 3) & Self::MASK;
-        r[8] = load3(&value, 21) & Self::MASK;
-        r[9] = (load4(&value, 23) >> 5) & Self::MASK;
-        r[10] = (load3(&value, 26) >> 2) & Self::MASK;
-        r[11] = (load4(&value, 28) >> 7) & Self::MASK;
-        r[12] = (load4(&value, 31) >> 4) & Self::MASK;
-        r[13] = (load3(&value, 34) >> 1) & Self::MASK;
-        r[14] = (load4(&value, 36) >> 6) & Self::MASK;
-        r[15] = (load3(&value, 39) >> 3) & Self::MASK;
-        r[16] = load3(&value, 42) & Self::MASK;
-        r[17] = (load4(&value, 44) >> 5) & Self::MASK;
-        r[18] = (load3(&value, 47) >> 2) & Self::MASK;
-        r[19] = (load4(&value, 49) >> 7) & Self::MASK;
-        r[20] = (load4(&value, 52) >> 4) & Self::MASK;
-        r[21] = (load3(&value, 55) >> 1) & Self::MASK;
-        r[22] = (load4(&value, 57) >> 6) & Self::MASK;
-        r[23] = load4(&value, 60) >> 3;
-        r.reduce();
-        r
+        let words = [
+            u64::from_le_bytes(value[0..8].try_into().unwrap()),
+            u64::from_le_bytes(value[8..16].try_into().unwrap()),
+            u64::from_le_bytes(value[16..24].try_into().unwrap()),
+            u64::from_le_bytes(value[24..32].try_into().unwrap()),
+            u64::from_le_bytes(value[32..40].try_into().unwrap()),
+            u64::from_le_bytes(value[40..48].try_into().unwrap()),
+            u64::from_le_bytes(value[48..56].try_into().unwrap()),
+            u64::from_le_bytes(value[56..64].try_into().unwrap()),
+        ];
+        let mut lo = Self::ZERO;
+        let mut hi = Self::ZERO;
+        lo[0] = words[0] & Self::MASK;
+        lo[1] = ((words[0] >> 52) | (words[1] << 12)) & Self::MASK;
+        lo[2] = ((words[1] >> 40) | (words[2] << 24)) & Self::MASK;
+        lo[3] = ((words[2] >> 28) | (words[3] << 36)) & Self::MASK;
+        lo[4] = ((words[3] >> 16) | (words[4] << 48)) & Self::MASK;
+        hi[0] = (words[4] >> 4) & Self::MASK;
+        hi[1] = ((words[4] >> 56) | (words[5] << 8)) & Self::MASK;
+        hi[2] = ((words[5] >> 44) | (words[6] << 20)) & Self::MASK;
+        hi[3] = ((words[6] >> 32) | (words[7] << 32)) & Self::MASK;
+        hi[4] = words[7] >> 20;
+        lo = lo.montgomery_mul(Self::R);
+        hi = hi.montgomery_mul(Self::R2);
+        hi + lo
     }
 }
 
 impl From<Scalar> for [u8; 32] {
     fn from(value: Scalar) -> Self {
-        let r: [u32; 8] = value.into();
         let mut bytes = [0u8; 32];
-        bytes[0..4].copy_from_slice(&r[0].to_le_bytes());
-        bytes[4..8].copy_from_slice(&r[1].to_le_bytes());
-        bytes[8..12].copy_from_slice(&r[2].to_le_bytes());
-        bytes[12..16].copy_from_slice(&r[3].to_le_bytes());
-        bytes[16..20].copy_from_slice(&r[4].to_le_bytes());
-        bytes[20..24].copy_from_slice(&r[5].to_le_bytes());
-        bytes[24..28].copy_from_slice(&r[6].to_le_bytes());
-        bytes[28..32].copy_from_slice(&r[7].to_le_bytes());
+        bytes[0] = value[0] as u8;
+        bytes[1] = (value[0] >> 8) as u8;
+        bytes[2] = (value[0] >> 16) as u8;
+        bytes[3] = (value[0] >> 24) as u8;
+        bytes[4] = (value[0] >> 32) as u8;
+        bytes[5] = (value[0] >> 40) as u8;
+        bytes[6] = ((value[0] >> 48) | (value[1] << 4)) as u8;
+        bytes[7] = (value[1] >> 4) as u8;
+        bytes[8] = (value[1] >> 12) as u8;
+        bytes[9] = (value[1] >> 20) as u8;
+        bytes[10] = (value[1] >> 28) as u8;
+        bytes[11] = (value[1] >> 36) as u8;
+        bytes[12] = (value[1] >> 44) as u8;
+        bytes[13] = value[2] as u8;
+        bytes[14] = (value[2] >> 8) as u8;
+        bytes[15] = (value[2] >> 16) as u8;
+        bytes[16] = (value[2] >> 24) as u8;
+        bytes[17] = (value[2] >> 32) as u8;
+        bytes[18] = (value[2] >> 40) as u8;
+        bytes[19] = ((value[2] >> 48) | (value[3] << 4)) as u8;
+        bytes[20] = (value[3] >> 4) as u8;
+        bytes[21] = (value[3] >> 12) as u8;
+        bytes[22] = (value[3] >> 20) as u8;
+        bytes[23] = (value[3] >> 28) as u8;
+        bytes[24] = (value[3] >> 36) as u8;
+        bytes[25] = (value[3] >> 44) as u8;
+        bytes[26] = value[4] as u8;
+        bytes[27] = (value[4] >> 8) as u8;
+        bytes[28] = (value[4] >> 16) as u8;
+        bytes[29] = (value[4] >> 24) as u8;
+        bytes[30] = (value[4] >> 32) as u8;
+        bytes[31] = (value[4] >> 40) as u8;
         bytes
-    }
-}
-
-impl From<Scalar> for [u32; 8] {
-    fn from(mut value: Scalar) -> Self {
-        value.canonical();
-        [
-            ((value[0]) | (value[1] << 21)) as u32,
-            ((value[1] >> 11) | (value[2] << 10) | (value[3] << 31)) as u32,
-            ((value[3] >> 1) | (value[4] << 20)) as u32,
-            ((value[4] >> 12) | (value[5] << 9) | (value[6] << 30)) as u32,
-            ((value[6] >> 2) | (value[7] << 19)) as u32,
-            ((value[7] >> 13) | (value[8] << 8) | (value[9] << 29)) as u32,
-            ((value[9] >> 3) | (value[10] << 18)) as u32,
-            ((value[10] >> 14) | (value[11] << 7)) as u32,
-        ]
     }
 }
 

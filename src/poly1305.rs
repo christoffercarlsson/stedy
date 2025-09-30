@@ -1,10 +1,6 @@
 use crate::block::Block;
 use core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign};
 
-const R: [u8; 16] = [
-    255, 255, 255, 15, 252, 255, 255, 15, 252, 255, 255, 15, 252, 255, 255, 15,
-];
-
 pub struct Poly1305 {
     a: FieldElement,
     r: FieldElement,
@@ -15,9 +11,9 @@ pub struct Poly1305 {
 impl Poly1305 {
     pub fn new(key: &[u8; 32]) -> Self {
         let mut r = FieldElement::from(&key[0..16]);
-        r &= FieldElement::from(&R);
+        r &= FieldElement::R;
         Self {
-            a: FieldElement::zero(),
+            a: FieldElement::ZERO,
             r,
             s: FieldElement::from(&key[16..32]),
             block: Block::<16>::new(),
@@ -65,10 +61,8 @@ struct FieldElement([u64; 5]);
 
 impl FieldElement {
     const MASK: u64 = (1u64 << 26) - 1;
-
-    fn zero() -> Self {
-        Self([0u64; 5])
-    }
+    const R: Self = Self([67108863, 67108611, 67092735, 66076671, 1048575]);
+    const ZERO: Self = Self([0; 5]);
 
     fn reduce(&mut self) {
         let carry = self[4] >> 26;
@@ -155,7 +149,7 @@ impl BitAndAssign for FieldElement {
 
 impl MulAssign for FieldElement {
     fn mul_assign(&mut self, rhs: Self) {
-        let mut r = Self::zero();
+        let mut r = Self::ZERO;
         r[0] += self[0] * rhs[0];
         r[0] += self[4] * rhs[1] * 5;
         r[0] += self[3] * rhs[2] * 5;

@@ -4,22 +4,27 @@ use core::{
 };
 
 #[derive(Clone, Copy)]
-pub struct Curve25519([u64; 5]);
+pub struct Curve25519(pub [u64; 5]);
 
 impl Curve25519 {
     const MASK: u64 = (1u64 << 51) - 1;
-    const SQRT_M1: [u8; 32] = [
-        176, 160, 14, 74, 39, 27, 238, 196, 120, 228, 47, 173, 6, 24, 67, 47, 167, 215, 251, 61,
-        153, 0, 77, 43, 11, 223, 193, 79, 128, 36, 131, 43,
-    ];
+    const P: Self = Self([
+        4503599627370458,
+        4503599627370494,
+        4503599627370494,
+        4503599627370494,
+        4503599627370494,
+    ]);
+    const SQRT_M1: Self = Self([
+        1718705420411056,
+        234908883556509,
+        2233514472574048,
+        2117202627021982,
+        765476049583133,
+    ]);
 
-    pub fn zero() -> Self {
-        Self([0; 5])
-    }
-
-    pub fn one() -> Self {
-        Self([1, 0, 0, 0, 0])
-    }
+    pub const ONE: Self = Self([1, 0, 0, 0, 0]);
+    pub const ZERO: Self = Self([0; 5]);
 
     pub fn select(a: &Self, b: &Self, condition: u64) -> Self {
         let mut x = *a;
@@ -60,21 +65,21 @@ impl Curve25519 {
 
     pub fn sub(self, rhs: Self) -> Self {
         Self::from([
-            4503599627370458 + self[0] - rhs[0],
-            4503599627370494 + self[1] - rhs[1],
-            4503599627370494 + self[2] - rhs[2],
-            4503599627370494 + self[3] - rhs[3],
-            4503599627370494 + self[4] - rhs[4],
+            Self::P[0] + self[0] - rhs[0],
+            Self::P[1] + self[1] - rhs[1],
+            Self::P[2] + self[2] - rhs[2],
+            Self::P[3] + self[3] - rhs[3],
+            Self::P[4] + self[4] - rhs[4],
         ])
     }
 
     pub fn neg(self) -> Self {
         Self::from([
-            4503599627370458 - self[0],
-            4503599627370494 - self[1],
-            4503599627370494 - self[2],
-            4503599627370494 - self[3],
-            4503599627370494 - self[4],
+            Self::P[0] - self[0],
+            Self::P[1] - self[1],
+            Self::P[2] - self[2],
+            Self::P[3] - self[3],
+            Self::P[4] - self[4],
         ])
     }
 
@@ -133,18 +138,18 @@ impl Curve25519 {
         let b3 = b.square() * b;
         let b7 = b3.square() * b;
         let u = a * b3 * (a * b7).pow22523();
-        let v = u * Self::from(&Self::SQRT_M1);
+        let v = u * Self::SQRT_M1;
         let c = b * u.square();
         let d = b * v.square();
         let e = (c == a) as u64;
         let f = (d == a) as u64;
         let mut r = Self::select(&v, &u, e);
         let valid = e | f;
-        r = Self::select(&Self::zero(), &r, valid);
+        r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
 
-    fn invert(self) -> Self {
+    pub fn invert(self) -> Self {
         let a = self.pow22523();
         let b = a.pow2n(3);
         let c = self * self.square();
@@ -347,7 +352,7 @@ impl From<u32> for Curve25519 {
 
 impl From<[u64; 4]> for Curve25519 {
     fn from(value: [u64; 4]) -> Self {
-        let mut r = Self::zero();
+        let mut r = Self::ZERO;
         r[0] = value[0];
         r[1] = (value[0] >> 51) | (value[1] << 13);
         r[2] = (value[1] >> 38) | (value[2] << 26);

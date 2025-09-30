@@ -35,11 +35,11 @@ fn calculate_share<const K: usize>(x: u32, c: &[Curve25519; K], share: &mut [u8;
 }
 
 pub fn sss_combine<const K: usize>(shares: &[[u8; 36]; K]) -> [u8; 32] {
-    let mut secret = Curve25519::zero();
+    let mut secret = Curve25519::ZERO;
     for j in 0..K {
         let xj = read_index(&shares[j]);
         let yj = read_bytes(&shares[j]);
-        let mut lambda = Curve25519::one();
+        let mut lambda = Curve25519::ONE;
         for m in 0..K {
             if m == j {
                 continue;
