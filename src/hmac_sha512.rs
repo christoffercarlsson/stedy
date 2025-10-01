@@ -1,4 +1,4 @@
-use crate::{verify::verify, xor, Error, Sha512};
+use crate::{verify::verify, xor, Sha512};
 
 pub struct HmacSha512 {
     inner: Sha512,
@@ -45,7 +45,7 @@ impl HmacSha512 {
         code
     }
 
-    pub fn verify(self, code: &[u8; 64]) -> Result<(), Error> {
+    pub fn verify(self, code: &[u8; 64]) -> bool {
         verify(code, &self.finalize())
     }
 }
@@ -56,7 +56,7 @@ pub fn hmac_sha512(key: &[u8], message: &[u8]) -> [u8; 64] {
     hmac.finalize()
 }
 
-pub fn hmac_sha512_verify(key: &[u8], message: &[u8], code: &[u8; 64]) -> Result<(), Error> {
+pub fn hmac_sha512_verify(key: &[u8], message: &[u8], code: &[u8; 64]) -> bool {
     let mut hmac = HmacSha512::new(key);
     hmac.update(message);
     hmac.verify(code)
@@ -75,7 +75,8 @@ mod tests {
         ];
         let message = [72, 105, 32, 84, 104, 101, 114, 101];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -95,7 +96,8 @@ mod tests {
             32, 110, 111, 116, 104, 105, 110, 103, 63,
         ];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -119,7 +121,8 @@ mod tests {
             221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221,
         ];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -143,7 +146,8 @@ mod tests {
             205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205,
         ];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -165,7 +169,8 @@ mod tests {
             110,
         ];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code[..16],
             [65, 95, 173, 98, 113, 88, 10, 83, 29, 65, 121, 188, 137, 29, 135, 166,]
@@ -190,7 +195,8 @@ mod tests {
             45, 32, 72, 97, 115, 104, 32, 75, 101, 121, 32, 70, 105, 114, 115, 116,
         ];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -226,7 +232,8 @@ mod tests {
             109, 46,
         ];
         let code = hmac_sha512(&key, &message);
-        hmac_sha512_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha512_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [

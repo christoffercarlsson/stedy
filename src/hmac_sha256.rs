@@ -1,4 +1,4 @@
-use crate::{verify::verify, xor, Error, Sha256};
+use crate::{verify::verify, xor, Sha256};
 
 pub struct HmacSha256 {
     inner: Sha256,
@@ -45,7 +45,7 @@ impl HmacSha256 {
         code
     }
 
-    pub fn verify(self, code: &[u8; 32]) -> Result<(), Error> {
+    pub fn verify(self, code: &[u8; 32]) -> bool {
         verify(code, &self.finalize())
     }
 }
@@ -56,7 +56,7 @@ pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
     hmac.finalize()
 }
 
-pub fn hmac_sha256_verify(key: &[u8], message: &[u8], code: &[u8; 32]) -> Result<(), Error> {
+pub fn hmac_sha256_verify(key: &[u8], message: &[u8], code: &[u8; 32]) -> bool {
     let mut hmac = HmacSha256::new(key);
     hmac.update(message);
     hmac.verify(code)
@@ -75,7 +75,8 @@ mod tests {
         ];
         let message = [72, 105, 32, 84, 104, 101, 114, 101];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -93,7 +94,8 @@ mod tests {
             32, 110, 111, 116, 104, 105, 110, 103, 63,
         ];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -115,7 +117,8 @@ mod tests {
             221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221,
         ];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -137,7 +140,8 @@ mod tests {
             205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205,
         ];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -157,7 +161,8 @@ mod tests {
             110,
         ];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code[..16],
             [163, 182, 22, 116, 115, 16, 14, 224, 110, 12, 121, 108, 41, 85, 85, 43,]
@@ -182,7 +187,8 @@ mod tests {
             45, 32, 72, 97, 115, 104, 32, 75, 101, 121, 32, 70, 105, 114, 115, 116,
         ];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [
@@ -216,7 +222,8 @@ mod tests {
             109, 46,
         ];
         let code = hmac_sha256(&key, &message);
-        hmac_sha256_verify(&key, &message, &code).unwrap();
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
         assert_eq!(
             code,
             [

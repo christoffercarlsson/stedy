@@ -3,7 +3,7 @@ name = "stedy"
 description = "Easy-to-use primitives for modern cryptographic protocols"
 version = "1.0.0-beta.3"
 license = "Unlicense"
-authors = ["Christoffer Carlsson <cc@christoffercarlsson.se>"]
+authors = ["Christoffer Carlsson <cc@christoffercarlsson.com>"]
 edition = "2021"
 keywords = [
     "cryptography",
@@ -14,16 +14,12 @@ keywords = [
   ]
 repository = "https://github.com/christoffercarlsson/stedy"
 
+[lib]
+name = "stedy"
+
 [[bench]]
 name = "stedy"
 harness = false
 
-[dependencies]
-getrandom = { version = "0.2.15", default-features = false, optional = true }
-
 [dev-dependencies]
 criterion = "0.7.0"
-
-[features]
-default = ["getrandom"]
-getrandom = ["dep:getrandom"]

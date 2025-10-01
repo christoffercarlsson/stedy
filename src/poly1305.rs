@@ -1,9 +1,5 @@
 use crate::block::Block;
-use core::ops::{AddAssign, BitAndAssign, MulAssign};
-
-const R: [u8; 16] = [
-    255, 255, 255, 15, 252, 255, 255, 15, 252, 255, 255, 15, 252, 255, 255, 15,
-];
+use core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign};
 
 pub struct Poly1305 {
     a: FieldElement,
@@ -15,9 +11,9 @@ pub struct Poly1305 {
 impl Poly1305 {
     pub fn new(key: &[u8; 32]) -> Self {
         let mut r = FieldElement::from(&key[0..16]);
-        r &= FieldElement::from(&R);
+        r &= FieldElement::R;
         Self {
-            a: FieldElement::zero(),
+            a: FieldElement::ZERO,
             r,
             s: FieldElement::from(&key[16..32]),
             block: Block::<16>::new(),
@@ -65,70 +61,77 @@ struct FieldElement([u64; 5]);
 
 impl FieldElement {
     const MASK: u64 = (1u64 << 26) - 1;
+    const R: Self = Self([67108863, 67108611, 67092735, 66076671, 1048575]);
+    const ZERO: Self = Self([0; 5]);
 
-    fn zero() -> Self {
-        Self([0u64; 5])
-    }
-
-    #[inline(always)]
     fn reduce(&mut self) {
-        let carry = self.0[4] >> 26;
+        let carry = self[4] >> 26;
         self.mask();
-        self.0[0] += carry * 5;
-        self.0[1] += self.0[0] >> 26;
-        self.0[2] += self.0[1] >> 26;
-        self.0[0] &= Self::MASK;
-        self.0[1] &= Self::MASK;
+        self[0] += carry * 5;
+        self[1] += self[0] >> 26;
+        self[2] += self[1] >> 26;
+        self[0] &= Self::MASK;
+        self[1] &= Self::MASK;
     }
 
-    #[inline(always)]
     fn carry(&mut self) {
-        self.0[1] += self.0[0] >> 26;
-        self.0[2] += self.0[1] >> 26;
-        self.0[3] += self.0[2] >> 26;
-        self.0[4] += self.0[3] >> 26;
+        self[1] += self[0] >> 26;
+        self[2] += self[1] >> 26;
+        self[3] += self[2] >> 26;
+        self[4] += self[3] >> 26;
     }
 
-    #[inline(always)]
     fn mask(&mut self) {
-        self.0[0] &= Self::MASK;
-        self.0[1] &= Self::MASK;
-        self.0[2] &= Self::MASK;
-        self.0[3] &= Self::MASK;
-        self.0[4] &= Self::MASK;
+        self[0] &= Self::MASK;
+        self[1] &= Self::MASK;
+        self[2] &= Self::MASK;
+        self[3] &= Self::MASK;
+        self[4] &= Self::MASK;
     }
 
-    #[inline(always)]
     fn canonical(&mut self) {
         let mut reduced = self.clone();
-        reduced.0[0] += 5;
+        reduced[0] += 5;
         reduced.carry();
-        reduced.0[4] = reduced.0[4].wrapping_sub(1 << 26);
-        let borrow = reduced.0[4] >> 63;
+        reduced[4] = reduced[4].wrapping_sub(1 << 26);
+        let borrow = reduced[4] >> 63;
         reduced.mask();
         *self = Self::select(&reduced, &self, borrow);
     }
 
-    #[inline(always)]
     fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mask = condition.wrapping_sub(1);
+        let mask = ((condition != 0) as u64).wrapping_neg();
         Self([
-            a.0[0] & mask | b.0[0] & !mask,
-            a.0[1] & mask | b.0[1] & !mask,
-            a.0[2] & mask | b.0[2] & !mask,
-            a.0[3] & mask | b.0[3] & !mask,
-            a.0[4] & mask | b.0[4] & !mask,
+            a[0] & !mask | b[0] & mask,
+            a[1] & !mask | b[1] & mask,
+            a[2] & !mask | b[2] & mask,
+            a[3] & !mask | b[3] & mask,
+            a[4] & !mask | b[4] & mask,
         ])
+    }
+}
+
+impl Index<usize> for FieldElement {
+    type Output = u64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl IndexMut<usize> for FieldElement {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
     }
 }
 
 impl AddAssign for FieldElement {
     fn add_assign(&mut self, rhs: Self) {
-        self.0[0] += rhs.0[0];
-        self.0[1] += rhs.0[1];
-        self.0[2] += rhs.0[2];
-        self.0[3] += rhs.0[3];
-        self.0[4] += rhs.0[4];
+        self[0] += rhs[0];
+        self[1] += rhs[1];
+        self[2] += rhs[2];
+        self[3] += rhs[3];
+        self[4] += rhs[4];
         self.carry();
         self.reduce();
     }
@@ -136,48 +139,45 @@ impl AddAssign for FieldElement {
 
 impl BitAndAssign for FieldElement {
     fn bitand_assign(&mut self, rhs: Self) {
-        self.0[0] &= rhs.0[0];
-        self.0[1] &= rhs.0[1];
-        self.0[2] &= rhs.0[2];
-        self.0[3] &= rhs.0[3];
-        self.0[4] &= rhs.0[4];
+        self[0] &= rhs[0];
+        self[1] &= rhs[1];
+        self[2] &= rhs[2];
+        self[3] &= rhs[3];
+        self[4] &= rhs[4];
     }
 }
 
 impl MulAssign for FieldElement {
     fn mul_assign(&mut self, rhs: Self) {
-        let a = &self.0;
-        let b = &rhs.0;
-        let mut t = [0u64; 5];
-        t[0] = a[0] * b[0];
-        t[0] += a[4] * b[1] * 5;
-        t[0] += a[3] * b[2] * 5;
-        t[0] += a[2] * b[3] * 5;
-        t[0] += a[1] * b[4] * 5;
-        t[1] = a[1] * b[0];
-        t[1] += a[0] * b[1];
-        t[1] += a[4] * b[2] * 5;
-        t[1] += a[3] * b[3] * 5;
-        t[1] += a[2] * b[4] * 5;
-        t[2] = a[2] * b[0];
-        t[2] += a[1] * b[1];
-        t[2] += a[0] * b[2];
-        t[2] += a[4] * b[3] * 5;
-        t[2] += a[3] * b[4] * 5;
-        t[3] = a[3] * b[0];
-        t[3] += a[2] * b[1];
-        t[3] += a[1] * b[2];
-        t[3] += a[0] * b[3];
-        t[3] += a[4] * b[4] * 5;
-        t[4] = a[4] * b[0];
-        t[4] += a[3] * b[1];
-        t[4] += a[2] * b[2];
-        t[4] += a[1] * b[3];
-        t[4] += a[0] * b[4];
-        let mut result = Self(t);
-        result.carry();
-        result.reduce();
-        *self = result;
+        let mut r = Self::ZERO;
+        r[0] += self[0] * rhs[0];
+        r[0] += self[4] * rhs[1] * 5;
+        r[0] += self[3] * rhs[2] * 5;
+        r[0] += self[2] * rhs[3] * 5;
+        r[0] += self[1] * rhs[4] * 5;
+        r[1] += self[1] * rhs[0];
+        r[1] += self[0] * rhs[1];
+        r[1] += self[4] * rhs[2] * 5;
+        r[1] += self[3] * rhs[3] * 5;
+        r[1] += self[2] * rhs[4] * 5;
+        r[2] += self[2] * rhs[0];
+        r[2] += self[1] * rhs[1];
+        r[2] += self[0] * rhs[2];
+        r[2] += self[4] * rhs[3] * 5;
+        r[2] += self[3] * rhs[4] * 5;
+        r[3] += self[3] * rhs[0];
+        r[3] += self[2] * rhs[1];
+        r[3] += self[1] * rhs[2];
+        r[3] += self[0] * rhs[3];
+        r[3] += self[4] * rhs[4] * 5;
+        r[4] += self[4] * rhs[0];
+        r[4] += self[3] * rhs[1];
+        r[4] += self[2] * rhs[2];
+        r[4] += self[1] * rhs[3];
+        r[4] += self[0] * rhs[4];
+        r.carry();
+        r.reduce();
+        *self = r;
     }
 }
 
@@ -224,12 +224,11 @@ impl From<&[u8]> for FieldElement {
 impl From<FieldElement> for [u32; 4] {
     fn from(mut value: FieldElement) -> Self {
         value.canonical();
-        let t = value.0.map(|x| x as u32);
         [
-            t[0] | (t[1] << 26),
-            t[1] >> 6 | (t[2] << 20),
-            t[2] >> 12 | (t[3] << 14),
-            t[3] >> 18 | (t[4] << 8),
+            (value[0] | (value[1] << 26)) as u32,
+            (value[1] >> 6 | (value[2] << 20)) as u32,
+            (value[2] >> 12 | (value[3] << 14)) as u32,
+            (value[3] >> 18 | (value[4] << 8)) as u32,
         ]
     }
 }
