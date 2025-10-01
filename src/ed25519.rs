@@ -159,12 +159,16 @@ impl EdwardsPoint {
         ys
     }
 
-    fn mul(self, rhs: [u8; 32]) -> Self {
-        let mut q = Self::IDENTITY;
-        for i in (0..256).rev() {
-            let bit = ((rhs[i / 8] >> (i % 8)) & 1) as u64;
+    fn mul(self, rhs: Scalar) -> Self {
+        let window = Window::from(self);
+        let digits = rhs.as_radix_16();
+        let mut q = window.select(digits[63]);
+        for i in (0..63).rev() {
             q = q.double();
-            q = Self::select(&q, &q.add(self), bit);
+            q = q.double();
+            q = q.double();
+            q = q.double();
+            q = q + window.select(digits[i]);
         }
         q
     }
@@ -201,6 +205,15 @@ impl EdwardsPoint {
         Self { x, y, t, z }
     }
 
+    fn neg(self) -> Self {
+        Self {
+            x: self.x.neg(),
+            y: self.y,
+            t: self.t.neg(),
+            z: self.z,
+        }
+    }
+
     fn select(a: &Self, b: &Self, condition: u64) -> Self {
         Self {
             x: Curve25519::select(&a.x, &b.x, condition),
@@ -231,7 +244,7 @@ impl Mul<[u8; 32]> for EdwardsPoint {
     type Output = Self;
 
     fn mul(self, rhs: [u8; 32]) -> Self::Output {
-        self.mul(rhs)
+        self.mul(Scalar::from(rhs))
     }
 }
 
@@ -239,7 +252,7 @@ impl Mul<Scalar> for EdwardsPoint {
     type Output = Self;
 
     fn mul(self, rhs: Scalar) -> Self::Output {
-        self.mul(rhs.into())
+        self.mul(rhs)
     }
 }
 
@@ -298,9 +311,6 @@ impl Scalar {
     }
 
     fn montgomery_mul(self, rhs: Self) -> Self {
-        fn m(x: u64, y: u64) -> u128 {
-            (x as u128) * (y as u128)
-        }
         let mut t = [0u128; 10];
         t[0] = m(self[0], rhs[0]);
         t[1] = m(self[0], rhs[1]) + m(self[1], rhs[0]);
@@ -367,6 +377,25 @@ impl Scalar {
             a[4] & !mask | b[4] & mask,
         ])
     }
+
+    fn as_radix_16(&self) -> [i8; 64] {
+        let s: [u8; 32] = self.into();
+        let mut t = [0i8; 64];
+        for i in 0..32 {
+            t[2 * i] = (s[i] & 15) as i8;
+            t[2 * i + 1] = ((s[i] >> 4) & 15) as i8;
+        }
+        for i in 0..63 {
+            let carry = (t[i] + 8) >> 4;
+            t[i] -= carry << 4;
+            t[i + 1] += carry;
+        }
+        t
+    }
+}
+
+fn m(x: u64, y: u64) -> u128 {
+    (x as u128) * (y as u128)
 }
 
 impl Index<usize> for Scalar {
@@ -466,6 +495,12 @@ impl From<[u8; 64]> for Scalar {
 
 impl From<Scalar> for [u8; 32] {
     fn from(value: Scalar) -> Self {
+        Self::from(&value)
+    }
+}
+
+impl From<&Scalar> for [u8; 32] {
+    fn from(value: &Scalar) -> Self {
         let mut bytes = [0u8; 32];
         bytes[0] = value[0] as u8;
         bytes[1] = (value[0] >> 8) as u8;
@@ -500,6 +535,46 @@ impl From<Scalar> for [u8; 32] {
         bytes[30] = (value[4] >> 32) as u8;
         bytes[31] = (value[4] >> 40) as u8;
         bytes
+    }
+}
+
+struct Window([EdwardsPoint; 9]);
+
+impl Window {
+    fn select(&self, x: i8) -> EdwardsPoint {
+        let y = x as i16;
+        let z = y >> 15;
+        let i = ((y ^ z) - z) as u8;
+        let mut t = EdwardsPoint::IDENTITY;
+        for j in 0..9 {
+            let is_index = ((j ^ i) == 0) as u64;
+            t = EdwardsPoint::select(&t, &self[j as usize], is_index);
+        }
+        let negate = (z & 1) as u64;
+        EdwardsPoint::select(&t, &t.neg(), negate)
+    }
+}
+
+impl Index<usize> for Window {
+    type Output = EdwardsPoint;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl From<EdwardsPoint> for Window {
+    fn from(value: EdwardsPoint) -> Self {
+        let mut t = [EdwardsPoint::IDENTITY; 9];
+        t[1] = value;
+        t[2] = t[1].add(value);
+        t[3] = t[2].add(value);
+        t[4] = t[3].add(value);
+        t[5] = t[4].add(value);
+        t[6] = t[5].add(value);
+        t[7] = t[6].add(value);
+        t[8] = t[7].add(value);
+        Self(t)
     }
 }
 
