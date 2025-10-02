@@ -1,4 +1,4 @@
-use crate::{block::Block, traits::Hasher};
+use crate::{block::Block, traits::Digest};
 
 type Sha512Block = Block<128>;
 
@@ -244,7 +244,7 @@ impl Default for Sha512 {
     }
 }
 
-impl Hasher<128, 64> for Sha512 {
+impl Digest<128, 64> for Sha512 {
     fn new() -> Self {
         Self::new()
     }

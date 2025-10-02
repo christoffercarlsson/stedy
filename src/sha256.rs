@@ -1,4 +1,4 @@
-use crate::{block::Block, traits::Hasher};
+use crate::{block::Block, traits::Digest};
 
 type Sha256Block = Block<64>;
 
@@ -172,7 +172,7 @@ impl Default for Sha256 {
     }
 }
 
-impl Hasher<64, 32> for Sha256 {
+impl Digest<64, 32> for Sha256 {
     fn new() -> Self {
         Self::new()
     }

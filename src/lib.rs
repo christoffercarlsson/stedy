@@ -5,8 +5,7 @@ mod chacha;
 mod chacha20poly1305;
 mod curve25519;
 mod ed25519;
-mod hkdf_sha256;
-mod hkdf_sha512;
+mod hkdf;
 mod hmac;
 mod poly1305;
 mod rng;
@@ -21,8 +20,7 @@ mod xor;
 pub use crate::{
     chacha20poly1305::{chacha20poly1305_decrypt, chacha20poly1305_encrypt},
     ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
-    hkdf_sha256::hkdf_sha256,
-    hkdf_sha512::hkdf_sha512,
+    hkdf::{hkdf_sha256, hkdf_sha512},
     hmac::{
         hmac_sha256, hmac_sha256_verify, hmac_sha512, hmac_sha512_verify, HmacSha256, HmacSha512,
     },

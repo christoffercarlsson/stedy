@@ -1,21 +1,27 @@
-use crate::{sha256::Sha256, sha512::Sha512, traits::Hasher, verify::verify, xor::xor};
+use crate::{
+    sha256::Sha256,
+    sha512::Sha512,
+    traits::{Digest, Mac},
+    verify::verify,
+    xor::xor,
+};
 
-pub struct Hmac<H, const BLOCK_SIZE: usize, const DIGEST_SIZE: usize>
+pub struct Hmac<D, const BLOCK_SIZE: usize, const DIGEST_SIZE: usize>
 where
-    H: Hasher<BLOCK_SIZE, DIGEST_SIZE>,
+    D: Digest<BLOCK_SIZE, DIGEST_SIZE>,
 {
-    inner: H,
-    outer: H,
+    inner: D,
+    outer: D,
 }
 
-impl<H, const BLOCK_SIZE: usize, const DIGEST_SIZE: usize> Hmac<H, BLOCK_SIZE, DIGEST_SIZE>
+impl<D, const BLOCK_SIZE: usize, const DIGEST_SIZE: usize> Hmac<D, BLOCK_SIZE, DIGEST_SIZE>
 where
-    H: Hasher<BLOCK_SIZE, DIGEST_SIZE>,
+    D: Digest<BLOCK_SIZE, DIGEST_SIZE>,
 {
     pub fn new(key: &[u8]) -> Self {
         let mut k = [0u8; BLOCK_SIZE];
         if key.len() > BLOCK_SIZE {
-            let mut hasher = H::new();
+            let mut hasher = D::new();
             hasher.update(key);
             let key_digest = hasher.finalize();
             k[..DIGEST_SIZE].copy_from_slice(&key_digest);
@@ -28,8 +34,8 @@ where
         let mut outer_key = [0u8; BLOCK_SIZE];
         xor(&k, &inner_pad, &mut inner_key);
         xor(&k, &outer_pad, &mut outer_key);
-        let mut inner = H::new();
-        let mut outer = H::new();
+        let mut inner = D::new();
+        let mut outer = D::new();
         inner.update(&inner_key);
         outer.update(&outer_key);
         Self { inner, outer }
@@ -58,6 +64,28 @@ where
 
 pub type HmacSha256 = Hmac<Sha256, 64, 32>;
 
+impl Mac<32> for HmacSha256 {
+    fn new(key: &[u8]) -> Self {
+        Self::new(key)
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 32] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, code: &mut [u8; 32]) {
+        self.finalize_into(code);
+    }
+
+    fn verify(self, code: &[u8; 32]) -> bool {
+        self.verify(code)
+    }
+}
+
 pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
     let mut hmac = HmacSha256::new(key);
     hmac.update(message);
@@ -71,6 +99,28 @@ pub fn hmac_sha256_verify(key: &[u8], message: &[u8], code: &[u8; 32]) -> bool {
 }
 
 pub type HmacSha512 = Hmac<Sha512, 128, 64>;
+
+impl Mac<64> for HmacSha512 {
+    fn new(key: &[u8]) -> Self {
+        Self::new(key)
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 64] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, code: &mut [u8; 64]) {
+        self.finalize_into(code);
+    }
+
+    fn verify(self, code: &[u8; 64]) -> bool {
+        self.verify(code)
+    }
+}
 
 pub fn hmac_sha512(key: &[u8], message: &[u8]) -> [u8; 64] {
     let mut hmac = HmacSha512::new(key);
