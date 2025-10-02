@@ -1,4 +1,4 @@
-use crate::block::Block;
+use crate::{block::Block, traits::Hasher};
 
 type Sha512Block = Block<128>;
 
@@ -241,6 +241,24 @@ impl Sha512 {
 impl Default for Sha512 {
     fn default() -> Self {
         Sha512::new()
+    }
+}
+
+impl Hasher<128, 64> for Sha512 {
+    fn new() -> Self {
+        Self::new()
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 64] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, digest: &mut [u8; 64]) {
+        self.finalize_into(digest);
     }
 }
 

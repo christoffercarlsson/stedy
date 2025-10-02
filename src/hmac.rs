@@ -1,54 +1,76 @@
-use crate::{verify::verify, xor, Sha512};
+use crate::{sha256::Sha256, sha512::Sha512, traits::Hasher, verify::verify, xor::xor};
 
-pub struct HmacSha512 {
-    inner: Sha512,
-    outer: Sha512,
+pub struct Hmac<H, const BLOCK_SIZE: usize, const DIGEST_SIZE: usize>
+where
+    H: Hasher<BLOCK_SIZE, DIGEST_SIZE>,
+{
+    inner: H,
+    outer: H,
 }
 
-impl HmacSha512 {
+impl<H, const BLOCK_SIZE: usize, const DIGEST_SIZE: usize> Hmac<H, BLOCK_SIZE, DIGEST_SIZE>
+where
+    H: Hasher<BLOCK_SIZE, DIGEST_SIZE>,
+{
     pub fn new(key: &[u8]) -> Self {
-        let mut k = [0; 128];
-        let inner_pad = [54; 128];
-        let outer_pad = [92; 128];
-        if key.len() > 128 {
-            let mut hasher = Sha512::new();
+        let mut k = [0u8; BLOCK_SIZE];
+        if key.len() > BLOCK_SIZE {
+            let mut hasher = H::new();
             hasher.update(key);
             let key_digest = hasher.finalize();
-            k[..64].copy_from_slice(&key_digest);
+            k[..DIGEST_SIZE].copy_from_slice(&key_digest);
         } else {
             k[..key.len()].copy_from_slice(key);
         }
-        let mut inner_key = [0; 128];
-        let mut outer_key = [0; 128];
+        let inner_pad = [54u8; BLOCK_SIZE];
+        let outer_pad = [92u8; BLOCK_SIZE];
+        let mut inner_key = [0u8; BLOCK_SIZE];
+        let mut outer_key = [0u8; BLOCK_SIZE];
         xor(&k, &inner_pad, &mut inner_key);
         xor(&k, &outer_pad, &mut outer_key);
-        let mut inner = Sha512::new();
-        let mut outer = Sha512::new();
+        let mut inner = H::new();
+        let mut outer = H::new();
         inner.update(&inner_key);
         outer.update(&outer_key);
         Self { inner, outer }
     }
 
-    pub fn update(&mut self, message: &[u8]) {
-        self.inner.update(message);
+    pub fn update(&mut self, msg: &[u8]) {
+        self.inner.update(msg);
     }
 
-    pub fn finalize_into(mut self, code: &mut [u8; 64]) {
+    pub fn finalize_into(mut self, code: &mut [u8; DIGEST_SIZE]) {
         let digest = self.inner.finalize();
         self.outer.update(&digest);
         self.outer.finalize_into(code);
     }
 
-    pub fn finalize(self) -> [u8; 64] {
-        let mut code = [0; 64];
-        self.finalize_into(&mut code);
-        code
+    pub fn finalize(self) -> [u8; DIGEST_SIZE] {
+        let mut out = [0u8; DIGEST_SIZE];
+        self.finalize_into(&mut out);
+        out
     }
 
-    pub fn verify(self, code: &[u8; 64]) -> bool {
+    pub fn verify(self, code: &[u8; DIGEST_SIZE]) -> bool {
         verify(code, &self.finalize())
     }
 }
+
+pub type HmacSha256 = Hmac<Sha256, 64, 32>;
+
+pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
+    let mut hmac = HmacSha256::new(key);
+    hmac.update(message);
+    hmac.finalize()
+}
+
+pub fn hmac_sha256_verify(key: &[u8], message: &[u8], code: &[u8; 32]) -> bool {
+    let mut hmac = HmacSha256::new(key);
+    hmac.update(message);
+    hmac.verify(code)
+}
+
+pub type HmacSha512 = Hmac<Sha512, 128, 64>;
 
 pub fn hmac_sha512(key: &[u8], message: &[u8]) -> [u8; 64] {
     let mut hmac = HmacSha512::new(key);
@@ -67,6 +89,171 @@ mod tests {
     use super::*;
 
     // https://datatracker.ietf.org/doc/html/rfc4231
+
+    #[test]
+    fn test_hmac_sha256_tc1() {
+        let key = [
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+        ];
+        let message = [72, 105, 32, 84, 104, 101, 114, 101];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                176, 52, 76, 97, 216, 219, 56, 83, 92, 168, 175, 206, 175, 11, 241, 43, 136, 29,
+                194, 0, 201, 131, 61, 167, 38, 233, 55, 108, 46, 50, 207, 247,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_hmac_sha256_tc2() {
+        let key = [74, 101, 102, 101];
+        let message = [
+            119, 104, 97, 116, 32, 100, 111, 32, 121, 97, 32, 119, 97, 110, 116, 32, 102, 111, 114,
+            32, 110, 111, 116, 104, 105, 110, 103, 63,
+        ];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                91, 220, 193, 70, 191, 96, 117, 78, 106, 4, 36, 38, 8, 149, 117, 199, 90, 0, 63, 8,
+                157, 39, 57, 131, 157, 236, 88, 185, 100, 236, 56, 67,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_hmac_sha256_tc3() {
+        let key = [
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170,
+        ];
+        let message = [
+            221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221,
+            221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221,
+            221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221, 221,
+        ];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                119, 62, 169, 30, 54, 128, 14, 70, 133, 77, 184, 235, 208, 145, 129, 167, 41, 89,
+                9, 139, 62, 248, 193, 34, 217, 99, 85, 20, 206, 213, 101, 254,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_hmac_sha256_tc4() {
+        let key = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25,
+        ];
+        let message = [
+            205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205,
+            205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205,
+            205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205,
+        ];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                130, 85, 138, 56, 154, 68, 60, 14, 164, 204, 129, 152, 153, 242, 8, 58, 133, 240,
+                250, 163, 229, 120, 248, 7, 122, 46, 63, 244, 103, 41, 102, 91,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_hmac_sha256_tc5() {
+        let key = [
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        ];
+        let message = [
+            84, 101, 115, 116, 32, 87, 105, 116, 104, 32, 84, 114, 117, 110, 99, 97, 116, 105, 111,
+            110,
+        ];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code[..16],
+            [163, 182, 22, 116, 115, 16, 14, 224, 110, 12, 121, 108, 41, 85, 85, 43,]
+        );
+    }
+
+    #[test]
+    fn test_hmac_sha256_tc6() {
+        let key = [
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+        ];
+        let message = [
+            84, 101, 115, 116, 32, 85, 115, 105, 110, 103, 32, 76, 97, 114, 103, 101, 114, 32, 84,
+            104, 97, 110, 32, 66, 108, 111, 99, 107, 45, 83, 105, 122, 101, 32, 75, 101, 121, 32,
+            45, 32, 72, 97, 115, 104, 32, 75, 101, 121, 32, 70, 105, 114, 115, 116,
+        ];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                96, 228, 49, 89, 30, 224, 182, 127, 13, 138, 38, 170, 203, 245, 183, 127, 142, 11,
+                198, 33, 55, 40, 197, 20, 5, 70, 4, 15, 14, 227, 127, 84,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_hmac_sha256_tc7() {
+        let key = [
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+            170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170,
+        ];
+        let message = [
+            84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 116, 101, 115, 116, 32, 117, 115, 105,
+            110, 103, 32, 97, 32, 108, 97, 114, 103, 101, 114, 32, 116, 104, 97, 110, 32, 98, 108,
+            111, 99, 107, 45, 115, 105, 122, 101, 32, 107, 101, 121, 32, 97, 110, 100, 32, 97, 32,
+            108, 97, 114, 103, 101, 114, 32, 116, 104, 97, 110, 32, 98, 108, 111, 99, 107, 45, 115,
+            105, 122, 101, 32, 100, 97, 116, 97, 46, 32, 84, 104, 101, 32, 107, 101, 121, 32, 110,
+            101, 101, 100, 115, 32, 116, 111, 32, 98, 101, 32, 104, 97, 115, 104, 101, 100, 32, 98,
+            101, 102, 111, 114, 101, 32, 98, 101, 105, 110, 103, 32, 117, 115, 101, 100, 32, 98,
+            121, 32, 116, 104, 101, 32, 72, 77, 65, 67, 32, 97, 108, 103, 111, 114, 105, 116, 104,
+            109, 46,
+        ];
+        let code = hmac_sha256(&key, &message);
+        let verified = hmac_sha256_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                155, 9, 255, 167, 27, 148, 47, 203, 39, 99, 95, 188, 213, 176, 233, 68, 191, 220,
+                99, 100, 79, 7, 19, 147, 138, 127, 81, 83, 92, 58, 53, 226,
+            ]
+        );
+    }
 
     #[test]
     fn test_hmac_sha512_tc1() {

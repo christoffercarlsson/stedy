@@ -1,4 +1,4 @@
-use crate::block::Block;
+use crate::{block::Block, traits::Hasher};
 
 type Sha256Block = Block<64>;
 
@@ -168,7 +168,25 @@ impl Sha256 {
 
 impl Default for Sha256 {
     fn default() -> Self {
-        Sha256::new()
+        Self::new()
+    }
+}
+
+impl Hasher<64, 32> for Sha256 {
+    fn new() -> Self {
+        Self::new()
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 32] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, digest: &mut [u8; 32]) {
+        self.finalize_into(digest);
     }
 }
 

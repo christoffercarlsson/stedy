@@ -2,10 +2,9 @@ use crate::{curve25519::Curve25519, rng::Rng, x25519::clamp};
 
 pub fn sss_split<const N: usize, const K: usize>(
     seed: [u8; 32],
-    secret: &[u8; 32],
+    private_key: &[u8; 32],
 ) -> [[u8; 36]; N] {
-    let mut rng = Rng::from(seed);
-    let c = calculate_coefficients(&mut rng, *secret);
+    let c = calculate_coefficients(seed, private_key);
     let mut shares = [[0u8; 36]; N];
     for i in 0..N {
         let x = (i + 1) as u32;
@@ -14,13 +13,17 @@ pub fn sss_split<const N: usize, const K: usize>(
     shares
 }
 
-fn calculate_coefficients<const K: usize>(rng: &mut Rng, mut secret: [u8; 32]) -> [Curve25519; K] {
-    clamp(&mut secret);
+fn calculate_coefficients<const K: usize>(
+    seed: [u8; 32],
+    private_key: &[u8; 32],
+) -> [Curve25519; K] {
+    let mut rng = Rng::from(seed);
     let mut c = [[0u8; 32]; K];
-    c[0] = secret;
+    c[0].copy_from_slice(private_key);
     for i in 1..K {
         rng.fill(&mut c[i]);
     }
+    clamp(&mut c[0]);
     c.map(|bytes| Curve25519::from(&bytes))
 }
 
@@ -69,13 +72,13 @@ mod tests {
     #[test]
     fn test_sss() {
         let seed = [0u8; 32];
-        let secret = [
+        let private_key = [
             136, 216, 83, 226, 72, 2, 31, 41, 30, 4, 133, 24, 79, 9, 12, 64, 255, 15, 234, 195, 20,
             214, 37, 199, 82, 42, 190, 148, 35, 201, 11, 121,
         ];
-        let shares = sss_split::<3, 2>(seed, &secret);
+        let shares = sss_split::<3, 2>(seed, &private_key);
         let result = sss_combine(&[shares[2], shares[1]]);
-        assert_eq!(result, secret);
+        assert_eq!(result, private_key);
     }
 
     #[test]
