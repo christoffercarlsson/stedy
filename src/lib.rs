@@ -10,6 +10,7 @@ mod hmac;
 mod pbkdf2;
 mod poly1305;
 mod rng;
+mod sha1;
 mod sha256;
 mod sha512;
 mod sss;
@@ -23,8 +24,10 @@ pub use crate::{
     ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
     hkdf::{hkdf_sha256, hkdf_sha512},
     hmac::{
-        hmac_sha256, hmac_sha256_verify, hmac_sha512, hmac_sha512_verify, HmacSha256, HmacSha512,
+        hmac_sha1, hmac_sha1_verify, hmac_sha256, hmac_sha256_verify, hmac_sha512,
+        hmac_sha512_verify, HmacSha1, HmacSha256, HmacSha512,
     },
+    pbkdf2::{pbkdf2_hmac_sha1, pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
     rng::Rng,
     sha256::{sha256, Sha256},
     sha512::{sha512, Sha512},

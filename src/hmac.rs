@@ -1,4 +1,5 @@
 use crate::{
+    sha1::Sha1,
     sha256::Sha256,
     sha512::Sha512,
     traits::{Digest, Hasher, KeyInit, Mac},
@@ -99,6 +100,20 @@ where
     fn verify(self, code: &[u8; OUTPUT_SIZE]) -> bool {
         self.verify(code)
     }
+}
+
+pub type HmacSha1 = Hmac<Sha1, 64, 20>;
+
+pub fn hmac_sha1(key: &[u8], message: &[u8]) -> [u8; 20] {
+    let mut hmac = HmacSha1::new(key);
+    hmac.update(message);
+    hmac.finalize()
+}
+
+pub fn hmac_sha1_verify(key: &[u8], message: &[u8], code: &[u8; 20]) -> bool {
+    let mut hmac = HmacSha1::new(key);
+    hmac.update(message);
+    hmac.verify(code)
 }
 
 pub type HmacSha256 = Hmac<Sha256, 64, 32>;
