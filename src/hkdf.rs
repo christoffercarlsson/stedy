@@ -1,23 +1,23 @@
 use crate::{
     hmac::{HmacSha256, HmacSha512},
-    traits::Mac,
+    traits::{Digest, KeyInit},
 };
 use core::marker::PhantomData;
 
-struct Hkdf<M, const DIGEST_SIZE: usize>
+struct Hkdf<M, const OUTPUT_SIZE: usize>
 where
-    M: Mac<DIGEST_SIZE>,
+    M: KeyInit + Digest<OUTPUT_SIZE>,
 {
-    prk: [u8; DIGEST_SIZE],
+    prk: [u8; OUTPUT_SIZE],
     m: PhantomData<M>,
 }
 
-impl<M, const DIGEST_SIZE: usize> Hkdf<M, DIGEST_SIZE>
+impl<M, const OUTPUT_SIZE: usize> Hkdf<M, OUTPUT_SIZE>
 where
-    M: Mac<DIGEST_SIZE>,
+    M: KeyInit + Digest<OUTPUT_SIZE>,
 {
     fn extract(salt: Option<&[u8]>, ikm: &[u8]) -> Self {
-        let mut mac = M::new(salt.unwrap_or(&[0u8; DIGEST_SIZE]));
+        let mut mac = M::new(salt.unwrap_or(&[0u8; OUTPUT_SIZE]));
         mac.update(ikm);
         let prk = mac.finalize();
         Self {
@@ -28,8 +28,8 @@ where
 
     fn expand(self, info: Option<&[u8]>, okm: &mut [u8]) {
         let info = info.unwrap_or(&[]);
-        let mut t = [0u8; DIGEST_SIZE];
-        for (i, chunk) in okm.chunks_mut(DIGEST_SIZE).take(255).enumerate() {
+        let mut t = [0u8; OUTPUT_SIZE];
+        for (i, chunk) in okm.chunks_mut(OUTPUT_SIZE).take(255).enumerate() {
             let mut mac = M::new(&self.prk);
             if i > 0 {
                 mac.update(&t);

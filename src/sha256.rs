@@ -1,4 +1,7 @@
-use crate::{block::Block, traits::Digest};
+use crate::{
+    block::Block,
+    traits::{Digest, Hasher, Init},
+};
 
 type Sha256Block = Block<64>;
 
@@ -53,6 +56,7 @@ fn schedule(block: &[u8]) -> [u32; 64] {
     w
 }
 
+#[derive(Copy, Clone)]
 pub struct Sha256 {
     h0: u32,
     h1: u32,
@@ -166,17 +170,13 @@ impl Sha256 {
     }
 }
 
-impl Default for Sha256 {
-    fn default() -> Self {
+impl Init for Sha256 {
+    fn new() -> Self {
         Self::new()
     }
 }
 
-impl Digest<64, 32> for Sha256 {
-    fn new() -> Self {
-        Self::new()
-    }
-
+impl Digest<32> for Sha256 {
     fn update(&mut self, message: &[u8]) {
         self.update(message);
     }
@@ -185,10 +185,12 @@ impl Digest<64, 32> for Sha256 {
         self.finalize()
     }
 
-    fn finalize_into(self, digest: &mut [u8; 32]) {
-        self.finalize_into(digest);
+    fn finalize_into(self, output: &mut [u8; 32]) {
+        self.finalize_into(output);
     }
 }
+
+impl Hasher<64, 32> for Sha256 {}
 
 pub fn sha256(message: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();

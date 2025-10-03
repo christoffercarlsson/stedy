@@ -7,6 +7,7 @@ mod curve25519;
 mod ed25519;
 mod hkdf;
 mod hmac;
+mod pbkdf2;
 mod poly1305;
 mod rng;
 mod sha256;
@@ -29,5 +30,5 @@ pub use crate::{
     sha512::{sha512, Sha512},
     sss::{sss_combine, sss_split},
     x25519::{x25519_generate_key_pair, x25519_key_exchange, x25519_public_key},
-    xor::xor,
+    xor::{xor, xor_mut},
 };
