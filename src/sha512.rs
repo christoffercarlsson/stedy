@@ -1,4 +1,7 @@
-use crate::block::Block;
+use crate::{
+    block::Block,
+    traits::{Digest, Hasher, Init},
+};
 
 type Sha512Block = Block<128>;
 
@@ -125,6 +128,7 @@ fn schedule(block: &[u8]) -> [u64; 80] {
     w
 }
 
+#[derive(Copy, Clone)]
 pub struct Sha512 {
     h0: u64,
     h1: u64,
@@ -238,11 +242,27 @@ impl Sha512 {
     }
 }
 
-impl Default for Sha512 {
-    fn default() -> Self {
-        Sha512::new()
+impl Init for Sha512 {
+    fn new() -> Self {
+        Self::new()
     }
 }
+
+impl Digest<64> for Sha512 {
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 64] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, digest: &mut [u8; 64]) {
+        self.finalize_into(digest);
+    }
+}
+
+impl Hasher<128, 64> for Sha512 {}
 
 pub fn sha512(message: &[u8]) -> [u8; 64] {
     let mut hasher = Sha512::new();

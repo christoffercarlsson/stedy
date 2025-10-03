@@ -1,7 +1,7 @@
 [package]
 name = "stedy"
 description = "Easy-to-use primitives for modern cryptographic protocols"
-version = "1.0.0-beta.3"
+version = "1.0.0-beta.4"
 license = "Unlicense"
 authors = ["Christoffer Carlsson <cc@christoffercarlsson.com>"]
 edition = "2021"

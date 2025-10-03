@@ -1,6 +1,6 @@
 pub fn verify(a: &[u8], b: &[u8]) -> bool {
     let mut result = 0;
-    for (x, y) in a.iter().zip(b.iter()) {
+    for (x, y) in a.iter().zip(b) {
         result |= x ^ y;
     }
     result == 0
