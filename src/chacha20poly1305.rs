@@ -1,4 +1,4 @@
-use crate::{chacha::ChaCha20, poly1305::Poly1305, verify::verify};
+use crate::{chacha::ChaCha20, poly1305::Poly1305, rng::Rng, verify::verify};
 
 pub fn chacha20poly1305_encrypt(
     key: &[u8; 32],
@@ -43,6 +43,13 @@ fn calculate_tag(mut mac: Poly1305, aad: Option<&[u8]>, ciphertext: &[u8]) -> [u
     mac.update(&(aad.len() as u64).to_le_bytes());
     mac.update(&(ciphertext.len() as u64).to_le_bytes());
     mac.finalize()
+}
+
+pub fn chacha20poly1305_generate_key(seed: [u8; 32]) -> [u8; 32] {
+    let mut rng = Rng::from(seed);
+    let mut secret_key = [0u8; 32];
+    rng.fill(&mut secret_key);
+    secret_key
 }
 
 #[cfg(test)]
@@ -95,6 +102,19 @@ mod tests {
                 116, 105, 112, 32, 102, 111, 114, 32, 116, 104, 101, 32, 102, 117, 116, 117, 114,
                 101, 44, 32, 115, 117, 110, 115, 99, 114, 101, 101, 110, 32, 119, 111, 117, 108,
                 100, 32, 98, 101, 32, 105, 116, 46,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_chacha20poly1305_generate_key() {
+        let seed = [0u8; 32];
+        let key = chacha20poly1305_generate_key(seed);
+        assert_eq!(
+            key,
+            [
+                118, 184, 224, 173, 160, 241, 61, 144, 64, 93, 106, 229, 83, 134, 189, 40, 189,
+                210, 25, 184, 160, 141, 237, 26, 168, 54, 239, 204, 139, 119, 13, 199,
             ]
         );
     }

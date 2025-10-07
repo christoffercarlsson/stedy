@@ -25,7 +25,9 @@ pub use crate::{
         blake2b, blake2b_mac, blake2b_verify, blake2s, blake2s_mac, blake2s_verify, Blake2b,
         Blake2s,
     },
-    chacha20poly1305::{chacha20poly1305_decrypt, chacha20poly1305_encrypt},
+    chacha20poly1305::{
+        chacha20poly1305_decrypt, chacha20poly1305_encrypt, chacha20poly1305_generate_key,
+    },
     ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
     hkdf::{hkdf_sha256, hkdf_sha512},
     hmac::{

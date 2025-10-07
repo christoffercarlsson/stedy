@@ -6,6 +6,7 @@ pub struct Rng {
     index: usize,
 }
 
+#[allow(dead_code)]
 impl Rng {
     fn refill_buffer(&mut self) {
         self.cipher.apply_keystream(&mut self.buffer);
