@@ -5,6 +5,10 @@ const BASE_POINT: Curve25519 = Curve25519([9, 0, 0, 0, 0]);
 
 pub fn x25519_generate_key_pair(seed: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     let mut rng = Rng::from(seed);
+    x25519_key_pair_from_rng(&mut rng)
+}
+
+pub fn x25519_key_pair_from_rng(rng: &mut Rng) -> ([u8; 32], [u8; 32]) {
     let mut private_key = [0u8; 32];
     rng.fill(&mut private_key);
     let public_key = x25519_public_key(&private_key);
