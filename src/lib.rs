@@ -33,10 +33,9 @@ pub use crate::{
         hmac_sha512_verify, HmacSha1, HmacSha256, HmacSha512,
     },
     pbkdf2::{pbkdf2_hmac_sha1, pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
-    rng::Rng,
     sha256::{sha256, Sha256},
     sha512::{sha512, Sha512},
     sss::{sss_combine, sss_split},
+    verify::verify,
     x25519::{x25519_generate_key_pair, x25519_key_exchange, x25519_public_key},
-    xor::{xor, xor_mut},
 };
