@@ -17,6 +17,7 @@ mod sha512;
 mod sss;
 mod traits;
 mod verify;
+mod wipe;
 mod x25519;
 mod xor;
 
@@ -39,5 +40,6 @@ pub use crate::{
     sha512::{sha512, Sha512},
     sss::{sss_combine, sss_split},
     verify::verify,
+    wipe::wipe,
     x25519::{x25519_generate_key_pair, x25519_key_exchange, x25519_public_key},
 };
