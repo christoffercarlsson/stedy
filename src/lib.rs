@@ -28,6 +28,8 @@ pub use crate::{
     },
     chacha20poly1305::{
         chacha20poly1305_decrypt, chacha20poly1305_encrypt, chacha20poly1305_generate_key,
+        xchacha20poly1305_decrypt, xchacha20poly1305_encrypt, xchacha20poly1305_generate_key,
+        xchacha20poly1305_generate_nonce,
     },
     ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
     hkdf::{hkdf_sha256, hkdf_sha512},
