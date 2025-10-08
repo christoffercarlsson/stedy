@@ -65,6 +65,24 @@ pub fn xchacha20poly1305_generate_nonce(seed: [u8; 32]) -> [u8; 24] {
     nonce
 }
 
+pub fn chacha20poly1305_increment_nonce(nonce: &mut [u8; 12]) -> bool {
+    increment_nonce(nonce)
+}
+
+pub fn xchacha20poly1305_increment_nonce(nonce: &mut [u8; 24]) -> bool {
+    increment_nonce(nonce)
+}
+
+fn increment_nonce(nonce: &mut [u8]) -> bool {
+    let mut carry: u16 = 1;
+    for b in nonce.iter_mut().rev() {
+        let sum = (*b as u16) + carry;
+        *b = sum as u8;
+        carry = sum >> 8;
+    }
+    carry == 0
+}
+
 fn encrypt(cipher: &mut ChaCha20, aad: Option<&[u8]>, message: &mut [u8]) -> [u8; 16] {
     let mac = create_mac(cipher);
     cipher.apply_keystream(message);
@@ -239,5 +257,32 @@ mod tests {
                 210, 25, 184, 160, 141, 237, 26,
             ]
         );
+    }
+
+    #[test]
+    fn test_chacha20poly1305_increment_nonce() {
+        let mut nonce = [42u8; 12];
+        let incremented = chacha20poly1305_increment_nonce(&mut nonce);
+        assert!(incremented == true);
+        assert_eq!(nonce, [42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 43]);
+        let mut nonce = [255u8; 12];
+        let incremented = chacha20poly1305_increment_nonce(&mut nonce);
+        assert!(incremented == false);
+        assert_eq!(nonce, [0u8; 12]);
+    }
+
+    #[test]
+    fn test_xchacha20poly1305_increment_nonce() {
+        let mut nonce = [0u8; 24];
+        let incremented = xchacha20poly1305_increment_nonce(&mut nonce);
+        assert!(incremented == true);
+        assert_eq!(
+            nonce,
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        );
+        let mut nonce = [255u8; 24];
+        let incremented = xchacha20poly1305_increment_nonce(&mut nonce);
+        assert!(incremented == false);
+        assert_eq!(nonce, [0u8; 24]);
     }
 }
