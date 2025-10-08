@@ -1,18 +1,11 @@
-use crate::{curve25519::Curve25519, rng::Rng};
+use crate::{curve25519::Curve25519, hkdf::hkdf_sha512, rng::Rng};
 
 const A24: Curve25519 = Curve25519([121665, 0, 0, 0, 0]);
 const BASE_POINT: Curve25519 = Curve25519([9, 0, 0, 0, 0]);
 
 pub fn x25519_generate_key_pair(seed: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     let mut rng = Rng::from(seed);
-    x25519_key_pair_from_rng(&mut rng)
-}
-
-pub fn x25519_key_pair_from_rng(rng: &mut Rng) -> ([u8; 32], [u8; 32]) {
-    let mut private_key = [0u8; 32];
-    rng.fill(&mut private_key);
-    let public_key = x25519_public_key(&private_key);
-    (private_key, public_key)
+    key_pair_from_rng(&mut rng)
 }
 
 pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
@@ -65,6 +58,20 @@ pub fn clamp(scalar: &mut [u8; 32]) {
     scalar[0] &= 248;
     scalar[31] &= 127;
     scalar[31] |= 64;
+}
+
+pub fn key_pair_from_rng(rng: &mut Rng) -> ([u8; 32], [u8; 32]) {
+    let mut private_key = [0u8; 32];
+    rng.fill(&mut private_key);
+    let public_key = x25519_public_key(&private_key);
+    (private_key, public_key)
+}
+
+pub fn derive_secret_key(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
+    let shared_secret = x25519_key_exchange(private_key, public_key);
+    let mut secret_key = [0u8; 32];
+    hkdf_sha512(&shared_secret, Some(&[0u8; 64]), None, &mut secret_key);
+    secret_key
 }
 
 #[cfg(test)]

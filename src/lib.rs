@@ -4,6 +4,7 @@ mod blake2;
 mod block;
 mod chacha;
 mod chacha20poly1305;
+mod cryptobox;
 mod curve25519;
 mod ed25519;
 mod hkdf;
@@ -31,6 +32,10 @@ pub use crate::{
         chacha20poly1305_increment_nonce, xchacha20poly1305_decrypt, xchacha20poly1305_encrypt,
         xchacha20poly1305_generate_key, xchacha20poly1305_generate_nonce,
         xchacha20poly1305_increment_nonce,
+    },
+    cryptobox::{
+        cryptobox_key_pair, cryptobox_open, cryptobox_open_anonymous, cryptobox_seal,
+        cryptobox_seal_anonymous,
     },
     ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
     hkdf::{hkdf_sha256, hkdf_sha512},

@@ -1,9 +1,8 @@
 use crate::{
     chacha20poly1305::{chacha20poly1305_decrypt, chacha20poly1305_encrypt},
     curve25519::Curve25519,
-    hkdf::hkdf_sha512,
     rng::Rng,
-    x25519::{clamp, x25519_key_exchange, x25519_key_pair_from_rng},
+    x25519::{clamp, derive_secret_key, key_pair_from_rng},
 };
 
 pub fn sss_split<const N: usize, const K: usize>(
@@ -13,7 +12,7 @@ pub fn sss_split<const N: usize, const K: usize>(
     let mut rng = Rng::from(seed);
     let private_key = generate_private_key(&mut rng);
     let public_key = generate_public_key(&mut rng);
-    let secret_key = calculate_secret_key(&private_key, &public_key);
+    let secret_key = derive_secret_key(&private_key, &public_key);
     let coefficients = calculate_coefficients::<K>(&mut rng, &private_key);
     let mut shares = [[0u8; 116]; N];
     for i in 0..N {
@@ -31,12 +30,12 @@ pub fn sss_split<const N: usize, const K: usize>(
 }
 
 fn generate_private_key(rng: &mut Rng) -> [u8; 32] {
-    let (private_key, _) = x25519_key_pair_from_rng(rng);
+    let (private_key, _) = key_pair_from_rng(rng);
     private_key
 }
 
 fn generate_public_key(rng: &mut Rng) -> [u8; 32] {
-    let (_, public_key) = x25519_key_pair_from_rng(rng);
+    let (_, public_key) = key_pair_from_rng(rng);
     public_key
 }
 
@@ -49,15 +48,9 @@ fn calculate_coefficients<const K: usize>(
     clamp(&mut c[0]);
     for i in 1..K {
         rng.fill(&mut c[i]);
+        clamp(&mut c[i]);
     }
     c.map(|bytes| Curve25519::from(&bytes))
-}
-
-fn calculate_secret_key(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
-    let shared_secret = x25519_key_exchange(private_key, public_key);
-    let mut secret_key = [0u8; 32];
-    hkdf_sha512(&shared_secret, Some(&[0u8; 64]), None, &mut secret_key);
-    secret_key
 }
 
 fn calculate_share<const K: usize>(
@@ -106,7 +99,7 @@ fn recover_secret_key<const K: usize>(shares: &[[u8; 116]; K]) -> [u8; 32] {
     let private_key = recover_private_key(shares);
     let mut public_key = [0u8; 32];
     public_key.copy_from_slice(&shares[0][36..68]);
-    calculate_secret_key(&private_key, &public_key)
+    derive_secret_key(&private_key, &public_key)
 }
 
 fn recover_private_key<const K: usize>(shares: &[[u8; 116]; K]) -> [u8; 32] {
