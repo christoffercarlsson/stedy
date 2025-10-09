@@ -582,6 +582,8 @@ impl From<EdwardsPoint> for Window {
 mod tests {
     use super::*;
 
+    // https://datatracker.ietf.org/doc/html/rfc8032#section-7.1
+
     #[test]
     fn test_ed25519_tc1() {
         let private_key = [

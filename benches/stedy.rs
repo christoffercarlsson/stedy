@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main};
 
 mod blake2;
 mod chacha20poly1305;
+mod cryptobox;
 mod ed25519;
 mod hkdf;
 mod hmac;
@@ -15,6 +16,7 @@ criterion_group!(
     benches,
     blake2::bench,
     chacha20poly1305::bench,
+    cryptobox::bench,
     ed25519::bench,
     hkdf::bench,
     hmac::bench,
