@@ -9,6 +9,7 @@ mod curve25519;
 mod ed25519;
 mod hkdf;
 mod hmac;
+mod pad;
 mod pbkdf2;
 mod poly1305;
 mod rng;
@@ -43,6 +44,7 @@ pub use crate::{
         hmac_sha1, hmac_sha1_verify, hmac_sha256, hmac_sha256_verify, hmac_sha512,
         hmac_sha512_verify, HmacSha1, HmacSha256, HmacSha512,
     },
+    pad::{pad, unpad},
     pbkdf2::{pbkdf2_hmac_sha1, pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
     sha256::{sha256, Sha256},
     sha512::{sha512, Sha512},
