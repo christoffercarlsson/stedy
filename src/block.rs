@@ -19,9 +19,10 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
             return None;
         }
         let head = self.buffer;
+        let tail = BlockIterator::<BLOCK_SIZE> { begin, end };
         self.buffer_size = 0;
         self.buffer_chunk(&data[end..]);
-        Some((head, BlockIterator::<BLOCK_SIZE> { begin, end }))
+        Some((head, tail))
     }
 
     pub fn remaining(&self) -> &[u8] {
