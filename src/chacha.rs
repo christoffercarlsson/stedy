@@ -1,3 +1,7 @@
+// pub type ChaCha8 = ChaCha<8>;
+// pub type ChaCha12 = ChaCha<12>;
+pub type ChaCha20 = ChaCha<20>;
+
 pub struct ChaCha<const ROUNDS: u8> {
     state: [u32; 16],
     keystream: [u8; 64],
@@ -6,15 +10,7 @@ pub struct ChaCha<const ROUNDS: u8> {
 
 impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     pub fn new(key: &[u8; 32], nonce: &[u8; 12]) -> Self {
-        let mut state = [0u32; 16];
-        state[0..4].copy_from_slice(&Self::SIGMA);
-        state[4..12].copy_from_slice(&Self::read_key(key));
-        state[13..16].copy_from_slice(&Self::read_nonce(nonce));
-        Self {
-            state,
-            keystream: [0u8; 64],
-            offset: 64,
-        }
+        Self::init(&Self::read_key(key), &Self::read_nonce(nonce))
     }
 
     pub fn apply_keystream(&mut self, mut data: &mut [u8]) {
@@ -39,8 +35,37 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     }
 }
 
+impl<const ROUNDS: u8> From<&[u8; 32]> for ChaCha<ROUNDS> {
+    fn from(key: &[u8; 32]) -> Self {
+        Self::new(key, &[0u8; 12])
+    }
+}
+
+impl<const ROUNDS: u8> From<&[u8; 48]> for ChaCha<ROUNDS> {
+    fn from(seed: &[u8; 48]) -> Self {
+        let key: &[u8; 32] = seed[0..32].try_into().unwrap();
+        let nonce: &[u8; 12] = seed[32..44].try_into().unwrap();
+        let counter = u32::from_le_bytes(seed[44..48].try_into().unwrap());
+        let mut cipher = Self::new(key, nonce);
+        cipher.seek(counter);
+        cipher
+    }
+}
+
 impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     const SIGMA: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
+
+    fn init(key: &[u32; 8], nonce: &[u32; 3]) -> Self {
+        let mut state = [0u32; 16];
+        state[0..4].copy_from_slice(&Self::SIGMA);
+        state[4..12].copy_from_slice(key);
+        state[13..16].copy_from_slice(nonce);
+        Self {
+            state,
+            keystream: [0u8; 64],
+            offset: 64,
+        }
+    }
 
     fn read_key(key: &[u8; 32]) -> [u32; 8] {
         Self::read::<8>(key)
@@ -98,23 +123,36 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     }
 }
 
-impl<const ROUNDS: u8> From<&[u8; 32]> for ChaCha<ROUNDS> {
-    fn from(key: &[u8; 32]) -> Self {
-        Self::new(key, &[0u8; 12])
+pub struct XChaCha20;
+
+impl XChaCha20 {
+    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> ChaCha20 {
+        let k = ChaCha20::read_key(key);
+        let (n1, n2) = Self::read_nonce(nonce);
+        let subkey = Self::calculate_subkey(&k, &n1);
+        ChaCha20::init(&subkey, &n2)
     }
 }
 
-impl<const ROUNDS: u8> From<&[u8; 48]> for ChaCha<ROUNDS> {
-    fn from(seed: &[u8; 48]) -> Self {
-        let key: &[u8; 32] = seed[0..32].try_into().unwrap();
-        let nonce: &[u8; 12] = seed[32..44].try_into().unwrap();
-        let counter = u32::from_le_bytes(seed[44..48].try_into().unwrap());
-        let mut cipher = Self::new(key, nonce);
-        cipher.seek(counter);
-        cipher
+impl XChaCha20 {
+    fn read_nonce(nonce: &[u8; 24]) -> ([u32; 4], [u32; 3]) {
+        let n1 = ChaCha20::read::<4>(&nonce[0..16]);
+        let n2 = [
+            0,
+            u32::from_le_bytes(nonce[16..20].try_into().unwrap()),
+            u32::from_le_bytes(nonce[20..24].try_into().unwrap()),
+        ];
+        (n1, n2)
+    }
+
+    fn calculate_subkey(key: &[u32; 8], nonce: &[u32; 4]) -> [u32; 8] {
+        let mut state = [0u32; 16];
+        state[0..4].copy_from_slice(&ChaCha20::SIGMA);
+        state[4..12].copy_from_slice(key);
+        state[12..16].copy_from_slice(nonce);
+        ChaCha20::rounds(&mut state);
+        [
+            state[0], state[1], state[2], state[3], state[12], state[13], state[14], state[15],
+        ]
     }
 }
-
-// pub type ChaCha8 = ChaCha<8>;
-// pub type ChaCha12 = ChaCha<12>;
-pub type ChaCha20 = ChaCha<20>;
