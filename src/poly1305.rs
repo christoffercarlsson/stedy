@@ -1,0 +1,265 @@
+use {
+    crate::block::Block,
+    core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
+};
+
+pub struct Poly1305 {
+    a: FieldElement,
+    r: FieldElement,
+    s: FieldElement,
+    block: Block<16>,
+}
+
+impl Poly1305 {
+    pub fn new(key: &[u8; 32]) -> Self {
+        let mut r = FieldElement::from(&key[0..16]);
+        r &= FieldElement::R;
+        Self {
+            a: FieldElement::ZERO,
+            r,
+            s: FieldElement::from(&key[16..32]),
+            block: Block::<16>::new(),
+        }
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        if let Some((head, tail)) = self.block.blocks(message) {
+            self.process_block(&head);
+            for (begin, end) in tail {
+                self.process_block(&message[begin..end]);
+            }
+        }
+    }
+
+    pub fn update_padded(&mut self, message: &[u8]) {
+        self.update(message);
+        let padding = [0u8; 16];
+        let padding_size = (16 - (message.len() % 16)) % 16;
+        self.update(&padding[..padding_size]);
+    }
+
+    pub fn finalize(mut self) -> [u8; 16] {
+        let remaining = self.block.remaining();
+        if !remaining.is_empty() {
+            let n = Self::read_block(remaining);
+            self.process_element(n);
+        }
+        self.a += self.s;
+        self.a.into()
+    }
+
+    fn process_block(&mut self, block: &[u8]) {
+        let n = Self::read_block(block);
+        self.process_element(n);
+    }
+
+    fn read_block(block: &[u8]) -> FieldElement {
+        let mut bytes = [0u8; 17];
+        bytes[..block.len()].copy_from_slice(block);
+        bytes[block.len()] = 1;
+        FieldElement::from(bytes)
+    }
+
+    fn process_element(&mut self, n: FieldElement) {
+        self.a += n;
+        self.a *= self.r;
+    }
+}
+
+#[derive(Clone, Copy)]
+struct FieldElement([u64; 5]);
+
+impl FieldElement {
+    const MASK: u64 = (1u64 << 26) - 1;
+    const R: Self = Self([67108863, 67108611, 67092735, 66076671, 1048575]);
+    const ZERO: Self = Self([0; 5]);
+
+    fn reduce(&mut self) {
+        let carry = self[4] >> 26;
+        self.mask();
+        self[0] += carry * 5;
+        self[1] += self[0] >> 26;
+        self[2] += self[1] >> 26;
+        self[0] &= Self::MASK;
+        self[1] &= Self::MASK;
+    }
+
+    fn carry(&mut self) {
+        self[1] += self[0] >> 26;
+        self[2] += self[1] >> 26;
+        self[3] += self[2] >> 26;
+        self[4] += self[3] >> 26;
+    }
+
+    fn mask(&mut self) {
+        self[0] &= Self::MASK;
+        self[1] &= Self::MASK;
+        self[2] &= Self::MASK;
+        self[3] &= Self::MASK;
+        self[4] &= Self::MASK;
+    }
+
+    fn canonical(&mut self) {
+        let mut reduced = self.clone();
+        reduced[0] += 5;
+        reduced.carry();
+        reduced[4] = reduced[4].wrapping_sub(1 << 26);
+        let borrow = reduced[4] >> 63;
+        reduced.mask();
+        *self = Self::select(&reduced, &self, borrow);
+    }
+
+    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+        let mask = ((condition != 0) as u64).wrapping_neg();
+        Self([
+            a[0] & !mask | b[0] & mask,
+            a[1] & !mask | b[1] & mask,
+            a[2] & !mask | b[2] & mask,
+            a[3] & !mask | b[3] & mask,
+            a[4] & !mask | b[4] & mask,
+        ])
+    }
+}
+
+impl Index<usize> for FieldElement {
+    type Output = u64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl IndexMut<usize> for FieldElement {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl AddAssign for FieldElement {
+    fn add_assign(&mut self, rhs: Self) {
+        self[0] += rhs[0];
+        self[1] += rhs[1];
+        self[2] += rhs[2];
+        self[3] += rhs[3];
+        self[4] += rhs[4];
+        self.carry();
+        self.reduce();
+    }
+}
+
+impl BitAndAssign for FieldElement {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self[0] &= rhs[0];
+        self[1] &= rhs[1];
+        self[2] &= rhs[2];
+        self[3] &= rhs[3];
+        self[4] &= rhs[4];
+    }
+}
+
+impl MulAssign for FieldElement {
+    fn mul_assign(&mut self, rhs: Self) {
+        let mut r = Self::ZERO;
+        r[0] += self[0] * rhs[0];
+        r[0] += self[4] * rhs[1] * 5;
+        r[0] += self[3] * rhs[2] * 5;
+        r[0] += self[2] * rhs[3] * 5;
+        r[0] += self[1] * rhs[4] * 5;
+        r[1] += self[1] * rhs[0];
+        r[1] += self[0] * rhs[1];
+        r[1] += self[4] * rhs[2] * 5;
+        r[1] += self[3] * rhs[3] * 5;
+        r[1] += self[2] * rhs[4] * 5;
+        r[2] += self[2] * rhs[0];
+        r[2] += self[1] * rhs[1];
+        r[2] += self[0] * rhs[2];
+        r[2] += self[4] * rhs[3] * 5;
+        r[2] += self[3] * rhs[4] * 5;
+        r[3] += self[3] * rhs[0];
+        r[3] += self[2] * rhs[1];
+        r[3] += self[1] * rhs[2];
+        r[3] += self[0] * rhs[3];
+        r[3] += self[4] * rhs[4] * 5;
+        r[4] += self[4] * rhs[0];
+        r[4] += self[3] * rhs[1];
+        r[4] += self[2] * rhs[2];
+        r[4] += self[1] * rhs[3];
+        r[4] += self[0] * rhs[4];
+        r.carry();
+        r.reduce();
+        *self = r;
+    }
+}
+
+impl From<[u8; 17]> for FieldElement {
+    fn from(value: [u8; 17]) -> Self {
+        let words = [
+            u32::from_le_bytes(value[0..4].try_into().unwrap()) as u64,
+            u32::from_le_bytes(value[4..8].try_into().unwrap()) as u64,
+            u32::from_le_bytes(value[8..12].try_into().unwrap()) as u64,
+            u32::from_le_bytes(value[12..16].try_into().unwrap()) as u64,
+            value[16] as u64,
+        ];
+        let mut fe = Self([
+            words[0],
+            words[0] >> 26 | (words[1] << 6),
+            words[1] >> 20 | (words[2] << 12),
+            words[2] >> 14 | (words[3] << 18),
+            words[3] >> 8 | (words[4] << 24),
+        ]);
+        fe.mask();
+        fe
+    }
+}
+
+impl From<&[u8]> for FieldElement {
+    fn from(value: &[u8]) -> Self {
+        let mut bytes = [0u8; 17];
+        bytes[0..16].copy_from_slice(&value[0..16]);
+        Self::from(bytes)
+    }
+}
+
+impl From<FieldElement> for [u8; 16] {
+    fn from(mut fe: FieldElement) -> Self {
+        fe.canonical();
+        let words = [
+            (fe[0] | (fe[1] << 26)) as u32,
+            (fe[1] >> 6 | (fe[2] << 20)) as u32,
+            (fe[2] >> 12 | (fe[3] << 14)) as u32,
+            (fe[3] >> 18 | (fe[4] << 8)) as u32,
+        ];
+        let mut bytes = [0u8; 16];
+        bytes[0..4].copy_from_slice(&words[0].to_le_bytes());
+        bytes[4..8].copy_from_slice(&words[1].to_le_bytes());
+        bytes[8..12].copy_from_slice(&words[2].to_le_bytes());
+        bytes[12..16].copy_from_slice(&words[3].to_le_bytes());
+        bytes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // https://datatracker.ietf.org/doc/html/rfc7539#section-2.5.2
+
+    #[test]
+    fn test_poly1305() {
+        let key = [
+            133, 214, 190, 120, 87, 85, 109, 51, 127, 68, 82, 254, 66, 213, 6, 168, 1, 3, 128, 138,
+            251, 13, 178, 253, 74, 191, 246, 175, 65, 73, 245, 27,
+        ];
+        let message = [
+            67, 114, 121, 112, 116, 111, 103, 114, 97, 112, 104, 105, 99, 32, 70, 111, 114, 117,
+            109, 32, 82, 101, 115, 101, 97, 114, 99, 104, 32, 71, 114, 111, 117, 112,
+        ];
+        let mut mac = Poly1305::new(&key);
+        mac.update(&message);
+        let tag = mac.finalize();
+        assert_eq!(
+            tag,
+            [168, 6, 29, 193, 48, 81, 54, 198, 194, 43, 139, 175, 12, 1, 39, 169]
+        );
+    }
+}
