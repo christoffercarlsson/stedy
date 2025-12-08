@@ -1,6 +1,7 @@
 #![no_std]
 
 mod block;
+mod chacha;
 mod sha256;
 mod sha512;
 
