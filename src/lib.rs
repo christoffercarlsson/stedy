@@ -12,6 +12,7 @@ mod sha256;
 mod sha512;
 mod verify;
 mod wipe;
+mod xor;
 
 pub use crate::{
     blake2b::*, blake2s::*, chacha20poly1305::*, pad::*, rng::*, sha256::*, sha512::*, verify::*,
