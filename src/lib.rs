@@ -1,5 +1,7 @@
 #![no_std]
 
+mod blake2b;
+mod blake2s;
 mod block;
 mod chacha;
 mod chacha20poly1305;
@@ -11,4 +13,7 @@ mod sha512;
 mod verify;
 mod wipe;
 
-pub use crate::{chacha20poly1305::*, pad::*, rng::*, sha256::*, sha512::*, verify::*, wipe::*};
+pub use crate::{
+    blake2b::*, blake2s::*, chacha20poly1305::*, pad::*, rng::*, sha256::*, sha512::*, verify::*,
+    wipe::*,
+};
