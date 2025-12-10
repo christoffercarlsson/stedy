@@ -8,6 +8,7 @@ mod chacha20poly1305;
 mod pad;
 mod poly1305;
 mod rng;
+mod sha1;
 mod sha256;
 mod sha512;
 mod verify;
