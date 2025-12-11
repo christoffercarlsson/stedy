@@ -1,4 +1,7 @@
-use crate::block::Block;
+use crate::{
+    block::Block,
+    traits::{Digest, Hasher, Init},
+};
 
 pub struct Sha512 {
     h: [u64; 8],
@@ -52,6 +55,28 @@ pub fn sha512(message: &[u8]) -> [u8; 64] {
     hasher.update(message);
     hasher.finalize()
 }
+
+impl Init for Sha512 {
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl Digest<64> for Sha512 {
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 64] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, digest: &mut [u8; 64]) {
+        self.finalize_into(digest);
+    }
+}
+
+impl Hasher<128, 64> for Sha512 {}
 
 impl Sha512 {
     const K: [u64; 80] = [
