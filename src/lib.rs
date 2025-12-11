@@ -11,6 +11,7 @@ mod rng;
 mod sha1;
 mod sha256;
 mod sha512;
+mod traits;
 mod verify;
 mod wipe;
 mod xor;

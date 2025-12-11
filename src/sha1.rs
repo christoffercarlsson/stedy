@@ -1,4 +1,7 @@
-use crate::block::Block;
+use crate::{
+    block::Block,
+    traits::{Digest, Hasher, Init},
+};
 
 pub struct Sha1 {
     h: [u32; 5],
@@ -37,6 +40,28 @@ impl Sha1 {
         digest
     }
 }
+
+impl Init for Sha1 {
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl Digest<20> for Sha1 {
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 20] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, output: &mut [u8; 20]) {
+        self.finalize_into(output);
+    }
+}
+
+impl Hasher<64, 20> for Sha1 {}
 
 impl Sha1 {
     fn process_block(&mut self, block: &[u8]) {

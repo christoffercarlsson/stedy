@@ -1,4 +1,7 @@
-use crate::block::Block;
+use crate::{
+    block::Block,
+    traits::{Digest, Hasher, Init, KeyInit},
+};
 
 pub struct Blake2b {
     h: [u64; 8],
@@ -50,6 +53,34 @@ pub fn blake2b(message: &[u8]) -> [u8; 64] {
     hasher.update(message);
     hasher.finalize()
 }
+
+impl Init for Blake2b {
+    fn new() -> Self {
+        Self::new(None)
+    }
+}
+
+impl KeyInit for Blake2b {
+    fn new(key: &[u8]) -> Self {
+        Self::new(Some(key))
+    }
+}
+
+impl Digest<64> for Blake2b {
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 64] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, output: &mut [u8; 64]) {
+        self.finalize_into(output);
+    }
+}
+
+impl Hasher<128, 64> for Blake2b {}
 
 impl Blake2b {
     const IV: [u64; 8] = [
@@ -151,4 +182,3 @@ mod tests {
         );
     }
 }
-

@@ -1,4 +1,7 @@
-use crate::block::Block;
+use crate::{
+    block::Block,
+    traits::{Digest, Hasher, Init},
+};
 
 pub struct Sha256 {
     h: [u32; 8],
@@ -46,6 +49,28 @@ pub fn sha256(message: &[u8]) -> [u8; 32] {
     hasher.update(message);
     hasher.finalize()
 }
+
+impl Init for Sha256 {
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl Digest<32> for Sha256 {
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> [u8; 32] {
+        self.finalize()
+    }
+
+    fn finalize_into(self, output: &mut [u8; 32]) {
+        self.finalize_into(output);
+    }
+}
+
+impl Hasher<64, 32> for Sha256 {}
 
 impl Sha256 {
     const K: [u32; 64] = [
