@@ -19,6 +19,7 @@ mod sha512;
 mod traits;
 mod verify;
 mod wipe;
+mod x25519;
 mod xor;
 
 pub use crate::{
@@ -38,4 +39,5 @@ pub use crate::{
     traits::Csprng,
     verify::*,
     wipe::*,
+    x25519::*,
 };
