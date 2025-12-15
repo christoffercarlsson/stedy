@@ -1,6 +1,7 @@
 use crate::{
     block::Block,
-    traits::{Digest, Hasher, Init, KeyInit},
+    traits::{Digest, Hasher, Init, KeyInit, Mac},
+    verify::verify,
 };
 
 pub struct Blake2s<const N: usize> {
@@ -45,6 +46,10 @@ impl<const N: usize> Blake2s<N> {
         let mut digest = [0u8; N];
         self.finalize_into(&mut digest);
         digest
+    }
+
+    pub fn verify(self, code: &[u8; N]) -> bool {
+        verify(code, &self.finalize())
     }
 }
 
@@ -104,6 +109,12 @@ impl<const N: usize> Hasher for Blake2s<N> {
     const BLOCK_SIZE: usize = 64;
 
     type Block = [u8; 64];
+}
+
+impl<const N: usize> Mac for Blake2s<N> {
+    fn verify(self, code: &[u8; N]) -> bool {
+        self.verify(code)
+    }
 }
 
 impl<const N: usize> Blake2s<N> {
