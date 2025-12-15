@@ -3,6 +3,7 @@ use crate::{
     traits::{Digest, Hasher, Init},
 };
 
+#[derive(Copy, Clone)]
 pub struct Sha256 {
     h: [u32; 8],
     block: Block<64>,

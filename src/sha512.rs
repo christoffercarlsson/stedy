@@ -3,6 +3,7 @@ use crate::{
     traits::{Digest, Hasher, Init},
 };
 
+#[derive(Copy, Clone)]
 pub struct Sha512 {
     h: [u64; 8],
     block: Block<128>,
