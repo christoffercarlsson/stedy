@@ -1,13 +1,8 @@
 use crate::{
-    hmac::{HmacSha1, HmacSha256, HmacSha512},
+    hmac::{HmacSha256, HmacSha512},
     traits::{Digest, KeyInit},
     xor::xor,
 };
-
-#[allow(dead_code)]
-pub fn pbkdf2_hmac_sha1(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
-    pbkdf2::<HmacSha1>(password, salt, iterations, output);
-}
 
 pub fn pbkdf2_hmac_sha256(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
     pbkdf2::<HmacSha256>(password, salt, iterations, output);
@@ -49,7 +44,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::hmac::HmacSha1};
+
+    fn pbkdf2_hmac_sha1(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
+        pbkdf2::<HmacSha1>(password, salt, iterations, output);
+    }
 
     // https://datatracker.ietf.org/doc/html/rfc6070
 
