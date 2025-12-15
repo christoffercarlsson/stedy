@@ -1,5 +1,9 @@
 use {
-    crate::block::Block,
+    crate::{
+        block::Block,
+        traits::{Digest, KeyInit, Mac},
+        verify::verify,
+    },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
 
@@ -48,6 +52,41 @@ impl Poly1305 {
         self.a.into()
     }
 
+    pub fn finalize_into(self, output: &mut [u8; 16]) {
+        output.copy_from_slice(&self.finalize());
+    }
+}
+
+impl KeyInit for Poly1305 {
+    fn new(key: &[u8]) -> Self {
+        let key = <&[u8; 32]>::try_from(key).unwrap();
+        Self::new(key)
+    }
+}
+
+impl Digest for Poly1305 {
+    type Output = [u8; 16];
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> Self::Output {
+        self.finalize()
+    }
+
+    fn finalize_into(self, output: &mut Self::Output) {
+        self.finalize_into(output);
+    }
+}
+
+impl Mac for Poly1305 {
+    fn verify(self, code: &Self::Output) -> bool {
+        verify(&self.finalize(), code)
+    }
+}
+
+impl Poly1305 {
     fn process_block(&mut self, block: &[u8]) {
         let n = Self::read_block(block);
         self.process_element(n);

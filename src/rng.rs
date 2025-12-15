@@ -1,4 +1,4 @@
-use crate::chacha::ChaCha20;
+use crate::{chacha::ChaCha20, traits::Csprng};
 
 pub struct Rng {
     cipher: ChaCha20,
@@ -40,30 +40,47 @@ impl From<[u8; 32]> for Rng {
     }
 }
 
+impl Csprng for Rng {
+    type Seed = [u8; 32];
+
+    fn new(seed: &Self::Seed) -> Self {
+        Self::new(seed)
+    }
+
+    fn fill(&mut self, bytes: &mut [u8]) {
+        self.fill(bytes);
+    }
+
+    fn next_u32(&mut self) -> u32 {
+        self.next_u32()
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        self.next_u64()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_next_u32() {
-        let seed = [0u8; 32];
-        let mut rng = Rng::from(seed);
+        let mut rng = Rng::from([0u8; 32]);
         let result = rng.next_u32();
         assert_eq!(result, 2917185654);
     }
 
     #[test]
     fn test_next_u64() {
-        let seed = [0u8; 32];
-        let mut rng = Rng::from(seed);
+        let mut rng = Rng::from([0u8; 32]);
         let result = rng.next_u64();
         assert_eq!(result, 10393729187455219830);
     }
 
     #[test]
     fn test_fill() {
-        let seed = [0u8; 32];
-        let mut rng = Rng::from(seed);
+        let mut rng = Rng::from([0u8; 32]);
         let mut bytes = [0u8; 32];
         rng.fill(&mut bytes);
         assert_eq!(
@@ -77,8 +94,7 @@ mod tests {
 
     #[test]
     fn test_fill_multiple_blocks() {
-        let seed = [0u8; 32];
-        let mut rng = Rng::from(seed);
+        let mut rng = Rng::from([0u8; 32]);
         let mut bytes = [0u8; 32];
         rng.fill(&mut bytes);
         assert_eq!(
