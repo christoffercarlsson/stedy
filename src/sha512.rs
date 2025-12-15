@@ -1,6 +1,6 @@
 use crate::{
     block::Block,
-    traits::{Digest, Hasher, Init},
+    traits::{Digest, Init},
 };
 
 pub struct Sha512 {
@@ -62,21 +62,21 @@ impl Init for Sha512 {
     }
 }
 
-impl Digest<64> for Sha512 {
+impl Digest for Sha512 {
+    type Output = [u8; 64];
+
     fn update(&mut self, message: &[u8]) {
         self.update(message);
     }
 
-    fn finalize(self) -> [u8; 64] {
+    fn finalize(self) -> Self::Output {
         self.finalize()
     }
 
-    fn finalize_into(self, digest: &mut [u8; 64]) {
-        self.finalize_into(digest);
+    fn finalize_into(self, output: &mut Self::Output) {
+        self.finalize_into(output);
     }
 }
-
-impl Hasher<128, 64> for Sha512 {}
 
 impl Sha512 {
     const K: [u64; 80] = [

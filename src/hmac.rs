@@ -2,34 +2,28 @@ use crate::{
     sha1::Sha1,
     sha256::Sha256,
     sha512::Sha512,
-    traits::{Digest, Hasher, KeyInit, Mac},
+    traits::{Digest, Hasher, Init, KeyInit, Mac},
     verify::verify,
     xor::xor,
 };
 
-pub type HmacSha1 = Hmac<Sha1, 64, 20>;
-pub type HmacSha256 = Hmac<Sha256, 64, 32>;
-pub type HmacSha512 = Hmac<Sha512, 128, 64>;
+pub type HmacSha1 = Hmac<Sha1, 64>;
+pub type HmacSha256 = Hmac<Sha256, 64>;
+pub type HmacSha512 = Hmac<Sha512, 128>;
 
-pub struct Hmac<H, const BLOCK_SIZE: usize, const OUTPUT_SIZE: usize>
-where
-    H: Hasher<BLOCK_SIZE, OUTPUT_SIZE>,
-{
+pub struct Hmac<H: Hasher, const BLOCK_SIZE: usize> {
     inner: H,
     outer: H,
 }
 
-impl<H, const BLOCK_SIZE: usize, const OUTPUT_SIZE: usize> Hmac<H, BLOCK_SIZE, OUTPUT_SIZE>
-where
-    H: Hasher<BLOCK_SIZE, OUTPUT_SIZE>,
-{
+impl<H: Hasher, const BLOCK_SIZE: usize> Hmac<H, BLOCK_SIZE> {
     pub fn new(key: &[u8]) -> Self {
         let mut k = [0u8; BLOCK_SIZE];
         if key.len() > BLOCK_SIZE {
             let mut hasher = H::new();
             hasher.update(key);
             let key_digest = hasher.finalize();
-            k[..OUTPUT_SIZE].copy_from_slice(&key_digest);
+            k[..key_digest.as_ref().len()].copy_from_slice(key_digest.as_ref());
         } else {
             k[..key.len()].copy_from_slice(key);
         }
@@ -48,58 +42,20 @@ where
         self.inner.update(message);
     }
 
-    pub fn finalize_into(mut self, code: &mut [u8; OUTPUT_SIZE]) {
+    pub fn finalize_into(mut self, code: &mut H::Output) {
         let digest = self.inner.finalize();
-        self.outer.update(&digest);
+        self.outer.update(digest.as_ref());
         self.outer.finalize_into(code);
     }
 
-    pub fn finalize(self) -> [u8; OUTPUT_SIZE] {
-        let mut code = [0u8; OUTPUT_SIZE];
+    pub fn finalize(self) -> H::Output {
+        let mut code = H::Output::new();
         self.finalize_into(&mut code);
         code
     }
 
-    pub fn verify(self, code: &[u8; OUTPUT_SIZE]) -> bool {
-        verify(code, &self.finalize())
-    }
-}
-
-impl<H, const BLOCK_SIZE: usize, const OUTPUT_SIZE: usize> KeyInit
-    for Hmac<H, BLOCK_SIZE, OUTPUT_SIZE>
-where
-    H: Hasher<BLOCK_SIZE, OUTPUT_SIZE>,
-{
-    fn new(key: &[u8]) -> Self {
-        Self::new(key)
-    }
-}
-
-impl<H, const BLOCK_SIZE: usize, const OUTPUT_SIZE: usize> Digest<OUTPUT_SIZE>
-    for Hmac<H, BLOCK_SIZE, OUTPUT_SIZE>
-where
-    H: Hasher<BLOCK_SIZE, OUTPUT_SIZE>,
-{
-    fn update(&mut self, message: &[u8]) {
-        self.update(message);
-    }
-
-    fn finalize(self) -> [u8; OUTPUT_SIZE] {
-        self.finalize()
-    }
-
-    fn finalize_into(self, output: &mut [u8; OUTPUT_SIZE]) {
-        self.finalize_into(output);
-    }
-}
-
-impl<H, const BLOCK_SIZE: usize, const OUTPUT_SIZE: usize> Mac<OUTPUT_SIZE>
-    for Hmac<H, BLOCK_SIZE, OUTPUT_SIZE>
-where
-    H: Hasher<BLOCK_SIZE, OUTPUT_SIZE>,
-{
-    fn verify(self, code: &[u8; OUTPUT_SIZE]) -> bool {
-        self.verify(code)
+    pub fn verify(self, code: &H::Output) -> bool {
+        verify(code.as_ref(), self.finalize().as_ref())
     }
 }
 
@@ -137,6 +93,34 @@ pub fn hmac_sha512_verify(key: &[u8], message: &[u8], code: &[u8; 64]) -> bool {
     let mut hmac = HmacSha512::new(key);
     hmac.update(message);
     hmac.verify(code)
+}
+
+impl<H: Hasher, const BLOCK_SIZE: usize> KeyInit for Hmac<H, BLOCK_SIZE> {
+    fn new(key: &[u8]) -> Self {
+        Self::new(key)
+    }
+}
+
+impl<H: Hasher, const BLOCK_SIZE: usize> Digest for Hmac<H, BLOCK_SIZE> {
+    type Output = H::Output;
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> Self::Output {
+        self.finalize()
+    }
+
+    fn finalize_into(self, output: &mut Self::Output) {
+        self.finalize_into(output);
+    }
+}
+
+impl<H: Hasher, const BLOCK_SIZE: usize> Mac for Hmac<H, BLOCK_SIZE> {
+    fn verify(self, code: &Self::Output) -> bool {
+        self.verify(code)
+    }
 }
 
 #[cfg(test)]

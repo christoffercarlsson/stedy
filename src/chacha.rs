@@ -1,3 +1,5 @@
+use crate::traits::{SeekableStreamCipher, StreamCipher};
+
 // pub type ChaCha8 = ChaCha<8>;
 // pub type ChaCha12 = ChaCha<12>;
 pub type ChaCha20 = ChaCha<20>;
@@ -49,6 +51,25 @@ impl<const ROUNDS: u8> From<&[u8; 48]> for ChaCha<ROUNDS> {
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
         cipher
+    }
+}
+
+impl<const ROUNDS: u8> StreamCipher for ChaCha<ROUNDS> {
+    type Key = [u8; 32];
+    type Nonce = [u8; 12];
+
+    fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self {
+        Self::new(key, nonce)
+    }
+
+    fn apply_keystream(&mut self, message: &mut [u8]) {
+        self.apply_keystream(message);
+    }
+}
+
+impl<const ROUNDS: u8> SeekableStreamCipher for ChaCha<ROUNDS> {
+    fn seek(&mut self, counter: u32) {
+        self.seek(counter);
     }
 }
 
@@ -123,14 +144,45 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     }
 }
 
-pub struct XChaCha20;
+pub struct XChaCha20 {
+    inner: ChaCha20,
+}
 
 impl XChaCha20 {
-    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> ChaCha20 {
+    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
         let k = ChaCha20::read_key(key);
         let (n1, n2) = Self::read_nonce(nonce);
         let subkey = Self::calculate_subkey(&k, &n1);
-        ChaCha20::init(&subkey, &n2)
+        Self {
+            inner: ChaCha20::init(&subkey, &n2),
+        }
+    }
+
+    pub fn apply_keystream(&mut self, data: &mut [u8]) {
+        self.inner.apply_keystream(data);
+    }
+
+    pub fn seek(&mut self, counter: u32) {
+        self.inner.seek(counter);
+    }
+}
+
+impl StreamCipher for XChaCha20 {
+    type Key = [u8; 32];
+    type Nonce = [u8; 24];
+
+    fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self {
+        Self::new(key, nonce)
+    }
+
+    fn apply_keystream(&mut self, message: &mut [u8]) {
+        self.apply_keystream(message);
+    }
+}
+
+impl SeekableStreamCipher for XChaCha20 {
+    fn seek(&mut self, counter: u32) {
+        self.seek(counter);
     }
 }
 
