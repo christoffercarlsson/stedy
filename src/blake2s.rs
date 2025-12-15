@@ -3,13 +3,13 @@ use crate::{
     traits::{Digest, Hasher, Init, KeyInit},
 };
 
-pub struct Blake2s {
+pub struct Blake2s<const N: usize> {
     h: [u32; 8],
     t: u64,
     block: Block<64>,
 }
 
-impl Blake2s {
+impl<const N: usize> Blake2s<N> {
     pub fn new(key: Option<&[u8]>) -> Self {
         let mut state = Self {
             h: Self::IV,
@@ -29,7 +29,7 @@ impl Blake2s {
         }
     }
 
-    pub fn finalize_into(mut self, digest: &mut [u8; 32]) {
+    pub fn finalize_into(mut self, digest: &mut [u8; N]) {
         let remaining = self.block.remaining();
         let mut block = [0u8; 64];
         block[..remaining.len()].copy_from_slice(remaining);
@@ -41,35 +41,51 @@ impl Blake2s {
         }
     }
 
-    pub fn finalize(self) -> [u8; 32] {
-        let mut digest = [0u8; 32];
+    pub fn finalize(self) -> [u8; N] {
+        let mut digest = [0u8; N];
         self.finalize_into(&mut digest);
         digest
     }
 }
 
-pub fn blake2s(message: &[u8]) -> [u8; 32] {
-    let mut hasher = Blake2s::new(None);
+pub fn blake2s<const N: usize>(message: &[u8]) -> [u8; N] {
+    let mut hasher = Blake2s::<N>::new(None);
     hasher.update(message);
     hasher.finalize()
 }
 
-impl Init for Blake2s {
+pub fn blake2s256(message: &[u8]) -> [u8; 32] {
+    blake2s::<32>(message)
+}
+
+pub fn blake2s224(message: &[u8]) -> [u8; 28] {
+    blake2s::<28>(message)
+}
+
+pub fn blake2s160(message: &[u8]) -> [u8; 20] {
+    blake2s::<20>(message)
+}
+
+pub fn blake2s128(message: &[u8]) -> [u8; 16] {
+    blake2s::<16>(message)
+}
+
+impl<const N: usize> Init for Blake2s<N> {
     fn new() -> Self {
         Self::new(None)
     }
 }
 
-impl KeyInit for Blake2s {
+impl<const N: usize> KeyInit for Blake2s<N> {
     fn new(key: &[u8]) -> Self {
         Self::new(Some(key))
     }
 }
 
-impl Digest for Blake2s {
-    const OUTPUT_SIZE: usize = 32;
+impl<const N: usize> Digest for Blake2s<N> {
+    const OUTPUT_SIZE: usize = N;
 
-    type Output = [u8; Self::OUTPUT_SIZE];
+    type Output = [u8; N];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -84,13 +100,13 @@ impl Digest for Blake2s {
     }
 }
 
-impl Hasher for Blake2s {
+impl<const N: usize> Hasher for Blake2s<N> {
     const BLOCK_SIZE: usize = 64;
 
-    type Block = [u8; Self::BLOCK_SIZE];
+    type Block = [u8; 64];
 }
 
-impl Blake2s {
+impl<const N: usize> Blake2s<N> {
     const IV: [u32; 8] = [
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
         0x5be0cd19,
@@ -111,7 +127,8 @@ impl Blake2s {
     fn init(&mut self, key: Option<&[u8]>) {
         let key = key.unwrap_or_default();
         let kk = key.len().min(32);
-        self.h[0] ^= 0x01010000 ^ ((kk as u32) << 8) ^ 32;
+        let nn = N.min(32);
+        self.h[0] ^= 0x01010000 ^ ((kk as u32) << 8) ^ (nn as u32);
         if !key.is_empty() {
             let mut block = [0u8; 64];
             block[..kk].copy_from_slice(&key[..kk]);
@@ -172,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_blake2s() {
-        let digest = blake2s(b"abc");
+        let digest = blake2s256(b"abc");
         assert_eq!(
             digest,
             [
