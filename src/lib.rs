@@ -7,6 +7,7 @@ mod block;
 mod chacha;
 mod chacha20poly1305;
 mod curve25519;
+mod ed25519;
 mod hkdf;
 mod hmac;
 mod pad;
@@ -26,6 +27,7 @@ pub use crate::{
     blake2b::*,
     blake2s::*,
     chacha20poly1305::*,
+    ed25519::*,
     hkdf::*,
     hmac::{
         hmac_sha1, hmac_sha1_verify, hmac_sha256, hmac_sha256_verify, hmac_sha512,
