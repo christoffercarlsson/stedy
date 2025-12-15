@@ -1,16 +1,12 @@
 use crate::traits::{SeekableStreamCipher, StreamCipher};
 
-// pub type ChaCha8 = ChaCha<8>;
-// pub type ChaCha12 = ChaCha<12>;
-pub type ChaCha20 = ChaCha<20>;
-
-pub struct ChaCha<const ROUNDS: u8> {
+pub struct ChaCha20 {
     state: [u32; 16],
     keystream: [u8; 64],
     offset: usize,
 }
 
-impl<const ROUNDS: u8> ChaCha<ROUNDS> {
+impl ChaCha20 {
     pub fn new(key: &[u8; 32], nonce: &[u8; 12]) -> Self {
         Self::init(&Self::read_key(key), &Self::read_nonce(nonce))
     }
@@ -37,24 +33,30 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     }
 }
 
-impl<const ROUNDS: u8> From<&[u8; 32]> for ChaCha<ROUNDS> {
+impl From<&[u8; 32]> for ChaCha20 {
     fn from(key: &[u8; 32]) -> Self {
         Self::new(key, &[0u8; 12])
     }
 }
 
-impl<const ROUNDS: u8> From<&[u8; 48]> for ChaCha<ROUNDS> {
+impl From<&[u8; 48]> for ChaCha20 {
     fn from(seed: &[u8; 48]) -> Self {
-        let key: &[u8; 32] = seed[0..32].try_into().unwrap();
-        let nonce: &[u8; 12] = seed[32..44].try_into().unwrap();
-        let counter = u32::from_le_bytes(seed[44..48].try_into().unwrap());
+        let (key, remaining) = seed.split_at(32);
+        let (nonce, counter) = remaining.split_at(12);
+        let key = <&[u8; 32]>::try_from(key).unwrap();
+        let nonce = <&[u8; 12]>::try_from(nonce).unwrap();
+        let counter = <&[u8; 4]>::try_from(counter).unwrap();
+        let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
         cipher
     }
 }
 
-impl<const ROUNDS: u8> StreamCipher for ChaCha<ROUNDS> {
+impl StreamCipher for ChaCha20 {
+    const KEY_SIZE: usize = 32;
+    const NONCE_SIZE: usize = 12;
+
     type Key = [u8; 32];
     type Nonce = [u8; 12];
 
@@ -67,13 +69,13 @@ impl<const ROUNDS: u8> StreamCipher for ChaCha<ROUNDS> {
     }
 }
 
-impl<const ROUNDS: u8> SeekableStreamCipher for ChaCha<ROUNDS> {
+impl SeekableStreamCipher for ChaCha20 {
     fn seek(&mut self, counter: u32) {
         self.seek(counter);
     }
 }
 
-impl<const ROUNDS: u8> ChaCha<ROUNDS> {
+impl ChaCha20 {
     const SIGMA: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
     fn init(key: &[u32; 8], nonce: &[u32; 3]) -> Self {
@@ -120,7 +122,7 @@ impl<const ROUNDS: u8> ChaCha<ROUNDS> {
     }
 
     fn rounds(block: &mut [u32; 16]) {
-        for _ in (0..ROUNDS).step_by(2) {
+        for _ in (0..20).step_by(2) {
             Self::quarter_round(0, 4, 8, 12, block);
             Self::quarter_round(1, 5, 9, 13, block);
             Self::quarter_round(2, 6, 10, 14, block);
@@ -167,9 +169,32 @@ impl XChaCha20 {
     }
 }
 
+impl From<&[u8; 32]> for XChaCha20 {
+    fn from(key: &[u8; 32]) -> Self {
+        Self::new(key, &[0u8; 24])
+    }
+}
+
+impl From<&[u8; 60]> for XChaCha20 {
+    fn from(seed: &[u8; 60]) -> Self {
+        let (key, remaining) = seed.split_at(32);
+        let (nonce, counter) = remaining.split_at(24);
+        let key = <&[u8; 32]>::try_from(key).unwrap();
+        let nonce = <&[u8; 24]>::try_from(nonce).unwrap();
+        let counter = <&[u8; 4]>::try_from(counter).unwrap();
+        let counter = u32::from_le_bytes(*counter);
+        let mut cipher = Self::new(key, nonce);
+        cipher.seek(counter);
+        cipher
+    }
+}
+
 impl StreamCipher for XChaCha20 {
-    type Key = [u8; 32];
-    type Nonce = [u8; 24];
+    const KEY_SIZE: usize = 32;
+    const NONCE_SIZE: usize = 24;
+
+    type Key = [u8; Self::KEY_SIZE];
+    type Nonce = [u8; Self::NONCE_SIZE];
 
     fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self {
         Self::new(key, nonce)

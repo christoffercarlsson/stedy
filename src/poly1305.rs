@@ -11,10 +11,12 @@ pub struct Poly1305 {
     a: FieldElement,
     r: FieldElement,
     s: FieldElement,
-    block: Block<16>,
+    block: Block<{ Self::BLOCK_SIZE }>,
 }
 
 impl Poly1305 {
+    pub const BLOCK_SIZE: usize = 16;
+
     pub fn new(key: &[u8; 32]) -> Self {
         let mut r = FieldElement::from(&key[0..16]);
         r &= FieldElement::R;
@@ -22,7 +24,7 @@ impl Poly1305 {
             a: FieldElement::ZERO,
             r,
             s: FieldElement::from(&key[16..32]),
-            block: Block::<16>::new(),
+            block: Block::<{ Self::BLOCK_SIZE }>::new(),
         }
     }
 
@@ -35,11 +37,8 @@ impl Poly1305 {
         }
     }
 
-    pub fn update_padded(&mut self, message: &[u8]) {
-        self.update(message);
-        let padding = [0u8; 16];
-        let padding_size = (16 - (message.len() % 16)) % 16;
-        self.update(&padding[..padding_size]);
+    pub fn finalize_into(self, output: &mut [u8; 16]) {
+        output.copy_from_slice(&self.finalize());
     }
 
     pub fn finalize(mut self) -> [u8; 16] {
@@ -51,10 +50,6 @@ impl Poly1305 {
         self.a += self.s;
         self.a.into()
     }
-
-    pub fn finalize_into(self, output: &mut [u8; 16]) {
-        output.copy_from_slice(&self.finalize());
-    }
 }
 
 impl KeyInit for Poly1305 {
@@ -65,7 +60,9 @@ impl KeyInit for Poly1305 {
 }
 
 impl Digest for Poly1305 {
-    type Output = [u8; 16];
+    const OUTPUT_SIZE: usize = 16;
+
+    type Output = [u8; Self::OUTPUT_SIZE];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);

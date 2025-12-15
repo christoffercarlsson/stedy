@@ -1,6 +1,6 @@
 use crate::{
     block::Block,
-    traits::{Digest, Init, KeyInit},
+    traits::{Digest, Hasher, Init, KeyInit},
 };
 
 pub struct Blake2s {
@@ -67,7 +67,9 @@ impl KeyInit for Blake2s {
 }
 
 impl Digest for Blake2s {
-    type Output = [u8; 32];
+    const OUTPUT_SIZE: usize = 32;
+
+    type Output = [u8; Self::OUTPUT_SIZE];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -80,6 +82,12 @@ impl Digest for Blake2s {
     fn finalize_into(self, output: &mut Self::Output) {
         self.finalize_into(output);
     }
+}
+
+impl Hasher for Blake2s {
+    const BLOCK_SIZE: usize = 64;
+
+    type Block = [u8; Self::BLOCK_SIZE];
 }
 
 impl Blake2s {

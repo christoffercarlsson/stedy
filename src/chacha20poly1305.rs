@@ -80,9 +80,16 @@ fn create_mac<C: SeekableStreamCipher>(cipher: &mut C) -> Poly1305 {
 }
 
 fn calculate_tag(mac: &mut Poly1305, ciphertext: &[u8], aad: Option<&[u8]>) {
+    let mut update_padded = |message: &[u8]| {
+        mac.update(message);
+        let padding = [0u8; Poly1305::BLOCK_SIZE];
+        let padding_size =
+            (Poly1305::BLOCK_SIZE - (message.len() % Poly1305::BLOCK_SIZE)) % Poly1305::BLOCK_SIZE;
+        mac.update(&padding[..padding_size]);
+    };
     let aad = aad.unwrap_or_default();
-    mac.update_padded(aad);
-    mac.update_padded(ciphertext);
+    update_padded(aad);
+    update_padded(ciphertext);
     mac.update(&(aad.len() as u64).to_le_bytes());
     mac.update(&(ciphertext.len() as u64).to_le_bytes());
 }

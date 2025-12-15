@@ -7,34 +7,42 @@ use crate::{
     xor::xor,
 };
 
-pub type HmacSha1 = Hmac<Sha1, 64>;
-pub type HmacSha256 = Hmac<Sha256, 64>;
-pub type HmacSha512 = Hmac<Sha512, 128>;
+pub type HmacSha1 = Hmac<Sha1>;
+pub type HmacSha256 = Hmac<Sha256>;
+pub type HmacSha512 = Hmac<Sha512>;
 
-pub struct Hmac<H: Hasher, const BLOCK_SIZE: usize> {
+pub struct Hmac<H: Hasher> {
     inner: H,
     outer: H,
 }
 
-impl<H: Hasher, const BLOCK_SIZE: usize> Hmac<H, BLOCK_SIZE> {
+impl<H: Hasher> Hmac<H> {
     pub fn new(key: &[u8]) -> Self {
-        let mut k = [0u8; BLOCK_SIZE];
-        if key.len() > BLOCK_SIZE {
+        let mut k = H::Block::new();
+        if key.len() > H::BLOCK_SIZE {
             let mut hasher = H::new();
             hasher.update(key);
             let key_digest = hasher.finalize();
-            k[..key_digest.as_ref().len()].copy_from_slice(key_digest.as_ref());
+            k.as_mut()
+                .get_mut(..key_digest.as_ref().len())
+                .unwrap()
+                .copy_from_slice(key_digest.as_ref());
         } else {
-            k[..key.len()].copy_from_slice(key);
+            k.as_mut()
+                .get_mut(..key.len())
+                .unwrap()
+                .copy_from_slice(key);
         }
-        let mut inner_key = [54u8; BLOCK_SIZE];
-        let mut outer_key = [92u8; BLOCK_SIZE];
-        xor(&mut inner_key, &k);
-        xor(&mut outer_key, &k);
+        let mut inner_key = H::Block::new();
+        let mut outer_key = H::Block::new();
+        inner_key.as_mut().fill(54);
+        outer_key.as_mut().fill(92);
+        xor(inner_key.as_mut(), k.as_ref());
+        xor(outer_key.as_mut(), k.as_ref());
         let mut inner = H::new();
         let mut outer = H::new();
-        inner.update(&inner_key);
-        outer.update(&outer_key);
+        inner.update(inner_key.as_ref());
+        outer.update(outer_key.as_ref());
         Self { inner, outer }
     }
 
@@ -95,13 +103,15 @@ pub fn hmac_sha512_verify(key: &[u8], message: &[u8], code: &[u8; 64]) -> bool {
     hmac.verify(code)
 }
 
-impl<H: Hasher, const BLOCK_SIZE: usize> KeyInit for Hmac<H, BLOCK_SIZE> {
+impl<H: Hasher> KeyInit for Hmac<H> {
     fn new(key: &[u8]) -> Self {
         Self::new(key)
     }
 }
 
-impl<H: Hasher, const BLOCK_SIZE: usize> Digest for Hmac<H, BLOCK_SIZE> {
+impl<H: Hasher> Digest for Hmac<H> {
+    const OUTPUT_SIZE: usize = H::OUTPUT_SIZE;
+
     type Output = H::Output;
 
     fn update(&mut self, message: &[u8]) {
@@ -117,7 +127,7 @@ impl<H: Hasher, const BLOCK_SIZE: usize> Digest for Hmac<H, BLOCK_SIZE> {
     }
 }
 
-impl<H: Hasher, const BLOCK_SIZE: usize> Mac for Hmac<H, BLOCK_SIZE> {
+impl<H: Hasher> Mac for Hmac<H> {
     fn verify(self, code: &Self::Output) -> bool {
         self.verify(code)
     }

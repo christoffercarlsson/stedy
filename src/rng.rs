@@ -41,7 +41,9 @@ impl From<[u8; 32]> for Rng {
 }
 
 impl Csprng for Rng {
-    type Seed = [u8; 32];
+    const SEED_SIZE: usize = 32;
+
+    type Seed = [u8; Self::SEED_SIZE];
 
     fn new(seed: &Self::Seed) -> Self {
         Self::new(seed)
