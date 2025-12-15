@@ -1,8 +1,9 @@
 use crate::{
     block::Block,
-    traits::{Digest, Init},
+    traits::{Digest, Hasher, Init},
 };
 
+#[derive(Copy, Clone)]
 pub struct Sha1 {
     h: [u32; 5],
     block: Block<64>,
@@ -48,7 +49,9 @@ impl Init for Sha1 {
 }
 
 impl Digest for Sha1 {
-    type Output = [u8; 20];
+    const OUTPUT_SIZE: usize = 20;
+
+    type Output = [u8; Self::OUTPUT_SIZE];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -61,6 +64,12 @@ impl Digest for Sha1 {
     fn finalize_into(self, output: &mut Self::Output) {
         self.finalize_into(output);
     }
+}
+
+impl Hasher for Sha1 {
+    const BLOCK_SIZE: usize = 64;
+
+    type Block = [u8; Self::BLOCK_SIZE];
 }
 
 impl Sha1 {

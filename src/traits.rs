@@ -10,6 +10,8 @@ pub trait KeyInit {
 }
 
 pub trait Digest {
+    const OUTPUT_SIZE: usize;
+
     type Output: ByteArray;
 
     fn update(&mut self, message: &[u8]);
@@ -19,13 +21,20 @@ pub trait Digest {
     fn finalize_into(self, output: &mut Self::Output);
 }
 
-pub trait Hasher: Init + Digest {}
+pub trait Hasher: Init + Digest {
+    const BLOCK_SIZE: usize;
+
+    type Block: ByteArray;
+}
 
 pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> bool;
 }
 
 pub trait StreamCipher {
+    const KEY_SIZE: usize;
+    const NONCE_SIZE: usize;
+
     type Key: ByteArray;
     type Nonce: ByteArray;
 
@@ -39,6 +48,8 @@ pub trait SeekableStreamCipher: StreamCipher {
 }
 
 pub trait Csprng {
+    const SEED_SIZE: usize;
+
     type Seed: ByteArray;
 
     fn new(seed: &Self::Seed) -> Self;
@@ -61,5 +72,3 @@ impl<const N: usize> Init for [u8; N] {
         [0u8; N]
     }
 }
-
-impl<T: Init + Digest> Hasher for T {}
