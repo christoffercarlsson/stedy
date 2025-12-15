@@ -1,9 +1,12 @@
 use crate::{
+    aead::Aead,
     chacha::{ChaCha20, XChaCha20},
     poly1305::Poly1305,
-    rng::Rng,
-    verify::verify,
+    traits::{Csprng, SeekableStreamCipher},
 };
+
+type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
+type XChaCha20Poly1305 = Aead<XChaCha20, Poly1305>;
 
 pub fn chacha20poly1305_encrypt(
     key: &[u8; 32],
@@ -11,8 +14,8 @@ pub fn chacha20poly1305_encrypt(
     aad: Option<&[u8]>,
     message: &mut [u8],
 ) -> [u8; 16] {
-    let mut cipher = ChaCha20::new(key, nonce);
-    encrypt(&mut cipher, aad, message)
+    let aead = ChaCha20Poly1305::new(key, nonce, create_mac);
+    aead.encrypt(message, aad, calculate_tag)
 }
 
 pub fn chacha20poly1305_decrypt(
@@ -22,19 +25,16 @@ pub fn chacha20poly1305_decrypt(
     message: &mut [u8],
     tag: &[u8; 16],
 ) -> bool {
-    let mut cipher = ChaCha20::new(key, nonce);
-    decrypt(&mut cipher, aad, message, tag)
+    let aead = ChaCha20Poly1305::new(key, nonce, create_mac);
+    aead.decrypt(message, tag, aad, calculate_tag)
 }
 
-pub fn chacha20poly1305_generate_key(seed: &[u8; 32]) -> [u8; 32] {
-    let mut rng = Rng::from(seed);
-    let mut secret_key = [0u8; 32];
-    rng.fill(&mut secret_key);
-    secret_key
+pub fn chacha20poly1305_generate_key<R: Csprng>(rng: &mut R) -> [u8; 32] {
+    ChaCha20Poly1305::generate_key(rng)
 }
 
 pub fn chacha20poly1305_increment_nonce(nonce: &mut [u8; 12]) -> bool {
-    increment_nonce(nonce)
+    ChaCha20Poly1305::increment_nonce(nonce)
 }
 
 pub fn xchacha20poly1305_encrypt(
@@ -43,8 +43,8 @@ pub fn xchacha20poly1305_encrypt(
     aad: Option<&[u8]>,
     message: &mut [u8],
 ) -> [u8; 16] {
-    let mut cipher = XChaCha20::new(key, nonce);
-    encrypt(&mut cipher, aad, message)
+    let aead = XChaCha20Poly1305::new(key, nonce, create_mac);
+    aead.encrypt(message, aad, calculate_tag)
 }
 
 pub fn xchacha20poly1305_decrypt(
@@ -54,67 +54,42 @@ pub fn xchacha20poly1305_decrypt(
     message: &mut [u8],
     tag: &[u8; 16],
 ) -> bool {
-    let mut cipher = XChaCha20::new(key, nonce);
-    decrypt(&mut cipher, aad, message, tag)
+    let aead = XChaCha20Poly1305::new(key, nonce, create_mac);
+    aead.decrypt(message, tag, aad, calculate_tag)
 }
 
-pub fn xchacha20poly1305_generate_key(seed: &[u8; 32]) -> [u8; 32] {
-    chacha20poly1305_generate_key(seed)
+pub fn xchacha20poly1305_generate_key<R: Csprng>(rng: &mut R) -> [u8; 32] {
+    XChaCha20Poly1305::generate_key(rng)
 }
 
-pub fn xchacha20poly1305_generate_nonce(seed: &[u8; 32]) -> [u8; 24] {
-    let mut rng = Rng::from(seed);
+pub fn xchacha20poly1305_increment_nonce(nonce: &mut [u8; 24]) -> bool {
+    XChaCha20Poly1305::increment_nonce(nonce)
+}
+
+pub fn xchacha20poly1305_generate_nonce<R: Csprng>(rng: &mut R) -> [u8; 24] {
     let mut nonce = [0u8; 24];
     rng.fill(&mut nonce);
     nonce
 }
 
-pub fn xchacha20poly1305_increment_nonce(nonce: &mut [u8; 24]) -> bool {
-    increment_nonce(nonce)
-}
-
-fn increment_nonce(nonce: &mut [u8]) -> bool {
-    let mut carry: u16 = 1;
-    for b in nonce.iter_mut().rev() {
-        let sum = (*b as u16) + carry;
-        *b = sum as u8;
-        carry = sum >> 8;
-    }
-    carry == 0
-}
-
-fn encrypt(cipher: &mut ChaCha20, aad: Option<&[u8]>, message: &mut [u8]) -> [u8; 16] {
-    let mac = create_mac(cipher);
-    cipher.apply_keystream(message);
-    calculate_tag(mac, aad, message)
-}
-
-fn decrypt(cipher: &mut ChaCha20, aad: Option<&[u8]>, message: &mut [u8], tag: &[u8; 16]) -> bool {
-    let mac = create_mac(cipher);
-    let t = calculate_tag(mac, aad, message);
-    cipher.apply_keystream(message);
-    verify(tag, &t)
-}
-
-fn create_mac(cipher: &mut ChaCha20) -> Poly1305 {
+fn create_mac<C: SeekableStreamCipher>(cipher: &mut C) -> Poly1305 {
     let mut key = [0u8; 32];
     cipher.apply_keystream(&mut key);
     cipher.seek(1);
     Poly1305::new(&key)
 }
 
-fn calculate_tag(mut mac: Poly1305, aad: Option<&[u8]>, ciphertext: &[u8]) -> [u8; 16] {
-    let aad = aad.unwrap_or(&[]);
+fn calculate_tag(mac: &mut Poly1305, ciphertext: &[u8], aad: Option<&[u8]>) {
+    let aad = aad.unwrap_or_default();
     mac.update_padded(aad);
     mac.update_padded(ciphertext);
     mac.update(&(aad.len() as u64).to_le_bytes());
     mac.update(&(ciphertext.len() as u64).to_le_bytes());
-    mac.finalize()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::Rng};
 
     #[test]
     fn test_chacha20poly1305() {
@@ -168,8 +143,8 @@ mod tests {
 
     #[test]
     fn test_chacha20poly1305_generate_key() {
-        let seed = [0u8; 32];
-        let key = chacha20poly1305_generate_key(&seed);
+        let mut rng = Rng::from([0u8; 32]);
+        let key = chacha20poly1305_generate_key(&mut rng);
         assert_eq!(
             key,
             [
@@ -236,8 +211,8 @@ mod tests {
 
     #[test]
     fn test_xchacha20poly1305_generate_key() {
-        let seed = [0u8; 32];
-        let key = xchacha20poly1305_generate_key(&seed);
+        let mut rng = Rng::from([0u8; 32]);
+        let key = xchacha20poly1305_generate_key(&mut rng);
         assert_eq!(
             key,
             [
@@ -249,8 +224,8 @@ mod tests {
 
     #[test]
     fn test_xchacha20poly1305_generate_nonce() {
-        let seed = [0u8; 32];
-        let nonce = xchacha20poly1305_generate_nonce(&seed);
+        let mut rng = Rng::from([0u8; 32]);
+        let nonce = xchacha20poly1305_generate_nonce(&mut rng);
         assert_eq!(
             nonce,
             [

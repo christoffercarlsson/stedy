@@ -25,6 +25,19 @@ pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> bool;
 }
 
+pub trait StreamCipher {
+    type Key: ByteArray;
+    type Nonce: ByteArray;
+
+    fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self;
+
+    fn apply_keystream(&mut self, message: &mut [u8]);
+}
+
+pub trait SeekableStreamCipher: StreamCipher {
+    fn seek(&mut self, counter: u32);
+}
+
 pub trait Csprng {
     type Seed: ByteArray;
 

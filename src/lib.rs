@@ -1,5 +1,6 @@
 #![no_std]
 
+mod aead;
 mod blake2b;
 mod blake2s;
 mod block;
