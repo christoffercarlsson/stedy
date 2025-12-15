@@ -1,15 +1,16 @@
 use crate::{
     block::Block,
-    traits::{Digest, Hasher, Init, KeyInit},
+    traits::{Digest, Hasher, Init, KeyInit, Mac},
+    verify::verify,
 };
 
-pub struct Blake2b {
+pub struct Blake2b<const N: usize> {
     h: [u64; 8],
     t: u128,
     block: Block<128>,
 }
 
-impl Blake2b {
+impl<const N: usize> Blake2b<N> {
     pub fn new(key: Option<&[u8]>) -> Self {
         let mut state = Self {
             h: Self::IV,
@@ -29,7 +30,7 @@ impl Blake2b {
         }
     }
 
-    pub fn finalize_into(mut self, digest: &mut [u8; 64]) {
+    pub fn finalize_into(mut self, digest: &mut [u8; N]) {
         let remaining = self.block.remaining();
         let mut block = [0u8; 128];
         block[..remaining.len()].copy_from_slice(remaining);
@@ -41,35 +42,55 @@ impl Blake2b {
         }
     }
 
-    pub fn finalize(self) -> [u8; 64] {
-        let mut digest = [0u8; 64];
+    pub fn finalize(self) -> [u8; N] {
+        let mut digest = [0u8; N];
         self.finalize_into(&mut digest);
         digest
     }
+
+    pub fn verify(self, code: &[u8; N]) -> bool {
+        verify(code, &self.finalize())
+    }
 }
 
-pub fn blake2b(message: &[u8]) -> [u8; 64] {
-    let mut hasher = Blake2b::new(None);
+pub fn blake2b<const N: usize>(message: &[u8]) -> [u8; N] {
+    let mut hasher = Blake2b::<N>::new(None);
     hasher.update(message);
     hasher.finalize()
 }
 
-impl Init for Blake2b {
+pub fn blake2b512(message: &[u8]) -> [u8; 64] {
+    blake2b::<64>(message)
+}
+
+pub fn blake2b384(message: &[u8]) -> [u8; 48] {
+    blake2b::<48>(message)
+}
+
+pub fn blake2b256(message: &[u8]) -> [u8; 32] {
+    blake2b::<32>(message)
+}
+
+pub fn blake2b160(message: &[u8]) -> [u8; 20] {
+    blake2b::<20>(message)
+}
+
+impl<const N: usize> Init for Blake2b<N> {
     fn new() -> Self {
         Self::new(None)
     }
 }
 
-impl KeyInit for Blake2b {
+impl<const N: usize> KeyInit for Blake2b<N> {
     fn new(key: &[u8]) -> Self {
         Self::new(Some(key))
     }
 }
 
-impl Digest for Blake2b {
-    const OUTPUT_SIZE: usize = 64;
+impl<const N: usize> Digest for Blake2b<N> {
+    const OUTPUT_SIZE: usize = N;
 
-    type Output = [u8; Self::OUTPUT_SIZE];
+    type Output = [u8; N];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -84,13 +105,19 @@ impl Digest for Blake2b {
     }
 }
 
-impl Hasher for Blake2b {
+impl<const N: usize> Hasher for Blake2b<N> {
     const BLOCK_SIZE: usize = 128;
 
-    type Block = [u8; Self::BLOCK_SIZE];
+    type Block = [u8; 128];
 }
 
-impl Blake2b {
+impl<const N: usize> Mac for Blake2b<N> {
+    fn verify(self, code: &[u8; N]) -> bool {
+        self.verify(code)
+    }
+}
+
+impl<const N: usize> Blake2b<N> {
     const IV: [u64; 8] = [
         0x6a09e667f3bcc908,
         0xbb67ae8584caa73b,
@@ -117,7 +144,8 @@ impl Blake2b {
     fn init(&mut self, key: Option<&[u8]>) {
         let key = key.unwrap_or_default();
         let kk = key.len().min(64);
-        self.h[0] ^= 0x01010000 ^ ((kk as u64) << 8) ^ 64;
+        let nn = N.min(64);
+        self.h[0] ^= 0x01010000 ^ ((kk as u64) << 8) ^ (nn as u64);
         if !key.is_empty() {
             let mut block = [0u8; 128];
             block[..kk].copy_from_slice(&key[..kk]);
@@ -177,8 +205,8 @@ mod tests {
     // https://datatracker.ietf.org/doc/html/rfc7693
 
     #[test]
-    fn test_blake2b() {
-        let digest = blake2b(b"abc");
+    fn test_blake2b512() {
+        let digest = blake2b512(b"abc");
         assert_eq!(
             digest,
             [
