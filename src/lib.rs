@@ -6,6 +6,7 @@ mod blake2s;
 mod block;
 mod chacha;
 mod chacha20poly1305;
+mod curve25519;
 mod hkdf;
 mod hmac;
 mod pad;
