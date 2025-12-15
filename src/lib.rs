@@ -21,6 +21,20 @@ mod wipe;
 mod xor;
 
 pub use crate::{
-    blake2b::*, blake2s::*, chacha20poly1305::*, hkdf::*, hmac::*, pad::*, pbkdf2::*, rng::*,
-    sha256::*, sha512::*, traits::Csprng, verify::*, wipe::*,
+    blake2b::*,
+    blake2s::*,
+    chacha20poly1305::*,
+    hkdf::*,
+    hmac::{
+        hmac_sha1, hmac_sha1_verify, hmac_sha256, hmac_sha256_verify, hmac_sha512,
+        hmac_sha512_verify, HmacSha1, HmacSha256, HmacSha512,
+    },
+    pad::*,
+    pbkdf2::*,
+    rng::*,
+    sha256::*,
+    sha512::*,
+    traits::Csprng,
+    verify::*,
+    wipe::*,
 };
