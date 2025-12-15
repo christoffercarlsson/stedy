@@ -141,6 +141,13 @@ impl Curve25519 {
         r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
+
+    pub fn invert(self) -> Self {
+        let a = self.pow22523();
+        let b = a.pow2n(3);
+        let c = self * self.square();
+        b * c
+    }
 }
 
 impl Index<usize> for Curve25519 {
@@ -292,13 +299,6 @@ impl Curve25519 {
         t[0] &= Self::MASK;
         t[1] &= Self::MASK;
         Self(t)
-    }
-
-    fn invert(self) -> Self {
-        let a = self.pow22523();
-        let b = a.pow2n(3);
-        let c = self * self.square();
-        b * c
     }
 
     fn pow22523(self) -> Self {
