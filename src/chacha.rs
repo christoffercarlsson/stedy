@@ -1,9 +1,10 @@
 use crate::traits::{SeekableStreamCipher, StreamCipher};
 
+#[repr(C)]
 pub struct ChaCha20 {
     state: [u32; 16],
     keystream: [u8; 64],
-    offset: usize,
+    offset: u8,
 }
 
 impl ChaCha20 {
@@ -16,13 +17,14 @@ impl ChaCha20 {
             if self.offset == 64 {
                 self.next();
             }
-            let take = data.len().min(64 - self.offset);
-            let keystream = &self.keystream[self.offset..self.offset + take];
+            let offset = self.offset as usize;
+            let take = data.len().min(64 - offset);
+            let keystream = &self.keystream[offset..offset + take];
             let (head, tail) = data.split_at_mut(take);
             for (b, k) in head.iter_mut().zip(keystream.iter()) {
                 *b ^= k;
             }
-            self.offset += take;
+            self.offset += take as u8;
             data = tail;
         }
     }

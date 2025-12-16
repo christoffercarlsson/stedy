@@ -96,7 +96,7 @@ fn calculate_tag(mac: &mut Poly1305, ciphertext: &[u8], aad: Option<&[u8]>) {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::Rng};
+    use {super::*, crate::rng::Rng};
 
     #[test]
     fn test_chacha20poly1305() {

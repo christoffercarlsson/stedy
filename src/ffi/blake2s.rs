@@ -1,7 +1,12 @@
 use {
     crate::api::{blake2s256, Blake2s256},
-    core::{mem::size_of, ptr, slice},
+    core::{ptr, slice},
 };
+
+#[repr(C, align(8))]
+pub struct StedyBlake2s256State {
+    pub opaque: [u8; 112],
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_blake2s256(
@@ -15,7 +20,11 @@ pub unsafe extern "C" fn stedy_blake2s256(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_blake2s256_init(state: *mut u8, key: *const u8, key_size: usize) {
+pub unsafe extern "C" fn stedy_blake2s256_init(
+    state: *mut StedyBlake2s256State,
+    key: *const u8,
+    key_size: usize,
+) {
     let key = if key.is_null() || key_size == 0 {
         None
     } else {
@@ -28,7 +37,7 @@ pub unsafe extern "C" fn stedy_blake2s256_init(state: *mut u8, key: *const u8, k
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_blake2s256_update(
-    state: *mut u8,
+    state: *mut StedyBlake2s256State,
     message: *const u8,
     message_size: usize,
 ) {
@@ -38,20 +47,21 @@ pub unsafe extern "C" fn stedy_blake2s256_update(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_blake2s256_final(state: *const u8, digest: *mut u8) {
+pub unsafe extern "C" fn stedy_blake2s256_final(
+    state: *const StedyBlake2s256State,
+    digest: *mut u8,
+) {
     let state = state as *const Blake2s256;
     let digest: &mut [u8; 32] = slice::from_raw_parts_mut(digest, 64).try_into().unwrap();
     ptr::read(state).finalize_into(digest);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_blake2s256_final_verify(state: *const u8, code: *const u8) -> bool {
+pub unsafe extern "C" fn stedy_blake2s256_final_verify(
+    state: *const StedyBlake2s256State,
+    code: *const u8,
+) -> bool {
     let state = state as *const Blake2s256;
     let code: &[u8; 32] = slice::from_raw_parts(code, 32).try_into().unwrap();
     ptr::read(state).verify(code)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn stedy_blake2s256_state_size() -> usize {
-    size_of::<Blake2s256>()
 }

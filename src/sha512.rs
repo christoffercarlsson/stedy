@@ -3,11 +3,12 @@ use crate::{
     traits::{Digest, Hasher, Init},
 };
 
+#[repr(C, align(8))]
 #[derive(Clone)]
 pub struct Sha512 {
     h: [u64; 8],
     block: Block<128>,
-    total_size: usize,
+    total_size: u64,
 }
 
 impl Sha512 {
@@ -174,7 +175,7 @@ impl Sha512 {
     fn process_block(&mut self, block: &[u8]) {
         let w = Self::schedule(block);
         self.compress(&w);
-        self.total_size += block.len();
+        self.total_size += block.len() as u64;
     }
 
     fn compress(&mut self, w: &[u64]) {
@@ -221,7 +222,7 @@ impl Sha512 {
         } else {
             256 - remaining.len()
         };
-        let total_bits = ((self.total_size + remaining.len()) * 8) as u128;
+        let total_bits = ((self.total_size + remaining.len() as u64) * 8) as u128;
         padding[(padding_size - 16)..padding_size].copy_from_slice(&total_bits.to_be_bytes());
         self.update(&padding[..padding_size]);
     }

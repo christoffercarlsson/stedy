@@ -1,7 +1,12 @@
 use {
     crate::api::{blake2b512, Blake2b512},
-    core::{mem::size_of, ptr, slice},
+    core::{ptr, slice},
 };
+
+#[repr(C, align(8))]
+pub struct StedyBlake2b512State {
+    pub opaque: [u8; 216],
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_blake2b512(
@@ -15,7 +20,11 @@ pub unsafe extern "C" fn stedy_blake2b512(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_blake2b512_init(state: *mut u8, key: *const u8, key_size: usize) {
+pub unsafe extern "C" fn stedy_blake2b512_init(
+    state: *mut StedyBlake2b512State,
+    key: *const u8,
+    key_size: usize,
+) {
     let key = if key.is_null() || key_size == 0 {
         None
     } else {
@@ -28,7 +37,7 @@ pub unsafe extern "C" fn stedy_blake2b512_init(state: *mut u8, key: *const u8, k
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_blake2b512_update(
-    state: *mut u8,
+    state: *mut StedyBlake2b512State,
     message: *const u8,
     message_size: usize,
 ) {
@@ -38,20 +47,21 @@ pub unsafe extern "C" fn stedy_blake2b512_update(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_blake2b512_final(state: *const u8, digest: *mut u8) {
+pub unsafe extern "C" fn stedy_blake2b512_final(
+    state: *const StedyBlake2b512State,
+    digest: *mut u8,
+) {
     let state = state as *const Blake2b512;
     let digest: &mut [u8; 64] = slice::from_raw_parts_mut(digest, 64).try_into().unwrap();
     ptr::read(state).finalize_into(digest);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_blake2b512_final_verify(state: *const u8, code: *const u8) -> bool {
+pub unsafe extern "C" fn stedy_blake2b512_final_verify(
+    state: *const StedyBlake2b512State,
+    code: *const u8,
+) -> bool {
     let state = state as *const Blake2b512;
     let code: &[u8; 64] = slice::from_raw_parts(code, 64).try_into().unwrap();
     ptr::read(state).verify(code)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn stedy_blake2b512_state_size() -> usize {
-    size_of::<Blake2b512>()
 }

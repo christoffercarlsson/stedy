@@ -1,7 +1,8 @@
+#[repr(C)]
 #[derive(Clone)]
 pub struct Block<const BLOCK_SIZE: usize> {
     buffer: [u8; BLOCK_SIZE],
-    buffer_size: usize,
+    buffer_size: u32,
 }
 
 impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
@@ -13,10 +14,10 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
     }
 
     pub fn blocks(&mut self, data: &[u8]) -> Option<([u8; BLOCK_SIZE], BlockIterator<BLOCK_SIZE>)> {
-        let begin = data.len().min(BLOCK_SIZE - self.buffer_size);
+        let begin = data.len().min(BLOCK_SIZE - self.buffer_size as usize);
         let end = data.len() - (data.len() - begin) % BLOCK_SIZE;
         self.buffer_chunk(&data[..begin]);
-        if self.buffer_size < BLOCK_SIZE {
+        if (self.buffer_size as usize) < BLOCK_SIZE {
             return None;
         }
         let head = self.buffer;
@@ -27,12 +28,13 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
     }
 
     pub fn remaining(&self) -> &[u8] {
-        &self.buffer[..self.buffer_size]
+        &self.buffer[..self.buffer_size as usize]
     }
 
     fn buffer_chunk(&mut self, chunk: &[u8]) {
-        self.buffer[self.buffer_size..self.buffer_size + chunk.len()].copy_from_slice(chunk);
-        self.buffer_size += chunk.len();
+        let buffer_size = self.buffer_size as usize;
+        self.buffer[buffer_size..buffer_size + chunk.len()].copy_from_slice(chunk);
+        self.buffer_size += chunk.len() as u32;
     }
 }
 
