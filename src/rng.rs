@@ -1,5 +1,6 @@
 use crate::{blake2b::blake2b384, chacha::ChaCha20, traits::Csprng};
 
+#[repr(C, align(4))]
 pub struct Rng {
     cipher: ChaCha20,
 }

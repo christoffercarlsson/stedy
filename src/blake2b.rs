@@ -9,10 +9,11 @@ pub type Blake2b384 = Blake2b<48>;
 pub type Blake2b256 = Blake2b<32>;
 pub type Blake2b160 = Blake2b<20>;
 
+#[repr(C, align(8))]
 #[derive(Clone)]
 pub struct Blake2b<const N: usize> {
     h: [u64; 8],
-    t: u128,
+    t: [u64; 2],
     block: Block<128>,
 }
 
@@ -20,7 +21,7 @@ impl<const N: usize> Blake2b<N> {
     pub fn new(key: Option<&[u8]>) -> Self {
         let mut state = Self {
             h: Self::IV,
-            t: 0,
+            t: [0u64; 2],
             block: Block::<128>::new(),
         };
         state.init(key);
@@ -40,7 +41,7 @@ impl<const N: usize> Blake2b<N> {
         let remaining = self.block.remaining();
         let mut block = [0u8; 128];
         block[..remaining.len()].copy_from_slice(remaining);
-        self.t += remaining.len() as u128;
+        self.accumulate(remaining.len());
         self.compress(&block, 1);
         for (i, dest) in digest.chunks_mut(8).take(8).enumerate() {
             let src = self.h[i].to_le_bytes();
@@ -160,8 +161,14 @@ impl<const N: usize> Blake2b<N> {
     }
 
     fn process_block(&mut self, block: &[u8]) {
-        self.t += block.len() as u128;
+        self.accumulate(block.len());
         self.compress(block, 0);
+    }
+
+    fn accumulate(&mut self, size: usize) {
+        let size = size as u128;
+        self.t[0] += size as u64;
+        self.t[1] += (size >> 64) as u64;
     }
 
     fn compress(&mut self, block: &[u8], is_final: u64) {
@@ -173,8 +180,8 @@ impl<const N: usize> Blake2b<N> {
         let mut v = [0u64; 16];
         v[0..8].copy_from_slice(&self.h);
         v[8..16].copy_from_slice(&Self::IV);
-        v[12] ^= self.t as u64;
-        v[13] ^= (self.t >> 64) as u64;
+        v[12] ^= self.t[0];
+        v[13] ^= self.t[1];
         v[14] ^= is_final.wrapping_neg();
         for i in 0..12 {
             let s = &Self::SIGMA[i % 10];

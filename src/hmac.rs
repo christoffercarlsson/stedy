@@ -11,6 +11,7 @@ pub type HmacSha1 = Hmac<Sha1>;
 pub type HmacSha256 = Hmac<Sha256>;
 pub type HmacSha512 = Hmac<Sha512>;
 
+#[repr(C)]
 #[derive(Clone)]
 pub struct Hmac<H: Hasher> {
     inner: H,
