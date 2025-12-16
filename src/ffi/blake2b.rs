@@ -1,6 +1,6 @@
 use {
     crate::api::{blake2b512, Blake2b512},
-    core::{ptr, slice},
+    core::{mem::size_of, ptr, slice},
 };
 
 #[no_mangle]
@@ -53,5 +53,5 @@ pub unsafe extern "C" fn stedy_blake2b512_final_verify(state: *const u8, code: *
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_blake2b512_state_size() -> usize {
-    core::mem::size_of::<Blake2b512>()
+    size_of::<Blake2b512>()
 }
