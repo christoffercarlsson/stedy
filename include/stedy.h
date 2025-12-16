@@ -202,6 +202,15 @@ void stedy_sha512_final(const uint8_t *state, uint8_t *digest);
 
 size_t stedy_sha512_state_size();
 
+void stedy_x25519_generate_key_pair(const uint8_t *seed, uint8_t *private_key,
+                                    uint8_t *public_key);
+
+void stedy_x25519_key_exchange(const uint8_t *private_key,
+                               const uint8_t *public_key,
+                               uint8_t *shared_secret);
+
+void stedy_x25519_public_key(const uint8_t *private_key, uint8_t *public_key);
+
 #ifdef __cplusplus
 }
 #endif
