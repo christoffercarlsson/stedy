@@ -158,6 +158,16 @@ size_t stedy_pad(uint8_t *unpadded, const size_t unpadded_size,
 size_t stedy_unpad(const uint8_t *padded, const size_t padded_size,
                    const size_t block_size);
 
+void stedy_pbkdf2_hmac_sha256(const uint8_t *password,
+                              const size_t password_size, const uint8_t *salt,
+                              const size_t salt_size, const size_t iterations,
+                              uint8_t *output, const size_t output_size);
+
+void stedy_pbkdf2_hmac_sha512(const uint8_t *password,
+                              const size_t password_size, const uint8_t *salt,
+                              const size_t salt_size, const size_t iterations,
+                              uint8_t *output, const size_t output_size);
+
 #ifdef __cplusplus
 }
 #endif
