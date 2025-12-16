@@ -47,8 +47,8 @@ pub unsafe extern "C" fn stedy_blake2s256_final(state: *const u8, digest: *mut u
 #[no_mangle]
 pub unsafe extern "C" fn stedy_blake2s256_final_verify(state: *const u8, code: *const u8) -> bool {
     let state = state as *const Blake2s256;
-    let code: [u8; 32] = slice::from_raw_parts(code, 32).try_into().unwrap();
-    ptr::read(state).verify(&code)
+    let code: &[u8; 32] = slice::from_raw_parts(code, 32).try_into().unwrap();
+    ptr::read(state).verify(code)
 }
 
 #[no_mangle]

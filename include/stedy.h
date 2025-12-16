@@ -71,6 +71,17 @@ bool stedy_xchacha20poly1305_increment_nonce(uint8_t *nonce);
 void stedy_xchacha20poly1305_generate_nonce(const uint8_t *seed,
                                             uint8_t *nonce);
 
+void stedy_ed25519_generate_key_pair(const uint8_t *seed, uint8_t *private_key,
+                                     uint8_t *public_key);
+
+void stedy_ed25519_public_key(const uint8_t *private_key, uint8_t *public_key);
+
+void stedy_ed25519_sign(const uint8_t *private_key, const uint8_t *message,
+                        const size_t message_size, uint8_t *signature);
+
+bool stedy_ed25519_verify(const uint8_t *message, const size_t message_size,
+                          const uint8_t *public_key, const uint8_t *signature);
+
 #ifdef __cplusplus
 }
 #endif
