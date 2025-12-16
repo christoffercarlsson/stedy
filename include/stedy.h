@@ -168,6 +168,16 @@ void stedy_pbkdf2_hmac_sha512(const uint8_t *password,
                               const size_t salt_size, const size_t iterations,
                               uint8_t *output, const size_t output_size);
 
+void stedy_rng_init(uint8_t *state, const uint8_t *seed);
+
+void stedy_rng_fill(uint8_t *state, uint8_t *bytes, const size_t size);
+
+uint32_t stedy_rng_next_u32(uint8_t *state);
+
+uint64_t stedy_rng_next_u64(uint8_t *state);
+
+size_t stedy_rng_state_size();
+
 #ifdef __cplusplus
 }
 #endif
