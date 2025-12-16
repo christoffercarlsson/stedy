@@ -152,6 +152,12 @@ bool stedy_hmac_sha512_final_verify(const uint8_t *state, const uint8_t *code);
 
 size_t stedy_hmac_sha512_state_size();
 
+size_t stedy_pad(uint8_t *unpadded, const size_t unpadded_size,
+                 const size_t block_size);
+
+size_t stedy_unpad(const uint8_t *padded, const size_t padded_size,
+                   const size_t block_size);
+
 #ifdef __cplusplus
 }
 #endif
