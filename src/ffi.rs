@@ -8,6 +8,7 @@ mod pad;
 mod pbkdf2;
 mod rng;
 mod sha256;
+mod sha512;
 
 #[panic_handler]
 #[inline(never)]
@@ -17,5 +18,5 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 
 pub use {
     blake2b::*, blake2s::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac::*, pad::*, pbkdf2::*,
-    rng::*, sha256::*,
+    rng::*, sha256::*, sha512::*,
 };
