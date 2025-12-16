@@ -178,6 +178,18 @@ uint64_t stedy_rng_next_u64(uint8_t *state);
 
 size_t stedy_rng_state_size();
 
+void stedy_sha256(const uint8_t *message, const size_t message_size,
+                  uint8_t *digest);
+
+void stedy_sha256_init(uint8_t *state);
+
+void stedy_sha256_update(uint8_t *state, const uint8_t *message,
+                         const size_t message_size);
+
+void stedy_sha256_final(const uint8_t *state, uint8_t *digest);
+
+size_t stedy_sha256_state_size();
+
 #ifdef __cplusplus
 }
 #endif
