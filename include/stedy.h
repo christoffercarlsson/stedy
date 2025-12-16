@@ -82,6 +82,16 @@ void stedy_ed25519_sign(const uint8_t *private_key, const uint8_t *message,
 bool stedy_ed25519_verify(const uint8_t *message, const size_t message_size,
                           const uint8_t *public_key, const uint8_t *signature);
 
+void stedy_hkdf_sha256(const uint8_t *ikm, const size_t ikm_size,
+                       const uint8_t *salt, const size_t salt_size,
+                       const uint8_t *info, const size_t info_size,
+                       uint8_t *okm, const size_t okm_size);
+
+void stedy_hkdf_sha512(const uint8_t *ikm, const size_t ikm_size,
+                       const uint8_t *salt, const size_t salt_size,
+                       const uint8_t *info, const size_t info_size,
+                       uint8_t *okm, const size_t okm_size);
+
 #ifdef __cplusplus
 }
 #endif
