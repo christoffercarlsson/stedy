@@ -1,8 +1,18 @@
 use crate::{
+    blake2b::Blake2b512,
+    blake2s::Blake2s256,
     hmac::{HmacSha256, HmacSha512},
     traits::{Digest, KeyInit},
     xor::xor,
 };
+
+pub fn pbkdf2_blake2s256(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
+    pbkdf2::<Blake2s256>(password, salt, iterations, output);
+}
+
+pub fn pbkdf2_blake2b512(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
+    pbkdf2::<Blake2b512>(password, salt, iterations, output);
+}
 
 pub fn pbkdf2_hmac_sha256(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
     pbkdf2::<HmacSha256>(password, salt, iterations, output);
