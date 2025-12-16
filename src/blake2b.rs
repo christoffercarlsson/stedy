@@ -9,6 +9,7 @@ pub type Blake2b384 = Blake2b<48>;
 pub type Blake2b256 = Blake2b<32>;
 pub type Blake2b160 = Blake2b<20>;
 
+#[derive(Clone)]
 pub struct Blake2b<const N: usize> {
     h: [u64; 8],
     t: u128,

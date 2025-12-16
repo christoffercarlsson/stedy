@@ -3,7 +3,7 @@ use crate::{
     traits::{Digest, Hasher, Init},
 };
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Sha1 {
     h: [u32; 5],
     block: Block<64>,
