@@ -1,4 +1,4 @@
-use crate::{chacha::ChaCha20, traits::Csprng};
+use crate::{blake2b::blake2b384, chacha::ChaCha20, traits::Csprng};
 
 pub struct Rng {
     cipher: ChaCha20,
@@ -6,8 +6,9 @@ pub struct Rng {
 
 impl Rng {
     pub fn new(seed: &[u8; 32]) -> Self {
+        let seed = blake2b384(seed);
         Self {
-            cipher: ChaCha20::from(seed),
+            cipher: ChaCha20::from(&seed),
         }
     }
 
