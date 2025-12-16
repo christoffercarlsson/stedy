@@ -1,4 +1,5 @@
 #![no_std]
+#![cfg_attr(feature = "ffi", allow(dead_code, unused_imports))]
 
 mod aead;
 mod api;
