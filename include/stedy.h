@@ -92,6 +92,66 @@ void stedy_hkdf_sha512(const uint8_t *ikm, const size_t ikm_size,
                        const uint8_t *info, const size_t info_size,
                        uint8_t *okm, const size_t okm_size);
 
+void stedy_hmac_sha1(const uint8_t *key, const size_t key_size,
+                     const uint8_t *message, const size_t message_size,
+                     uint8_t *code);
+
+bool stedy_hmac_sha1_verify(const uint8_t *key, const size_t key_size,
+                            const uint8_t *message, const size_t message_size,
+                            const uint8_t *code);
+
+void stedy_hmac_sha1_init(uint8_t *state, const uint8_t *key,
+                          const size_t key_size);
+
+void stedy_hmac_sha1_update(uint8_t *state, const uint8_t *message,
+                            const size_t message_size);
+
+void stedy_hmac_sha1_final(const uint8_t *state, uint8_t *code);
+
+bool stedy_hmac_sha1_final_verify(const uint8_t *state, const uint8_t *code);
+
+size_t stedy_hmac_sha1_state_size();
+
+void stedy_hmac_sha256(const uint8_t *key, const size_t key_size,
+                       const uint8_t *message, const size_t message_size,
+                       uint8_t *code);
+
+bool stedy_hmac_sha256_verify(const uint8_t *key, const size_t key_size,
+                              const uint8_t *message, const size_t message_size,
+                              const uint8_t *code);
+
+void stedy_hmac_sha256_init(uint8_t *state, const uint8_t *key,
+                            const size_t key_size);
+
+void stedy_hmac_sha256_update(uint8_t *state, const uint8_t *message,
+                              const size_t message_size);
+
+void stedy_hmac_sha256_final(const uint8_t *state, uint8_t *code);
+
+bool stedy_hmac_sha256_final_verify(const uint8_t *state, const uint8_t *code);
+
+size_t stedy_hmac_sha256_state_size();
+
+void stedy_hmac_sha512(const uint8_t *key, const size_t key_size,
+                       const uint8_t *message, const size_t message_size,
+                       uint8_t *code);
+
+bool stedy_hmac_sha512_verify(const uint8_t *key, const size_t key_size,
+                              const uint8_t *message, const size_t message_size,
+                              const uint8_t *code);
+
+void stedy_hmac_sha512_init(uint8_t *state, const uint8_t *key,
+                            const size_t key_size);
+
+void stedy_hmac_sha512_update(uint8_t *state, const uint8_t *message,
+                              const size_t message_size);
+
+void stedy_hmac_sha512_final(const uint8_t *state, uint8_t *code);
+
+bool stedy_hmac_sha512_final_verify(const uint8_t *state, const uint8_t *code);
+
+size_t stedy_hmac_sha512_state_size();
+
 #ifdef __cplusplus
 }
 #endif
