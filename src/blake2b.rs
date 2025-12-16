@@ -4,6 +4,11 @@ use crate::{
     verify::verify,
 };
 
+pub type Blake2b512 = Blake2b<64>;
+pub type Blake2b384 = Blake2b<48>;
+pub type Blake2b256 = Blake2b<32>;
+pub type Blake2b160 = Blake2b<20>;
+
 pub struct Blake2b<const N: usize> {
     h: [u64; 8],
     t: u128,
