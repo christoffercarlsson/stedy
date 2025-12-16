@@ -211,6 +211,10 @@ void stedy_x25519_key_exchange(const uint8_t *private_key,
 
 void stedy_x25519_public_key(const uint8_t *private_key, uint8_t *public_key);
 
+bool stedy_verify(const uint8_t *a, const uint8_t *b, size_t size);
+
+void stedy_wipe(uint8_t *data, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
