@@ -1,5 +1,5 @@
 use {
-    crate::api::{blake2b512, Blake2b512},
+    crate::blake2b::{blake2b512, Blake2b512},
     core::{ptr, slice},
 };
 

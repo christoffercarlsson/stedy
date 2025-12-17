@@ -1,5 +1,5 @@
 use {
-    crate::api::{hmac_sha512, hmac_sha512_verify, HmacSha512},
+    crate::hmac::{hmac_sha512, hmac_sha512_verify, HmacSha512},
     core::{ptr, slice},
 };
 #[repr(C, align(8))]

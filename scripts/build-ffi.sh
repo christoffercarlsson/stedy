@@ -10,7 +10,7 @@ HEADER_DIR="${BUILD_DIR}/include"
 
 CARGO_ARGS="+nightly rustc -Z build-std --profile ffi --features ffi --crate-type=staticlib --quiet"
 
-if [ $# -eq 0 ];
+if [ $# -eq 0 ]
 then
     cargo ${CARGO_ARGS}
 else

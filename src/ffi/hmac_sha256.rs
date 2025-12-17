@@ -1,5 +1,5 @@
 use {
-    crate::api::{hmac_sha256, hmac_sha256_verify, HmacSha256},
+    crate::hmac::{hmac_sha256, hmac_sha256_verify, HmacSha256},
     core::{ptr, slice},
 };
 

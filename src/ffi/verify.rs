@@ -1,4 +1,4 @@
-use {crate::api::verify, core::slice};
+use {crate::verify::verify, core::slice};
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_verify(a: *const u8, b: *const u8, size: usize) -> bool {

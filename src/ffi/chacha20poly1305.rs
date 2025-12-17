@@ -1,9 +1,12 @@
 use {
-    crate::api::{
-        chacha20poly1305_decrypt, chacha20poly1305_encrypt, chacha20poly1305_generate_key,
-        chacha20poly1305_increment_nonce, xchacha20poly1305_decrypt, xchacha20poly1305_encrypt,
-        xchacha20poly1305_generate_key, xchacha20poly1305_generate_nonce,
-        xchacha20poly1305_increment_nonce, Rng,
+    crate::{
+        chacha20poly1305::{
+            chacha20poly1305_decrypt, chacha20poly1305_encrypt, chacha20poly1305_generate_key,
+            chacha20poly1305_increment_nonce, xchacha20poly1305_decrypt, xchacha20poly1305_encrypt,
+            xchacha20poly1305_generate_key, xchacha20poly1305_generate_nonce,
+            xchacha20poly1305_increment_nonce,
+        },
+        rng::Rng,
     },
     core::{ptr, slice},
 };

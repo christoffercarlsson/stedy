@@ -1,5 +1,5 @@
 use {
-    crate::api::{hkdf_sha256, hkdf_sha512},
+    crate::hkdf::{hkdf_sha256, hkdf_sha512},
     core::slice,
 };
 

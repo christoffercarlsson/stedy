@@ -1,5 +1,5 @@
 use {
-    crate::api::Rng,
+    crate::rng::Rng,
     core::{ptr, slice},
 };
 

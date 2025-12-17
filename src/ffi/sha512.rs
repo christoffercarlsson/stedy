@@ -1,5 +1,5 @@
 use {
-    crate::api::{sha512, Sha512},
+    crate::sha512::{sha512, Sha512},
     core::{ptr, slice},
 };
 

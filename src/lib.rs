@@ -1,8 +1,6 @@
 #![no_std]
-#![cfg_attr(feature = "ffi", allow(dead_code, unused_imports))]
 
 mod aead;
-mod api;
 mod blake2b;
 mod blake2s;
 mod block;
@@ -27,8 +25,10 @@ mod wipe;
 mod x25519;
 mod xor;
 
-#[cfg(not(feature = "ffi"))]
-pub use crate::api::*;
+pub use crate::{
+    blake2b::*, blake2s::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac::*, pad::*, pbkdf2::*,
+    rng::*, sha256::*, sha512::*, traits::Csprng, verify::*, wipe::*, x25519::*, xor::*,
+};
 
 #[cfg(feature = "ffi")]
 pub use crate::ffi::*;

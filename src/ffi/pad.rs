@@ -1,5 +1,5 @@
 use {
-    crate::api::{pad, unpad},
+    crate::pad::{pad, unpad},
     core::slice,
 };
 

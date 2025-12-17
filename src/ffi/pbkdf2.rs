@@ -1,5 +1,5 @@
 use {
-    crate::api::{pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
+    crate::pbkdf2::{pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
     core::slice,
 };
 

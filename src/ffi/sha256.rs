@@ -1,5 +1,5 @@
 use {
-    crate::api::{sha256, Sha256},
+    crate::sha256::{sha256, Sha256},
     core::{ptr, slice},
 };
 

@@ -1,4 +1,4 @@
-use {crate::api::wipe, core::slice};
+use {crate::wipe::wipe, core::slice};
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_wipe(data: *mut u8, size: usize) {
