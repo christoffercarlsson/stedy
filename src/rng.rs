@@ -1,4 +1,8 @@
-use crate::{blake2b::blake2b384, chacha::ChaCha20, traits::Csprng};
+use crate::{
+    blake2b::blake2b384,
+    chacha::ChaCha20,
+    traits::{Csprng, SeedableCsprng},
+};
 
 #[repr(C, align(4))]
 pub struct Rng {
@@ -6,13 +10,6 @@ pub struct Rng {
 }
 
 impl Rng {
-    pub fn new(seed: &[u8; 32]) -> Self {
-        let seed = blake2b384(seed);
-        Self {
-            cipher: ChaCha20::from(&seed),
-        }
-    }
-
     pub fn fill(&mut self, bytes: &mut [u8]) {
         self.cipher.apply_keystream(bytes);
     }
@@ -27,6 +24,21 @@ impl Rng {
         let mut bytes = [0u8; 8];
         self.fill(&mut bytes);
         u64::from_le_bytes(bytes)
+    }
+
+    pub fn next_u128(&mut self) -> u128 {
+        let mut bytes = [0u8; 16];
+        self.fill(&mut bytes);
+        u128::from_le_bytes(bytes)
+    }
+}
+
+#[cfg(feature = "getrandom")]
+impl Rng {
+    pub fn seed() -> Option<Self> {
+        let mut seed = [0u8; 32];
+        getrandom::fill(&mut seed).ok()?;
+        Some(Self::from(seed))
     }
 }
 
@@ -43,14 +55,6 @@ impl From<[u8; 32]> for Rng {
 }
 
 impl Csprng for Rng {
-    const SEED_SIZE: usize = 32;
-
-    type Seed = [u8; Self::SEED_SIZE];
-
-    fn new(seed: &Self::Seed) -> Self {
-        Self::new(seed)
-    }
-
     fn fill(&mut self, bytes: &mut [u8]) {
         self.fill(bytes);
     }
@@ -64,9 +68,43 @@ impl Csprng for Rng {
     }
 }
 
+impl SeedableCsprng for Rng {
+    const SEED_SIZE: usize = 32;
+
+    type Seed = [u8; Self::SEED_SIZE];
+
+    fn new(seed: &Self::Seed) -> Self {
+        Self::new(seed)
+    }
+}
+
+impl Rng {
+    fn new(seed: &[u8; 32]) -> Self {
+        let seed = blake2b384(seed);
+        Self {
+            cipher: ChaCha20::from(&seed),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "getrandom")]
+    #[test]
+    fn test_getrandom_seed() {
+        let mut rng = Rng::seed().unwrap();
+        let mut bytes = [0u8; 32];
+        rng.fill(&mut bytes);
+        assert_ne!(
+            bytes,
+            [
+                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
+                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
+            ]
+        );
+    }
 
     #[test]
     fn test_next_u32() {
@@ -80,6 +118,13 @@ mod tests {
         let mut rng = Rng::from([0u8; 32]);
         let result = rng.next_u64();
         assert_eq!(result, 16861873601850325412);
+    }
+
+    #[test]
+    fn test_next_u128() {
+        let mut rng = Rng::from([0u8; 32]);
+        let result = rng.next_u128();
+        assert_eq!(result, 39891831856960291545189506228929378724);
     }
 
     #[test]

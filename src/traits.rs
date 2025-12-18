@@ -48,17 +48,19 @@ pub trait SeekableStreamCipher: StreamCipher {
 }
 
 pub trait Csprng {
-    const SEED_SIZE: usize;
-
-    type Seed: ByteArray;
-
-    fn new(seed: &Self::Seed) -> Self;
-
     fn fill(&mut self, bytes: &mut [u8]);
 
     fn next_u32(&mut self) -> u32;
 
     fn next_u64(&mut self) -> u64;
+}
+
+pub trait SeedableCsprng: Csprng {
+    const SEED_SIZE: usize;
+
+    type Seed: ByteArray;
+
+    fn new(seed: &Self::Seed) -> Self;
 }
 
 trait Sealed {}
