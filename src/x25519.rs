@@ -1,4 +1,7 @@
-use crate::{curve25519::Curve25519, traits::Csprng};
+use crate::{
+    curve25519::Curve25519,
+    traits::{Csprng, FieldElement},
+};
 
 pub fn x25519_generate_key_pair<R: Csprng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
     let mut private_key = [0u8; 32];

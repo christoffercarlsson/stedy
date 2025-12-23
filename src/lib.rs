@@ -11,6 +11,8 @@ mod chacha;
 mod chacha20poly1305;
 mod curve25519;
 mod ed25519;
+mod eddsa;
+mod edwards25519;
 #[cfg(feature = "ffi")]
 mod ffi;
 mod hkdf;
@@ -19,6 +21,7 @@ mod pad;
 mod pbkdf2;
 mod poly1305;
 mod rng;
+mod scalar25519;
 mod sha1;
 mod sha256;
 mod sha512;
@@ -29,22 +32,8 @@ mod x25519;
 mod xor;
 
 pub use crate::{
-    blake2b::*,
-    blake2s::*,
-    chacha20poly1305::*,
-    ed25519::*,
-    hkdf::*,
-    hmac::*,
-    pad::*,
-    pbkdf2::*,
-    rng::*,
-    sha256::*,
-    sha512::*,
-    traits::{Csprng, SeedableCsprng},
-    verify::*,
-    wipe::*,
-    x25519::*,
-    xor::*,
+    blake2b::*, blake2s::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac::*, pad::*, pbkdf2::*,
+    rng::*, sha256::*, sha512::*, verify::*, wipe::*, x25519::*, xor::*,
 };
 
 #[cfg(feature = "ffi")]

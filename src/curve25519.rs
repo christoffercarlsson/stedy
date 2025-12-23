@@ -1,22 +1,15 @@
-use core::{
-    cmp::{Eq, PartialEq},
-    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub},
+use {
+    crate::traits::FieldElement,
+    core::{
+        cmp::{Eq, PartialEq},
+        ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub},
+    },
 };
 
 #[derive(Clone, Copy)]
 pub struct Curve25519(pub [u64; 5]);
 
 impl Curve25519 {
-    pub const ONE: Self = Self([1, 0, 0, 0, 0]);
-    pub const ZERO: Self = Self([0; 5]);
-
-    pub fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mut x = *a;
-        let mut y = *b;
-        Self::swap(&mut x, &mut y, condition);
-        x
-    }
-
     pub fn swap(a: &mut Self, b: &mut Self, condition: u64) {
         let mask = ((condition != 0) as u64).wrapping_neg();
         let x = a.0;
@@ -35,118 +28,6 @@ impl Curve25519 {
             y[3] & !mask | x[3] & mask,
             y[4] & !mask | x[4] & mask,
         ];
-    }
-
-    pub fn add(self, rhs: Self) -> Self {
-        let mut result = Self([
-            self[0] + rhs[0],
-            self[1] + rhs[1],
-            self[2] + rhs[2],
-            self[3] + rhs[3],
-            self[4] + rhs[4],
-        ]);
-        result.carry();
-        result.reduce();
-        result
-    }
-
-    pub fn sub(self, rhs: Self) -> Self {
-        let mut result = Self([
-            Self::P[0] + self[0] - rhs[0],
-            Self::P[1] + self[1] - rhs[1],
-            Self::P[2] + self[2] - rhs[2],
-            Self::P[3] + self[3] - rhs[3],
-            Self::P[4] + self[4] - rhs[4],
-        ]);
-        result.carry();
-        result.reduce();
-        result
-    }
-
-    pub fn neg(self) -> Self {
-        let mut result = Self([
-            Self::P[0] - self[0],
-            Self::P[1] - self[1],
-            Self::P[2] - self[2],
-            Self::P[3] - self[3],
-            Self::P[4] - self[4],
-        ]);
-        result.carry();
-        result.reduce();
-        result
-    }
-
-    pub fn mul(self, rhs: Self) -> Self {
-        let mut t = [0u128; 5];
-        t[0] += m(self[0], rhs[0]);
-        t[0] += m(self[4], rhs[1] * 19);
-        t[0] += m(self[3], rhs[2] * 19);
-        t[0] += m(self[2], rhs[3] * 19);
-        t[0] += m(self[1], rhs[4] * 19);
-        t[1] += m(self[1], rhs[0]);
-        t[1] += m(self[0], rhs[1]);
-        t[1] += m(self[4], rhs[2] * 19);
-        t[1] += m(self[3], rhs[3] * 19);
-        t[1] += m(self[2], rhs[4] * 19);
-        t[2] += m(self[2], rhs[0]);
-        t[2] += m(self[1], rhs[1]);
-        t[2] += m(self[0], rhs[2]);
-        t[2] += m(self[4], rhs[3] * 19);
-        t[2] += m(self[3], rhs[4] * 19);
-        t[3] += m(self[3], rhs[0]);
-        t[3] += m(self[2], rhs[1]);
-        t[3] += m(self[1], rhs[2]);
-        t[3] += m(self[0], rhs[3]);
-        t[3] += m(self[4], rhs[4] * 19);
-        t[4] += m(self[4], rhs[0]);
-        t[4] += m(self[3], rhs[1]);
-        t[4] += m(self[2], rhs[2]);
-        t[4] += m(self[1], rhs[3]);
-        t[4] += m(self[0], rhs[4]);
-        Self::new(t)
-    }
-
-    pub fn square(self) -> Self {
-        let a = &self;
-        let mut t = [0u128; 5];
-        t[0] = m(a[0], a[0]);
-        t[0] += 2 * (m(a[1], a[4] * 19) + m(a[2], a[3] * 19));
-        t[1] = m(a[3], a[3] * 19);
-        t[1] += 2 * (m(a[0], a[1]) + m(a[2], a[4] * 19));
-        t[2] += m(a[1], a[1]);
-        t[2] += 2 * (m(a[0], a[2]) + m(a[4], a[3] * 19));
-        t[3] = m(a[4], a[4] * 19);
-        t[3] += 2 * (m(a[0], a[3]) + m(a[1], a[2]));
-        t[4] = m(a[2], a[2]);
-        t[4] += 2 * (m(a[0], a[4]) + m(a[1], a[3]));
-        Self::new(t)
-    }
-
-    pub fn div(self, rhs: Self) -> Self {
-        self.mul(rhs.invert())
-    }
-
-    pub fn sqrt(self, b: Self) -> (Self, u64) {
-        let a = self;
-        let b3 = b.square() * b;
-        let b7 = b3.square() * b;
-        let u = a * b3 * (a * b7).pow22523();
-        let v = u * Self::SQRT_M1;
-        let c = b * u.square();
-        let d = b * v.square();
-        let e = (c == a) as u64;
-        let f = (d == a) as u64;
-        let mut r = Self::select(&v, &u, e);
-        let valid = e | f;
-        r = Self::select(&Self::ZERO, &r, valid);
-        (r, valid)
-    }
-
-    pub fn invert(self) -> Self {
-        let a = self.pow22523();
-        let b = a.pow2n(3);
-        let c = self * self.square();
-        b * c
     }
 }
 
@@ -179,7 +60,16 @@ impl Add for Curve25519 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        self.add(rhs)
+        let mut result = Self([
+            self[0] + rhs[0],
+            self[1] + rhs[1],
+            self[2] + rhs[2],
+            self[3] + rhs[3],
+            self[4] + rhs[4],
+        ]);
+        result.carry();
+        result.reduce();
+        result
     }
 }
 
@@ -193,7 +83,7 @@ impl Div for Curve25519 {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        self.div(rhs)
+        self.mul(rhs.invert())
     }
 }
 
@@ -201,7 +91,33 @@ impl Mul for Curve25519 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        self.mul(rhs)
+        let mut t = [0u128; 5];
+        t[0] += m(self[0], rhs[0]);
+        t[0] += m(self[4], rhs[1] * 19);
+        t[0] += m(self[3], rhs[2] * 19);
+        t[0] += m(self[2], rhs[3] * 19);
+        t[0] += m(self[1], rhs[4] * 19);
+        t[1] += m(self[1], rhs[0]);
+        t[1] += m(self[0], rhs[1]);
+        t[1] += m(self[4], rhs[2] * 19);
+        t[1] += m(self[3], rhs[3] * 19);
+        t[1] += m(self[2], rhs[4] * 19);
+        t[2] += m(self[2], rhs[0]);
+        t[2] += m(self[1], rhs[1]);
+        t[2] += m(self[0], rhs[2]);
+        t[2] += m(self[4], rhs[3] * 19);
+        t[2] += m(self[3], rhs[4] * 19);
+        t[3] += m(self[3], rhs[0]);
+        t[3] += m(self[2], rhs[1]);
+        t[3] += m(self[1], rhs[2]);
+        t[3] += m(self[0], rhs[3]);
+        t[3] += m(self[4], rhs[4] * 19);
+        t[4] += m(self[4], rhs[0]);
+        t[4] += m(self[3], rhs[1]);
+        t[4] += m(self[2], rhs[2]);
+        t[4] += m(self[1], rhs[3]);
+        t[4] += m(self[0], rhs[4]);
+        Self::new(t)
     }
 }
 
@@ -215,7 +131,16 @@ impl Neg for Curve25519 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        self.neg()
+        let mut result = Self([
+            Self::P[0] - self[0],
+            Self::P[1] - self[1],
+            Self::P[2] - self[2],
+            Self::P[3] - self[3],
+            Self::P[4] - self[4],
+        ]);
+        result.carry();
+        result.reduce();
+        result
     }
 }
 
@@ -223,7 +148,67 @@ impl Sub for Curve25519 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        self.sub(rhs)
+        let mut result = Self([
+            Self::P[0] + self[0] - rhs[0],
+            Self::P[1] + self[1] - rhs[1],
+            Self::P[2] + self[2] - rhs[2],
+            Self::P[3] + self[3] - rhs[3],
+            Self::P[4] + self[4] - rhs[4],
+        ]);
+        result.carry();
+        result.reduce();
+        result
+    }
+}
+
+impl FieldElement for Curve25519 {
+    const ONE: Self = Self([1, 0, 0, 0, 0]);
+    const ZERO: Self = Self([0; 5]);
+
+    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+        let mut x = *a;
+        let mut y = *b;
+        Self::swap(&mut x, &mut y, condition);
+        x
+    }
+
+    fn square(self) -> Self {
+        let a = &self;
+        let mut t = [0u128; 5];
+        t[0] = m(a[0], a[0]);
+        t[0] += 2 * (m(a[1], a[4] * 19) + m(a[2], a[3] * 19));
+        t[1] = m(a[3], a[3] * 19);
+        t[1] += 2 * (m(a[0], a[1]) + m(a[2], a[4] * 19));
+        t[2] += m(a[1], a[1]);
+        t[2] += 2 * (m(a[0], a[2]) + m(a[4], a[3] * 19));
+        t[3] = m(a[4], a[4] * 19);
+        t[3] += 2 * (m(a[0], a[3]) + m(a[1], a[2]));
+        t[4] = m(a[2], a[2]);
+        t[4] += 2 * (m(a[0], a[4]) + m(a[1], a[3]));
+        Self::new(t)
+    }
+
+    fn invert(self) -> Self {
+        let a = self.pow22523();
+        let b = a.pow2n(3);
+        let c = self * self.square();
+        b * c
+    }
+
+    fn sqrt(self, b: Self) -> (Self, u64) {
+        let a = self;
+        let b3 = b.square() * b;
+        let b7 = b3.square() * b;
+        let u = a * b3 * (a * b7).pow22523();
+        let v = u * Self::SQRT_M1;
+        let c = b * u.square();
+        let d = b * v.square();
+        let e = (c == a) as u64;
+        let f = (d == a) as u64;
+        let mut r = Self::select(&v, &u, e);
+        let valid = e | f;
+        r = Self::select(&Self::ZERO, &r, valid);
+        (r, valid)
     }
 }
 
