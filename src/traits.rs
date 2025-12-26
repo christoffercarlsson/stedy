@@ -1,7 +1,7 @@
+#![allow(private_bounds, dead_code)]
 use core::ops::{Add, Mul, Neg, Sub};
 
-#[allow(private_bounds)]
-pub trait ByteArray: Sealed + Init + AsRef<[u8]> + AsMut<[u8]> + Copy {
+pub(crate) trait ByteArray: Sealed + Init + AsRef<[u8]> + AsMut<[u8]> + Copy {
     fn from_slice(slice: &[u8]) -> &Self;
 }
 
@@ -49,6 +49,16 @@ pub trait StreamCipher {
 
 pub trait SeekableStreamCipher: StreamCipher {
     fn seek(&mut self, counter: u32);
+}
+
+pub trait Authenticator<C: SeekableStreamCipher> {
+    type Output;
+
+    fn new(cipher: &mut C) -> Self;
+
+    fn tag(self, ciphertext: &[u8], aad: Option<&[u8]>) -> Self::Output;
+
+    fn verify(self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool;
 }
 
 pub trait Csprng {

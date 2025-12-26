@@ -1,48 +1,29 @@
-use crate::traits::{Csprng, Init, Mac, StreamCipher};
+use crate::traits::{Authenticator, Csprng, Init, SeekableStreamCipher};
 
-pub struct Aead<C: StreamCipher, M: Mac> {
+pub struct Aead<C: SeekableStreamCipher, M: Authenticator<C>> {
     cipher: C,
     mac: M,
 }
 
-impl<C: StreamCipher, M: Mac> Aead<C, M> {
-    pub fn new<F>(key: &C::Key, nonce: &C::Nonce, create_mac: F) -> Self
-    where
-        F: Fn(&mut C) -> M,
-    {
+impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
+    pub fn new(key: &C::Key, nonce: &C::Nonce) -> Self {
         let mut cipher = C::new(key, nonce);
-        let mac = create_mac(&mut cipher);
+        let mac = M::new(&mut cipher);
         Self { cipher, mac }
     }
 
-    pub fn encrypt<F>(
-        mut self,
-        message: &mut [u8],
-        aad: Option<&[u8]>,
-        calculate_tag: F,
-    ) -> M::Output
-    where
-        F: Fn(&mut M, &[u8], Option<&[u8]>),
-    {
+    pub fn encrypt(mut self, message: &mut [u8], aad: Option<&[u8]>) -> M::Output {
         self.cipher.apply_keystream(message);
-        calculate_tag(&mut self.mac, message, aad);
-        self.mac.finalize()
+        self.mac.tag(message, aad)
     }
 
-    pub fn decrypt<F>(
-        mut self,
-        message: &mut [u8],
-        tag: &M::Output,
-        aad: Option<&[u8]>,
-        calculate_tag: F,
-    ) -> bool
-    where
-        F: Fn(&mut M, &[u8], Option<&[u8]>),
-    {
-        calculate_tag(&mut self.mac, message, aad);
-        let verified = self.mac.verify(tag);
-        self.cipher.apply_keystream(message);
-        verified
+    pub fn decrypt(mut self, message: &mut [u8], tag: &M::Output, aad: Option<&[u8]>) -> bool {
+        if self.mac.verify(message, aad, tag) {
+            self.cipher.apply_keystream(message);
+            true
+        } else {
+            false
+        }
     }
 
     pub fn generate_key<R: Csprng>(rng: &mut R) -> C::Key {

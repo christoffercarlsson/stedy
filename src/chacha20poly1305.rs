@@ -2,7 +2,7 @@ use crate::{
     aead::Aead,
     chacha::{ChaCha20, XChaCha20},
     poly1305::Poly1305,
-    traits::{Csprng, SeekableStreamCipher},
+    traits::Csprng,
 };
 
 type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
@@ -14,8 +14,8 @@ pub fn chacha20poly1305_encrypt(
     aad: Option<&[u8]>,
     message: &mut [u8],
 ) -> [u8; 16] {
-    let aead = ChaCha20Poly1305::new(key, nonce, create_mac);
-    aead.encrypt(message, aad, calculate_tag)
+    let aead = ChaCha20Poly1305::new(key, nonce);
+    aead.encrypt(message, aad)
 }
 
 pub fn chacha20poly1305_decrypt(
@@ -25,8 +25,8 @@ pub fn chacha20poly1305_decrypt(
     message: &mut [u8],
     tag: &[u8; 16],
 ) -> bool {
-    let aead = ChaCha20Poly1305::new(key, nonce, create_mac);
-    aead.decrypt(message, tag, aad, calculate_tag)
+    let aead = ChaCha20Poly1305::new(key, nonce);
+    aead.decrypt(message, tag, aad)
 }
 
 pub fn chacha20poly1305_generate_key<R: Csprng>(rng: &mut R) -> [u8; 32] {
@@ -43,8 +43,8 @@ pub fn xchacha20poly1305_encrypt(
     aad: Option<&[u8]>,
     message: &mut [u8],
 ) -> [u8; 16] {
-    let aead = XChaCha20Poly1305::new(key, nonce, create_mac);
-    aead.encrypt(message, aad, calculate_tag)
+    let aead = XChaCha20Poly1305::new(key, nonce);
+    aead.encrypt(message, aad)
 }
 
 pub fn xchacha20poly1305_decrypt(
@@ -54,8 +54,8 @@ pub fn xchacha20poly1305_decrypt(
     message: &mut [u8],
     tag: &[u8; 16],
 ) -> bool {
-    let aead = XChaCha20Poly1305::new(key, nonce, create_mac);
-    aead.decrypt(message, tag, aad, calculate_tag)
+    let aead = XChaCha20Poly1305::new(key, nonce);
+    aead.decrypt(message, tag, aad)
 }
 
 pub fn xchacha20poly1305_generate_key<R: Csprng>(rng: &mut R) -> [u8; 32] {
@@ -70,28 +70,6 @@ pub fn xchacha20poly1305_generate_nonce<R: Csprng>(rng: &mut R) -> [u8; 24] {
     let mut nonce = [0u8; 24];
     rng.fill(&mut nonce);
     nonce
-}
-
-fn create_mac<C: SeekableStreamCipher>(cipher: &mut C) -> Poly1305 {
-    let mut key = [0u8; 32];
-    cipher.apply_keystream(&mut key);
-    cipher.seek(1);
-    Poly1305::new(&key)
-}
-
-fn calculate_tag(mac: &mut Poly1305, ciphertext: &[u8], aad: Option<&[u8]>) {
-    let mut update_padded = |message: &[u8]| {
-        mac.update(message);
-        let padding = [0u8; Poly1305::BLOCK_SIZE];
-        let padding_size =
-            (Poly1305::BLOCK_SIZE - (message.len() % Poly1305::BLOCK_SIZE)) % Poly1305::BLOCK_SIZE;
-        mac.update(&padding[..padding_size]);
-    };
-    let aad = aad.unwrap_or_default();
-    update_padded(aad);
-    update_padded(ciphertext);
-    mac.update(&(aad.len() as u64).to_le_bytes());
-    mac.update(&(ciphertext.len() as u64).to_le_bytes());
 }
 
 #[cfg(test)]

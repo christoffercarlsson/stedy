@@ -1,29 +1,30 @@
 use {
     crate::{
         block::Block,
-        traits::{Digest, KeyInit, Mac},
+        chacha::{ChaCha20, XChaCha20},
+        traits::{Authenticator, Digest, Init, KeyInit, Mac, SeekableStreamCipher},
         verify::verify,
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
 
 pub struct Poly1305 {
-    a: FieldElement,
-    r: FieldElement,
-    s: FieldElement,
+    a: Poly1305FieldElement,
+    r: Poly1305FieldElement,
+    s: Poly1305FieldElement,
     block: Block<{ Self::BLOCK_SIZE }>,
 }
 
 impl Poly1305 {
-    pub const BLOCK_SIZE: usize = 16;
+    const BLOCK_SIZE: usize = 16;
 
     pub fn new(key: &[u8; 32]) -> Self {
-        let mut r = FieldElement::from(&key[0..16]);
-        r &= FieldElement::R;
+        let mut r = Poly1305FieldElement::from(&key[0..16]);
+        r &= Poly1305FieldElement::R;
         Self {
-            a: FieldElement::ZERO,
+            a: Poly1305FieldElement::ZERO,
             r,
-            s: FieldElement::from(&key[16..32]),
+            s: Poly1305FieldElement::from(&key[16..32]),
             block: Block::<{ Self::BLOCK_SIZE }>::new(),
         }
     }
@@ -83,29 +84,88 @@ impl Mac for Poly1305 {
     }
 }
 
+impl Authenticator<ChaCha20> for Poly1305 {
+    type Output = [u8; 16];
+
+    fn new(cipher: &mut ChaCha20) -> Self {
+        Self::create_mac(cipher)
+    }
+
+    fn tag(mut self, ciphertext: &[u8], aad: Option<&[u8]>) -> Self::Output {
+        self.calculate_tag(ciphertext, aad);
+        self.finalize()
+    }
+
+    fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
+        self.calculate_tag(ciphertext, aad);
+        Mac::verify(self, tag)
+    }
+}
+
+impl Authenticator<XChaCha20> for Poly1305 {
+    type Output = [u8; 16];
+
+    fn new(cipher: &mut XChaCha20) -> Self {
+        Self::create_mac(cipher)
+    }
+
+    fn tag(mut self, ciphertext: &[u8], aad: Option<&[u8]>) -> Self::Output {
+        self.calculate_tag(ciphertext, aad);
+        self.finalize()
+    }
+
+    fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
+        self.calculate_tag(ciphertext, aad);
+        Mac::verify(self, tag)
+    }
+}
+
 impl Poly1305 {
     fn process_block(&mut self, block: &[u8]) {
         let n = Self::read_block(block);
         self.process_element(n);
     }
 
-    fn read_block(block: &[u8]) -> FieldElement {
+    fn read_block(block: &[u8]) -> Poly1305FieldElement {
         let mut bytes = [0u8; 17];
         bytes[..block.len()].copy_from_slice(block);
         bytes[block.len()] = 1;
-        FieldElement::from(bytes)
+        Poly1305FieldElement::from(bytes)
     }
 
-    fn process_element(&mut self, n: FieldElement) {
+    fn process_element(&mut self, n: Poly1305FieldElement) {
         self.a += n;
         self.a *= self.r;
+    }
+
+    fn create_mac<C: SeekableStreamCipher>(cipher: &mut C) -> Self {
+        let mut key = C::Key::new();
+        cipher.apply_keystream(key.as_mut());
+        cipher.seek(1);
+        <Self as KeyInit>::new(key.as_ref())
+    }
+
+    fn calculate_tag(&mut self, ciphertext: &[u8], aad: Option<&[u8]>) {
+        let aad = aad.unwrap_or_default();
+        self.update_padded(aad);
+        self.update_padded(ciphertext);
+        self.update(&(aad.len() as u64).to_le_bytes());
+        self.update(&(ciphertext.len() as u64).to_le_bytes());
+    }
+
+    fn update_padded(&mut self, message: &[u8]) {
+        self.update(message);
+        let padding = [0u8; Self::BLOCK_SIZE];
+        let padding_size =
+            (Self::BLOCK_SIZE - (message.len() % Self::BLOCK_SIZE)) % Self::BLOCK_SIZE;
+        self.update(&padding[..padding_size]);
     }
 }
 
 #[derive(Clone, Copy)]
-struct FieldElement([u64; 5]);
+struct Poly1305FieldElement([u64; 5]);
 
-impl FieldElement {
+impl Poly1305FieldElement {
     const MASK: u64 = (1u64 << 26) - 1;
     const R: Self = Self([67108863, 67108611, 67092735, 66076671, 1048575]);
     const ZERO: Self = Self([0; 5]);
@@ -157,7 +217,7 @@ impl FieldElement {
     }
 }
 
-impl Index<usize> for FieldElement {
+impl Index<usize> for Poly1305FieldElement {
     type Output = u64;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -165,13 +225,13 @@ impl Index<usize> for FieldElement {
     }
 }
 
-impl IndexMut<usize> for FieldElement {
+impl IndexMut<usize> for Poly1305FieldElement {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
     }
 }
 
-impl AddAssign for FieldElement {
+impl AddAssign for Poly1305FieldElement {
     fn add_assign(&mut self, rhs: Self) {
         self[0] += rhs[0];
         self[1] += rhs[1];
@@ -183,7 +243,7 @@ impl AddAssign for FieldElement {
     }
 }
 
-impl BitAndAssign for FieldElement {
+impl BitAndAssign for Poly1305FieldElement {
     fn bitand_assign(&mut self, rhs: Self) {
         self[0] &= rhs[0];
         self[1] &= rhs[1];
@@ -193,7 +253,7 @@ impl BitAndAssign for FieldElement {
     }
 }
 
-impl MulAssign for FieldElement {
+impl MulAssign for Poly1305FieldElement {
     fn mul_assign(&mut self, rhs: Self) {
         let mut r = Self::ZERO;
         r[0] += self[0] * rhs[0];
@@ -227,7 +287,7 @@ impl MulAssign for FieldElement {
     }
 }
 
-impl From<[u8; 17]> for FieldElement {
+impl From<[u8; 17]> for Poly1305FieldElement {
     fn from(value: [u8; 17]) -> Self {
         let words = [
             u32::from_le_bytes(value[0..4].try_into().unwrap()) as u64,
@@ -248,7 +308,7 @@ impl From<[u8; 17]> for FieldElement {
     }
 }
 
-impl From<&[u8]> for FieldElement {
+impl From<&[u8]> for Poly1305FieldElement {
     fn from(value: &[u8]) -> Self {
         let mut bytes = [0u8; 17];
         bytes[0..16].copy_from_slice(&value[0..16]);
@@ -256,8 +316,8 @@ impl From<&[u8]> for FieldElement {
     }
 }
 
-impl From<FieldElement> for [u8; 16] {
-    fn from(mut fe: FieldElement) -> Self {
+impl From<Poly1305FieldElement> for [u8; 16] {
+    fn from(mut fe: Poly1305FieldElement) -> Self {
         fe.canonical();
         let words = [
             (fe[0] | (fe[1] << 26)) as u32,
