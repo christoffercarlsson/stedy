@@ -1,5 +1,7 @@
-use criterion::Criterion;
-use stedy::{ed25519_public_key, ed25519_sign, ed25519_verify};
+use {
+    criterion::Criterion,
+    stedy::{ed25519_public_key, ed25519_sign, ed25519_verify},
+};
 
 pub fn bench(c: &mut Criterion) {
     let private_key = [

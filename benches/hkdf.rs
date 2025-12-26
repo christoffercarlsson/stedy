@@ -1,5 +1,7 @@
-use criterion::Criterion;
-use stedy::{hkdf_sha256, hkdf_sha512};
+use {
+    criterion::Criterion,
+    stedy::{hkdf_sha256, hkdf_sha512},
+};
 
 pub fn bench(c: &mut Criterion) {
     let ikm = [

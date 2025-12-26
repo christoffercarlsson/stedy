@@ -1,5 +1,7 @@
-use criterion::Criterion;
-use stedy::{x25519_key_exchange, x25519_public_key};
+use {
+    criterion::Criterion,
+    stedy::{x25519_key_exchange, x25519_public_key},
+};
 
 pub fn bench(c: &mut Criterion) {
     let alice_private_key = [

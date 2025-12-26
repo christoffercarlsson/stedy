@@ -1,5 +1,7 @@
-use criterion::Criterion;
-use stedy::{pbkdf2_hmac_sha256, pbkdf2_hmac_sha512};
+use {
+    criterion::Criterion,
+    stedy::{pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
+};
 
 pub fn bench(c: &mut Criterion) {
     let password = b"password";

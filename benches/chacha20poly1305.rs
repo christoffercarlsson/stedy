@@ -1,5 +1,7 @@
-use criterion::Criterion;
-use stedy::{chacha20poly1305_decrypt, chacha20poly1305_encrypt};
+use {
+    criterion::Criterion,
+    stedy::{chacha20poly1305_decrypt, chacha20poly1305_encrypt},
+};
 
 pub fn bench(c: &mut Criterion) {
     let key = [

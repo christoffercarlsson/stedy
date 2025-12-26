@@ -1,5 +1,4 @@
-use criterion::Criterion;
-use stedy::Rng;
+use {criterion::Criterion, stedy::Rng};
 
 pub fn bench(c: &mut Criterion) {
     c.bench_function("rng_fill", |b| {

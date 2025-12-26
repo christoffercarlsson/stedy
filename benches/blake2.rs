@@ -1,5 +1,7 @@
-use criterion::Criterion;
-use stedy::{blake2b512, blake2s256};
+use {
+    criterion::Criterion,
+    stedy::{blake2b512, blake2s256},
+};
 
 pub fn bench(c: &mut Criterion) {
     let message = [72, 105, 32, 84, 104, 101, 114, 101];

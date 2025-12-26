@@ -1,6 +1,9 @@
-use criterion::Criterion;
-use stedy::{
-    hmac_sha1, hmac_sha1_verify, hmac_sha256, hmac_sha256_verify, hmac_sha512, hmac_sha512_verify,
+use {
+    criterion::Criterion,
+    stedy::{
+        hmac_sha1, hmac_sha1_verify, hmac_sha256, hmac_sha256_verify, hmac_sha512,
+        hmac_sha512_verify,
+    },
 };
 
 pub fn bench(c: &mut Criterion) {
