@@ -32,6 +32,6 @@ criterion = "0.8.1"
 
 [features]
 default = []
-ffi = []
+ffi = ["getrandom"]
 getrandom = ["dep:getrandom"]
 hazmat = []

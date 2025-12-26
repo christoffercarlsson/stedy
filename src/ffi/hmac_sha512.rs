@@ -2,6 +2,7 @@ use {
     crate::hmac::{hmac_sha512, hmac_sha512_verify, HmacSha512},
     core::{ptr, slice},
 };
+
 #[repr(C, align(8))]
 pub struct StedyHmacSha512State {
     pub opaque: [u8; 416],

@@ -58,8 +58,7 @@ bool stedy_chacha20poly1305_decrypt(const uint8_t key[32],
                                     const size_t message_size,
                                     const uint8_t tag[16]);
 
-void stedy_chacha20poly1305_generate_key(const uint8_t seed[32],
-                                         uint8_t key[32]);
+void stedy_chacha20poly1305_generate_key(uint8_t key[32]);
 
 bool stedy_chacha20poly1305_increment_nonce(uint8_t nonce[12]);
 
@@ -77,16 +76,13 @@ bool stedy_xchacha20poly1305_decrypt(const uint8_t key[32],
                                      const size_t message_size,
                                      const uint8_t tag[16]);
 
-void stedy_xchacha20poly1305_generate_key(const uint8_t seed[32],
-                                          uint8_t key[32]);
+void stedy_xchacha20poly1305_generate_key(uint8_t key[32]);
 
 bool stedy_xchacha20poly1305_increment_nonce(uint8_t nonce[24]);
 
-void stedy_xchacha20poly1305_generate_nonce(const uint8_t seed[32],
-                                            uint8_t nonce[24]);
+void stedy_xchacha20poly1305_generate_nonce(uint8_t nonce[24]);
 
-void stedy_ed25519_generate_key_pair(const uint8_t seed[32],
-                                     uint8_t private_key[32],
+void stedy_ed25519_generate_key_pair(uint8_t private_key[32],
                                      uint8_t public_key[32]);
 
 void stedy_ed25519_public_key(const uint8_t private_key[32],
@@ -203,7 +199,7 @@ typedef struct alignas(4) stedy_rng_state {
   uint8_t opaque[132];
 } stedy_rng_state;
 
-void stedy_rng_init(stedy_rng_state *state, const uint8_t seed[32]);
+void stedy_rng_init(stedy_rng_state *state);
 
 void stedy_rng_fill(stedy_rng_state *state, uint8_t *bytes, const size_t size);
 
@@ -239,8 +235,7 @@ void stedy_sha512_update(stedy_sha512_state *state, const uint8_t *message,
 
 void stedy_sha512_final(const stedy_sha512_state *state, uint8_t digest[64]);
 
-void stedy_x25519_generate_key_pair(const uint8_t seed[32],
-                                    uint8_t private_key[32],
+void stedy_x25519_generate_key_pair(uint8_t private_key[32],
                                     uint8_t public_key[32]);
 
 void stedy_x25519_key_exchange(const uint8_t private_key[32],

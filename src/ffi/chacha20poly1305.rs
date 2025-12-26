@@ -56,9 +56,8 @@ pub unsafe extern "C" fn stedy_chacha20poly1305_decrypt(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_chacha20poly1305_generate_key(seed: *const u8, key: *mut u8) {
-    let seed: &[u8; 32] = slice::from_raw_parts(seed, 32).try_into().unwrap();
-    let mut rng = Rng::from(seed);
+pub unsafe extern "C" fn stedy_chacha20poly1305_generate_key(key: *mut u8) {
+    let mut rng = Rng::seed().unwrap();
     let _key = chacha20poly1305_generate_key(&mut rng);
     ptr::copy(_key.as_ptr(), key, 32);
 }
@@ -114,9 +113,8 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_decrypt(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_key(seed: *const u8, key: *mut u8) {
-    let seed: &[u8; 32] = slice::from_raw_parts(seed, 32).try_into().unwrap();
-    let mut rng = Rng::from(seed);
+pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_key(key: *mut u8) {
+    let mut rng = Rng::seed().unwrap();
     let _key = xchacha20poly1305_generate_key(&mut rng);
     ptr::copy(_key.as_ptr(), key, 32);
 }
@@ -128,9 +126,8 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_increment_nonce(nonce: *mut u8)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_nonce(seed: *const u8, nonce: *mut u8) {
-    let seed: &[u8; 32] = slice::from_raw_parts(seed, 32).try_into().unwrap();
-    let mut rng = Rng::from(seed);
+pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_nonce(nonce: *mut u8) {
+    let mut rng = Rng::seed().unwrap();
     let _nonce = xchacha20poly1305_generate_nonce(&mut rng);
     ptr::copy(_nonce.as_ptr(), nonce, 24);
 }

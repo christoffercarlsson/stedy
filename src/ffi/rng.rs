@@ -9,10 +9,9 @@ pub struct StedyRngState {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_rng_init(state: *mut StedyRngState, seed: *const u8) {
-    let seed: &[u8; 32] = slice::from_raw_parts(seed, 32).try_into().unwrap();
+pub unsafe extern "C" fn stedy_rng_init(state: *mut StedyRngState) {
     let dest = state as *mut Rng;
-    let src = Rng::from(seed);
+    let src = Rng::seed().unwrap();
     ptr::write(dest, src);
 }
 
