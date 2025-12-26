@@ -4,15 +4,7 @@ use crate::{
     xor::xor,
 };
 
-pub fn pbkdf2_hmac_sha256(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
-    pbkdf2::<HmacSha256>(password, salt, iterations, output);
-}
-
-pub fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
-    pbkdf2::<HmacSha512>(password, salt, iterations, output);
-}
-
-fn pbkdf2<P>(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8])
+pub fn pbkdf2<P>(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8])
 where
     P: KeyInit + Digest + Clone,
 {
@@ -20,6 +12,14 @@ where
     for (i, chunk) in output.chunks_mut(P::OUTPUT_SIZE).enumerate() {
         f(&prf, salt, iterations, i as u32, chunk);
     }
+}
+
+pub fn pbkdf2_hmac_sha256(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
+    pbkdf2::<HmacSha256>(password, salt, iterations, output);
+}
+
+pub fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
+    pbkdf2::<HmacSha512>(password, salt, iterations, output);
 }
 
 fn f<P>(prf: &P, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8])

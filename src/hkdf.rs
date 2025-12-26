@@ -3,18 +3,23 @@ use crate::{
     traits::{Digest, Init, KeyInit},
 };
 
+pub struct Hkdf<M: KeyInit + Digest> {
+    prk: M::Output,
+}
+
+impl<M: KeyInit + Digest> Hkdf<M> {
+    pub fn hkdf(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
+        let hkdf = Self::extract(salt, ikm);
+        hkdf.expand(info, okm);
+    }
+}
+
 pub fn hkdf_sha256(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
-    let hkdf = <Hkdf<HmacSha256>>::extract(salt, ikm);
-    hkdf.expand(info, okm);
+    <Hkdf<HmacSha256>>::hkdf(ikm, salt, info, okm);
 }
 
 pub fn hkdf_sha512(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
-    let hkdf = <Hkdf<HmacSha512>>::extract(salt, ikm);
-    hkdf.expand(info, okm);
-}
-
-struct Hkdf<M: KeyInit + Digest> {
-    prk: M::Output,
+    <Hkdf<HmacSha512>>::hkdf(ikm, salt, info, okm);
 }
 
 impl<M: KeyInit + Digest> Hkdf<M> {

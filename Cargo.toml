@@ -34,3 +34,4 @@ criterion = "0.8.1"
 default = []
 ffi = []
 getrandom = ["dep:getrandom"]
+hazmat = []

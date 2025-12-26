@@ -38,3 +38,9 @@ pub use crate::{
 
 #[cfg(feature = "ffi")]
 pub use crate::ffi::*;
+
+#[cfg(feature = "hazmat")]
+pub use crate::{
+    aead::*, chacha::*, curve25519::*, eddsa::*, edwards25519::*, poly1305::*, scalar25519::*,
+    traits::*,
+};
