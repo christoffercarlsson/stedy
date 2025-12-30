@@ -1,64 +1,17 @@
-use crate::{
-    curve25519::Curve25519,
-    traits::{Csprng, FieldElement},
-};
+use crate::{curve25519::Curve25519, ecdh::Ecdh, traits::Csprng};
+
+type X25519 = Ecdh<Curve25519>;
 
 pub fn x25519_generate_key_pair<R: Csprng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
-    let mut private_key = [0u8; 32];
-    rng.fill(&mut private_key);
-    let public_key = x25519_public_key(&private_key);
-    (private_key, public_key)
+    X25519::generate_key_pair(rng)
 }
 
 pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    scalar_mult(private_key, BASE_POINT)
+    X25519::get_public_key(private_key)
 }
 
 pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
-    let public = Curve25519::from(public_key);
-    scalar_mult(private_key, public)
-}
-
-const A24: Curve25519 = Curve25519([121665, 0, 0, 0, 0]);
-const BASE_POINT: Curve25519 = Curve25519([9, 0, 0, 0, 0]);
-
-fn scalar_mult(k: &[u8; 32], u: Curve25519) -> [u8; 32] {
-    let mut scalar = *k;
-    scalar[0] &= 248;
-    scalar[31] &= 127;
-    scalar[31] |= 64;
-    let x1 = u;
-    let mut x2 = Curve25519::ONE;
-    let mut z2 = Curve25519::ZERO;
-    let mut x3 = u;
-    let mut z3 = Curve25519::ONE;
-    let mut swap = 0u64;
-    for i in (0..255).rev() {
-        let byte_index = i / 8;
-        let bit_index = i % 8;
-        let bit = ((scalar[byte_index] >> bit_index) & 1) as u64;
-        swap ^= bit;
-        Curve25519::swap(&mut x2, &mut x3, swap);
-        Curve25519::swap(&mut z2, &mut z3, swap);
-        swap = bit;
-        let a = x2 + z2;
-        let aa = a.square();
-        let b = x2 - z2;
-        let bb = b.square();
-        let e = aa - bb;
-        let c = x3 + z3;
-        let d = x3 - z3;
-        let da = d * a;
-        let cb = c * b;
-        x3 = (da + cb).square();
-        z3 = x1 * (da - cb).square();
-        x2 = aa * bb;
-        z2 = e * (aa + A24 * e);
-    }
-    Curve25519::swap(&mut x2, &mut x3, swap);
-    Curve25519::swap(&mut z2, &mut z3, swap);
-    let result = x2 / z2;
-    result.into()
+    X25519::key_exchange(private_key, public_key)
 }
 
 #[cfg(test)]
@@ -73,11 +26,11 @@ mod tests {
             165, 70, 227, 107, 240, 82, 124, 157, 59, 22, 21, 75, 130, 70, 94, 221, 98, 20, 76, 10,
             193, 252, 90, 24, 80, 106, 34, 68, 186, 68, 154, 196,
         ];
-        let u = Curve25519::from(&[
+        let u = [
             230, 219, 104, 103, 88, 48, 48, 219, 53, 148, 193, 164, 36, 177, 95, 124, 114, 102, 36,
             236, 38, 179, 53, 59, 16, 169, 3, 166, 208, 171, 28, 76,
-        ]);
-        let result = scalar_mult(&k, u);
+        ];
+        let result = x25519_key_exchange(&k, &u);
         assert_eq!(
             result,
             [
@@ -93,11 +46,11 @@ mod tests {
             75, 102, 233, 212, 209, 180, 103, 60, 90, 210, 38, 145, 149, 125, 106, 245, 193, 27,
             100, 33, 224, 234, 1, 212, 44, 164, 22, 158, 121, 24, 186, 13,
         ];
-        let u = Curve25519::from(&[
+        let u = [
             229, 33, 15, 18, 120, 104, 17, 211, 244, 183, 149, 157, 5, 56, 174, 44, 49, 219, 231,
             16, 111, 192, 60, 62, 252, 76, 213, 73, 199, 21, 164, 147,
-        ]);
-        let result = scalar_mult(&k, u);
+        ];
+        let result = x25519_key_exchange(&k, &u);
         assert_eq!(
             result,
             [
@@ -109,8 +62,14 @@ mod tests {
 
     #[test]
     fn test_x25519_iter() {
-        let k: [u8; 32] = Curve25519::from(BASE_POINT).into();
-        let u: [u8; 32] = Curve25519::from(BASE_POINT).into();
+        let k = [
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ];
+        let u = [
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ];
         let result = x25519_key_exchange(&k, &u);
         assert_eq!(
             result,
@@ -123,8 +82,14 @@ mod tests {
 
     #[test]
     fn test_x25519_iter_1k() {
-        let mut k: [u8; 32] = Curve25519::from(BASE_POINT).into();
-        let mut u: [u8; 32] = Curve25519::from(BASE_POINT).into();
+        let mut k = [
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ];
+        let mut u = [
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ];
         for _ in 0..1000 {
             let result = x25519_key_exchange(&k, &u);
             u = k;
@@ -141,8 +106,14 @@ mod tests {
 
     // #[test]
     // fn test_x25519_iter_1m() {
-    //     let mut k: [u8; 32] = Curve25519::from(BASE_POINT).into();
-    //     let mut u: [u8; 32] = Curve25519::from(BASE_POINT).into();
+    //     let mut k = [
+    //         9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    //         0, 0, 0,
+    //     ];
+    //     let mut u = [
+    //         9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    //         0, 0, 0,
+    //     ];
     //     for _ in 0..1000000 {
     //         let result = x25519_key_exchange(&k, &u);
     //         u = k;

@@ -14,11 +14,11 @@ impl<F: FieldElement, H: Hasher, P: EdwardsPoint<F, S>, S: Scalar> Eddsa<F, H, P
     pub fn generate_key_pair<R: Csprng>(rng: &mut R) -> (S::Bytes, S::Bytes) {
         let mut private_key = S::Bytes::new();
         rng.fill(private_key.as_mut());
-        let public_key = Self::public_key(&private_key);
+        let public_key = Self::get_public_key(&private_key);
         (private_key, public_key)
     }
 
-    pub fn public_key(private_key: &S::Bytes) -> S::Bytes {
+    pub fn get_public_key(private_key: &S::Bytes) -> S::Bytes {
         let g = P::BASE_POINT;
         let (a, _) = Self::expand(private_key);
         (g * a).compress()

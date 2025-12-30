@@ -1,8 +1,16 @@
-#![allow(private_bounds, dead_code)]
-use core::ops::{Add, Mul, Neg, Sub};
+#![allow(dead_code)]
+use core::{
+    cmp::Ord,
+    ops::{Add, Div, Mul, Neg, Sub},
+};
 
-pub(crate) trait ByteArray: Sealed + Init + AsRef<[u8]> + AsMut<[u8]> + Copy {
+#[allow(private_bounds)]
+pub trait ByteArray: Copy + Ord + AsRef<[u8]> + AsMut<[u8]> + Sealed + Init {
     fn from_slice(slice: &[u8]) -> &Self;
+
+    fn from_slice_checked(slice: &[u8]) -> Option<&Self>;
+
+    fn from_slice_mut_checked(slice: &mut [u8]) -> Option<&mut Self>;
 }
 
 pub trait Init {
@@ -78,10 +86,24 @@ pub trait SeedableCsprng: Csprng {
 }
 
 pub trait FieldElement:
-    Sized + Eq + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Neg<Output = Self>
+    Sized
+    + Copy
+    + Eq
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + Neg<Output = Self>
+    + From<Self::Bytes>
+    + Into<Self::Bytes>
+    + From<u64>
 {
     const ZERO: Self;
     const ONE: Self;
+
+    type Bytes: ByteArray;
+
+    fn swap(a: &mut Self, b: &mut Self, condition: u64);
 
     fn select(a: &Self, b: &Self, condition: u64) -> Self;
 
@@ -133,9 +155,14 @@ impl<const N: usize> Init for [u8; N] {
 
 impl<const N: usize> ByteArray for [u8; N] {
     fn from_slice(slice: &[u8]) -> &Self {
-        match <&Self>::try_from(slice) {
-            Ok(r) => r,
-            Err(_) => &[0u8; N],
-        }
+        Self::from_slice_checked(slice).unwrap_or(&[0u8; N])
+    }
+
+    fn from_slice_checked(slice: &[u8]) -> Option<&Self> {
+        <&Self>::try_from(slice).ok()
+    }
+
+    fn from_slice_mut_checked(slice: &mut [u8]) -> Option<&mut Self> {
+        <&mut Self>::try_from(slice).ok()
     }
 }

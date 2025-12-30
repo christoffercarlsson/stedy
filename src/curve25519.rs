@@ -9,28 +9,6 @@ use {
 #[derive(Clone, Copy)]
 pub struct Curve25519(pub [u64; 5]);
 
-impl Curve25519 {
-    pub fn swap(a: &mut Self, b: &mut Self, condition: u64) {
-        let mask = ((condition != 0) as u64).wrapping_neg();
-        let x = a.0;
-        let y = b.0;
-        a.0 = [
-            x[0] & !mask | y[0] & mask,
-            x[1] & !mask | y[1] & mask,
-            x[2] & !mask | y[2] & mask,
-            x[3] & !mask | y[3] & mask,
-            x[4] & !mask | y[4] & mask,
-        ];
-        b.0 = [
-            y[0] & !mask | x[0] & mask,
-            y[1] & !mask | x[1] & mask,
-            y[2] & !mask | x[2] & mask,
-            y[3] & !mask | x[3] & mask,
-            y[4] & !mask | x[4] & mask,
-        ];
-    }
-}
-
 impl Index<usize> for Curve25519 {
     type Output = u64;
 
@@ -165,6 +143,28 @@ impl FieldElement for Curve25519 {
     const ONE: Self = Self([1, 0, 0, 0, 0]);
     const ZERO: Self = Self([0; 5]);
 
+    type Bytes = [u8; 32];
+
+    fn swap(a: &mut Self, b: &mut Self, condition: u64) {
+        let mask = ((condition != 0) as u64).wrapping_neg();
+        let x = a.0;
+        let y = b.0;
+        a.0 = [
+            x[0] & !mask | y[0] & mask,
+            x[1] & !mask | y[1] & mask,
+            x[2] & !mask | y[2] & mask,
+            x[3] & !mask | y[3] & mask,
+            x[4] & !mask | y[4] & mask,
+        ];
+        b.0 = [
+            y[0] & !mask | x[0] & mask,
+            y[1] & !mask | x[1] & mask,
+            y[2] & !mask | x[2] & mask,
+            y[3] & !mask | x[3] & mask,
+            y[4] & !mask | x[4] & mask,
+        ];
+    }
+
     fn select(a: &Self, b: &Self, condition: u64) -> Self {
         let mut x = *a;
         let mut y = *b;
@@ -230,6 +230,12 @@ impl From<&[u8; 32]> for Curve25519 {
     }
 }
 
+impl From<[u8; 32]> for Curve25519 {
+    fn from(value: [u8; 32]) -> Self {
+        Self::from(&value)
+    }
+}
+
 impl From<Curve25519> for [u8; 32] {
     fn from(mut value: Curve25519) -> Self {
         value.canonical();
@@ -245,6 +251,12 @@ impl From<Curve25519> for [u8; 32] {
             chunk.copy_from_slice(&words[i].to_le_bytes());
         }
         bytes
+    }
+}
+
+impl From<u64> for Curve25519 {
+    fn from(value: u64) -> Self {
+        Self([value, 0, 0, 0, 0])
     }
 }
 

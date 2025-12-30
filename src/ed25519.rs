@@ -10,7 +10,7 @@ pub fn ed25519_generate_key_pair<R: Csprng>(rng: &mut R) -> ([u8; 32], [u8; 32])
 }
 
 pub fn ed25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    Ed25519::public_key(private_key)
+    Ed25519::get_public_key(private_key)
 }
 
 pub fn ed25519_sign(private_key: &[u8; 32], message: &[u8]) -> [u8; 64] {
