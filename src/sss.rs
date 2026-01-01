@@ -43,13 +43,6 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
     }
 }
 
-#[cfg(feature = "getrandom")]
-pub fn sss_split<const N: usize, const K: usize>(secret: &[u8; 32]) -> [[u8; 36]; N] {
-    let mut rng = crate::rng::Rng::seed().unwrap();
-    Shamir::<Curve25519>::split::<N, K>(&mut rng, secret)
-}
-
-#[cfg(not(feature = "getrandom"))]
 pub fn sss_split<const N: usize, const K: usize>(
     rng: &mut impl Csprng,
     secret: &[u8; 32],
