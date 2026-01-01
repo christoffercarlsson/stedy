@@ -315,6 +315,8 @@ typedef struct alignas(4) stedy_rng_state {
 
 void stedy_rng_init(stedy_rng_state *state);
 
+void stedy_rng_seed(const uint8_t seed[32], stedy_rng_state *state);
+
 void stedy_rng_fill(stedy_rng_state *state, uint8_t *bytes, const size_t size);
 
 uint32_t stedy_rng_next_u32(stedy_rng_state *state);

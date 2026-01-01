@@ -41,9 +41,9 @@ pub unsafe extern "C" fn stedy_blake2s128_update(
     message: *const u8,
     message_size: usize,
 ) {
-    let state = state as *mut Blake2s128;
+    let state = &mut *(state as *mut Blake2s128);
     let message = slice::from_raw_parts(message, message_size);
-    ptr::read(state).update(message);
+    state.update(message);
 }
 
 #[no_mangle]
@@ -64,4 +64,38 @@ pub unsafe extern "C" fn stedy_blake2s128_final_verify(
     let state = state as *const Blake2s128;
     let code: &[u8; 16] = slice::from_raw_parts(code, 16).try_into().unwrap();
     ptr::read(state).verify(code)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_stedy_blake2s128() {
+        let message = b"abc";
+        let mut digest = [0u8; 16];
+        unsafe { stedy_blake2s128(message.as_ptr(), message.len(), digest.as_mut_ptr()) };
+        assert_eq!(
+            digest,
+            [170, 73, 56, 17, 155, 29, 199, 184, 124, 186, 208, 255, 210, 0, 208, 174],
+        );
+    }
+
+    #[test]
+    fn test_stedy_blake2s128_inc() {
+        let mut state = StedyBlake2s128State { opaque: [0u8; 112] };
+        let state = &mut state as *mut _;
+        let mut digest = [0u8; 16];
+        unsafe {
+            stedy_blake2s128_init(state, core::ptr::null(), 0);
+            stedy_blake2s128_update(state, b"a".as_ptr(), 1);
+            stedy_blake2s128_update(state, b"b".as_ptr(), 1);
+            stedy_blake2s128_update(state, b"c".as_ptr(), 1);
+            stedy_blake2s128_final(state, digest.as_mut_ptr());
+        };
+        assert_eq!(
+            digest,
+            [170, 73, 56, 17, 155, 29, 199, 184, 124, 186, 208, 255, 210, 0, 208, 174],
+        );
+    }
 }

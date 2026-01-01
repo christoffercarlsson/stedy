@@ -1,12 +1,14 @@
 use crate::wipe::wipe;
 
-pub fn pad(unpadded: &mut [u8], unpadded_size: usize, block_size: usize) -> Option<usize> {
+pub fn pad(unpadded: &[u8], block_size: usize, padded: &mut [u8]) -> Option<usize> {
+    let unpadded_size = unpadded.len();
     let padded_size = unpadded_size + block_size - (unpadded_size % block_size);
-    if padded_size > unpadded.len() {
+    if padded_size > padded.len() {
         return None;
     }
-    unpadded[unpadded_size] = 128;
-    wipe(&mut unpadded[(unpadded_size + 1)..]);
+    padded[..unpadded_size].copy_from_slice(unpadded);
+    padded[unpadded_size] = 128;
+    wipe(&mut padded[(unpadded_size + 1)..padded_size]);
     Some(padded_size)
 }
 
@@ -42,23 +44,29 @@ mod tests {
 
     #[test]
     fn test_pad() {
-        let mut bytes = [1, 2, 3, 4, 42, 42, 42, 42];
-        pad(&mut bytes, 4, 8);
-        assert_eq!(bytes, [1, 2, 3, 4, 128, 0, 0, 0]);
+        let unpadded = [1, 2, 3, 4];
+        let mut padded = [42u8; 8];
+        let size = pad(&unpadded, 8, &mut padded).unwrap();
+        assert_eq!(size, 8);
+        assert_eq!(padded, [1, 2, 3, 4, 128, 0, 0, 0]);
     }
 
     #[test]
     fn test_pad_single() {
-        let mut bytes = [1, 2, 3, 4, 5, 6, 7, 0];
-        pad(&mut bytes, 7, 8);
-        assert_eq!(bytes, [1, 2, 3, 4, 5, 6, 7, 128]);
+        let unpadded = [1, 2, 3, 4, 5, 6, 7];
+        let mut padded = [1u8; 8];
+        let size = pad(&unpadded, 8, &mut padded).unwrap();
+        assert_eq!(size, 8);
+        assert_eq!(padded, [1, 2, 3, 4, 5, 6, 7, 128]);
     }
 
     #[test]
     fn test_pad_block_size() {
-        let mut bytes = [1, 2, 3, 4, 5, 6, 7, 8, 1, 1, 1, 1, 1, 1, 1, 1];
-        pad(&mut bytes, 8, 8);
-        assert_eq!(bytes, [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0]);
+        let unpadded = [1, 2, 3, 4, 5, 6, 7, 8];
+        let mut padded = [1u8; 16];
+        let size = pad(&unpadded, 8, &mut padded).unwrap();
+        assert_eq!(size, 16);
+        assert_eq!(padded, [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]

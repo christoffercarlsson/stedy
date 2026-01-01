@@ -139,6 +139,24 @@ impl<H: Hasher> Mac for Hmac<H> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_hmac_sha1() {
+        let key = [
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+        ];
+        let message = [72, 105, 32, 84, 104, 101, 114, 101];
+        let code = hmac_sha1(&key, &message);
+        let verified = hmac_sha1_verify(&key, &message, &code);
+        assert!(verified);
+        assert_eq!(
+            code,
+            [
+                182, 23, 49, 134, 85, 5, 114, 100, 226, 139, 192, 182, 251, 55, 140, 142, 241, 70,
+                190, 0
+            ]
+        );
+    }
+
     // https://datatracker.ietf.org/doc/html/rfc4231
 
     #[test]

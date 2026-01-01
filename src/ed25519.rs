@@ -23,7 +23,27 @@ pub fn ed25519_verify(message: &[u8], public_key: &[u8; 32], signature: &[u8; 64
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::rng::Rng};
+
+    #[test]
+    fn test_ed25519_generate_key_pair() {
+        let mut rng = Rng::from([0u8; 32]);
+        let (private_key, public_key) = ed25519_generate_key_pair(&mut rng);
+        assert_eq!(
+            private_key,
+            [
+                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
+                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
+            ]
+        );
+        assert_eq!(
+            public_key,
+            [
+                185, 175, 67, 174, 182, 228, 51, 132, 174, 211, 127, 232, 89, 49, 129, 38, 12, 69,
+                16, 12, 109, 7, 176, 36, 247, 153, 77, 167, 38, 229, 59, 121
+            ]
+        );
+    }
 
     // https://datatracker.ietf.org/doc/html/rfc8032#section-7.1
 

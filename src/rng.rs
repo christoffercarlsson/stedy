@@ -25,12 +25,6 @@ impl Rng {
         self.fill(&mut bytes);
         u64::from_le_bytes(bytes)
     }
-
-    pub fn next_u128(&mut self) -> u128 {
-        let mut bytes = [0u8; 16];
-        self.fill(&mut bytes);
-        u128::from_le_bytes(bytes)
-    }
 }
 
 #[cfg(feature = "getrandom")]
@@ -97,6 +91,7 @@ mod tests {
         let mut rng = Rng::seed().unwrap();
         let mut bytes = [0u8; 32];
         rng.fill(&mut bytes);
+        assert_ne!(bytes, [0u8; 32]);
         assert_ne!(
             bytes,
             [
@@ -118,13 +113,6 @@ mod tests {
         let mut rng = Rng::from([0u8; 32]);
         let result = rng.next_u64();
         assert_eq!(result, 16861873601850325412);
-    }
-
-    #[test]
-    fn test_next_u128() {
-        let mut rng = Rng::from([0u8; 32]);
-        let result = rng.next_u128();
-        assert_eq!(result, 39891831856960291545189506228929378724);
     }
 
     #[test]

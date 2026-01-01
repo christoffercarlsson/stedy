@@ -16,7 +16,59 @@ pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::rng::Rng};
+
+    #[test]
+    fn test_x25519_generate_key_pair() {
+        let mut rng = Rng::from([0u8; 32]);
+        let (private_key, public_key) = x25519_generate_key_pair(&mut rng);
+        assert_eq!(
+            private_key,
+            [
+                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
+                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
+            ]
+        );
+        assert_eq!(
+            public_key,
+            [
+                240, 218, 70, 30, 171, 24, 175, 126, 180, 68, 124, 104, 87, 128, 155, 141, 31, 181,
+                213, 146, 237, 163, 35, 113, 239, 169, 232, 235, 1, 185, 245, 81
+            ]
+        );
+    }
+
+    #[test]
+    fn test_x25519() {
+        let alice_private_key = [
+            119, 7, 109, 10, 115, 24, 165, 125, 60, 22, 193, 114, 81, 178, 102, 69, 223, 76, 47,
+            135, 235, 192, 153, 42, 177, 119, 251, 165, 29, 185, 44, 42,
+        ];
+        let alice_public_key = [
+            133, 32, 240, 9, 137, 48, 167, 84, 116, 139, 125, 220, 180, 62, 247, 90, 13, 191, 58,
+            13, 38, 56, 26, 244, 235, 164, 169, 142, 170, 155, 78, 106,
+        ];
+        let bob_private_key = [
+            93, 171, 8, 126, 98, 74, 138, 75, 121, 225, 127, 139, 131, 128, 14, 230, 111, 59, 177,
+            41, 38, 24, 182, 253, 28, 47, 139, 39, 255, 136, 224, 235,
+        ];
+        let bob_public_key = [
+            222, 158, 219, 125, 123, 125, 193, 180, 211, 91, 97, 194, 236, 228, 53, 55, 63, 131,
+            67, 200, 91, 120, 103, 77, 173, 252, 126, 20, 111, 136, 43, 79,
+        ];
+        let shared_secret = [
+            74, 93, 157, 91, 164, 206, 45, 225, 114, 142, 59, 244, 128, 53, 15, 37, 224, 126, 33,
+            201, 71, 209, 158, 51, 118, 240, 155, 60, 30, 22, 23, 66,
+        ];
+        let public_key = x25519_public_key(&alice_private_key);
+        assert_eq!(public_key, alice_public_key);
+        let public_key = x25519_public_key(&bob_private_key);
+        assert_eq!(public_key, bob_public_key);
+        let secret = x25519_key_exchange(&alice_private_key, &bob_public_key);
+        assert_eq!(secret, shared_secret);
+        let secret = x25519_key_exchange(&bob_private_key, &alice_public_key);
+        assert_eq!(secret, shared_secret);
+    }
 
     // https://datatracker.ietf.org/doc/html/rfc7748#section-5.2
 
@@ -127,36 +179,4 @@ mod tests {
     //         ]
     //     );
     // }
-
-    #[test]
-    fn test_x25519() {
-        let alice_private_key = [
-            119, 7, 109, 10, 115, 24, 165, 125, 60, 22, 193, 114, 81, 178, 102, 69, 223, 76, 47,
-            135, 235, 192, 153, 42, 177, 119, 251, 165, 29, 185, 44, 42,
-        ];
-        let alice_public_key = [
-            133, 32, 240, 9, 137, 48, 167, 84, 116, 139, 125, 220, 180, 62, 247, 90, 13, 191, 58,
-            13, 38, 56, 26, 244, 235, 164, 169, 142, 170, 155, 78, 106,
-        ];
-        let bob_private_key = [
-            93, 171, 8, 126, 98, 74, 138, 75, 121, 225, 127, 139, 131, 128, 14, 230, 111, 59, 177,
-            41, 38, 24, 182, 253, 28, 47, 139, 39, 255, 136, 224, 235,
-        ];
-        let bob_public_key = [
-            222, 158, 219, 125, 123, 125, 193, 180, 211, 91, 97, 194, 236, 228, 53, 55, 63, 131,
-            67, 200, 91, 120, 103, 77, 173, 252, 126, 20, 111, 136, 43, 79,
-        ];
-        let shared_secret = [
-            74, 93, 157, 91, 164, 206, 45, 225, 114, 142, 59, 244, 128, 53, 15, 37, 224, 126, 33,
-            201, 71, 209, 158, 51, 118, 240, 155, 60, 30, 22, 23, 66,
-        ];
-        let public_key = x25519_public_key(&alice_private_key);
-        assert_eq!(public_key, alice_public_key);
-        let public_key = x25519_public_key(&bob_private_key);
-        assert_eq!(public_key, bob_public_key);
-        let secret = x25519_key_exchange(&alice_private_key, &bob_public_key);
-        assert_eq!(secret, shared_secret);
-        let secret = x25519_key_exchange(&bob_private_key, &alice_public_key);
-        assert_eq!(secret, shared_secret);
-    }
 }

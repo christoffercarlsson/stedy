@@ -27,9 +27,9 @@ pub unsafe extern "C" fn stedy_sha256_update(
     message: *const u8,
     message_size: usize,
 ) {
-    let state = state as *mut Sha256;
+    let state = &mut *(state as *mut Sha256);
     let message = slice::from_raw_parts(message, message_size);
-    ptr::read(state).update(message);
+    state.update(message);
 }
 
 #[no_mangle]
@@ -37,4 +37,44 @@ pub unsafe extern "C" fn stedy_sha256_final(state: *const StedySha256State, dige
     let state = state as *const Sha256;
     let digest: &mut [u8; 32] = slice::from_raw_parts_mut(digest, 32).try_into().unwrap();
     ptr::read(state).finalize_into(digest);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_stedy_sha256() {
+        let message = b"abc";
+        let mut digest = [0u8; 32];
+        unsafe { stedy_sha256(message.as_ptr(), message.len(), digest.as_mut_ptr()) };
+        assert_eq!(
+            digest,
+            [
+                186, 120, 22, 191, 143, 1, 207, 234, 65, 65, 64, 222, 93, 174, 34, 35, 176, 3, 97,
+                163, 150, 23, 122, 156, 180, 16, 255, 97, 242, 0, 21, 173,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_stedy_sha256_inc() {
+        let mut state = StedySha256State { opaque: [0u8; 112] };
+        let state = &mut state as *mut _;
+        let mut digest = [0u8; 32];
+        unsafe {
+            stedy_sha256_init(state);
+            stedy_sha256_update(state, b"a".as_ptr(), 1);
+            stedy_sha256_update(state, b"b".as_ptr(), 1);
+            stedy_sha256_update(state, b"c".as_ptr(), 1);
+            stedy_sha256_final(state, digest.as_mut_ptr());
+        };
+        assert_eq!(
+            digest,
+            [
+                186, 120, 22, 191, 143, 1, 207, 234, 65, 65, 64, 222, 93, 174, 34, 35, 176, 3, 97,
+                163, 150, 23, 122, 156, 180, 16, 255, 97, 242, 0, 21, 173,
+            ]
+        );
+    }
 }
