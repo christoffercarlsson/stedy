@@ -365,6 +365,8 @@ bool stedy_verify(const uint8_t *a, const uint8_t *b, size_t size);
 
 void stedy_wipe(uint8_t *data, size_t size);
 
+void stedy_xor(uint8_t *x, size_t x_size, const uint8_t *y, size_t y_size);
+
 #ifdef __cplusplus
 }
 #endif
