@@ -1,0 +1,132 @@
+use {
+    crate::{
+        curve25519::Curve25519,
+        traits::{Csprng, FieldElement},
+    },
+    core::marker::PhantomData,
+};
+
+pub struct Shamir<F: FieldElement<Bytes = [u8; 32]>> {
+    _f: PhantomData<F>,
+}
+
+impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
+    pub fn split<const N: usize, const K: usize>(
+        rng: &mut impl Csprng,
+        secret: &[u8; 32],
+    ) -> [[u8; 36]; N] {
+        let c = Self::calculate_coefficients::<K>(rng, *secret);
+        let mut shares = [[0u8; 36]; N];
+        for i in 0..N {
+            let x = (i + 1) as u32;
+            Self::calculate_share(x, &c, &mut shares[i]);
+        }
+        shares
+    }
+
+    pub fn combine<const K: usize>(shares: [&[u8; 36]; K]) -> [u8; 32] {
+        let mut secret = F::ZERO;
+        for j in 0..K {
+            let xj = Self::read_index(&shares[j]);
+            let yj = Self::read_bytes(&shares[j]);
+            let mut lambda = F::ONE;
+            for m in 0..K {
+                if m == j {
+                    continue;
+                }
+                let xm = Self::read_index(&shares[m]);
+                lambda *= xm / (xm - xj);
+            }
+            secret += yj * lambda;
+        }
+        secret.into()
+    }
+}
+
+#[cfg(feature = "getrandom")]
+pub fn sss_split<const N: usize, const K: usize>(secret: &[u8; 32]) -> [[u8; 36]; N] {
+    let mut rng = crate::rng::Rng::seed().unwrap();
+    Shamir::<Curve25519>::split::<N, K>(&mut rng, secret)
+}
+
+#[cfg(not(feature = "getrandom"))]
+pub fn sss_split<const N: usize, const K: usize>(
+    rng: &mut impl Csprng,
+    secret: &[u8; 32],
+) -> [[u8; 36]; N] {
+    Shamir::<Curve25519>::split::<N, K>(rng, secret)
+}
+
+pub fn sss_combine<const K: usize>(shares: [&[u8; 36]; K]) -> [u8; 32] {
+    Shamir::<Curve25519>::combine::<K>(shares)
+}
+
+impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
+    fn calculate_coefficients<const K: usize>(rng: &mut impl Csprng, secret: [u8; 32]) -> [F; K] {
+        let mut c = [[0u8; 32]; K];
+        c[0] = secret;
+        for i in 1..K {
+            rng.fill(&mut c[i]);
+        }
+        c.map(|bytes| F::from(bytes))
+    }
+
+    fn calculate_share<const K: usize>(x: u32, c: &[F; K], share: &mut [u8; 36]) {
+        let mut t = c[0];
+        for i in 1..K {
+            t += c[i] * F::from(x.pow(i as u32));
+        }
+        let bytes: [u8; 32] = t.into();
+        share[0..4].copy_from_slice(&x.to_be_bytes());
+        share[4..36].copy_from_slice(&bytes);
+    }
+
+    fn read_index(share: &[u8; 36]) -> F {
+        let index = u32::from_be_bytes([share[0], share[1], share[2], share[3]]);
+        F::from(index)
+    }
+
+    fn read_bytes(share: &[u8; 36]) -> F {
+        let bytes: [u8; 32] = share[4..36].try_into().unwrap();
+        F::from(bytes)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::*,
+        crate::{rng::Rng, x25519::x25519_key_exchange},
+    };
+
+    #[test]
+    fn test_sss() {
+        let mut rng = Rng::from([0u8; 32]);
+        let secret = [
+            136, 216, 83, 226, 72, 2, 31, 41, 30, 4, 133, 24, 79, 9, 12, 64, 255, 15, 234, 195, 20,
+            214, 37, 199, 82, 42, 190, 148, 35, 201, 11, 121,
+        ];
+        let shares = sss_split::<3, 2>(&mut rng, &secret);
+        let result = sss_combine([&shares[2], &shares[1]]);
+        assert_eq!(result, secret);
+    }
+
+    #[test]
+    fn test_sss_key_exchange() {
+        let mut rng = Rng::from([0u8; 32]);
+        let private_key = [
+            187, 26, 123, 182, 188, 166, 140, 90, 67, 163, 206, 196, 135, 52, 179, 199, 168, 255,
+            10, 206, 36, 75, 186, 93, 223, 168, 101, 186, 20, 202, 188, 140,
+        ];
+        let public_key = [
+            23, 51, 74, 39, 79, 208, 23, 47, 213, 82, 102, 99, 53, 126, 217, 31, 31, 242, 86, 195,
+            1, 22, 177, 188, 230, 120, 233, 205, 44, 141, 43, 13,
+        ];
+        let shared_secret = x25519_key_exchange(&private_key, &public_key);
+        let shares = sss_split::<6, 3>(&mut rng, &private_key);
+        let key = sss_combine([&shares[2], &shares[1], &shares[3]]);
+        let secret = x25519_key_exchange(&key, &public_key);
+        assert_ne!(key, private_key);
+        assert_eq!(secret, shared_secret);
+    }
+}

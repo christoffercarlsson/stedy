@@ -26,6 +26,8 @@ mod scalar25519;
 mod sha1;
 mod sha256;
 mod sha512;
+#[cfg(feature = "sss")]
+mod sss;
 mod traits;
 mod verify;
 mod wipe;
@@ -45,3 +47,9 @@ pub use crate::{
     aead::*, chacha::*, curve25519::*, ecdh::*, eddsa::*, edwards25519::*, poly1305::*,
     scalar25519::*, traits::*,
 };
+
+#[cfg(feature = "sss")]
+pub use crate::sss::{sss_combine, sss_split};
+
+#[cfg(all(feature = "hazmat", feature = "sss"))]
+pub use crate::sss::*;

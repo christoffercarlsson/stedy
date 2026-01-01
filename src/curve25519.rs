@@ -236,6 +236,27 @@ impl From<[u8; 32]> for Curve25519 {
     }
 }
 
+impl From<&[u8]> for Curve25519 {
+    fn from(value: &[u8]) -> Self {
+        let mut bytes = [0u8; 32];
+        let size = value.len().min(32);
+        bytes[..size].copy_from_slice(&value[..size]);
+        Self::from(&bytes)
+    }
+}
+
+impl From<u64> for Curve25519 {
+    fn from(value: u64) -> Self {
+        Self([value, 0, 0, 0, 0])
+    }
+}
+
+impl From<u32> for Curve25519 {
+    fn from(value: u32) -> Self {
+        Self::from(value as u64)
+    }
+}
+
 impl From<Curve25519> for [u8; 32] {
     fn from(mut value: Curve25519) -> Self {
         value.canonical();
@@ -251,12 +272,6 @@ impl From<Curve25519> for [u8; 32] {
             chunk.copy_from_slice(&words[i].to_le_bytes());
         }
         bytes
-    }
-}
-
-impl From<u64> for Curve25519 {
-    fn from(value: u64) -> Self {
-        Self([value, 0, 0, 0, 0])
     }
 }
 

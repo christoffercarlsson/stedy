@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use core::{
     cmp::Ord,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub},
 };
 
 #[allow(private_bounds)]
@@ -90,13 +90,15 @@ pub trait FieldElement:
     + Copy
     + Eq
     + Add<Output = Self>
+    + AddAssign
     + Sub<Output = Self>
     + Mul<Output = Self>
+    + MulAssign
     + Div<Output = Self>
     + Neg<Output = Self>
     + From<Self::Bytes>
     + Into<Self::Bytes>
-    + From<u64>
+    + From<u32>
 {
     const ZERO: Self;
     const ONE: Self;
