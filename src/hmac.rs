@@ -2,7 +2,7 @@ use crate::{
     sha1::Sha1,
     sha256::Sha256,
     sha512::Sha512,
-    traits::{Digest, Hasher, Init, KeyInit, Mac},
+    traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
     verify::verify,
     xor::xor,
 };
@@ -128,6 +128,8 @@ impl<H: Hasher> Digest for Hmac<H> {
         self.finalize_into(output);
     }
 }
+
+impl<H: Hasher> Prf for Hmac<H> {}
 
 impl<H: Hasher> Mac for Hmac<H> {
     fn verify(self, code: &Self::Output) -> bool {

@@ -1,6 +1,6 @@
 use crate::{
     block::Block,
-    traits::{Digest, Hasher, Init, KeyInit, Mac},
+    traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
     verify::verify,
 };
 
@@ -117,6 +117,8 @@ impl<const N: usize> Hasher for Blake2s<N> {
 
     type Block = [u8; 64];
 }
+
+impl<const N: usize> Prf for Blake2s<N> {}
 
 impl<const N: usize> Mac for Blake2s<N> {
     fn verify(self, code: &[u8; N]) -> bool {

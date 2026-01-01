@@ -1,12 +1,12 @@
 use crate::{
     hmac::{HmacSha256, HmacSha512},
-    traits::{Digest, KeyInit},
+    traits::Prf,
     xor::xor,
 };
 
 pub fn pbkdf2<P>(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8])
 where
-    P: KeyInit + Digest + Clone,
+    P: Prf + Clone,
 {
     let prf = P::new(password);
     for (i, chunk) in output.chunks_mut(P::OUTPUT_SIZE).enumerate() {
@@ -24,7 +24,7 @@ pub fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], iterations: usize, outpu
 
 fn f<P>(prf: &P, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8])
 where
-    P: KeyInit + Digest + Clone,
+    P: Prf + Clone,
 {
     let mut u = {
         let mut p = prf.clone();

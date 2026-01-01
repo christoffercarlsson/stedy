@@ -39,6 +39,8 @@ pub trait Hasher: Init + Digest {
     type Block: ByteArray;
 }
 
+pub trait Prf: KeyInit + Digest {}
+
 pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> bool;
 }
