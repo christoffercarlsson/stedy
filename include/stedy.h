@@ -28,6 +28,63 @@ void stedy_blake2b512_final(const stedy_blake2b512_state *state,
 bool stedy_blake2b512_final_verify(const stedy_blake2b512_state *state,
                                    const uint8_t code[64]);
 
+typedef struct alignas(8) stedy_blake2b384_state {
+  uint8_t opaque[216];
+} stedy_blake2b384_state;
+
+void stedy_blake2b384(const uint8_t *message, const size_t message_size,
+                      uint8_t digest[48]);
+
+void stedy_blake2b384_init(stedy_blake2b384_state *state, const uint8_t *key,
+                           const size_t key_size);
+
+void stedy_blake2b384_update(stedy_blake2b384_state *state,
+                             const uint8_t *message, const size_t message_size);
+
+void stedy_blake2b384_final(const stedy_blake2b384_state *state,
+                            uint8_t digest[48]);
+
+bool stedy_blake2b384_final_verify(const stedy_blake2b384_state *state,
+                                   const uint8_t code[48]);
+
+typedef struct alignas(8) stedy_blake2b256_state {
+  uint8_t opaque[216];
+} stedy_blake2b256_state;
+
+void stedy_blake2b256(const uint8_t *message, const size_t message_size,
+                      uint8_t digest[32]);
+
+void stedy_blake2b256_init(stedy_blake2b256_state *state, const uint8_t *key,
+                           const size_t key_size);
+
+void stedy_blake2b256_update(stedy_blake2b256_state *state,
+                             const uint8_t *message, const size_t message_size);
+
+void stedy_blake2b256_final(const stedy_blake2b256_state *state,
+                            uint8_t digest[32]);
+
+bool stedy_blake2b256_final_verify(const stedy_blake2b256_state *state,
+                                   const uint8_t code[32]);
+
+typedef struct alignas(8) stedy_blake2b160_state {
+  uint8_t opaque[216];
+} stedy_blake2b160_state;
+
+void stedy_blake2b160(const uint8_t *message, const size_t message_size,
+                      uint8_t digest[20]);
+
+void stedy_blake2b160_init(stedy_blake2b160_state *state, const uint8_t *key,
+                           const size_t key_size);
+
+void stedy_blake2b160_update(stedy_blake2b160_state *state,
+                             const uint8_t *message, const size_t message_size);
+
+void stedy_blake2b160_final(const stedy_blake2b160_state *state,
+                            uint8_t digest[20]);
+
+bool stedy_blake2b160_final_verify(const stedy_blake2b160_state *state,
+                                   const uint8_t code[20]);
+
 typedef struct alignas(8) stedy_blake2s256_state {
   uint8_t opaque[112];
 } stedy_blake2s256_state;
