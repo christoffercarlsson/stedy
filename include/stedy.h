@@ -104,6 +104,63 @@ void stedy_blake2s256_final(const stedy_blake2s256_state *state,
 bool stedy_blake2s256_final_verify(const stedy_blake2s256_state *state,
                                    const uint8_t code[32]);
 
+typedef struct alignas(8) stedy_blake2s224_state {
+  uint8_t opaque[112];
+} stedy_blake2s224_state;
+
+void stedy_blake2s224(const uint8_t *message, const size_t message_size,
+                      uint8_t digest[28]);
+
+void stedy_blake2s224_init(stedy_blake2s224_state *state, const uint8_t *key,
+                           const size_t key_size);
+
+void stedy_blake2s224_update(stedy_blake2s224_state *state,
+                             const uint8_t *message, const size_t message_size);
+
+void stedy_blake2s224_final(const stedy_blake2s224_state *state,
+                            uint8_t digest[28]);
+
+bool stedy_blake2s224_final_verify(const stedy_blake2s224_state *state,
+                                   const uint8_t code[28]);
+
+typedef struct alignas(8) stedy_blake2s160_state {
+  uint8_t opaque[112];
+} stedy_blake2s160_state;
+
+void stedy_blake2s160(const uint8_t *message, const size_t message_size,
+                      uint8_t digest[20]);
+
+void stedy_blake2s160_init(stedy_blake2s160_state *state, const uint8_t *key,
+                           const size_t key_size);
+
+void stedy_blake2s160_update(stedy_blake2s160_state *state,
+                             const uint8_t *message, const size_t message_size);
+
+void stedy_blake2s160_final(const stedy_blake2s160_state *state,
+                            uint8_t digest[20]);
+
+bool stedy_blake2s160_final_verify(const stedy_blake2s160_state *state,
+                                   const uint8_t code[20]);
+
+typedef struct alignas(8) stedy_blake2s128_state {
+  uint8_t opaque[112];
+} stedy_blake2s128_state;
+
+void stedy_blake2s128(const uint8_t *message, const size_t message_size,
+                      uint8_t digest[16]);
+
+void stedy_blake2s128_init(stedy_blake2s128_state *state, const uint8_t *key,
+                           const size_t key_size);
+
+void stedy_blake2s128_update(stedy_blake2s128_state *state,
+                             const uint8_t *message, const size_t message_size);
+
+void stedy_blake2s128_final(const stedy_blake2s128_state *state,
+                            uint8_t digest[16]);
+
+bool stedy_blake2s128_final_verify(const stedy_blake2s128_state *state,
+                                   const uint8_t code[16]);
+
 void stedy_chacha20poly1305_encrypt(const uint8_t key[32],
                                     const uint8_t nonce[12], const uint8_t *aad,
                                     const size_t aad_size, uint8_t *message,

@@ -16,7 +16,7 @@ pub unsafe extern "C" fn stedy_blake2s256(
 ) {
     let message = slice::from_raw_parts(message, message_size);
     let _digest = blake2s256(message);
-    ptr::copy(_digest.as_ptr(), digest, 64);
+    ptr::copy(_digest.as_ptr(), digest, 32);
 }
 
 #[no_mangle]
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn stedy_blake2s256_final(
     digest: *mut u8,
 ) {
     let state = state as *const Blake2s256;
-    let digest: &mut [u8; 32] = slice::from_raw_parts_mut(digest, 64).try_into().unwrap();
+    let digest: &mut [u8; 32] = slice::from_raw_parts_mut(digest, 32).try_into().unwrap();
     ptr::read(state).finalize_into(digest);
 }
 
