@@ -204,17 +204,4 @@ mod tests {
         let size = sss_combine([&shares[2], &shares[1]], &mut result).unwrap();
         assert_eq!(result[..size], secret);
     }
-
-    #[cfg(feature = "getrandom")]
-    #[test]
-    fn test_sss_getrandom() {
-        let mut rng = Rng::seed().unwrap();
-        let mut secret = [0u8; 42];
-        rng.fill(&mut secret);
-        let mut output = [0u8; 204];
-        let shares = sss_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
-        let mut result = [0u8; 42];
-        sss_combine([&shares[0], &shares[1]], &mut result);
-        assert_eq!(result, secret);
-    }
 }

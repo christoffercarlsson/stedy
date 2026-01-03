@@ -1,6 +1,7 @@
 use {
     crate::{
         ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
+        ffi::rng::StedyRngState,
         rng::Rng,
     },
     core::{ptr, slice},
@@ -8,11 +9,12 @@ use {
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_ed25519_generate_key_pair(
+    rng: *mut StedyRngState,
     private_key: *mut u8,
     public_key: *mut u8,
 ) {
-    let mut rng = Rng::seed().unwrap();
-    let (_private_key, _public_key) = ed25519_generate_key_pair(&mut rng);
+    let rng = &mut *(rng as *mut Rng);
+    let (_private_key, _public_key) = ed25519_generate_key_pair(rng);
     ptr::copy(_private_key.as_ptr(), private_key, 32);
     ptr::copy(_public_key.as_ptr(), public_key, 32);
 }
@@ -52,25 +54,27 @@ pub unsafe extern "C" fn stedy_ed25519_verify(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::ffi::rng::stedy_rng_seed};
 
     #[test]
     fn test_stedy_ed25519_generate_key_pair() {
+        let mut rng = StedyRngState { opaque: [0u8; 132] };
+        let rng = &mut rng as *mut _;
+        let seed = [0u8; 32];
+        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
         let mut private_key = [0u8; 32];
         let mut public_key = [0u8; 32];
         unsafe {
-            stedy_ed25519_generate_key_pair(private_key.as_mut_ptr(), public_key.as_mut_ptr())
+            stedy_ed25519_generate_key_pair(rng, private_key.as_mut_ptr(), public_key.as_mut_ptr())
         };
-        assert_ne!(private_key, [0u8; 32]);
-        assert_ne!(public_key, [0u8; 32]);
-        assert_ne!(
+        assert_eq!(
             private_key,
             [
                 164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
                 229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
             ]
         );
-        assert_ne!(
+        assert_eq!(
             public_key,
             [
                 185, 175, 67, 174, 182, 228, 51, 132, 174, 211, 127, 232, 89, 49, 129, 38, 12, 69,

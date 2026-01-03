@@ -6,6 +6,7 @@ use {
             xchacha20poly1305_generate_key, xchacha20poly1305_generate_nonce,
             xchacha20poly1305_increment_nonce,
         },
+        ffi::rng::StedyRngState,
         rng::Rng,
     },
     core::{ptr, slice},
@@ -56,9 +57,12 @@ pub unsafe extern "C" fn stedy_chacha20poly1305_decrypt(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_chacha20poly1305_generate_key(key: *mut u8) {
-    let mut rng = Rng::seed().unwrap();
-    let _key = chacha20poly1305_generate_key(&mut rng);
+pub unsafe extern "C" fn stedy_chacha20poly1305_generate_key(
+    rng: *mut StedyRngState,
+    key: *mut u8,
+) {
+    let rng = &mut *(rng as *mut Rng);
+    let _key = chacha20poly1305_generate_key(rng);
     ptr::copy(_key.as_ptr(), key, 32);
 }
 
@@ -113,9 +117,12 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_decrypt(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_key(key: *mut u8) {
-    let mut rng = Rng::seed().unwrap();
-    let _key = xchacha20poly1305_generate_key(&mut rng);
+pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_key(
+    rng: *mut StedyRngState,
+    key: *mut u8,
+) {
+    let rng = &mut *(rng as *mut Rng);
+    let _key = xchacha20poly1305_generate_key(rng);
     ptr::copy(_key.as_ptr(), key, 32);
 }
 
@@ -126,15 +133,18 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_increment_nonce(nonce: *mut u8)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_nonce(nonce: *mut u8) {
-    let mut rng = Rng::seed().unwrap();
-    let _nonce = xchacha20poly1305_generate_nonce(&mut rng);
+pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_nonce(
+    rng: *mut StedyRngState,
+    nonce: *mut u8,
+) {
+    let rng = &mut *(rng as *mut Rng);
+    let _nonce = xchacha20poly1305_generate_nonce(rng);
     ptr::copy(_nonce.as_ptr(), nonce, 24);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::ffi::rng::stedy_rng_seed};
 
     #[test]
     fn test_stedy_chacha20poly1305() {
@@ -209,10 +219,13 @@ mod tests {
 
     #[test]
     fn test_stedy_chacha20poly1305_generate_key() {
+        let mut rng = StedyRngState { opaque: [0u8; 132] };
+        let rng = &mut rng as *mut _;
+        let seed = [0u8; 32];
+        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
         let mut key = [0u8; 32];
-        unsafe { stedy_chacha20poly1305_generate_key(key.as_mut_ptr()) };
-        assert_ne!(key, [0u8; 32]);
-        assert_ne!(
+        unsafe { stedy_chacha20poly1305_generate_key(rng, key.as_mut_ptr()) };
+        assert_eq!(
             key,
             [
                 164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
@@ -309,10 +322,13 @@ mod tests {
 
     #[test]
     fn test_stedy_xchacha20poly1305_generate_key() {
+        let mut rng = StedyRngState { opaque: [0u8; 132] };
+        let rng = &mut rng as *mut _;
+        let seed = [0u8; 32];
+        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
         let mut key = [0u8; 32];
-        unsafe { stedy_xchacha20poly1305_generate_key(key.as_mut_ptr()) };
-        assert_ne!(key, [0u8; 32]);
-        assert_ne!(
+        unsafe { stedy_xchacha20poly1305_generate_key(rng, key.as_mut_ptr()) };
+        assert_eq!(
             key,
             [
                 164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
@@ -323,10 +339,13 @@ mod tests {
 
     #[test]
     fn test_stedy_xchacha20poly1305_generate_nonce() {
+        let mut rng = StedyRngState { opaque: [0u8; 132] };
+        let rng = &mut rng as *mut _;
+        let seed = [0u8; 32];
+        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
         let mut nonce = [0u8; 24];
-        unsafe { stedy_xchacha20poly1305_generate_nonce(nonce.as_mut_ptr()) };
-        assert_ne!(nonce, [0u8; 24]);
-        assert_ne!(
+        unsafe { stedy_xchacha20poly1305_generate_nonce(rng, nonce.as_mut_ptr()) };
+        assert_eq!(
             nonce,
             [
                 164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,

@@ -9,6 +9,18 @@
 extern "C" {
 #endif
 
+typedef struct alignas(4) stedy_rng_state {
+  uint8_t opaque[132];
+} stedy_rng_state;
+
+void stedy_rng_seed(const uint8_t seed[32], stedy_rng_state *state);
+
+void stedy_rng_fill(stedy_rng_state *state, uint8_t *bytes, size_t size);
+
+uint32_t stedy_rng_next_u32(stedy_rng_state *state);
+
+uint64_t stedy_rng_next_u64(stedy_rng_state *state);
+
 typedef struct alignas(8) stedy_blake2b512_state {
   uint8_t opaque[216];
 } stedy_blake2b512_state;
@@ -171,7 +183,7 @@ bool stedy_chacha20poly1305_decrypt(const uint8_t key[32],
                                     size_t aad_size, uint8_t *message,
                                     size_t message_size, const uint8_t tag[16]);
 
-void stedy_chacha20poly1305_generate_key(uint8_t key[32]);
+void stedy_chacha20poly1305_generate_key(stedy_rng_state *rng, uint8_t key[32]);
 
 bool stedy_chacha20poly1305_increment_nonce(uint8_t nonce[12]);
 
@@ -187,13 +199,16 @@ bool stedy_xchacha20poly1305_decrypt(const uint8_t key[32],
                                      uint8_t *message, size_t message_size,
                                      const uint8_t tag[16]);
 
-void stedy_xchacha20poly1305_generate_key(uint8_t key[32]);
+void stedy_xchacha20poly1305_generate_key(stedy_rng_state *rng,
+                                          uint8_t key[32]);
 
 bool stedy_xchacha20poly1305_increment_nonce(uint8_t nonce[24]);
 
-void stedy_xchacha20poly1305_generate_nonce(uint8_t nonce[24]);
+void stedy_xchacha20poly1305_generate_nonce(stedy_rng_state *rng,
+                                            uint8_t nonce[24]);
 
-void stedy_ed25519_generate_key_pair(uint8_t private_key[32],
+void stedy_ed25519_generate_key_pair(stedy_rng_state *rng,
+                                     uint8_t private_key[32],
                                      uint8_t public_key[32]);
 
 void stedy_ed25519_public_key(const uint8_t private_key[32],
@@ -302,20 +317,6 @@ void stedy_pbkdf2_hmac_sha512(const uint8_t *password, size_t password_size,
                               size_t iterations, uint8_t *output,
                               size_t output_size);
 
-typedef struct alignas(4) stedy_rng_state {
-  uint8_t opaque[132];
-} stedy_rng_state;
-
-void stedy_rng_init(stedy_rng_state *state);
-
-void stedy_rng_seed(const uint8_t seed[32], stedy_rng_state *state);
-
-void stedy_rng_fill(stedy_rng_state *state, uint8_t *bytes, size_t size);
-
-uint32_t stedy_rng_next_u32(stedy_rng_state *state);
-
-uint64_t stedy_rng_next_u64(stedy_rng_state *state);
-
 typedef struct alignas(8) stedy_sha256_state {
   uint8_t opaque[112];
 } stedy_sha256_state;
@@ -344,7 +345,8 @@ void stedy_sha512_update(stedy_sha512_state *state, const uint8_t *message,
 
 void stedy_sha512_final(const stedy_sha512_state *state, uint8_t digest[64]);
 
-void stedy_x25519_generate_key_pair(uint8_t private_key[32],
+void stedy_x25519_generate_key_pair(stedy_rng_state *rng,
+                                    uint8_t private_key[32],
                                     uint8_t public_key[32]);
 
 void stedy_x25519_key_exchange(const uint8_t private_key[32],

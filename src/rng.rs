@@ -27,15 +27,6 @@ impl Rng {
     }
 }
 
-#[cfg(feature = "getrandom")]
-impl Rng {
-    pub fn seed() -> Option<Self> {
-        let mut seed = [0u8; 32];
-        getrandom::fill(&mut seed).ok()?;
-        Some(Self::from(seed))
-    }
-}
-
 impl From<&[u8; 32]> for Rng {
     fn from(value: &[u8; 32]) -> Self {
         Self::new(value)
@@ -84,22 +75,6 @@ impl Rng {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[cfg(feature = "getrandom")]
-    #[test]
-    fn test_getrandom_seed() {
-        let mut rng = Rng::seed().unwrap();
-        let mut bytes = [0u8; 32];
-        rng.fill(&mut bytes);
-        assert_ne!(bytes, [0u8; 32]);
-        assert_ne!(
-            bytes,
-            [
-                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
-                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
-            ]
-        );
-    }
 
     #[test]
     fn test_next_u32() {

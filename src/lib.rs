@@ -1,8 +1,5 @@
 #![no_std]
 
-#[cfg(feature = "getrandom")]
-extern crate getrandom;
-
 mod aead;
 mod blake2b;
 mod blake2s;

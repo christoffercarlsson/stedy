@@ -9,13 +9,6 @@ pub struct StedyRngState {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_rng_init(state: *mut StedyRngState) {
-    let dest = state as *mut Rng;
-    let src = Rng::seed().unwrap();
-    ptr::write(dest, src);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn stedy_rng_seed(seed: *const u8, state: *mut StedyRngState) {
     let seed: [u8; 32] = slice::from_raw_parts(seed, 32).try_into().unwrap();
     let dest = state as *mut Rng;
@@ -45,23 +38,6 @@ pub unsafe extern "C" fn stedy_rng_next_u64(state: *mut StedyRngState) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_stedy_rng_init() {
-        let mut state = StedyRngState { opaque: [0u8; 132] };
-        let state = &mut state as *mut _;
-        unsafe { stedy_rng_init(state) };
-        let mut bytes = [0u8; 32];
-        unsafe { stedy_rng_fill(state, bytes.as_mut_ptr(), bytes.len()) };
-        assert_ne!(bytes, [0u8; 32]);
-        assert_ne!(
-            bytes,
-            [
-                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
-                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
-            ]
-        );
-    }
 
     #[test]
     fn test_stedy_rng_fill() {
