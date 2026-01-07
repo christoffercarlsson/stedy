@@ -32,8 +32,8 @@ impl Sha512 {
     pub fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks(message) {
             self.process_block(&head);
-            for (begin, end) in tail {
-                self.process_block(&message[begin..end]);
+            for block in tail {
+                self.process_block(block);
             }
         }
     }
