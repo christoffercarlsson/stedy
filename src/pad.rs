@@ -1,6 +1,6 @@
 use crate::wipe::wipe;
 
-pub fn pad(unpadded: &[u8], block_size: usize, padded: &mut [u8]) -> Option<usize> {
+pub fn pad<'a>(unpadded: &[u8], block_size: usize, padded: &'a mut [u8]) -> Option<&'a [u8]> {
     let unpadded_size = unpadded.len();
     let padded_size = unpadded_size + block_size - (unpadded_size % block_size);
     if padded_size > padded.len() {
@@ -9,15 +9,15 @@ pub fn pad(unpadded: &[u8], block_size: usize, padded: &mut [u8]) -> Option<usiz
     padded[..unpadded_size].copy_from_slice(unpadded);
     padded[unpadded_size] = 128;
     wipe(&mut padded[(unpadded_size + 1)..padded_size]);
-    Some(padded_size)
+    Some(&padded[..padded_size])
 }
 
-pub fn unpad(padded: &[u8], block_size: usize) -> Option<usize> {
+pub fn unpad<'a>(padded: &'a [u8], block_size: usize) -> Option<&'a [u8]> {
     let size = calculate_unpadded_size(padded, block_size);
     if size == 0 {
         None
     } else {
-        Some(size)
+        Some(&padded[..size])
     }
 }
 
@@ -45,48 +45,45 @@ mod tests {
     #[test]
     fn test_pad() {
         let unpadded = [1, 2, 3, 4];
-        let mut padded = [42u8; 8];
-        let size = pad(&unpadded, 8, &mut padded).unwrap();
-        assert_eq!(size, 8);
+        let mut buffer = [42u8; 8];
+        let padded = pad(&unpadded, 8, &mut buffer).unwrap();
         assert_eq!(padded, [1, 2, 3, 4, 128, 0, 0, 0]);
     }
 
     #[test]
     fn test_pad_single() {
         let unpadded = [1, 2, 3, 4, 5, 6, 7];
-        let mut padded = [1u8; 8];
-        let size = pad(&unpadded, 8, &mut padded).unwrap();
-        assert_eq!(size, 8);
+        let mut buffer = [1u8; 8];
+        let padded = pad(&unpadded, 8, &mut buffer).unwrap();
         assert_eq!(padded, [1, 2, 3, 4, 5, 6, 7, 128]);
     }
 
     #[test]
     fn test_pad_block_size() {
         let unpadded = [1, 2, 3, 4, 5, 6, 7, 8];
-        let mut padded = [1u8; 16];
-        let size = pad(&unpadded, 8, &mut padded).unwrap();
-        assert_eq!(size, 16);
+        let mut buffer = [1u8; 16];
+        let padded = pad(&unpadded, 8, &mut buffer).unwrap();
         assert_eq!(padded, [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
     fn test_unpad() {
         let input = [1, 2, 3, 4, 128, 0, 0, 0];
-        let size = unpad(&input, 8).unwrap();
-        assert_eq!(input[..size], [1, 2, 3, 4]);
+        let unpadded = unpad(&input, 8).unwrap();
+        assert_eq!(unpadded, [1, 2, 3, 4]);
     }
 
     #[test]
     fn test_unpad_block_size() {
         let input = [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0];
-        let size = unpad(&input, 8).unwrap();
-        assert_eq!(input[..size], [1, 2, 3, 4, 5, 6, 7, 8]);
+        let unpadded = unpad(&input, 8).unwrap();
+        assert_eq!(unpadded, [1, 2, 3, 4, 5, 6, 7, 8]);
     }
 
     #[test]
     fn test_unpad_single() {
         let input = [1, 2, 3, 4, 5, 6, 7, 128];
-        let size = unpad(&input, 8).unwrap();
-        assert_eq!(input[..size], [1, 2, 3, 4, 5, 6, 7]);
+        let unpadded = unpad(&input, 8).unwrap();
+        assert_eq!(unpadded, [1, 2, 3, 4, 5, 6, 7]);
     }
 }

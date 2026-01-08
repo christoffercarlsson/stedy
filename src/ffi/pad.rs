@@ -14,7 +14,7 @@ pub unsafe extern "C" fn stedy_pad(
     let unpadded = slice::from_raw_parts(unpadded, unpadded_size);
     let padded = slice::from_raw_parts_mut(padded, padded_size);
     match pad(unpadded, block_size, padded) {
-        Some(size) => size,
+        Some(padded) => padded.len(),
         None => 0,
     }
 }
@@ -27,7 +27,7 @@ pub unsafe extern "C" fn stedy_unpad(
 ) -> usize {
     let padded = slice::from_raw_parts(padded, padded_size);
     match unpad(padded, block_size) {
-        Some(size) => size,
+        Some(unpadded) => unpadded.len(),
         None => 0,
     }
 }

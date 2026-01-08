@@ -160,9 +160,10 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
                 (x, y)
             });
             let src = Self::combine_column(pairs);
-            let size = unpad(&src, 32)?;
+            let unpadded = unpad(&src, 32)?;
+            let size = unpadded.len();
             let dest = secret.get_mut(offset..(offset + size))?;
-            dest.copy_from_slice(&src[..size]);
+            dest.copy_from_slice(unpadded);
             offset += size;
         }
         Some(offset)
