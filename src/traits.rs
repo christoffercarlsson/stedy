@@ -58,6 +58,12 @@ pub trait StreamCipher {
 }
 
 pub trait SeekableStreamCipher: StreamCipher {
+    const SEED_SIZE: usize;
+
+    type Seed: ByteArray;
+
+    fn seed(seed: &Self::Seed) -> Self;
+
     fn seek(&mut self, counter: u32);
 }
 
@@ -71,7 +77,7 @@ pub trait Authenticator<C: SeekableStreamCipher> {
     fn verify(self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool;
 }
 
-pub trait Csprng {
+pub trait CryptoRng {
     fn fill(&mut self, bytes: &mut [u8]);
 
     fn next_u32(&mut self) -> u32;
@@ -79,7 +85,7 @@ pub trait Csprng {
     fn next_u64(&mut self) -> u64;
 }
 
-pub trait SeedableCsprng: Csprng {
+pub trait SeedableRng: CryptoRng {
     const SEED_SIZE: usize;
 
     type Seed: ByteArray;

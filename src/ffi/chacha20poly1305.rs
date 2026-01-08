@@ -6,8 +6,8 @@ use {
             xchacha20poly1305_generate_key, xchacha20poly1305_generate_nonce,
             xchacha20poly1305_increment_nonce,
         },
+        csprng::Rng,
         ffi::rng::StedyRngState,
-        rng::Rng,
     },
     core::{ptr, slice},
 };

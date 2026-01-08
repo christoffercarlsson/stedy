@@ -2,7 +2,7 @@ use crate::{
     aead::Aead,
     chacha::{ChaCha20, XChaCha20},
     poly1305::Poly1305,
-    traits::Csprng,
+    traits::CryptoRng,
 };
 
 type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
@@ -29,7 +29,7 @@ pub fn chacha20poly1305_decrypt(
     aead.decrypt(message, tag, aad)
 }
 
-pub fn chacha20poly1305_generate_key<R: Csprng>(rng: &mut R) -> [u8; 32] {
+pub fn chacha20poly1305_generate_key<R: CryptoRng>(rng: &mut R) -> [u8; 32] {
     ChaCha20Poly1305::generate_key(rng)
 }
 
@@ -58,7 +58,7 @@ pub fn xchacha20poly1305_decrypt(
     aead.decrypt(message, tag, aad)
 }
 
-pub fn xchacha20poly1305_generate_key<R: Csprng>(rng: &mut R) -> [u8; 32] {
+pub fn xchacha20poly1305_generate_key<R: CryptoRng>(rng: &mut R) -> [u8; 32] {
     XChaCha20Poly1305::generate_key(rng)
 }
 
@@ -66,7 +66,7 @@ pub fn xchacha20poly1305_increment_nonce(nonce: &mut [u8; 24]) -> bool {
     XChaCha20Poly1305::increment_nonce(nonce)
 }
 
-pub fn xchacha20poly1305_generate_nonce<R: Csprng>(rng: &mut R) -> [u8; 24] {
+pub fn xchacha20poly1305_generate_nonce<R: CryptoRng>(rng: &mut R) -> [u8; 24] {
     let mut nonce = [0u8; 24];
     rng.fill(&mut nonce);
     nonce
@@ -74,7 +74,7 @@ pub fn xchacha20poly1305_generate_nonce<R: Csprng>(rng: &mut R) -> [u8; 24] {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::rng::Rng};
+    use {super::*, crate::csprng::Rng};
 
     #[test]
     fn test_chacha20poly1305() {

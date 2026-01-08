@@ -1,5 +1,5 @@
 use {
-    crate::traits::{ByteArray, Csprng, EdwardsPoint, FieldElement, Hasher, Init, Scalar},
+    crate::traits::{ByteArray, CryptoRng, EdwardsPoint, FieldElement, Hasher, Init, Scalar},
     core::marker::PhantomData,
 };
 
@@ -11,7 +11,7 @@ pub struct Eddsa<F: FieldElement, H: Hasher, P: EdwardsPoint<F, S>, S: Scalar> {
 }
 
 impl<F: FieldElement, H: Hasher, P: EdwardsPoint<F, S>, S: Scalar> Eddsa<F, H, P, S> {
-    pub fn generate_key_pair<R: Csprng>(rng: &mut R) -> (S::Bytes, S::Bytes) {
+    pub fn generate_key_pair<R: CryptoRng>(rng: &mut R) -> (S::Bytes, S::Bytes) {
         let mut private_key = S::Bytes::new();
         rng.fill(private_key.as_mut());
         let public_key = Self::get_public_key(&private_key);

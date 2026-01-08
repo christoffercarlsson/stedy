@@ -7,6 +7,7 @@ mod blake2s;
 mod block;
 mod chacha;
 mod chacha20poly1305;
+mod csprng;
 mod curve25519;
 mod ecdh;
 mod ed25519;
@@ -19,7 +20,6 @@ mod hmac;
 mod pad;
 mod pbkdf2;
 mod poly1305;
-mod rng;
 mod scalar25519;
 mod sha1;
 mod sha256;
@@ -33,8 +33,8 @@ mod x25519;
 mod xor;
 
 pub use crate::{
-    base::*, blake2b::*, blake2s::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac::*, pad::*,
-    pbkdf2::*, rng::*, sha256::*, sha512::*, traits::ByteArray, verify::*, wipe::*, x25519::*,
+    base::*, blake2b::*, blake2s::*, chacha20poly1305::*, csprng::*, ed25519::*, hkdf::*, hmac::*,
+    pad::*, pbkdf2::*, sha256::*, sha512::*, traits::ByteArray, verify::*, wipe::*, x25519::*,
     xor::*,
 };
 

@@ -1,4 +1,4 @@
-use crate::traits::{Authenticator, Csprng, Init, SeekableStreamCipher};
+use crate::traits::{Authenticator, CryptoRng, Init, SeekableStreamCipher};
 
 pub struct Aead<C: SeekableStreamCipher, M: Authenticator<C>> {
     cipher: C,
@@ -26,7 +26,7 @@ impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
         }
     }
 
-    pub fn generate_key<R: Csprng>(rng: &mut R) -> C::Key {
+    pub fn generate_key<R: CryptoRng>(rng: &mut R) -> C::Key {
         let mut key = C::Key::new();
         rng.fill(key.as_mut());
         key

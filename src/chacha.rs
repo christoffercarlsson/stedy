@@ -72,6 +72,14 @@ impl StreamCipher for ChaCha20 {
 }
 
 impl SeekableStreamCipher for ChaCha20 {
+    const SEED_SIZE: usize = 48;
+
+    type Seed = [u8; Self::SEED_SIZE];
+
+    fn seed(seed: &Self::Seed) -> Self {
+        Self::from(seed)
+    }
+
     fn seek(&mut self, counter: u32) {
         self.seek(counter);
     }
@@ -208,6 +216,14 @@ impl StreamCipher for XChaCha20 {
 }
 
 impl SeekableStreamCipher for XChaCha20 {
+    const SEED_SIZE: usize = 60;
+
+    type Seed = [u8; Self::SEED_SIZE];
+
+    fn seed(seed: &Self::Seed) -> Self {
+        Self::from(seed)
+    }
+
     fn seek(&mut self, counter: u32) {
         self.seek(counter);
     }

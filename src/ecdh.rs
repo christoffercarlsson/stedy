@@ -1,5 +1,5 @@
 use {
-    crate::traits::{Csprng, FieldElement},
+    crate::traits::{CryptoRng, FieldElement},
     core::marker::PhantomData,
 };
 
@@ -8,7 +8,7 @@ pub struct Ecdh<F: FieldElement<Bytes = [u8; 32]>> {
 }
 
 impl<F: FieldElement<Bytes = [u8; 32]>> Ecdh<F> {
-    pub fn generate_key_pair<R: Csprng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
+    pub fn generate_key_pair<R: CryptoRng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
         let mut private_key = [0u8; 32];
         rng.fill(&mut private_key);
         let public_key = Self::get_public_key(&private_key);

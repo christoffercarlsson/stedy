@@ -1,7 +1,7 @@
 use {
     crate::{
+        csprng::Rng,
         ffi::rng::StedyRngState,
-        rng::Rng,
         x25519::{x25519_generate_key_pair, x25519_key_exchange, x25519_public_key},
     },
     core::{ptr, slice},

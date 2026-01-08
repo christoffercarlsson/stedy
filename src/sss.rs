@@ -2,7 +2,7 @@ use {
     crate::{
         curve25519::Curve25519,
         pad::{pad, unpad},
-        traits::{Csprng, FieldElement},
+        traits::{CryptoRng, FieldElement},
         wipe::wipe,
     },
     core::{array::from_fn, marker::PhantomData},
@@ -14,7 +14,7 @@ pub struct Shamir<F: FieldElement<Bytes = [u8; 32]>> {
 
 impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
     pub fn split<'a, const N: usize, const K: usize>(
-        rng: &mut impl Csprng,
+        rng: &mut impl CryptoRng,
         secret: &[u8],
         output: &'a mut [u8],
     ) -> Option<[&'a [u8]; N]> {
@@ -53,7 +53,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
 }
 
 pub fn sss_split<'a, const N: usize, const K: usize>(
-    rng: &mut impl Csprng,
+    rng: &mut impl CryptoRng,
     secret: &[u8],
     output: &'a mut [u8],
 ) -> Option<[&'a [u8]; N]> {
@@ -79,7 +79,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
     }
 
     fn split_chunk<const N: usize, const K: usize>(
-        rng: &mut impl Csprng,
+        rng: &mut impl CryptoRng,
         share_size: usize,
         index: usize,
         secret: [u8; 32],
@@ -101,7 +101,10 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
         }
     }
 
-    fn calculate_coefficients<const K: usize>(rng: &mut impl Csprng, secret: [u8; 32]) -> [F; K] {
+    fn calculate_coefficients<const K: usize>(
+        rng: &mut impl CryptoRng,
+        secret: [u8; 32],
+    ) -> [F; K] {
         let mut c = [[0u8; 32]; K];
         c[0] = secret;
         for i in 1..K {
@@ -178,7 +181,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::rng::Rng};
+    use {super::*, crate::csprng::Rng};
 
     #[test]
     fn test_sss() {

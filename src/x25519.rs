@@ -1,8 +1,8 @@
-use crate::{curve25519::Curve25519, ecdh::Ecdh, traits::Csprng};
+use crate::{curve25519::Curve25519, ecdh::Ecdh, traits::CryptoRng};
 
 type X25519 = Ecdh<Curve25519>;
 
-pub fn x25519_generate_key_pair<R: Csprng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
+pub fn x25519_generate_key_pair<R: CryptoRng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
     X25519::generate_key_pair(rng)
 }
 
@@ -16,7 +16,7 @@ pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::rng::Rng};
+    use {super::*, crate::csprng::Rng};
 
     #[test]
     fn test_x25519_generate_key_pair() {

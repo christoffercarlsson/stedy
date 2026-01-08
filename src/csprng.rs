@@ -1,15 +1,18 @@
-use crate::{
-    blake2b::blake2b384,
-    chacha::ChaCha20,
-    traits::{Csprng, SeedableCsprng},
+use {
+    crate::{
+        blake2b::Blake2b384,
+        chacha::ChaCha20,
+        traits::{CryptoRng, Hasher, SeedableRng, SeekableStreamCipher},
+    },
+    core::marker::PhantomData,
 };
 
-#[repr(C, align(4))]
-pub struct Rng {
-    cipher: ChaCha20,
+pub struct Csprng<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> {
+    cipher: C,
+    _h: PhantomData<H>,
 }
 
-impl Rng {
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
     pub fn fill(&mut self, bytes: &mut [u8]) {
         self.cipher.apply_keystream(bytes);
     }
@@ -27,19 +30,19 @@ impl Rng {
     }
 }
 
-impl From<&[u8; 32]> for Rng {
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> From<&[u8; 32]> for Csprng<C, H> {
     fn from(value: &[u8; 32]) -> Self {
         Self::new(value)
     }
 }
 
-impl From<[u8; 32]> for Rng {
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> From<[u8; 32]> for Csprng<C, H> {
     fn from(value: [u8; 32]) -> Self {
         Self::from(&value)
     }
 }
 
-impl Csprng for Rng {
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> CryptoRng for Csprng<C, H> {
     fn fill(&mut self, bytes: &mut [u8]) {
         self.fill(bytes);
     }
@@ -53,21 +56,26 @@ impl Csprng for Rng {
     }
 }
 
-impl SeedableCsprng for Rng {
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> SeedableRng for Csprng<C, H> {
     const SEED_SIZE: usize = 32;
 
-    type Seed = [u8; Self::SEED_SIZE];
+    type Seed = [u8; 32];
 
     fn new(seed: &Self::Seed) -> Self {
         Self::new(seed)
     }
 }
 
-impl Rng {
+pub type Rng = Csprng<ChaCha20, Blake2b384>;
+
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
     fn new(seed: &[u8; 32]) -> Self {
-        let seed = blake2b384(seed);
+        let mut hasher = H::new();
+        hasher.update(seed);
+        let seed = hasher.finalize();
         Self {
-            cipher: ChaCha20::from(&seed),
+            cipher: C::seed(&seed),
+            _h: PhantomData::<H>,
         }
     }
 }

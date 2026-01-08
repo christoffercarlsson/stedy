@@ -1,8 +1,8 @@
 use {
     crate::{
+        csprng::Rng,
         ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
         ffi::rng::StedyRngState,
-        rng::Rng,
     },
     core::{ptr, slice},
 };

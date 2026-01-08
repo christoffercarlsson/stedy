@@ -1,11 +1,11 @@
 use crate::{
     curve25519::Curve25519, eddsa::Eddsa, edwards25519::Edwards25519, scalar25519::Scalar25519,
-    sha512::Sha512, traits::Csprng,
+    sha512::Sha512, traits::CryptoRng,
 };
 
 type Ed25519 = Eddsa<Curve25519, Sha512, Edwards25519, Scalar25519>;
 
-pub fn ed25519_generate_key_pair<R: Csprng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
+pub fn ed25519_generate_key_pair<R: CryptoRng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
     Ed25519::generate_key_pair(rng)
 }
 
@@ -23,7 +23,7 @@ pub fn ed25519_verify(message: &[u8], public_key: &[u8; 32], signature: &[u8; 64
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::rng::Rng};
+    use {super::*, crate::csprng::Rng};
 
     #[test]
     fn test_ed25519_generate_key_pair() {
