@@ -36,15 +36,18 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
         Some(shares)
     }
 
-    pub fn combine<const K: usize>(shares: [&[u8]; K], secret: &mut [u8]) -> Option<usize> {
-        let secret_size = Self::combine_secret(shares, secret).unwrap_or_else(|| {
+    pub fn combine<'a, const K: usize>(
+        shares: [&[u8]; K],
+        secret: &'a mut [u8],
+    ) -> Option<&'a [u8]> {
+        let size = Self::combine_secret(shares, secret).unwrap_or_else(|| {
             wipe(secret);
             0
         });
-        if secret_size == 0 {
+        if size == 0 {
             None
         } else {
-            Some(secret_size)
+            Some(&secret[..size])
         }
     }
 }
@@ -57,7 +60,10 @@ pub fn sss_split<'a, const N: usize, const K: usize>(
     Shamir::<Curve25519>::split::<N, K>(rng, secret, output)
 }
 
-pub fn sss_combine<const K: usize>(shares: [&[u8]; K], secret: &mut [u8]) -> Option<usize> {
+pub fn sss_combine<'a, const K: usize>(
+    shares: [&[u8]; K],
+    secret: &'a mut [u8],
+) -> Option<&'a [u8]> {
     Shamir::<Curve25519>::combine::<K>(shares, secret)
 }
 
@@ -188,10 +194,9 @@ mod tests {
         assert_eq!(shares[0][..4], [0, 0, 0, 1]);
         assert_eq!(shares[1][..4], [0, 0, 0, 2]);
         assert_eq!(shares[2][..4], [0, 0, 0, 3]);
-        let mut result = [0u8; 32];
-        let size = sss_combine([&shares[2], &shares[1]], &mut result).unwrap();
-        assert_eq!(size, 32);
-        assert_eq!(result[..size], secret);
+        let mut buffer = [0u8; 32];
+        let result = sss_combine([&shares[2], &shares[1]], &mut buffer).unwrap();
+        assert_eq!(result, secret);
     }
 
     #[test]
@@ -201,8 +206,8 @@ mod tests {
         rng.fill(&mut secret);
         let mut output = [0u8; 1024];
         let shares = sss_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
-        let mut result = [0u8; 1024];
-        let size = sss_combine([&shares[2], &shares[1]], &mut result).unwrap();
-        assert_eq!(result[..size], secret);
+        let mut buffer = [0u8; 1024];
+        let result = sss_combine([&shares[2], &shares[1]], &mut buffer).unwrap();
+        assert_eq!(result, secret);
     }
 }
