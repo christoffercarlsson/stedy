@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main};
 
+mod base;
 mod blake2;
 mod chacha20poly1305;
 mod ed25519;
@@ -12,6 +13,7 @@ mod x25519;
 
 criterion_group!(
     bench,
+    base::bench,
     blake2::bench,
     chacha20poly1305::bench,
     ed25519::bench,

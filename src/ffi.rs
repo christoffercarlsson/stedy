@@ -1,3 +1,4 @@
+mod base;
 mod blake2b160;
 mod blake2b256;
 mod blake2b384;
@@ -30,8 +31,8 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 }
 
 pub use {
-    blake2b160::*, blake2b256::*, blake2b384::*, blake2b512::*, blake2s128::*, blake2s160::*,
-    blake2s224::*, blake2s256::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac_sha1::*,
-    hmac_sha256::*, hmac_sha512::*, pad::*, pbkdf2::*, rng::*, sha256::*, sha512::*, verify::*,
-    wipe::*, x25519::*, xor::*,
+    base::*, blake2b160::*, blake2b256::*, blake2b384::*, blake2b512::*, blake2s128::*,
+    blake2s160::*, blake2s224::*, blake2s256::*, chacha20poly1305::*, ed25519::*, hkdf::*,
+    hmac_sha1::*, hmac_sha256::*, hmac_sha512::*, pad::*, pbkdf2::*, rng::*, sha256::*, sha512::*,
+    verify::*, wipe::*, x25519::*, xor::*,
 };

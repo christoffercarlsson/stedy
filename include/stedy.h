@@ -221,6 +221,14 @@ bool stedy_ed25519_verify(const uint8_t *message, size_t message_size,
                           const uint8_t public_key[32],
                           const uint8_t signature[64]);
 
+size_t stedy_encode(uint8_t encoding, const uint8_t *decoded,
+                    size_t decoded_size, uint8_t *encoded,
+                    size_t encoded_max_size);
+
+size_t stedy_decode(uint8_t encoding, const uint8_t *encoded,
+                    size_t encoded_size, uint8_t *decoded,
+                    size_t decoded_max_size);
+
 void stedy_hkdf_sha256(const uint8_t *ikm, size_t ikm_size, const uint8_t *salt,
                        size_t salt_size, const uint8_t *info, size_t info_size,
                        uint8_t *okm, size_t okm_size);

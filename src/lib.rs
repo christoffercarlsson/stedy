@@ -1,6 +1,7 @@
 #![no_std]
 
 mod aead;
+mod base;
 mod blake2b;
 mod blake2s;
 mod block;
@@ -32,8 +33,9 @@ mod x25519;
 mod xor;
 
 pub use crate::{
-    blake2b::*, blake2s::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac::*, pad::*, pbkdf2::*,
-    rng::*, sha256::*, sha512::*, traits::ByteArray, verify::*, wipe::*, x25519::*, xor::*,
+    base::*, blake2b::*, blake2s::*, chacha20poly1305::*, ed25519::*, hkdf::*, hmac::*, pad::*,
+    pbkdf2::*, rng::*, sha256::*, sha512::*, traits::ByteArray, verify::*, wipe::*, x25519::*,
+    xor::*,
 };
 
 #[cfg(feature = "ffi")]
