@@ -6,20 +6,27 @@ pub struct Aead<C: SeekableStreamCipher, M: Authenticator<C>> {
 }
 
 impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
-    pub fn new(key: &C::Key, nonce: &C::Nonce) -> Self {
-        let mut cipher = C::new(key, nonce);
-        let mac = M::new(&mut cipher);
-        Self { cipher, mac }
+    pub fn encrypt(
+        key: &C::Key,
+        nonce: &C::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> M::Output {
+        let mut aead = Self::new(key, nonce);
+        aead.cipher.apply_keystream(message);
+        aead.mac.tag(message, aad)
     }
 
-    pub fn encrypt(mut self, message: &mut [u8], aad: Option<&[u8]>) -> M::Output {
-        self.cipher.apply_keystream(message);
-        self.mac.tag(message, aad)
-    }
-
-    pub fn decrypt(mut self, message: &mut [u8], tag: &M::Output, aad: Option<&[u8]>) -> bool {
-        if self.mac.verify(message, aad, tag) {
-            self.cipher.apply_keystream(message);
+    pub fn decrypt(
+        key: &C::Key,
+        nonce: &C::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &M::Output,
+    ) -> bool {
+        let mut aead = Self::new(key, nonce);
+        if aead.mac.verify(message, aad, tag) {
+            aead.cipher.apply_keystream(message);
             true
         } else {
             false
@@ -40,5 +47,21 @@ impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
             carry = sum >> 8;
         }
         carry == 0
+    }
+}
+
+impl<C: SeekableStreamCipher<Nonce = [u8; 24]>, M: Authenticator<C>> Aead<C, M> {
+    pub fn generate_nonce<R: CryptoRng>(rng: &mut R) -> C::Nonce {
+        let mut nonce = C::Nonce::new();
+        rng.fill(nonce.as_mut());
+        nonce
+    }
+}
+
+impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
+    fn new(key: &C::Key, nonce: &C::Nonce) -> Self {
+        let mut cipher = C::new(key, nonce);
+        let mac = M::new(&mut cipher);
+        Self { cipher, mac }
     }
 }

@@ -1,7 +1,4 @@
-use {
-    criterion::Criterion,
-    stedy::{chacha20poly1305_decrypt, chacha20poly1305_encrypt},
-};
+use {criterion::Criterion, stedy::ChaCha20Poly1305};
 
 pub fn bench(c: &mut Criterion) {
     let key = [
@@ -21,7 +18,7 @@ pub fn bench(c: &mut Criterion) {
             115, 117, 110, 115, 99, 114, 101, 101, 110, 32, 119, 111, 117, 108, 100, 32, 98, 101,
             32, 105, 116, 46,
         ];
-        b.iter(|| chacha20poly1305_encrypt(&key, &nonce, Some(&aad), &mut message))
+        b.iter(|| ChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message))
     });
 
     c.bench_function("chacha20poly1305_decrypt", |b| {
@@ -37,6 +34,6 @@ pub fn bench(c: &mut Criterion) {
         let tag = [
             26, 225, 11, 89, 79, 9, 226, 106, 126, 144, 46, 203, 208, 96, 6, 145,
         ];
-        b.iter(|| chacha20poly1305_decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
+        b.iter(|| ChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
     });
 }

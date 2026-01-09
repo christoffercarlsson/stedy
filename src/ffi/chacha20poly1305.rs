@@ -1,11 +1,6 @@
 use {
     crate::{
-        chacha20poly1305::{
-            chacha20poly1305_decrypt, chacha20poly1305_encrypt, chacha20poly1305_generate_key,
-            chacha20poly1305_increment_nonce, xchacha20poly1305_decrypt, xchacha20poly1305_encrypt,
-            xchacha20poly1305_generate_key, xchacha20poly1305_generate_nonce,
-            xchacha20poly1305_increment_nonce,
-        },
+        chacha20poly1305::{ChaCha20Poly1305, XChaCha20Poly1305},
         csprng::Rng,
         ffi::rng::StedyRngState,
     },
@@ -30,7 +25,7 @@ pub unsafe extern "C" fn stedy_chacha20poly1305_encrypt(
         Some(slice::from_raw_parts(aad, aad_size))
     };
     let message = slice::from_raw_parts_mut(message, message_size);
-    let _tag = chacha20poly1305_encrypt(key, nonce, aad, message);
+    let _tag = ChaCha20Poly1305::encrypt(key, nonce, aad, message);
     ptr::copy(_tag.as_ptr(), tag, 16);
 }
 
@@ -53,7 +48,7 @@ pub unsafe extern "C" fn stedy_chacha20poly1305_decrypt(
     };
     let message = slice::from_raw_parts_mut(message, message_size);
     let tag: &[u8; 16] = slice::from_raw_parts(tag, 16).try_into().unwrap();
-    chacha20poly1305_decrypt(key, nonce, aad, message, tag)
+    ChaCha20Poly1305::decrypt(key, nonce, aad, message, tag)
 }
 
 #[no_mangle]
@@ -62,14 +57,14 @@ pub unsafe extern "C" fn stedy_chacha20poly1305_generate_key(
     key: *mut u8,
 ) {
     let rng = &mut *(rng as *mut Rng);
-    let _key = chacha20poly1305_generate_key(rng);
+    let _key = ChaCha20Poly1305::generate_key(rng);
     ptr::copy(_key.as_ptr(), key, 32);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_chacha20poly1305_increment_nonce(nonce: *mut u8) -> bool {
     let nonce: &mut [u8; 12] = slice::from_raw_parts_mut(nonce, 12).try_into().unwrap();
-    chacha20poly1305_increment_nonce(nonce)
+    ChaCha20Poly1305::increment_nonce(nonce)
 }
 
 #[no_mangle]
@@ -90,7 +85,7 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_encrypt(
         Some(slice::from_raw_parts(aad, aad_size))
     };
     let message = slice::from_raw_parts_mut(message, message_size);
-    let _tag = xchacha20poly1305_encrypt(key, nonce, aad, message);
+    let _tag = XChaCha20Poly1305::encrypt(key, nonce, aad, message);
     ptr::copy(_tag.as_ptr(), tag, 16);
 }
 
@@ -113,7 +108,7 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_decrypt(
     };
     let message = slice::from_raw_parts_mut(message, message_size);
     let tag: &[u8; 16] = slice::from_raw_parts(tag, 16).try_into().unwrap();
-    xchacha20poly1305_decrypt(key, nonce, aad, message, tag)
+    XChaCha20Poly1305::decrypt(key, nonce, aad, message, tag)
 }
 
 #[no_mangle]
@@ -122,14 +117,14 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_key(
     key: *mut u8,
 ) {
     let rng = &mut *(rng as *mut Rng);
-    let _key = xchacha20poly1305_generate_key(rng);
+    let _key = XChaCha20Poly1305::generate_key(rng);
     ptr::copy(_key.as_ptr(), key, 32);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_xchacha20poly1305_increment_nonce(nonce: *mut u8) -> bool {
     let nonce: &mut [u8; 24] = slice::from_raw_parts_mut(nonce, 24).try_into().unwrap();
-    xchacha20poly1305_increment_nonce(nonce)
+    XChaCha20Poly1305::increment_nonce(nonce)
 }
 
 #[no_mangle]
@@ -138,7 +133,7 @@ pub unsafe extern "C" fn stedy_xchacha20poly1305_generate_nonce(
     nonce: *mut u8,
 ) {
     let rng = &mut *(rng as *mut Rng);
-    let _nonce = xchacha20poly1305_generate_nonce(rng);
+    let _nonce = XChaCha20Poly1305::generate_nonce(rng);
     ptr::copy(_nonce.as_ptr(), nonce, 24);
 }
 

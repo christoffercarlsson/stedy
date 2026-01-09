@@ -2,75 +2,10 @@ use crate::{
     aead::Aead,
     chacha::{ChaCha20, XChaCha20},
     poly1305::Poly1305,
-    traits::CryptoRng,
 };
 
-type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
-type XChaCha20Poly1305 = Aead<XChaCha20, Poly1305>;
-
-pub fn chacha20poly1305_encrypt(
-    key: &[u8; 32],
-    nonce: &[u8; 12],
-    aad: Option<&[u8]>,
-    message: &mut [u8],
-) -> [u8; 16] {
-    let aead = ChaCha20Poly1305::new(key, nonce);
-    aead.encrypt(message, aad)
-}
-
-pub fn chacha20poly1305_decrypt(
-    key: &[u8; 32],
-    nonce: &[u8; 12],
-    aad: Option<&[u8]>,
-    message: &mut [u8],
-    tag: &[u8; 16],
-) -> bool {
-    let aead = ChaCha20Poly1305::new(key, nonce);
-    aead.decrypt(message, tag, aad)
-}
-
-pub fn chacha20poly1305_generate_key<R: CryptoRng>(rng: &mut R) -> [u8; 32] {
-    ChaCha20Poly1305::generate_key(rng)
-}
-
-pub fn chacha20poly1305_increment_nonce(nonce: &mut [u8; 12]) -> bool {
-    ChaCha20Poly1305::increment_nonce(nonce)
-}
-
-pub fn xchacha20poly1305_encrypt(
-    key: &[u8; 32],
-    nonce: &[u8; 24],
-    aad: Option<&[u8]>,
-    message: &mut [u8],
-) -> [u8; 16] {
-    let aead = XChaCha20Poly1305::new(key, nonce);
-    aead.encrypt(message, aad)
-}
-
-pub fn xchacha20poly1305_decrypt(
-    key: &[u8; 32],
-    nonce: &[u8; 24],
-    aad: Option<&[u8]>,
-    message: &mut [u8],
-    tag: &[u8; 16],
-) -> bool {
-    let aead = XChaCha20Poly1305::new(key, nonce);
-    aead.decrypt(message, tag, aad)
-}
-
-pub fn xchacha20poly1305_generate_key<R: CryptoRng>(rng: &mut R) -> [u8; 32] {
-    XChaCha20Poly1305::generate_key(rng)
-}
-
-pub fn xchacha20poly1305_increment_nonce(nonce: &mut [u8; 24]) -> bool {
-    XChaCha20Poly1305::increment_nonce(nonce)
-}
-
-pub fn xchacha20poly1305_generate_nonce<R: CryptoRng>(rng: &mut R) -> [u8; 24] {
-    let mut nonce = [0u8; 24];
-    rng.fill(&mut nonce);
-    nonce
-}
+pub type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
+pub type XChaCha20Poly1305 = Aead<XChaCha20, Poly1305>;
 
 #[cfg(test)]
 mod tests {
@@ -93,7 +28,7 @@ mod tests {
             115, 117, 110, 115, 99, 114, 101, 101, 110, 32, 119, 111, 117, 108, 100, 32, 98, 101,
             32, 105, 116, 46,
         ];
-        let tag = chacha20poly1305_encrypt(&key, &nonce, Some(&aad), &mut message);
+        let tag = ChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message);
         assert_eq!(
             message,
             [
@@ -110,7 +45,7 @@ mod tests {
             tag,
             [26, 225, 11, 89, 79, 9, 226, 106, 126, 144, 46, 203, 208, 96, 6, 145]
         );
-        let verified = chacha20poly1305_decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
+        let verified = ChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
         assert!(verified);
         assert_eq!(
             message,
@@ -129,7 +64,7 @@ mod tests {
     #[test]
     fn test_chacha20poly1305_generate_key() {
         let mut rng = Rng::from([0u8; 32]);
-        let key = chacha20poly1305_generate_key(&mut rng);
+        let key = ChaCha20Poly1305::generate_key(&mut rng);
         assert_eq!(
             key,
             [
@@ -161,7 +96,7 @@ mod tests {
             115, 117, 110, 115, 99, 114, 101, 101, 110, 32, 119, 111, 117, 108, 100, 32, 98, 101,
             32, 105, 116, 46,
         ];
-        let tag = xchacha20poly1305_encrypt(&key, &nonce, Some(&aad), &mut message);
+        let tag = XChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message);
         assert_eq!(
             message,
             [
@@ -178,7 +113,7 @@ mod tests {
             tag,
             [192, 135, 89, 36, 193, 199, 152, 121, 71, 222, 175, 216, 120, 10, 207, 73]
         );
-        let verified = xchacha20poly1305_decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
+        let verified = XChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
         assert!(verified);
         assert_eq!(
             message,
@@ -197,7 +132,7 @@ mod tests {
     #[test]
     fn test_xchacha20poly1305_generate_key() {
         let mut rng = Rng::from([0u8; 32]);
-        let key = xchacha20poly1305_generate_key(&mut rng);
+        let key = XChaCha20Poly1305::generate_key(&mut rng);
         assert_eq!(
             key,
             [
@@ -210,7 +145,7 @@ mod tests {
     #[test]
     fn test_xchacha20poly1305_generate_nonce() {
         let mut rng = Rng::from([0u8; 32]);
-        let nonce = xchacha20poly1305_generate_nonce(&mut rng);
+        let nonce = XChaCha20Poly1305::generate_nonce(&mut rng);
         assert_eq!(
             nonce,
             [
@@ -223,11 +158,11 @@ mod tests {
     #[test]
     fn test_chacha20poly1305_increment_nonce() {
         let mut nonce = [42u8; 12];
-        let incremented = chacha20poly1305_increment_nonce(&mut nonce);
+        let incremented = ChaCha20Poly1305::increment_nonce(&mut nonce);
         assert!(incremented == true);
         assert_eq!(nonce, [42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 43]);
         let mut nonce = [255u8; 12];
-        let incremented = chacha20poly1305_increment_nonce(&mut nonce);
+        let incremented = ChaCha20Poly1305::increment_nonce(&mut nonce);
         assert!(incremented == false);
         assert_eq!(nonce, [0u8; 12]);
     }
@@ -235,14 +170,14 @@ mod tests {
     #[test]
     fn test_xchacha20poly1305_increment_nonce() {
         let mut nonce = [0u8; 24];
-        let incremented = xchacha20poly1305_increment_nonce(&mut nonce);
+        let incremented = XChaCha20Poly1305::increment_nonce(&mut nonce);
         assert!(incremented == true);
         assert_eq!(
             nonce,
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         );
         let mut nonce = [255u8; 24];
-        let incremented = xchacha20poly1305_increment_nonce(&mut nonce);
+        let incremented = XChaCha20Poly1305::increment_nonce(&mut nonce);
         assert!(incremented == false);
         assert_eq!(nonce, [0u8; 24]);
     }
