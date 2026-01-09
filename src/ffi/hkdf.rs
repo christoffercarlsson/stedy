@@ -1,5 +1,5 @@
 use {
-    crate::hkdf::{hkdf_sha256, hkdf_sha512},
+    crate::{hkdf::Hkdf, sha256::Sha256, sha512::Sha512},
     core::slice,
 };
 
@@ -26,7 +26,7 @@ pub unsafe extern "C" fn stedy_hkdf_sha256(
         Some(slice::from_raw_parts(info, info_size))
     };
     let okm = slice::from_raw_parts_mut(okm, okm_size);
-    hkdf_sha256(ikm, salt, info, okm)
+    Hkdf::<Sha256>::hkdf(ikm, salt, info, okm)
 }
 
 #[no_mangle]
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn stedy_hkdf_sha512(
         Some(slice::from_raw_parts(info, info_size))
     };
     let okm = slice::from_raw_parts_mut(okm, okm_size);
-    hkdf_sha512(ikm, salt, info, okm)
+    Hkdf::<Sha512>::hkdf(ikm, salt, info, okm)
 }
 
 #[cfg(test)]

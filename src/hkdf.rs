@@ -1,30 +1,22 @@
 use crate::{
-    hmac::{HmacSha256, HmacSha512},
-    traits::{Digest, Init, KeyInit},
+    hmac::Hmac,
+    traits::{Hasher, Init},
 };
 
-pub struct Hkdf<M: KeyInit + Digest> {
-    prk: M::Output,
+pub struct Hkdf<H: Hasher> {
+    prk: H::Output,
 }
 
-impl<M: KeyInit + Digest> Hkdf<M> {
+impl<H: Hasher> Hkdf<H> {
     pub fn hkdf(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
         let hkdf = Self::extract(salt, ikm);
         hkdf.expand(info, okm);
     }
 }
 
-pub fn hkdf_sha256(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
-    <Hkdf<HmacSha256>>::hkdf(ikm, salt, info, okm);
-}
-
-pub fn hkdf_sha512(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) {
-    <Hkdf<HmacSha512>>::hkdf(ikm, salt, info, okm);
-}
-
-impl<M: KeyInit + Digest> Hkdf<M> {
+impl<H: Hasher> Hkdf<H> {
     fn extract(salt: Option<&[u8]>, ikm: &[u8]) -> Self {
-        let mut mac = M::new(salt.unwrap_or(M::Output::new().as_ref()));
+        let mut mac = Hmac::<H>::new(salt.unwrap_or(H::Output::new().as_ref()));
         mac.update(ikm);
         let prk = mac.finalize();
         Self { prk }
@@ -32,9 +24,9 @@ impl<M: KeyInit + Digest> Hkdf<M> {
 
     fn expand(self, info: Option<&[u8]>, okm: &mut [u8]) {
         let info = info.unwrap_or_default();
-        let mut t = M::Output::new();
-        for (i, chunk) in okm.chunks_mut(M::OUTPUT_SIZE).take(255).enumerate() {
-            let mut mac = M::new(self.prk.as_ref());
+        let mut t = H::Output::new();
+        for (i, chunk) in okm.chunks_mut(H::OUTPUT_SIZE).take(255).enumerate() {
+            let mut mac = Hmac::<H>::new(self.prk.as_ref());
             if i > 0 {
                 mac.update(t.as_ref());
             }
@@ -48,7 +40,10 @@ impl<M: KeyInit + Digest> Hkdf<M> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {
+        super::*,
+        crate::{sha256::Sha256, sha512::Sha512},
+    };
 
     #[test]
     fn test_hkdf_sha256() {
@@ -58,7 +53,7 @@ mod tests {
         let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let info = [240, 241, 242, 243, 244, 245, 246, 247, 248, 249];
         let mut okm = [0; 42];
-        hkdf_sha256(&ikm, Some(&salt), Some(&info), &mut okm);
+        Hkdf::<Sha256>::hkdf(&ikm, Some(&salt), Some(&info), &mut okm);
         assert_eq!(
             okm,
             [
@@ -75,7 +70,7 @@ mod tests {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
         ];
         let mut okm = [0; 42];
-        hkdf_sha256(&ikm, None, None, &mut okm);
+        Hkdf::<Sha256>::hkdf(&ikm, None, None, &mut okm);
         assert_eq!(
             okm,
             [
@@ -94,7 +89,7 @@ mod tests {
         let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let info = [240, 241, 242, 243, 244, 245, 246, 247, 248, 249];
         let mut okm = [0; 42];
-        hkdf_sha512(&ikm, Some(&salt), Some(&info), &mut okm);
+        Hkdf::<Sha512>::hkdf(&ikm, Some(&salt), Some(&info), &mut okm);
         assert_eq!(
             okm,
             [
@@ -111,7 +106,7 @@ mod tests {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
         ];
         let mut okm = [0; 42];
-        hkdf_sha512(&ikm, None, None, &mut okm);
+        Hkdf::<Sha512>::hkdf(&ikm, None, None, &mut okm);
         assert_eq!(
             okm,
             [
