@@ -1,9 +1,5 @@
 use {
-    crate::{
-        csprng::Rng,
-        ffi::rng::StedyRngState,
-        x25519::{x25519_generate_key_pair, x25519_key_exchange, x25519_public_key},
-    },
+    crate::{csprng::Rng, ffi::rng::StedyRngState, x25519::X25519},
     core::{ptr, slice},
 };
 
@@ -14,7 +10,7 @@ pub unsafe extern "C" fn stedy_x25519_generate_key_pair(
     public_key: *mut u8,
 ) {
     let rng = &mut *(rng as *mut Rng);
-    let (_private_key, _public_key) = x25519_generate_key_pair(rng);
+    let (_private_key, _public_key) = X25519::generate_key_pair(rng);
     ptr::copy(_private_key.as_ptr(), private_key, 32);
     ptr::copy(_public_key.as_ptr(), public_key, 32);
 }
@@ -22,7 +18,7 @@ pub unsafe extern "C" fn stedy_x25519_generate_key_pair(
 #[no_mangle]
 pub unsafe extern "C" fn stedy_x25519_public_key(private_key: *const u8, public_key: *mut u8) {
     let private_key: &[u8; 32] = slice::from_raw_parts(private_key, 32).try_into().unwrap();
-    let _public_key = x25519_public_key(private_key);
+    let _public_key = X25519::get_public_key(private_key);
     ptr::copy(_public_key.as_ptr(), public_key, 32);
 }
 
@@ -34,7 +30,7 @@ pub unsafe extern "C" fn stedy_x25519_key_exchange(
 ) {
     let private_key: &[u8; 32] = slice::from_raw_parts(private_key, 32).try_into().unwrap();
     let public_key: &[u8; 32] = slice::from_raw_parts(public_key, 32).try_into().unwrap();
-    let _shared_secret = x25519_key_exchange(private_key, public_key);
+    let _shared_secret = X25519::key_exchange(private_key, public_key);
     ptr::copy(_shared_secret.as_ptr(), shared_secret, 32);
 }
 

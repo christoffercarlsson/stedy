@@ -1,7 +1,4 @@
-use {
-    criterion::Criterion,
-    stedy::{x25519_key_exchange, x25519_public_key},
-};
+use {criterion::Criterion, stedy::X25519};
 
 pub fn bench(c: &mut Criterion) {
     let alice_private_key = [
@@ -14,10 +11,10 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("x25519_public_key", |b| {
-        b.iter(|| x25519_public_key(&alice_private_key))
+        b.iter(|| X25519::get_public_key(&alice_private_key))
     });
 
     c.bench_function("x25519_key_exchange", |b| {
-        b.iter(|| x25519_key_exchange(&alice_private_key, &bob_public_key))
+        b.iter(|| X25519::key_exchange(&alice_private_key, &bob_public_key))
     });
 }

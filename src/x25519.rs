@@ -1,18 +1,6 @@
-use crate::{curve25519::Curve25519, ecdh::Ecdh, traits::CryptoRng};
+use crate::{curve25519::Curve25519, ecdh::Ecdh};
 
-type X25519 = Ecdh<Curve25519>;
-
-pub fn x25519_generate_key_pair<R: CryptoRng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
-    X25519::generate_key_pair(rng)
-}
-
-pub fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    X25519::get_public_key(private_key)
-}
-
-pub fn x25519_key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> [u8; 32] {
-    X25519::key_exchange(private_key, public_key)
-}
+pub type X25519 = Ecdh<Curve25519>;
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +9,7 @@ mod tests {
     #[test]
     fn test_x25519_generate_key_pair() {
         let mut rng = Rng::from([0u8; 32]);
-        let (private_key, public_key) = x25519_generate_key_pair(&mut rng);
+        let (private_key, public_key) = X25519::generate_key_pair(&mut rng);
         assert_eq!(
             private_key,
             [
@@ -60,13 +48,13 @@ mod tests {
             74, 93, 157, 91, 164, 206, 45, 225, 114, 142, 59, 244, 128, 53, 15, 37, 224, 126, 33,
             201, 71, 209, 158, 51, 118, 240, 155, 60, 30, 22, 23, 66,
         ];
-        let public_key = x25519_public_key(&alice_private_key);
+        let public_key = X25519::get_public_key(&alice_private_key);
         assert_eq!(public_key, alice_public_key);
-        let public_key = x25519_public_key(&bob_private_key);
+        let public_key = X25519::get_public_key(&bob_private_key);
         assert_eq!(public_key, bob_public_key);
-        let secret = x25519_key_exchange(&alice_private_key, &bob_public_key);
+        let secret = X25519::key_exchange(&alice_private_key, &bob_public_key);
         assert_eq!(secret, shared_secret);
-        let secret = x25519_key_exchange(&bob_private_key, &alice_public_key);
+        let secret = X25519::key_exchange(&bob_private_key, &alice_public_key);
         assert_eq!(secret, shared_secret);
     }
 
@@ -82,7 +70,7 @@ mod tests {
             230, 219, 104, 103, 88, 48, 48, 219, 53, 148, 193, 164, 36, 177, 95, 124, 114, 102, 36,
             236, 38, 179, 53, 59, 16, 169, 3, 166, 208, 171, 28, 76,
         ];
-        let result = x25519_key_exchange(&k, &u);
+        let result = X25519::key_exchange(&k, &u);
         assert_eq!(
             result,
             [
@@ -102,7 +90,7 @@ mod tests {
             229, 33, 15, 18, 120, 104, 17, 211, 244, 183, 149, 157, 5, 56, 174, 44, 49, 219, 231,
             16, 111, 192, 60, 62, 252, 76, 213, 73, 199, 21, 164, 147,
         ];
-        let result = x25519_key_exchange(&k, &u);
+        let result = X25519::key_exchange(&k, &u);
         assert_eq!(
             result,
             [
@@ -122,7 +110,7 @@ mod tests {
             9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0,
         ];
-        let result = x25519_key_exchange(&k, &u);
+        let result = X25519::key_exchange(&k, &u);
         assert_eq!(
             result,
             [
@@ -143,7 +131,7 @@ mod tests {
             0, 0, 0,
         ];
         for _ in 0..1000 {
-            let result = x25519_key_exchange(&k, &u);
+            let result = X25519::key_exchange(&k, &u);
             u = k;
             k = result;
         }
@@ -167,7 +155,7 @@ mod tests {
     //         0, 0, 0,
     //     ];
     //     for _ in 0..1000000 {
-    //         let result = x25519_key_exchange(&k, &u);
+    //         let result = X25519::key_exchange(&k, &u);
     //         u = k;
     //         k = result;
     //     }
