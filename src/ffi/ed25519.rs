@@ -1,9 +1,5 @@
 use {
-    crate::{
-        csprng::Rng,
-        ed25519::{ed25519_generate_key_pair, ed25519_public_key, ed25519_sign, ed25519_verify},
-        ffi::rng::StedyRngState,
-    },
+    crate::{csprng::Rng, ed25519::Ed25519, ffi::rng::StedyRngState},
     core::{ptr, slice},
 };
 
@@ -14,7 +10,7 @@ pub unsafe extern "C" fn stedy_ed25519_generate_key_pair(
     public_key: *mut u8,
 ) {
     let rng = &mut *(rng as *mut Rng);
-    let (_private_key, _public_key) = ed25519_generate_key_pair(rng);
+    let (_private_key, _public_key) = Ed25519::generate_key_pair(rng);
     ptr::copy(_private_key.as_ptr(), private_key, 32);
     ptr::copy(_public_key.as_ptr(), public_key, 32);
 }
@@ -22,7 +18,7 @@ pub unsafe extern "C" fn stedy_ed25519_generate_key_pair(
 #[no_mangle]
 pub unsafe extern "C" fn stedy_ed25519_public_key(private_key: *const u8, public_key: *mut u8) {
     let private_key: &[u8; 32] = slice::from_raw_parts(private_key, 32).try_into().unwrap();
-    let _public_key = ed25519_public_key(private_key);
+    let _public_key = Ed25519::get_public_key(private_key);
     ptr::copy(_public_key.as_ptr(), public_key, 32);
 }
 
@@ -35,7 +31,7 @@ pub unsafe extern "C" fn stedy_ed25519_sign(
 ) {
     let private_key: &[u8; 32] = slice::from_raw_parts(private_key, 32).try_into().unwrap();
     let message = slice::from_raw_parts(message, message_size);
-    let _signature = ed25519_sign(private_key, message);
+    let _signature = Ed25519::sign(private_key, message);
     ptr::copy(_signature.as_ptr(), signature, 64);
 }
 
@@ -49,7 +45,7 @@ pub unsafe extern "C" fn stedy_ed25519_verify(
     let message = slice::from_raw_parts(message, message_size);
     let public_key: &[u8; 32] = slice::from_raw_parts(public_key, 32).try_into().unwrap();
     let signature: &[u8; 64] = slice::from_raw_parts(signature, 64).try_into().unwrap();
-    ed25519_verify(message, &public_key, &signature)
+    Ed25519::verify(message, &public_key, &signature)
 }
 
 #[cfg(test)]

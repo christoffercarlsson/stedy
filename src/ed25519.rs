@@ -1,25 +1,9 @@
 use crate::{
     curve25519::Curve25519, eddsa::Eddsa, edwards25519::Edwards25519, scalar25519::Scalar25519,
-    sha512::Sha512, traits::CryptoRng,
+    sha512::Sha512,
 };
 
-type Ed25519 = Eddsa<Curve25519, Sha512, Edwards25519, Scalar25519>;
-
-pub fn ed25519_generate_key_pair<R: CryptoRng>(rng: &mut R) -> ([u8; 32], [u8; 32]) {
-    Ed25519::generate_key_pair(rng)
-}
-
-pub fn ed25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
-    Ed25519::get_public_key(private_key)
-}
-
-pub fn ed25519_sign(private_key: &[u8; 32], message: &[u8]) -> [u8; 64] {
-    Ed25519::sign(private_key, message)
-}
-
-pub fn ed25519_verify(message: &[u8], public_key: &[u8; 32], signature: &[u8; 64]) -> bool {
-    Ed25519::verify(message, public_key, signature)
-}
+pub type Ed25519 = Eddsa<Curve25519, Sha512, Edwards25519, Scalar25519>;
 
 #[cfg(test)]
 mod tests {
@@ -28,7 +12,7 @@ mod tests {
     #[test]
     fn test_ed25519_generate_key_pair() {
         let mut rng = Rng::from([0u8; 32]);
-        let (private_key, public_key) = ed25519_generate_key_pair(&mut rng);
+        let (private_key, public_key) = Ed25519::generate_key_pair(&mut rng);
         assert_eq!(
             private_key,
             [
@@ -64,11 +48,11 @@ mod tests {
             163, 59, 172, 198, 30, 57, 112, 28, 249, 180, 107, 210, 91, 245, 240, 89, 91, 190, 36,
             101, 81, 65, 67, 142, 122, 16, 11,
         ];
-        let public_key = ed25519_public_key(&private_key);
+        let public_key = Ed25519::get_public_key(&private_key);
         assert_eq!(public_key, public_key_ref);
-        let signature = ed25519_sign(&private_key, &message);
+        let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = ed25519_verify(&message, &public_key, &signature);
+        let verified = Ed25519::verify(&message, &public_key, &signature);
         assert!(verified);
     }
 
@@ -89,11 +73,11 @@ mod tests {
             153, 110, 69, 143, 54, 19, 208, 241, 29, 140, 56, 123, 46, 174, 180, 48, 42, 238, 176,
             13, 41, 22, 18, 187, 12, 0,
         ];
-        let public_key = ed25519_public_key(&private_key);
+        let public_key = Ed25519::get_public_key(&private_key);
         assert_eq!(public_key, public_key_ref);
-        let signature = ed25519_sign(&private_key, &message);
+        let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = ed25519_verify(&message, &public_key, &signature);
+        let verified = Ed25519::verify(&message, &public_key, &signature);
         assert!(verified);
     }
 
@@ -114,11 +98,11 @@ mod tests {
             144, 174, 103, 247, 96, 152, 77, 198, 89, 74, 124, 21, 233, 113, 110, 210, 141, 192,
             39, 190, 206, 234, 30, 196, 10,
         ];
-        let public_key = ed25519_public_key(&private_key);
+        let public_key = Ed25519::get_public_key(&private_key);
         assert_eq!(public_key, public_key_ref);
-        let signature = ed25519_sign(&private_key, &message);
+        let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = ed25519_verify(&message, &public_key, &signature);
+        let verified = Ed25519::verify(&message, &public_key, &signature);
         assert!(verified);
     }
 
@@ -195,11 +179,11 @@ mod tests {
             159, 69, 40, 236, 234, 35, 196, 54, 217, 75, 94, 143, 205, 79, 104, 30, 48, 166, 172,
             0, 169, 112, 74, 24, 138, 3,
         ];
-        let public_key = ed25519_public_key(&private_key);
+        let public_key = Ed25519::get_public_key(&private_key);
         assert_eq!(public_key, public_key_ref);
-        let signature = ed25519_sign(&private_key, &message);
+        let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = ed25519_verify(&message, &public_key, &signature);
+        let verified = Ed25519::verify(&message, &public_key, &signature);
         assert!(verified);
     }
 
@@ -225,11 +209,12 @@ mod tests {
             236, 253, 251, 199, 198, 100, 49, 224, 48, 61, 202, 23, 156, 19, 138, 193, 122, 217,
             190, 241, 23, 115, 49, 167, 4,
         ];
-        let public_key = ed25519_public_key(&private_key);
+        let public_key = Ed25519::get_public_key(&private_key);
         assert_eq!(public_key, public_key_ref);
-        let signature = ed25519_sign(&private_key, &message);
+        let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = ed25519_verify(&message, &public_key, &signature);
+        let verified = Ed25519::verify(&message, &public_key, &signature);
+
         assert!(verified);
     }
 }

@@ -1,7 +1,4 @@
-use {
-    criterion::Criterion,
-    stedy::{ed25519_public_key, ed25519_sign, ed25519_verify},
-};
+use {criterion::Criterion, stedy::Ed25519};
 
 pub fn bench(c: &mut Criterion) {
     let private_key = [
@@ -21,14 +18,14 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("ed25519_public_key", |b| {
-        b.iter(|| ed25519_public_key(&private_key))
+        b.iter(|| Ed25519::get_public_key(&private_key))
     });
 
     c.bench_function("ed25519_sign", |b| {
-        b.iter(|| ed25519_sign(&private_key, &message))
+        b.iter(|| Ed25519::sign(&private_key, &message))
     });
 
     c.bench_function("ed25519_verify", |b| {
-        b.iter(|| ed25519_verify(&message, &public_key, &signature))
+        b.iter(|| Ed25519::verify(&message, &public_key, &signature))
     });
 }
