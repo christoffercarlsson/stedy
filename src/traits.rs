@@ -131,8 +131,9 @@ pub trait Scalar:
     + From<Self::Bytes>
     + From<Self::WideBytes>
     + Into<Self::Bytes>
-    + Add<Output = Self>
-    + Mul<Output = Self>
+    + Add<Self, Output = Self>
+    + Mul<Self, Output = Self>
+    + Neg<Output = Self>
 {
     type Bytes: ByteArray;
     type WideBytes: ByteArray;
@@ -145,7 +146,7 @@ pub trait Scalar:
 }
 
 pub trait EdwardsPoint<F: FieldElement, S: Scalar>:
-    Sized + Copy + Eq + Add<Output = Self> + Mul<S, Output = Self>
+    Sized + Copy + Eq + Add<Self, Output = Self> + Mul<S, Output = Self>
 {
     const BASE_POINT: Self;
     const IDENTITY: Self;
@@ -153,6 +154,8 @@ pub trait EdwardsPoint<F: FieldElement, S: Scalar>:
     fn decompress(scalar: &S::Bytes) -> (Self, u64);
 
     fn compress(self) -> S::Bytes;
+
+    fn vartime_double_base(a: &S, p: Self, b: &S) -> Self;
 }
 
 trait Sealed {}

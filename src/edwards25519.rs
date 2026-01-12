@@ -4,7 +4,10 @@ use {
         scalar25519::Scalar25519,
         traits::{EdwardsPoint, FieldElement},
     },
-    core::ops::{Add, Index, Mul, Neg},
+    core::{
+        array::from_fn,
+        ops::{Add, Index, Mul, Neg},
+    },
 };
 
 #[derive(Clone, Copy)]
@@ -81,6 +84,38 @@ impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
         ys[31] |= sign << 7;
         ys
     }
+
+    fn vartime_double_base(a: &Scalar25519, p: Self, b: &Scalar25519) -> Self {
+        let na = a.non_adjacent_form_5();
+        let nb = b.non_adjacent_form_5();
+        let mut i: usize = 255;
+        for j in (0..256).rev() {
+            i = j;
+            if na[i] != 0 || nb[i] != 0 {
+                break;
+            }
+        }
+        let wa = NafWindow::from(p);
+        let wb = NafWindow::from(Self::BASE_POINT);
+        let mut r = Projective25519::IDENTITY;
+        loop {
+            let mut t = r.double();
+            let da = na[i];
+            let db = nb[i];
+            if da != 0 {
+                t = t.to_extended() + wa.select(da);
+            }
+            if db != 0 {
+                t = t.to_extended() + wb.select(db);
+            }
+            r = t.to_projective();
+            if i == 0 {
+                break;
+            }
+            i -= 1;
+        }
+        r.to_extended()
+    }
 }
 
 impl Edwards25519 {
@@ -98,31 +133,6 @@ impl Edwards25519 {
         1815898335770999,
         633789495995903,
     ]);
-
-    fn double(self) -> Self {
-        let a = self.x.square();
-        let b = self.y.square();
-        let z2 = self.z.square();
-        let c = z2 + z2;
-        let e = (self.x + self.y).square() - a - b;
-        let g = b - a;
-        let f = g - c;
-        let h = Curve25519::ZERO - (a + b);
-        let x = e * f;
-        let y = g * h;
-        let t = e * h;
-        let z = f * g;
-        Self { x, y, t, z }
-    }
-
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        Self {
-            x: Curve25519::select(&a.x, &b.x, condition),
-            y: Curve25519::select(&a.y, &b.y, condition),
-            t: Curve25519::select(&a.t, &b.t, condition),
-            z: Curve25519::select(&a.z, &b.z, condition),
-        }
-    }
 }
 
 impl PartialEq for Edwards25519 {
@@ -159,50 +169,175 @@ impl Mul<Scalar25519> for Edwards25519 {
     fn mul(self, rhs: Scalar25519) -> Self::Output {
         let window = Window::from(self);
         let digits = rhs.as_radix_16();
-        let mut q = window.select(digits[63]);
+        let mut t2: Projective25519;
+        let mut t3 = Self::IDENTITY;
+        let mut t1 = t3 + window.select(digits[63]);
         for i in (0..63).rev() {
-            q = q.double();
-            q = q.double();
-            q = q.double();
-            q = q.double();
-            q = q + window.select(digits[i]);
+            t2 = t1.to_projective();
+            t1 = t2.double();
+            t2 = t1.to_projective();
+            t1 = t2.double();
+            t2 = t1.to_projective();
+            t1 = t2.double();
+            t2 = t1.to_projective();
+            t1 = t2.double();
+            t3 = t1.to_extended();
+            t1 = t3 + window.select(digits[i]);
         }
-        q
+        t1.to_extended()
     }
 }
 
-impl Neg for Edwards25519 {
+impl Add<ProjectiveNiels25519> for Edwards25519 {
+    type Output = Completed25519;
+
+    fn add(self, rhs: ProjectiveNiels25519) -> Self::Output {
+        let a = self.y + self.x;
+        let b = self.y - self.x;
+        let c = a * rhs.y_plus_x;
+        let d = b * rhs.y_minus_x;
+        let e = self.t * rhs.t2d;
+        let f = self.z * rhs.z;
+        let g = f + f;
+        let x = c - d;
+        let y = c + d;
+        let t = g - e;
+        let z = g + e;
+        Completed25519 { x, y, t, z }
+    }
+}
+
+struct Projective25519 {
+    x: Curve25519,
+    y: Curve25519,
+    z: Curve25519,
+}
+
+impl Projective25519 {
+    const IDENTITY: Self = Self {
+        x: Curve25519::ZERO,
+        y: Curve25519::ONE,
+        z: Curve25519::ONE,
+    };
+
+    fn double(self) -> Completed25519 {
+        let a = self.x.square();
+        let b = self.y.square();
+        let c = self.z.square() + self.z.square();
+        let d = self.x + self.y;
+        let e = d.square();
+        let y = a + b;
+        let z = b - a;
+        let x = e - y;
+        let t = c - z;
+        Completed25519 { x, y, t, z }
+    }
+
+    fn to_extended(self) -> Edwards25519 {
+        Edwards25519 {
+            x: self.x * self.z,
+            y: self.y * self.z,
+            t: self.x * self.y,
+            z: self.z.square(),
+        }
+    }
+}
+
+struct Completed25519 {
+    x: Curve25519,
+    y: Curve25519,
+    t: Curve25519,
+    z: Curve25519,
+}
+
+impl Completed25519 {
+    fn to_projective(self) -> Projective25519 {
+        Projective25519 {
+            x: self.x * self.t,
+            y: self.y * self.z,
+            z: self.z * self.t,
+        }
+    }
+
+    fn to_extended(self) -> Edwards25519 {
+        Edwards25519 {
+            x: self.x * self.t,
+            y: self.y * self.z,
+            z: self.z * self.t,
+            t: self.x * self.y,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ProjectiveNiels25519 {
+    y_plus_x: Curve25519,
+    y_minus_x: Curve25519,
+    z: Curve25519,
+    t2d: Curve25519,
+}
+
+impl ProjectiveNiels25519 {
+    const IDENTITY: Self = Self {
+        y_plus_x: Curve25519::ONE,
+        y_minus_x: Curve25519::ONE,
+        z: Curve25519::ONE,
+        t2d: Curve25519::ZERO,
+    };
+
+    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+        Self {
+            y_plus_x: Curve25519::select(&a.y_plus_x, &b.y_plus_x, condition),
+            y_minus_x: Curve25519::select(&a.y_minus_x, &b.y_minus_x, condition),
+            z: Curve25519::select(&a.z, &b.z, condition),
+            t2d: Curve25519::select(&a.t2d, &b.t2d, condition),
+        }
+    }
+}
+
+impl Neg for ProjectiveNiels25519 {
     type Output = Self;
 
     fn neg(self) -> Self {
         Self {
-            x: self.x.neg(),
-            y: self.y,
-            t: self.t.neg(),
+            y_plus_x: self.y_minus_x,
+            y_minus_x: self.y_plus_x,
             z: self.z,
+            t2d: self.t2d.neg(),
         }
     }
 }
 
-struct Window([Edwards25519; 9]);
+impl From<Edwards25519> for ProjectiveNiels25519 {
+    fn from(point: Edwards25519) -> Self {
+        Self {
+            y_plus_x: point.y + point.x,
+            y_minus_x: point.y - point.x,
+            z: point.z,
+            t2d: point.t * Edwards25519::D2,
+        }
+    }
+}
+
+struct Window([ProjectiveNiels25519; 8]);
 
 impl Window {
-    fn select(&self, x: i8) -> Edwards25519 {
+    fn select(&self, x: i8) -> ProjectiveNiels25519 {
         let y = x as i16;
         let z = y >> 15;
         let i = ((y ^ z) - z) as u8;
-        let mut t = Edwards25519::IDENTITY;
-        for j in 0..9 {
-            let is_index = ((j ^ i) == 0) as u64;
-            t = Edwards25519::select(&t, &self[j as usize], is_index);
+        let mut t = ProjectiveNiels25519::IDENTITY;
+        for j in 0..8 {
+            let is_index = (((j + 1) ^ i) == 0) as u64;
+            t = ProjectiveNiels25519::select(&t, &self[j as usize], is_index);
         }
         let negate = (z & 1) as u64;
-        Edwards25519::select(&t, &t.neg(), negate)
+        ProjectiveNiels25519::select(&t, &t.neg(), negate)
     }
 }
 
 impl Index<usize> for Window {
-    type Output = Edwards25519;
+    type Output = ProjectiveNiels25519;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
@@ -210,16 +345,56 @@ impl Index<usize> for Window {
 }
 
 impl From<Edwards25519> for Window {
-    fn from(value: Edwards25519) -> Self {
-        let mut t = [Edwards25519::IDENTITY; 9];
-        t[1] = value;
-        t[2] = t[1].add(value);
-        t[3] = t[2].add(value);
-        t[4] = t[3].add(value);
-        t[5] = t[4].add(value);
-        t[6] = t[5].add(value);
-        t[7] = t[6].add(value);
-        t[8] = t[7].add(value);
+    fn from(point: Edwards25519) -> Self {
+        let mut p = [Edwards25519::IDENTITY; 9];
+        p[1] = point;
+        p[2] = p[1].add(point);
+        p[3] = p[2].add(point);
+        p[4] = p[3].add(point);
+        p[5] = p[4].add(point);
+        p[6] = p[5].add(point);
+        p[7] = p[6].add(point);
+        p[8] = p[7].add(point);
+        let t: [ProjectiveNiels25519; 8] = from_fn(|i| p[i + 1].into());
         Self(t)
+    }
+}
+
+struct NafWindow([ProjectiveNiels25519; 8]);
+
+impl From<Edwards25519> for NafWindow {
+    fn from(point: Edwards25519) -> Self {
+        let p1 = point;
+        let p2 = p1 + p1;
+        let p3 = p1 + p2;
+        let p5 = p3 + p2;
+        let p7 = p5 + p2;
+        let p9 = p7 + p2;
+        let p11 = p9 + p2;
+        let p13 = p11 + p2;
+        let p15 = p13 + p2;
+        Self([
+            ProjectiveNiels25519::from(p1),
+            ProjectiveNiels25519::from(p3),
+            ProjectiveNiels25519::from(p5),
+            ProjectiveNiels25519::from(p7),
+            ProjectiveNiels25519::from(p9),
+            ProjectiveNiels25519::from(p11),
+            ProjectiveNiels25519::from(p13),
+            ProjectiveNiels25519::from(p15),
+        ])
+    }
+}
+
+impl NafWindow {
+    fn select(&self, x: i8) -> ProjectiveNiels25519 {
+        if x == 0 {
+            return ProjectiveNiels25519::IDENTITY;
+        }
+        let mut t = self.0[(x.unsigned_abs() >> 1) as usize];
+        if x < 0 {
+            t = t.neg();
+        }
+        t
     }
 }

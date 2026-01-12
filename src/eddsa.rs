@@ -47,15 +47,13 @@ impl<F: FieldElement, H: Hasher, P: EdwardsPoint<F, S>, S: Scalar> Eddsa<F, H, P
         let s = S::from(*s);
         let (a, valid_a) = P::decompress(public_key);
         let (r, valid_r) = P::decompress(gr);
-        let g = P::BASE_POINT;
-        let gs = g * s;
         let mut state = H::new();
         state.update(gr.as_ref());
         state.update(public_key.as_ref());
         state.update(message);
         let h = Self::scalar_from_state(state);
-        let s2 = r + a * h;
-        let verified = (gs == s2) as u64;
+        let r2 = P::vartime_double_base(&h.neg(), a, &s);
+        let verified = (r2 == r) as u64;
         (verified & valid_a & valid_r) == 1
     }
 }
