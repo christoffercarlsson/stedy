@@ -237,30 +237,6 @@ void stedy_hkdf_sha512(const uint8_t *ikm, size_t ikm_size, const uint8_t *salt,
                        size_t salt_size, const uint8_t *info, size_t info_size,
                        uint8_t *okm, size_t okm_size);
 
-typedef struct alignas(8) stedy_hmac_sha1_state {
-  uint8_t opaque[192];
-} stedy_hmac_sha1_state;
-
-void stedy_hmac_sha1(const uint8_t *key, size_t key_size,
-                     const uint8_t *message, size_t message_size,
-                     uint8_t code[20]);
-
-bool stedy_hmac_sha1_verify(const uint8_t *key, size_t key_size,
-                            const uint8_t *message, size_t message_size,
-                            const uint8_t code[20]);
-
-void stedy_hmac_sha1_init(stedy_hmac_sha1_state *state, const uint8_t *key,
-                          size_t key_size);
-
-void stedy_hmac_sha1_update(stedy_hmac_sha1_state *state,
-                            const uint8_t *message, size_t message_size);
-
-void stedy_hmac_sha1_final(const stedy_hmac_sha1_state *state,
-                           uint8_t code[20]);
-
-bool stedy_hmac_sha1_final_verify(const stedy_hmac_sha1_state *state,
-                                  const uint8_t code[20]);
-
 typedef struct alignas(8) stedy_hmac_sha256_state {
   uint8_t opaque[224];
 } stedy_hmac_sha256_state;

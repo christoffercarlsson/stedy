@@ -37,6 +37,8 @@ pub trait Hasher: Init + Digest {
     const BLOCK_SIZE: usize;
 
     type Block: ByteArray;
+
+    fn digest(message: &[u8]) -> Self::Output;
 }
 
 pub trait Prf: KeyInit + Digest {}

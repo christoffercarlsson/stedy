@@ -1,5 +1,5 @@
 use {
-    crate::sha512::{sha512, Sha512},
+    crate::sha512::Sha512,
     core::{ptr, slice},
 };
 
@@ -11,7 +11,7 @@ pub struct StedySha512State {
 #[no_mangle]
 pub unsafe extern "C" fn stedy_sha512(message: *const u8, message_size: usize, digest: *mut u8) {
     let message = slice::from_raw_parts(message, message_size);
-    let _digest = sha512(message);
+    let _digest = Sha512::digest(message);
     ptr::copy(_digest.as_ptr(), digest, 64);
 }
 

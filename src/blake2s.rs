@@ -18,6 +18,12 @@ pub struct Blake2s<const N: usize> {
 }
 
 impl<const N: usize> Blake2s<N> {
+    pub fn digest(message: &[u8]) -> [u8; N] {
+        let mut hasher = Self::new(None);
+        hasher.update(message);
+        hasher.finalize()
+    }
+
     pub fn new(key: Option<&[u8]>) -> Self {
         let mut state = Self {
             h: Self::IV,
@@ -60,28 +66,6 @@ impl<const N: usize> Blake2s<N> {
     }
 }
 
-pub fn blake2s<const N: usize>(message: &[u8]) -> [u8; N] {
-    let mut hasher = Blake2s::<N>::new(None);
-    hasher.update(message);
-    hasher.finalize()
-}
-
-pub fn blake2s256(message: &[u8]) -> [u8; 32] {
-    blake2s::<32>(message)
-}
-
-pub fn blake2s224(message: &[u8]) -> [u8; 28] {
-    blake2s::<28>(message)
-}
-
-pub fn blake2s160(message: &[u8]) -> [u8; 20] {
-    blake2s::<20>(message)
-}
-
-pub fn blake2s128(message: &[u8]) -> [u8; 16] {
-    blake2s::<16>(message)
-}
-
 impl<const N: usize> Init for Blake2s<N> {
     fn new() -> Self {
         Self::new(None)
@@ -116,6 +100,10 @@ impl<const N: usize> Hasher for Blake2s<N> {
     const BLOCK_SIZE: usize = 64;
 
     type Block = [u8; 64];
+
+    fn digest(message: &[u8]) -> Self::Output {
+        Self::digest(message)
+    }
 }
 
 impl<const N: usize> Prf for Blake2s<N> {}
@@ -209,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_blake2s() {
-        let digest = blake2s256(b"abc");
+        let digest = Blake2s256::digest(b"abc");
         assert_eq!(
             digest,
             [

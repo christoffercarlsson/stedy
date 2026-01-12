@@ -21,6 +21,7 @@ mod pad;
 mod pbkdf2;
 mod poly1305;
 mod scalar25519;
+#[cfg(feature = "hazmat")]
 mod sha1;
 mod sha256;
 mod sha512;
@@ -44,7 +45,7 @@ pub use crate::ffi::*;
 #[cfg(feature = "hazmat")]
 pub use crate::{
     aead::*, chacha::*, curve25519::*, ecdh::*, eddsa::*, edwards25519::*, poly1305::*,
-    scalar25519::*, traits::*,
+    scalar25519::*, sha1::*, traits::*,
 };
 
 #[cfg(feature = "sss")]

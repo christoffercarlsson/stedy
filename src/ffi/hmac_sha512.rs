@@ -1,5 +1,5 @@
 use {
-    crate::hmac::{hmac_sha512, hmac_sha512_verify, HmacSha512},
+    crate::{hmac::Hmac, sha512::Sha512},
     core::{ptr, slice},
 };
 
@@ -18,7 +18,9 @@ pub unsafe extern "C" fn stedy_hmac_sha512(
 ) {
     let key = slice::from_raw_parts(key, key_size);
     let message = slice::from_raw_parts(message, message_size);
-    let _code = hmac_sha512(key, message);
+    let mut mac = Hmac::<Sha512>::new(key);
+    mac.update(message);
+    let _code = mac.finalize();
     ptr::copy(_code.as_ptr(), code, 64);
 }
 
@@ -33,7 +35,9 @@ pub unsafe extern "C" fn stedy_hmac_sha512_verify(
     let key = slice::from_raw_parts(key, key_size);
     let message = slice::from_raw_parts(message, message_size);
     let code: &[u8; 64] = slice::from_raw_parts(code, 64).try_into().unwrap();
-    hmac_sha512_verify(key, message, code)
+    let mut mac = Hmac::<Sha512>::new(key);
+    mac.update(message);
+    mac.verify(code)
 }
 
 #[no_mangle]
@@ -42,9 +46,9 @@ pub unsafe extern "C" fn stedy_hmac_sha512_init(
     key: *const u8,
     key_size: usize,
 ) {
-    let state = state as *mut HmacSha512;
+    let state = state as *mut Hmac<Sha512>;
     let key = slice::from_raw_parts(key, key_size);
-    ptr::write(state, HmacSha512::new(key));
+    ptr::write(state, Hmac::<Sha512>::new(key));
 }
 
 #[no_mangle]
@@ -53,7 +57,7 @@ pub unsafe extern "C" fn stedy_hmac_sha512_update(
     message: *const u8,
     message_size: usize,
 ) {
-    let state = &mut *(state as *mut HmacSha512);
+    let state = &mut *(state as *mut Hmac<Sha512>);
     let message = slice::from_raw_parts(message, message_size);
     state.update(message);
 }
@@ -63,7 +67,7 @@ pub unsafe extern "C" fn stedy_hmac_sha512_final(
     state: *const StedyHmacSha512State,
     code: *mut u8,
 ) {
-    let state = state as *const HmacSha512;
+    let state = state as *const Hmac<Sha512>;
     let code: &mut [u8; 64] = slice::from_raw_parts_mut(code, 64).try_into().unwrap();
     ptr::read(state).finalize_into(code);
 }
@@ -73,7 +77,7 @@ pub unsafe extern "C" fn stedy_hmac_sha512_final_verify(
     state: *const StedyHmacSha512State,
     code: *const u8,
 ) -> bool {
-    let state = state as *const HmacSha512;
+    let state = state as *const Hmac<Sha512>;
     let code: &[u8; 64] = slice::from_raw_parts(code, 64).try_into().unwrap();
     ptr::read(state).verify(&code)
 }

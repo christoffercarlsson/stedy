@@ -12,6 +12,12 @@ pub struct Sha256 {
 }
 
 impl Sha256 {
+    pub fn digest(message: &[u8]) -> [u8; 32] {
+        let mut hasher = Self::new();
+        hasher.update(message);
+        hasher.finalize()
+    }
+
     pub fn new() -> Self {
         Self {
             h: [
@@ -46,12 +52,6 @@ impl Sha256 {
     }
 }
 
-pub fn sha256(message: &[u8]) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(message);
-    hasher.finalize()
-}
-
 impl Init for Sha256 {
     fn new() -> Self {
         Self::new()
@@ -80,6 +80,10 @@ impl Hasher for Sha256 {
     const BLOCK_SIZE: usize = 64;
 
     type Block = [u8; Self::BLOCK_SIZE];
+
+    fn digest(message: &[u8]) -> Self::Output {
+        Self::digest(message)
+    }
 }
 
 impl Sha256 {

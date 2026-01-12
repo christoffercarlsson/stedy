@@ -1,6 +1,6 @@
 use {
     criterion::Criterion,
-    stedy::{pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
+    stedy::{pbkdf2, Hmac, Sha256, Sha512},
 };
 
 pub fn bench(c: &mut Criterion) {
@@ -11,14 +11,14 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("pbkdf2_hmac_sha256", |b| {
         b.iter(|| {
             let mut output = [0u8; 32];
-            pbkdf2_hmac_sha256(password, salt, iterations, &mut output);
+            pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut output);
         })
     });
 
     c.bench_function("pbkdf2_hmac_sha512", |b| {
         b.iter(|| {
             let mut output = [0u8; 64];
-            pbkdf2_hmac_sha512(password, salt, iterations, &mut output);
+            pbkdf2::<Hmac<Sha512>>(password, salt, iterations, &mut output);
         })
     });
 }

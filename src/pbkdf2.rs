@@ -1,8 +1,4 @@
-use crate::{
-    hmac::{HmacSha256, HmacSha512},
-    traits::Prf,
-    xor::xor,
-};
+use crate::{traits::Prf, xor::xor};
 
 pub fn pbkdf2<P>(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8])
 where
@@ -12,14 +8,6 @@ where
     for (i, chunk) in output.chunks_mut(P::OUTPUT_SIZE).enumerate() {
         f(&prf, salt, iterations, i as u32, chunk);
     }
-}
-
-pub fn pbkdf2_hmac_sha256(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
-    pbkdf2::<HmacSha256>(password, salt, iterations, output);
-}
-
-pub fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
-    pbkdf2::<HmacSha512>(password, salt, iterations, output);
 }
 
 fn f<P>(prf: &P, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8])
@@ -44,21 +32,24 @@ where
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::hmac::HmacSha1};
+    use {
+        super::*,
+        crate::{hmac::Hmac, sha256::Sha256, sha512::Sha512},
+    };
 
-    fn pbkdf2_hmac_sha1(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]) {
-        pbkdf2::<HmacSha1>(password, salt, iterations, output);
-    }
+    #[cfg(feature = "hazmat")]
+    use crate::sha1::Sha1;
 
     // https://datatracker.ietf.org/doc/html/rfc6070
 
+    #[cfg(feature = "hazmat")]
     #[test]
     fn test_pbkdf2_hmac_sha1_tc1() {
         let password = b"password";
         let salt = b"salt";
         let iterations = 1;
         let mut output = [0u8; 20];
-        pbkdf2_hmac_sha1(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [
@@ -68,13 +59,14 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "hazmat")]
     #[test]
     fn test_pbkdf2_hmac_sha1_tc2() {
         let password = b"password";
         let salt = b"salt";
         let iterations = 2;
         let mut output = [0u8; 20];
-        pbkdf2_hmac_sha1(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [
@@ -84,13 +76,14 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "hazmat")]
     #[test]
     fn test_pbkdf2_hmac_sha1_tc3() {
         let password = b"password";
         let salt = b"salt";
         let iterations = 4096;
         let mut output = [0u8; 20];
-        pbkdf2_hmac_sha1(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [
@@ -100,6 +93,7 @@ mod tests {
         );
     }
 
+    // #[cfg(feature = "hazmat")]
     // #[test]
     // fn test_pbkdf2_hmac_sha1_tc4() {
     //     let password = b"password";
@@ -116,13 +110,14 @@ mod tests {
     //     );
     // }
 
+    #[cfg(feature = "hazmat")]
     #[test]
     fn test_pbkdf2_hmac_sha1_tc5() {
         let password = b"passwordPASSWORDpassword";
         let salt = b"saltSALTsaltSALTsaltSALTsaltSALTsalt";
         let iterations = 4096;
         let mut output = [0u8; 25];
-        pbkdf2_hmac_sha1(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [
@@ -132,13 +127,14 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "hazmat")]
     #[test]
     fn test_pbkdf2_hmac_sha1_tc6() {
         let password = b"pass\0word";
         let salt = b"sa\0lt";
         let iterations = 4096;
         let mut output = [0u8; 16];
-        pbkdf2_hmac_sha1(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [86, 250, 106, 167, 85, 72, 9, 157, 204, 55, 215, 240, 52, 37, 224, 195]
@@ -151,7 +147,7 @@ mod tests {
         let salt = b"salt";
         let iterations = 4096;
         let mut output = [0u8; 32];
-        pbkdf2_hmac_sha256(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [
@@ -167,7 +163,7 @@ mod tests {
         let salt = b"salt";
         let iterations = 4096;
         let mut output = [0u8; 64];
-        pbkdf2_hmac_sha512(password, salt, iterations, &mut output);
+        pbkdf2::<Hmac<Sha512>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
             [

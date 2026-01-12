@@ -1,6 +1,6 @@
 use {
     criterion::Criterion,
-    stedy::{hkdf_sha256, hkdf_sha512},
+    stedy::{Hkdf, Sha256, Sha512},
 };
 
 pub fn bench(c: &mut Criterion) {
@@ -13,14 +13,14 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("hkdf_sha256", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
-            hkdf_sha256(&ikm, Some(&salt), Some(&info), &mut okm)
+            Hkdf::<Sha256>::hkdf(&ikm, Some(&salt), Some(&info), &mut okm)
         })
     });
 
     c.bench_function("hkdf_sha512", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
-            hkdf_sha512(&ikm, Some(&salt), Some(&info), &mut okm)
+            Hkdf::<Sha512>::hkdf(&ikm, Some(&salt), Some(&info), &mut okm)
         })
     });
 }

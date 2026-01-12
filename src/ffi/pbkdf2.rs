@@ -1,5 +1,5 @@
 use {
-    crate::pbkdf2::{pbkdf2_hmac_sha256, pbkdf2_hmac_sha512},
+    crate::{hmac::Hmac, pbkdf2::pbkdf2, sha256::Sha256, sha512::Sha512},
     core::slice,
 };
 
@@ -16,7 +16,7 @@ pub unsafe extern "C" fn stedy_pbkdf2_hmac_sha256(
     let password = slice::from_raw_parts(password, password_size);
     let salt = slice::from_raw_parts(salt, salt_size);
     let output = slice::from_raw_parts_mut(output, output_size);
-    pbkdf2_hmac_sha256(password, salt, iterations, output);
+    pbkdf2::<Hmac<Sha256>>(password, salt, iterations, output);
 }
 
 #[no_mangle]
@@ -32,7 +32,7 @@ pub unsafe extern "C" fn stedy_pbkdf2_hmac_sha512(
     let password = slice::from_raw_parts(password, password_size);
     let salt = slice::from_raw_parts(salt, salt_size);
     let output = slice::from_raw_parts_mut(output, output_size);
-    pbkdf2_hmac_sha512(password, salt, iterations, output);
+    pbkdf2::<Hmac<Sha512>>(password, salt, iterations, output);
 }
 
 #[cfg(test)]

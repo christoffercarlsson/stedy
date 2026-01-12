@@ -1,5 +1,5 @@
 use {
-    crate::blake2b::{blake2b384, Blake2b384},
+    crate::blake2b::Blake2b384,
     core::{ptr, slice},
 };
 
@@ -15,7 +15,7 @@ pub unsafe extern "C" fn stedy_blake2b384(
     digest: *mut u8,
 ) {
     let message = slice::from_raw_parts(message, message_size);
-    let _digest = blake2b384(message);
+    let _digest = Blake2b384::digest(message);
     ptr::copy(_digest.as_ptr(), digest, 48);
 }
 

@@ -1,5 +1,5 @@
 use {
-    crate::sha256::{sha256, Sha256},
+    crate::sha256::Sha256,
     core::{ptr, slice},
 };
 
@@ -11,7 +11,7 @@ pub struct StedySha256State {
 #[no_mangle]
 pub unsafe extern "C" fn stedy_sha256(message: *const u8, message_size: usize, digest: *mut u8) {
     let message = slice::from_raw_parts(message, message_size);
-    let _digest = sha256(message);
+    let _digest = Sha256::digest(message);
     ptr::copy(_digest.as_ptr(), digest, 32);
 }
 

@@ -12,6 +12,12 @@ pub struct Sha1 {
 }
 
 impl Sha1 {
+    pub fn digest(message: &[u8]) -> [u8; 20] {
+        let mut hasher = Self::new();
+        hasher.update(message);
+        hasher.finalize()
+    }
+
     pub fn new() -> Self {
         Self {
             h: [0x67452301, 0xefcdaB89, 0x98badcfe, 0x10325476, 0xc3d2E1f0],
@@ -71,6 +77,10 @@ impl Hasher for Sha1 {
     const BLOCK_SIZE: usize = 64;
 
     type Block = [u8; Self::BLOCK_SIZE];
+
+    fn digest(message: &[u8]) -> Self::Output {
+        Self::digest(message)
+    }
 }
 
 impl Sha1 {
