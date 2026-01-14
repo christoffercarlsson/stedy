@@ -45,7 +45,6 @@ impl Add for Curve25519 {
             self[3] + rhs[3],
             self[4] + rhs[4],
         ]);
-        result.carry();
         result.reduce();
         result
     }
@@ -116,7 +115,6 @@ impl Neg for Curve25519 {
             Self::P[3] - self[3],
             Self::P[4] - self[4],
         ]);
-        result.carry();
         result.reduce();
         result
     }
@@ -133,7 +131,6 @@ impl Sub for Curve25519 {
             Self::P[3] + self[3] - rhs[3],
             Self::P[4] + self[4] - rhs[4],
         ]);
-        result.carry();
         result.reduce();
         result
     }
@@ -347,6 +344,7 @@ impl Curve25519 {
     }
 
     fn reduce(&mut self) {
+        self.carry();
         let carry = self[4] >> 51;
         self.mask();
         self[0] += carry * 19;

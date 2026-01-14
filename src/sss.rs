@@ -185,7 +185,7 @@ mod tests {
 
     #[test]
     fn test_sss() {
-        let mut rng = Rng::from([0u8; 32]);
+        let mut rng = Rng::new(&[0u8; 96]).unwrap();
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 204];
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_sss_long_arrays() {
-        let mut rng = Rng::from([0u8; 32]);
+        let mut rng = Rng::new(&[0u8; 96]).unwrap();
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 1024];

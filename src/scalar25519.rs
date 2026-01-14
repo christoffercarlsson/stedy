@@ -24,7 +24,15 @@ impl Scalar25519 {
 
     pub fn non_adjacent_form_5(&self) -> [i8; 256] {
         let mut naf = [0i8; 256];
-        let words: [u64; 5] = self.into();
+        let bytes: [u8; 32] = self.into();
+        let (chunks, _) = bytes.as_chunks::<8>();
+        let words = [
+            u64::from_le_bytes(chunks[0]),
+            u64::from_le_bytes(chunks[1]),
+            u64::from_le_bytes(chunks[2]),
+            u64::from_le_bytes(chunks[3]),
+            0,
+        ];
         let mut pos = 0usize;
         let mut carry = 0u64;
         while pos < 256 {
@@ -310,20 +318,6 @@ impl From<Scalar25519> for [u8; 32] {
 impl From<&Scalar25519> for [u8; 32] {
     fn from(value: &Scalar25519) -> Self {
         Self::from(*value)
-    }
-}
-
-impl From<&Scalar25519> for [u64; 5] {
-    fn from(value: &Scalar25519) -> Self {
-        let bytes: [u8; 32] = value.into();
-        let (chunks, _) = bytes.as_chunks::<8>();
-        [
-            u64::from_le_bytes(chunks[0]),
-            u64::from_le_bytes(chunks[1]),
-            u64::from_le_bytes(chunks[2]),
-            u64::from_le_bytes(chunks[3]),
-            0,
-        ]
     }
 }
 

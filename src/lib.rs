@@ -9,7 +9,7 @@ mod chacha;
 mod chacha20poly1305;
 mod csprng;
 mod curve25519;
-mod ecdh;
+mod dh;
 mod ed25519;
 mod eddsa;
 mod edwards25519;
@@ -44,7 +44,7 @@ pub use crate::ffi::*;
 
 #[cfg(feature = "hazmat")]
 pub use crate::{
-    aead::*, chacha::*, curve25519::*, ecdh::*, eddsa::*, edwards25519::*, poly1305::*,
+    aead::*, chacha::*, curve25519::*, dh::*, eddsa::*, edwards25519::*, poly1305::*,
     scalar25519::*, sha1::*, traits::*,
 };
 

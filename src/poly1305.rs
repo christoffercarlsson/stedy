@@ -16,8 +16,6 @@ pub struct Poly1305 {
 }
 
 impl Poly1305 {
-    const BLOCK_SIZE: usize = 16;
-
     pub fn new(key: &[u8; 32]) -> Self {
         let mut r = Poly1305FieldElement::from(&key[0..16]);
         r &= Poly1305FieldElement::R;
@@ -121,6 +119,8 @@ impl Authenticator<XChaCha20> for Poly1305 {
 }
 
 impl Poly1305 {
+    const BLOCK_SIZE: usize = 16;
+
     fn process_block(&mut self, block: &[u8]) {
         let n = Self::read_block(block);
         self.process_element(n);

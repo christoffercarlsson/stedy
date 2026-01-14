@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use core::{
     cmp::Ord,
     ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub},
@@ -87,12 +86,11 @@ pub trait CryptoRng {
     fn next_u64(&mut self) -> u64;
 }
 
-pub trait SeedableRng: CryptoRng {
-    const SEED_SIZE: usize;
+#[allow(dead_code)]
+pub trait SeedableRng: CryptoRng + Sized {
+    fn new(seed: &[u8]) -> Option<Self>;
 
-    type Seed: ByteArray;
-
-    fn new(seed: &Self::Seed) -> Self;
+    fn seed(&mut self, seed: &[u8]) -> bool;
 }
 
 pub trait FieldElement:

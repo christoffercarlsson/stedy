@@ -9,11 +9,19 @@ pub struct StedyRngState {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn stedy_rng_seed(seed: *const u8, state: *mut StedyRngState) {
-    let seed: [u8; 32] = slice::from_raw_parts(seed, 32).try_into().unwrap();
+pub unsafe extern "C" fn stedy_rng_seed(
+    seed: *const u8,
+    seed_size: usize,
+    state: *mut StedyRngState,
+) -> bool {
+    let seed = slice::from_raw_parts(seed, seed_size);
     let dest = state as *mut Rng;
-    let src = Rng::from(seed);
-    ptr::write(dest, src);
+    if let Some(src) = Rng::new(seed) {
+        ptr::write(dest, src);
+        true
+    } else {
+        false
+    }
 }
 
 #[no_mangle]
@@ -43,15 +51,15 @@ mod tests {
     fn test_stedy_rng_fill() {
         let mut state = StedyRngState { opaque: [0u8; 132] };
         let state = &mut state as *mut _;
-        let seed = [0u8; 32];
-        unsafe { stedy_rng_seed(seed.as_ptr(), state) };
+        let seed = [0u8; 96];
+        unsafe { stedy_rng_seed(seed.as_ptr(), 96, state) };
         let mut bytes = [0u8; 32];
         unsafe { stedy_rng_fill(state, bytes.as_mut_ptr(), bytes.len()) };
         assert_eq!(
             bytes,
             [
-                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
-                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
     }
@@ -60,19 +68,19 @@ mod tests {
     fn test_stedy_rng_next_u32() {
         let mut state = StedyRngState { opaque: [0u8; 132] };
         let state = &mut state as *mut _;
-        let seed = [0u8; 32];
-        unsafe { stedy_rng_seed(seed.as_ptr(), state) };
+        let seed = [0u8; 96];
+        unsafe { stedy_rng_seed(seed.as_ptr(), 96, state) };
         let result = unsafe { stedy_rng_next_u32(state) };
-        assert_eq!(result, 3990043044);
+        assert_eq!(result, 1987994301);
     }
 
     #[test]
     fn test_stedy_rng_next_u64() {
         let mut state = StedyRngState { opaque: [0u8; 132] };
         let state = &mut state as *mut _;
-        let seed = [0u8; 32];
-        unsafe { stedy_rng_seed(seed.as_ptr(), state) };
+        let seed = [0u8; 96];
+        unsafe { stedy_rng_seed(seed.as_ptr(), 96, state) };
         let result = unsafe { stedy_rng_next_u64(state) };
-        assert_eq!(result, 16861873601850325412);
+        assert_eq!(result, 7751686179014992573);
     }
 }

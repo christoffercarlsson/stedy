@@ -216,15 +216,15 @@ mod tests {
     fn test_stedy_chacha20poly1305_generate_key() {
         let mut rng = StedyRngState { opaque: [0u8; 132] };
         let rng = &mut rng as *mut _;
-        let seed = [0u8; 32];
-        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
+        let seed = [0u8; 96];
+        unsafe { stedy_rng_seed(seed.as_ptr(), 96, rng) };
         let mut key = [0u8; 32];
         unsafe { stedy_chacha20poly1305_generate_key(rng, key.as_mut_ptr()) };
         assert_eq!(
             key,
             [
-                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
-                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
     }
@@ -319,15 +319,15 @@ mod tests {
     fn test_stedy_xchacha20poly1305_generate_key() {
         let mut rng = StedyRngState { opaque: [0u8; 132] };
         let rng = &mut rng as *mut _;
-        let seed = [0u8; 32];
-        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
+        let seed = [0u8; 96];
+        unsafe { stedy_rng_seed(seed.as_ptr(), 96, rng) };
         let mut key = [0u8; 32];
         unsafe { stedy_xchacha20poly1305_generate_key(rng, key.as_mut_ptr()) };
         assert_eq!(
             key,
             [
-                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
-                229, 229, 5, 91, 53, 238, 8, 215, 139, 233, 41, 127, 255, 205
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
     }
@@ -336,15 +336,15 @@ mod tests {
     fn test_stedy_xchacha20poly1305_generate_nonce() {
         let mut rng = StedyRngState { opaque: [0u8; 132] };
         let rng = &mut rng as *mut _;
-        let seed = [0u8; 32];
-        unsafe { stedy_rng_seed(seed.as_ptr(), rng) };
+        let seed = [0u8; 96];
+        unsafe { stedy_rng_seed(seed.as_ptr(), 96, rng) };
         let mut nonce = [0u8; 24];
         unsafe { stedy_xchacha20poly1305_generate_nonce(rng, nonce.as_mut_ptr()) };
         assert_eq!(
             nonce,
             [
-                164, 57, 211, 237, 179, 104, 1, 234, 36, 204, 6, 111, 41, 227, 2, 30, 141, 242,
-                229, 229, 5, 91, 53, 238
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74
             ]
         );
     }
