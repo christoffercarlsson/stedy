@@ -26,16 +26,28 @@ fn calculate_unpadded_size(padded: &[u8], block_size: usize) -> usize {
     if size == 0 || (size % block_size) > 0 {
         return 0;
     }
+    let mut found_marker = 0;
+    let mut position = 0;
+    let mut error = 0;
     for i in (size - block_size..size).rev() {
         let byte = padded[i];
-        if byte == 128 {
-            return i;
-        }
-        if byte != 0 {
-            return 0;
-        }
+        let is_zero = is_byte(byte, 0);
+        let is_marker = is_byte(byte, 128);
+        error |= (found_marker ^ 1) & (is_zero ^ 1) & (is_marker ^ 1);
+        position |= ((found_marker ^ 1) & is_marker) * i;
+        found_marker |= is_marker;
     }
-    0
+    error |= found_marker ^ 1;
+    if error == 0 {
+        position
+    } else {
+        0
+    }
+}
+
+fn is_byte(byte: u8, value: u8) -> usize {
+    let diff = (byte as usize) ^ (value as usize);
+    1 ^ ((diff | diff.wrapping_neg()) >> (usize::BITS - 1))
 }
 
 #[cfg(test)]

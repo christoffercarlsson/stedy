@@ -146,7 +146,7 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         let mut padding_size = 0;
         let mut error = 0;
         for &b in encoded {
-            let is_padding = (b == PADDING_BYTE) as usize;
+            let is_padding = Self::is_padding(b);
             error |= reached_padding & (is_padding ^ 1);
             reached_padding |= is_padding;
             padding_size += is_padding;
@@ -178,6 +178,11 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             ((BITS == 4) as u8) & ((byte >= b'A') as u8) & ((byte <= b'F') as u8);
         let mask = (is_base16_uppercase.wrapping_neg()) & 32;
         byte ^ mask
+    }
+
+    fn is_padding(byte: u8) -> usize {
+        let diff = (byte as usize) ^ (PADDING_BYTE as usize);
+        1 ^ ((diff | diff.wrapping_neg()) >> (usize::BITS - 1))
     }
 
     fn from_binary(chunk: &[u8]) -> u8 {
