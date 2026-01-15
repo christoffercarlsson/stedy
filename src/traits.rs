@@ -107,6 +107,7 @@ pub trait FieldElement:
     + From<Self::Bytes>
     + Into<Self::Bytes>
     + From<u32>
+    + From<[u64; 5]>
 {
     const ZERO: Self;
     const ONE: Self;

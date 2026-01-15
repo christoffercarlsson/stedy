@@ -20,14 +20,14 @@ pub struct Edwards25519 {
 
 impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
     const BASE_POINT: Self = Self {
-        x: Curve25519([
+        x: Curve25519::from_51bit([
             1738742601995546,
             1146398526822698,
             2070867633025821,
             562264141797630,
             587772402128613,
         ]),
-        y: Curve25519([
+        y: Curve25519::from_51bit([
             1801439850948184,
             1351079888211148,
             450359962737049,
@@ -35,7 +35,7 @@ impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
             1801439850948198,
         ]),
         z: Curve25519::ONE,
-        t: Curve25519([
+        t: Curve25519::from_51bit([
             1841354044333475,
             16398895984059,
             755974180946558,
@@ -119,14 +119,14 @@ impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
 }
 
 impl Edwards25519 {
-    const D: Curve25519 = Curve25519([
+    const D: Curve25519 = Curve25519::from_51bit([
         929955233495203,
         466365720129213,
         1662059464998953,
         2033849074728123,
         1442794654840575,
     ]);
-    const D2: Curve25519 = Curve25519([
+    const D2: Curve25519 = Curve25519::from_51bit([
         1859910466990425,
         932731440258426,
         1072319116312658,
