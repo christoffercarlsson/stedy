@@ -4,7 +4,7 @@ use core::{
 };
 
 #[derive(Clone, Copy)]
-pub struct Curve25519(pub [i32; 10]);
+pub struct Curve25519([i32; 10]);
 
 impl Index<usize> for Curve25519 {
     type Output = i32;

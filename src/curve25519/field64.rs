@@ -7,7 +7,7 @@ use {
 };
 
 #[derive(Clone, Copy)]
-pub struct Curve25519(pub [u64; 5]);
+pub struct Curve25519([u64; 5]);
 
 impl Index<usize> for Curve25519 {
     type Output = u64;
