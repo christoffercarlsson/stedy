@@ -121,7 +121,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
         t.into()
     }
 
-    fn calculate_columns<const K: usize>(shares: [&[u8]; K]) -> Option<usize> {
+    fn calculate_columns<const K: usize>(shares: [&[u8]; K], secret: &[u8]) -> Option<usize> {
         let share_size = shares[0].len();
         if share_size < 36 {
             return None;
@@ -133,7 +133,12 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
         if !shares[1..].iter().all(|share| share.len() == share_size) {
             return None;
         }
-        Some(payload_size / 32)
+        let columns = payload_size / 32;
+        if secret.len() >= columns * 30 {
+            Some(columns)
+        } else {
+            None
+        }
     }
 
     fn combine_column<const K: usize>(pairs: [(F, F); K]) -> [u8; 32] {
@@ -155,7 +160,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
     }
 
     fn combine_secret<const K: usize>(shares: [&[u8]; K], secret: &mut [u8]) -> Option<usize> {
-        let columns = Self::calculate_columns(shares)?;
+        let columns = Self::calculate_columns(shares, secret)?;
         let mut offset: usize = 0;
         for i in 0..columns {
             let begin = 4 + i * 32;
@@ -171,8 +176,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
             let src = Self::combine_column(pairs);
             let unpadded = unpad(&src, 32).unwrap_or(&src[..30]);
             let size = unpadded.len();
-            let dest = secret.get_mut(offset..(offset + size))?;
-            dest.copy_from_slice(unpadded);
+            secret[offset..offset + size].copy_from_slice(unpadded);
             offset += size;
         }
         Some(offset)
@@ -197,7 +201,7 @@ mod tests {
         assert_eq!(shares[0][..4], [0, 0, 0, 1]);
         assert_eq!(shares[1][..4], [0, 0, 0, 2]);
         assert_eq!(shares[2][..4], [0, 0, 0, 3]);
-        let mut buffer = [0u8; 32];
+        let mut buffer = [0u8; 60];
         let result = sss_combine([&shares[2], &shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
