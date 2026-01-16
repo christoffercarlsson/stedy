@@ -21,7 +21,3 @@ fi
 
 mkdir -p "${HEADER_DIR}"
 cp "${INCLUDE_DIR}/stedy.h" "${HEADER_DIR}"
-
-echo "${BUILD_DIR}/libstedy.a"
-echo "${HEADER_DIR}"
-
