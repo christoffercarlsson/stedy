@@ -24,11 +24,15 @@ name = "stedy"
 name = "bench"
 harness = false
 
+[dependencies]
+getrandom = { version = "0.3.4", default-features = false, optional = true }
+
 [dev-dependencies]
 criterion = "0.8.1"
 
 [features]
 default = []
-ffi = []
+ffi = ["getrandom"]
+getrandom = ["dep:getrandom"]
 hazmat = []
 sss = []

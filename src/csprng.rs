@@ -2,7 +2,7 @@ use {
     crate::{
         blake2b::Blake2b384,
         chacha::ChaCha20,
-        traits::{CryptoRng, Hasher, SeedableRng, SeekableStreamCipher},
+        traits::{CryptoRng, Hasher, SeekableStreamCipher},
     },
     core::marker::PhantomData,
 };
@@ -13,28 +13,6 @@ pub struct Csprng<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> {
 }
 
 impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
-    pub fn new(seed: &[u8]) -> Option<Self> {
-        if seed.len() < H::OUTPUT_SIZE * 2 {
-            return None;
-        }
-        let mut hasher = H::new();
-        hasher.update(seed);
-        let seed = hasher.finalize();
-        Some(Self {
-            cipher: C::seed(&seed),
-            _h: PhantomData::<H>,
-        })
-    }
-
-    pub fn seed(&mut self, seed: &[u8]) -> bool {
-        if let Some(rng) = Self::new(seed) {
-            *self = rng;
-            true
-        } else {
-            false
-        }
-    }
-
     pub fn fill(&mut self, bytes: &mut [u8]) {
         self.cipher.apply_keystream(bytes);
     }
@@ -66,60 +44,99 @@ impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> CryptoRng for Csprng<
     }
 }
 
-impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> SeedableRng for Csprng<C, H> {
-    fn new(seed: &[u8]) -> Option<Self> {
-        Self::new(seed)
-    }
-
-    fn seed(&mut self, seed: &[u8]) -> bool {
-        self.seed(seed)
+impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
+    fn new(seed: &[u8]) -> Self {
+        let mut hasher = H::new();
+        hasher.update(seed);
+        let seed = hasher.finalize();
+        Self {
+            cipher: C::seed(&seed),
+            _h: PhantomData::<H>,
+        }
     }
 }
 
 pub type Rng = Csprng<ChaCha20, Blake2b384>;
 
+impl From<&[u8; 128]> for Rng {
+    fn from(seed: &[u8; 128]) -> Self {
+        Self::new(seed)
+    }
+}
+
+impl From<[u8; 128]> for Rng {
+    fn from(seed: [u8; 128]) -> Self {
+        Self::from(&seed)
+    }
+}
+
+#[cfg(feature = "getrandom")]
+impl Rng {
+    pub fn seed() -> Self {
+        let mut seed = [0u8; 128];
+        getrandom::fill(&mut seed)
+            .expect("CSPRNG should be seeded using the system's preferred entropy source");
+        Self::from(seed)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[cfg(feature = "getrandom")]
+    #[test]
+    fn test_seed() {
+        let mut rng = Rng::seed();
+        let mut bytes = [0u8; 32];
+        rng.fill(&mut bytes);
+        assert_ne!(
+            bytes,
+            [
+                89, 151, 243, 239, 17, 196, 251, 133, 30, 56, 89, 220, 74, 144, 209, 105, 150, 125,
+                139, 44, 132, 127, 191, 13, 64, 39, 240, 246, 10, 240, 124, 104
+            ]
+        );
+    }
+
     #[test]
     fn test_next_u32() {
-        let mut rng = Rng::new(&[0u8; 96]).unwrap();
+        let mut rng = Rng::from(&[0u8; 128]);
         let result = rng.next_u32();
-        assert_eq!(result, 1987994301);
+        assert_eq!(result, 4025718617);
     }
 
     #[test]
     fn test_next_u64() {
-        let mut rng = Rng::new(&[0u8; 96]).unwrap();
+        let mut rng = Rng::from(&[0u8; 128]);
         let result = rng.next_u64();
-        assert_eq!(result, 7751686179014992573);
+        assert_eq!(result, 9654525807517996889);
     }
 
     #[test]
     fn test_fill() {
-        let mut rng = Rng::new(&[0u8; 96]).unwrap();
+        let mut rng = Rng::from(&[0u8; 128]);
         let mut bytes = [0u8; 32];
         rng.fill(&mut bytes);
         assert_eq!(
             bytes,
             [
-                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
-                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
+                89, 151, 243, 239, 17, 196, 251, 133, 30, 56, 89, 220, 74, 144, 209, 105, 150, 125,
+                139, 44, 132, 127, 191, 13, 64, 39, 240, 246, 10, 240, 124, 104
             ]
         );
     }
 
     #[test]
     fn test_fill_multiple_blocks() {
-        let mut rng = Rng::new(&[0u8; 96]).unwrap();
+        let mut rng = Rng::from(&[0u8; 128]);
         let mut bytes = [0u8; 32];
         rng.fill(&mut bytes);
         assert_eq!(
             bytes,
             [
-                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
-                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
+                89, 151, 243, 239, 17, 196, 251, 133, 30, 56, 89, 220, 74, 144, 209, 105, 150, 125,
+                139, 44, 132, 127, 191, 13, 64, 39, 240, 246, 10, 240, 124, 104
             ]
         );
         let mut bytes = [0u8; 48];
@@ -127,16 +144,16 @@ mod tests {
         assert_eq!(
             bytes,
             [
-                202, 29, 227, 98, 39, 63, 218, 245, 127, 170, 158, 94, 212, 115, 2, 22, 109, 212,
-                235, 42, 215, 1, 120, 200, 5, 161, 173, 162, 48, 153, 5, 228, 51, 185, 144, 5, 108,
-                180, 103, 227, 33, 249, 180, 55, 133, 138, 84, 78
+                108, 146, 119, 105, 4, 4, 214, 165, 18, 40, 155, 173, 139, 34, 253, 223, 121, 58,
+                96, 51, 144, 140, 216, 89, 33, 178, 169, 152, 2, 2, 92, 0, 14, 210, 107, 149, 175,
+                222, 110, 64, 71, 138, 111, 46, 228, 249, 36, 115
             ]
         );
         let mut bytes = [0u8; 16];
         rng.fill(&mut bytes);
         assert_eq!(
             bytes,
-            [248, 192, 49, 168, 83, 96, 159, 150, 163, 210, 249, 205, 252, 103, 187, 90]
+            [207, 95, 167, 198, 254, 54, 36, 42, 174, 255, 53, 160, 250, 74, 236, 10]
         );
     }
 }

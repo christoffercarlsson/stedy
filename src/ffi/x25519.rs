@@ -36,14 +36,14 @@ pub unsafe extern "C" fn stedy_x25519_key_exchange(
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::ffi::rng::stedy_rng_seed};
+    use {super::*, crate::ffi::rng::stedy_rng_from};
 
     #[test]
     fn test_stedy_x25519_generate_key_pair() {
         let mut rng = StedyRngState { opaque: [0u8; 132] };
         let rng = &mut rng as *mut _;
-        let seed = [0u8; 96];
-        unsafe { stedy_rng_seed(seed.as_ptr(), 96, rng) };
+        let seed = [0u8; 128];
+        unsafe { stedy_rng_from(seed.as_ptr(), rng) };
         let mut private_key = [0u8; 32];
         let mut public_key = [0u8; 32];
         unsafe {
@@ -52,15 +52,15 @@ mod tests {
         assert_eq!(
             private_key,
             [
-                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
-                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
+                89, 151, 243, 239, 17, 196, 251, 133, 30, 56, 89, 220, 74, 144, 209, 105, 150, 125,
+                139, 44, 132, 127, 191, 13, 64, 39, 240, 246, 10, 240, 124, 104
             ]
         );
         assert_eq!(
             public_key,
             [
-                48, 72, 76, 124, 65, 101, 69, 153, 133, 245, 18, 124, 94, 174, 138, 160, 31, 17,
-                101, 148, 187, 233, 40, 245, 70, 201, 97, 223, 58, 103, 188, 68
+                106, 137, 242, 0, 140, 36, 185, 25, 173, 143, 27, 126, 10, 55, 89, 147, 228, 193,
+                170, 248, 174, 227, 222, 96, 40, 226, 119, 130, 91, 188, 104, 116
             ]
         );
     }

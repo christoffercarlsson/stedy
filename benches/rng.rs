@@ -11,7 +11,7 @@ pub fn bench(c: &mut Criterion) {
             103, 187, 90, 178, 221, 40, 105, 227, 110, 111, 5, 124, 47, 232, 3, 253, 227, 1, 20,
             189, 47, 60, 165, 183, 221, 125, 127, 97, 76, 221, 161, 6, 145, 225, 254,
         ];
-        let mut rng = Rng::new(&seed).unwrap();
+        let mut rng = Rng::from(seed);
         let mut bytes = [0u8; 96];
         b.iter(|| rng.fill(&mut bytes))
     });

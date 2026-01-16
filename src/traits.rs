@@ -86,13 +86,6 @@ pub trait CryptoRng {
     fn next_u64(&mut self) -> u64;
 }
 
-#[allow(dead_code)]
-pub trait SeedableRng: CryptoRng + Sized {
-    fn new(seed: &[u8]) -> Option<Self>;
-
-    fn seed(&mut self, seed: &[u8]) -> bool;
-}
-
 pub trait FieldElement:
     Sized
     + Copy

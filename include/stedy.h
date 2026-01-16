@@ -13,8 +13,9 @@ typedef struct alignas(4) stedy_rng_state {
   uint8_t opaque[132];
 } stedy_rng_state;
 
-bool stedy_rng_seed(const uint8_t *seed, size_t seed_size,
-                    stedy_rng_state *state);
+void stedy_rng_seed(stedy_rng_state *state);
+
+void stedy_rng_from(const uint8_t seed[128], stedy_rng_state *state);
 
 void stedy_rng_fill(stedy_rng_state *state, uint8_t *bytes, size_t size);
 
