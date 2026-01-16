@@ -25,8 +25,8 @@ mod scalar25519;
 mod sha1;
 mod sha256;
 mod sha512;
-#[cfg(feature = "sss")]
-mod sss;
+#[cfg(feature = "shamir")]
+mod shamir;
 mod traits;
 mod verify;
 mod wipe;
@@ -48,8 +48,8 @@ pub use crate::{
     scalar25519::*, sha1::*, traits::*,
 };
 
-#[cfg(feature = "sss")]
-pub use crate::sss::{sss_combine, sss_split};
+#[cfg(feature = "shamir")]
+pub use crate::shamir::{shamir_combine, shamir_split};
 
-#[cfg(all(feature = "hazmat", feature = "sss"))]
-pub use crate::sss::*;
+#[cfg(all(feature = "hazmat", feature = "shamir"))]
+pub use crate::shamir::*;

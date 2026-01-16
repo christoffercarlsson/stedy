@@ -52,7 +52,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
     }
 }
 
-pub fn sss_split<'a, const N: usize, const K: usize>(
+pub fn shamir_split<'a, const N: usize, const K: usize>(
     rng: &mut impl CryptoRng,
     secret: &[u8],
     output: &'a mut [u8],
@@ -60,7 +60,7 @@ pub fn sss_split<'a, const N: usize, const K: usize>(
     Shamir::<Curve25519>::split::<N, K>(rng, secret, output)
 }
 
-pub fn sss_combine<'a, const K: usize>(
+pub fn shamir_combine<'a, const K: usize>(
     shares: [&[u8]; K],
     secret: &'a mut [u8],
 ) -> Option<&'a [u8]> {
@@ -192,7 +192,7 @@ mod tests {
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 204];
-        let shares = sss_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
+        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(shares.len(), 3);
         assert_eq!(shares[0].len(), 68);
         assert_eq!(shares[1].len(), 68);
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(shares[1][..4], [0, 0, 0, 2]);
         assert_eq!(shares[2][..4], [0, 0, 0, 3]);
         let mut buffer = [0u8; 60];
-        let result = sss_combine([&shares[2], &shares[1]], &mut buffer).unwrap();
+        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
@@ -211,9 +211,9 @@ mod tests {
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 1024];
-        let shares = sss_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
+        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
         let mut buffer = [0u8; 1024];
-        let result = sss_combine([&shares[2], &shares[1]], &mut buffer).unwrap();
+        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 }
