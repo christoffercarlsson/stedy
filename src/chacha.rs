@@ -45,9 +45,10 @@ impl From<&[u8; 48]> for ChaCha20 {
     fn from(seed: &[u8; 48]) -> Self {
         let (key, remaining) = seed.split_at(32);
         let (nonce, counter) = remaining.split_at(12);
-        let key = <&[u8; 32]>::try_from(key).unwrap();
-        let nonce = <&[u8; 12]>::try_from(nonce).unwrap();
-        let counter = <&[u8; 4]>::try_from(counter).unwrap();
+        let key = <&[u8; 32]>::try_from(key).expect("ChaCha20 seed should contain key bytes");
+        let nonce = <&[u8; 12]>::try_from(nonce).expect("ChaCha20 seed should contain nonce bytes");
+        let counter =
+            <&[u8; 4]>::try_from(counter).expect("ChaCha20 seed should contain counter bytes");
         let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
@@ -189,9 +190,11 @@ impl From<&[u8; 60]> for XChaCha20 {
     fn from(seed: &[u8; 60]) -> Self {
         let (key, remaining) = seed.split_at(32);
         let (nonce, counter) = remaining.split_at(24);
-        let key = <&[u8; 32]>::try_from(key).unwrap();
-        let nonce = <&[u8; 24]>::try_from(nonce).unwrap();
-        let counter = <&[u8; 4]>::try_from(counter).unwrap();
+        let key = <&[u8; 32]>::try_from(key).expect("XChaCha20 seed should contain key bytes");
+        let nonce =
+            <&[u8; 24]>::try_from(nonce).expect("XChaCha20 seed should contain nonce bytes");
+        let counter =
+            <&[u8; 4]>::try_from(counter).expect("XChaCha20 seed should contain counter bytes");
         let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
@@ -232,11 +235,8 @@ impl SeekableStreamCipher for XChaCha20 {
 impl XChaCha20 {
     fn read_nonce(nonce: &[u8; 24]) -> ([u32; 4], [u32; 3]) {
         let n1 = ChaCha20::read::<4>(&nonce[0..16]);
-        let n2 = [
-            0,
-            u32::from_le_bytes(nonce[16..20].try_into().unwrap()),
-            u32::from_le_bytes(nonce[20..24].try_into().unwrap()),
-        ];
+        let n2 = ChaCha20::read::<2>(&nonce[16..24]);
+        let n2 = [0, n2[0], n2[1]];
         (n1, n2)
     }
 

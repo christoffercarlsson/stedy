@@ -155,8 +155,9 @@ impl Sha1 {
 
     fn schedule(block: &[u8]) -> [u32; 80] {
         let mut w = [0u32; 80];
-        for (i, word) in block.chunks(4).enumerate().take(16) {
-            w[i] = u32::from_be_bytes(word.try_into().unwrap());
+        let (words, _) = block.as_chunks::<4>();
+        for (i, &word) in words.iter().enumerate().take(16) {
+            w[i] = u32::from_be_bytes(word);
         }
         for t in 16..80 {
             w[t] = (w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]).rotate_left(1);

@@ -56,12 +56,11 @@ impl Neg for Scalar25519 {
 
 impl From<[u8; 32]> for Scalar25519 {
     fn from(value: [u8; 32]) -> Self {
-        let words = [
-            u64::from_le_bytes(value[0..8].try_into().unwrap()),
-            u64::from_le_bytes(value[8..16].try_into().unwrap()),
-            u64::from_le_bytes(value[16..24].try_into().unwrap()),
-            u64::from_le_bytes(value[24..32].try_into().unwrap()),
-        ];
+        let (chunks, _) = value.as_chunks::<8>();
+        let mut words = [0u64; 4];
+        for (i, chunk) in chunks.iter().enumerate().take(4) {
+            words[i] = u64::from_le_bytes(*chunk);
+        }
         let mut s = Self::ZERO;
         s[0] = words[0] & Self::MASK;
         s[1] = ((words[0] >> 52) | (words[1] << 12)) & Self::MASK;
@@ -74,16 +73,11 @@ impl From<[u8; 32]> for Scalar25519 {
 
 impl From<[u8; 64]> for Scalar25519 {
     fn from(value: [u8; 64]) -> Self {
-        let words = [
-            u64::from_le_bytes(value[0..8].try_into().unwrap()),
-            u64::from_le_bytes(value[8..16].try_into().unwrap()),
-            u64::from_le_bytes(value[16..24].try_into().unwrap()),
-            u64::from_le_bytes(value[24..32].try_into().unwrap()),
-            u64::from_le_bytes(value[32..40].try_into().unwrap()),
-            u64::from_le_bytes(value[40..48].try_into().unwrap()),
-            u64::from_le_bytes(value[48..56].try_into().unwrap()),
-            u64::from_le_bytes(value[56..64].try_into().unwrap()),
-        ];
+        let (chunks, _) = value.as_chunks::<8>();
+        let mut words = [0u64; 8];
+        for (i, chunk) in chunks.iter().enumerate().take(8) {
+            words[i] = u64::from_le_bytes(*chunk);
+        }
         let mut lo = Self::ZERO;
         let mut hi = Self::ZERO;
         lo[0] = words[0] & Self::MASK;

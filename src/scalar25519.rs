@@ -1,14 +1,14 @@
-#[cfg(target_pointer_width = "64")]
-mod scalar32;
 #[cfg(target_pointer_width = "32")]
+mod scalar32;
+#[cfg(target_pointer_width = "64")]
 mod scalar64;
 
 use {crate::traits::Scalar, core::ops::Mul};
 
-#[cfg(target_pointer_width = "64")]
+#[cfg(target_pointer_width = "32")]
 pub use scalar32::Scalar25519;
 
-#[cfg(target_pointer_width = "32")]
+#[cfg(target_pointer_width = "64")]
 pub use scalar64::Scalar25519;
 
 impl Scalar25519 {
@@ -93,8 +93,10 @@ impl Scalar for Scalar25519 {
     }
 
     fn split(bytes: &[u8; 64]) -> (&[u8; 32], &[u8; 32]) {
-        let a = <&[u8; 32]>::try_from(&bytes[..32]).unwrap();
-        let b = <&[u8; 32]>::try_from(&bytes[32..]).unwrap();
+        let a = <&[u8; 32]>::try_from(&bytes[..32])
+            .expect("WideBytes should be twice the size of Bytes");
+        let b = <&[u8; 32]>::try_from(&bytes[32..])
+            .expect("WideBytes should be twice the size of Bytes");
         (a, b)
     }
 

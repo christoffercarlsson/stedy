@@ -188,8 +188,8 @@ impl Sha256 {
     fn schedule(block: &[u8]) -> [u32; 64] {
         let mut w = [0u32; 64];
         let (words, _) = block.as_chunks::<4>();
-        for (i, word) in words.iter().enumerate().take(16) {
-            w[i] = u32::from_be_bytes(*word);
+        for (i, &word) in words.iter().enumerate().take(16) {
+            w[i] = u32::from_be_bytes(word);
         }
         for i in 16..64 {
             let s0 = Self::small_sigma0(w[i - 15]);

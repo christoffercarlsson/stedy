@@ -1,4 +1,5 @@
 #![no_std]
+#![deny(clippy::unwrap_used)]
 
 mod aead;
 mod base;

@@ -263,8 +263,9 @@ impl Sha512 {
 
     fn schedule(block: &[u8]) -> [u64; 80] {
         let mut w = [0u64; 80];
-        for (i, word) in block.chunks(8).enumerate().take(16) {
-            w[i] = u64::from_be_bytes(word.try_into().unwrap());
+        let (words, _) = block.as_chunks::<8>();
+        for (i, &word) in words.iter().enumerate().take(16) {
+            w[i] = u64::from_be_bytes(word);
         }
         for i in 16..80 {
             let s0 = Self::small_sigma0(w[i - 15]);

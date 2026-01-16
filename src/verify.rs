@@ -15,8 +15,8 @@ mod tests {
         let a = [0; 16];
         let b = [0; 16];
         let c = [1; 16];
-        assert_eq!(verify(&a, &b), true);
-        assert_eq!(verify(&a, &c), false);
-        assert_eq!(verify(&b, &c), false);
+        assert!(verify(&a, &b));
+        assert!(!verify(&a, &c));
+        assert!(!verify(&b, &c));
     }
 }

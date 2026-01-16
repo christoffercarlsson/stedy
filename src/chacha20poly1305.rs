@@ -159,11 +159,11 @@ mod tests {
     fn test_chacha20poly1305_increment_nonce() {
         let mut nonce = [42u8; 12];
         let incremented = ChaCha20Poly1305::increment_nonce(&mut nonce);
-        assert!(incremented == true);
+        assert!(incremented);
         assert_eq!(nonce, [42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 43]);
         let mut nonce = [255u8; 12];
         let incremented = ChaCha20Poly1305::increment_nonce(&mut nonce);
-        assert!(incremented == false);
+        assert!(!incremented);
         assert_eq!(nonce, [0u8; 12]);
     }
 
@@ -171,14 +171,14 @@ mod tests {
     fn test_xchacha20poly1305_increment_nonce() {
         let mut nonce = [0u8; 24];
         let incremented = XChaCha20Poly1305::increment_nonce(&mut nonce);
-        assert!(incremented == true);
+        assert!(incremented);
         assert_eq!(
             nonce,
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         );
         let mut nonce = [255u8; 24];
         let incremented = XChaCha20Poly1305::increment_nonce(&mut nonce);
-        assert!(incremented == false);
+        assert!(!incremented);
         assert_eq!(nonce, [0u8; 24]);
     }
 }

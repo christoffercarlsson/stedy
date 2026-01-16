@@ -17,9 +17,7 @@ pub unsafe extern "C" fn stedy_rng_seed(state: *mut StedyRngState) {
 
 #[no_mangle]
 pub unsafe extern "C" fn stedy_rng_from(seed: *const u8, state: *mut StedyRngState) {
-    let seed: &[u8; 128] = slice::from_raw_parts(seed, 128)
-        .try_into()
-        .expect("CSPRNG seed should be 128 bytes");
+    let seed: &[u8; 128] = slice::from_raw_parts(seed, 128).try_into().unwrap();
     let dest = state as *mut Rng;
     let src = Rng::from(seed);
     ptr::write(dest, src);

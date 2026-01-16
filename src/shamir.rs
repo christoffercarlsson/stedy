@@ -167,7 +167,9 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
             let pairs: [(F, F); K] = from_fn(|j| {
                 let share = shares[j];
                 let index = u32::from_be_bytes([share[0], share[1], share[2], share[3]]);
-                let bytes: [u8; 32] = share[begin..end].try_into().unwrap();
+                let bytes: [u8; 32] = share[begin..end]
+                    .try_into()
+                    .expect("Each Shamir secret column should be 32 bytes");
                 let x = F::from(index);
                 let y = F::from(bytes);
                 (x, y)
@@ -192,7 +194,8 @@ mod tests {
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 204];
-        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
+        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output)
+            .expect("Buffer should have enough space for all generated shares");
         assert_eq!(shares.len(), 3);
         assert_eq!(shares[0].len(), 68);
         assert_eq!(shares[1].len(), 68);
@@ -201,7 +204,8 @@ mod tests {
         assert_eq!(shares[1][..4], [0, 0, 0, 2]);
         assert_eq!(shares[2][..4], [0, 0, 0, 3]);
         let mut buffer = [0u8; 60];
-        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
+        let result = shamir_combine([shares[2], shares[1]], &mut buffer)
+            .expect("Buffer should have enough space to combine secret");
         assert_eq!(result, secret);
     }
 
@@ -211,9 +215,11 @@ mod tests {
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 1024];
-        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
+        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output)
+            .expect("Buffer should have enough space for all generated shares");
         let mut buffer = [0u8; 1024];
-        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
+        let result = shamir_combine([shares[2], shares[1]], &mut buffer)
+            .expect("Buffer should have enough space to combine secret");
         assert_eq!(result, secret);
     }
 }

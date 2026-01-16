@@ -58,7 +58,7 @@ mod tests {
     fn test_pad() {
         let unpadded = [1, 2, 3, 4];
         let mut buffer = [42u8; 8];
-        let padded = pad(&unpadded, 8, &mut buffer).unwrap();
+        let padded = pad(&unpadded, 8, &mut buffer).expect("Should pad correctly");
         assert_eq!(padded, [1, 2, 3, 4, 128, 0, 0, 0]);
     }
 
@@ -66,7 +66,7 @@ mod tests {
     fn test_pad_single() {
         let unpadded = [1, 2, 3, 4, 5, 6, 7];
         let mut buffer = [1u8; 8];
-        let padded = pad(&unpadded, 8, &mut buffer).unwrap();
+        let padded = pad(&unpadded, 8, &mut buffer).expect("Should pad correctly");
         assert_eq!(padded, [1, 2, 3, 4, 5, 6, 7, 128]);
     }
 
@@ -74,28 +74,29 @@ mod tests {
     fn test_pad_block_size() {
         let unpadded = [1, 2, 3, 4, 5, 6, 7, 8];
         let mut buffer = [1u8; 16];
-        let padded = pad(&unpadded, 8, &mut buffer).unwrap();
+        let padded =
+            pad(&unpadded, 8, &mut buffer).expect("Should pad multiple of block size correctly");
         assert_eq!(padded, [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
     fn test_unpad() {
         let input = [1, 2, 3, 4, 128, 0, 0, 0];
-        let unpadded = unpad(&input, 8).unwrap();
+        let unpadded = unpad(&input, 8).expect("Should unpad correctly");
         assert_eq!(unpadded, [1, 2, 3, 4]);
-    }
-
-    #[test]
-    fn test_unpad_block_size() {
-        let input = [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0];
-        let unpadded = unpad(&input, 8).unwrap();
-        assert_eq!(unpadded, [1, 2, 3, 4, 5, 6, 7, 8]);
     }
 
     #[test]
     fn test_unpad_single() {
         let input = [1, 2, 3, 4, 5, 6, 7, 128];
-        let unpadded = unpad(&input, 8).unwrap();
+        let unpadded = unpad(&input, 8).expect("Should unpad correctly");
         assert_eq!(unpadded, [1, 2, 3, 4, 5, 6, 7]);
+    }
+
+    #[test]
+    fn test_unpad_block_size() {
+        let input = [1, 2, 3, 4, 5, 6, 7, 8, 128, 0, 0, 0, 0, 0, 0, 0];
+        let unpadded = unpad(&input, 8).expect("Should unpad multiple of block size correctly");
+        assert_eq!(unpadded, [1, 2, 3, 4, 5, 6, 7, 8]);
     }
 }

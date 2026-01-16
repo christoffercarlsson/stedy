@@ -231,6 +231,6 @@ mod tests {
             190, 241, 23, 115, 49, 167, 4,
         ];
         let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(verified == false);
+        assert!(!verified);
     }
 }

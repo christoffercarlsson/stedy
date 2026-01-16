@@ -1,4 +1,4 @@
-#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::missing_safety_doc, clippy::unwrap_used)]
 mod base;
 mod blake2b160;
 mod blake2b256;

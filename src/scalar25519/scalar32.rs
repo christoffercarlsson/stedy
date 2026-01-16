@@ -76,16 +76,11 @@ impl Neg for Scalar25519 {
 
 impl From<[u8; 32]> for Scalar25519 {
     fn from(value: [u8; 32]) -> Self {
-        let words = [
-            u32::from_le_bytes(value[0..4].try_into().unwrap()),
-            u32::from_le_bytes(value[4..8].try_into().unwrap()),
-            u32::from_le_bytes(value[8..12].try_into().unwrap()),
-            u32::from_le_bytes(value[12..16].try_into().unwrap()),
-            u32::from_le_bytes(value[16..20].try_into().unwrap()),
-            u32::from_le_bytes(value[20..24].try_into().unwrap()),
-            u32::from_le_bytes(value[24..28].try_into().unwrap()),
-            u32::from_le_bytes(value[28..32].try_into().unwrap()),
-        ];
+        let (chunks, _) = value.as_chunks::<4>();
+        let mut words = [0u32; 8];
+        for (i, chunk) in chunks.iter().enumerate().take(8) {
+            words[i] = u32::from_le_bytes(*chunk);
+        }
         let mut s = Self::ZERO;
         s[0] = words[0] & Self::MASK;
         s[1] = ((words[0] >> 26) | (words[1] << 6)) & Self::MASK;
@@ -103,24 +98,11 @@ impl From<[u8; 32]> for Scalar25519 {
 
 impl From<[u8; 64]> for Scalar25519 {
     fn from(value: [u8; 64]) -> Self {
-        let words = [
-            u32::from_le_bytes(value[0..4].try_into().unwrap()),
-            u32::from_le_bytes(value[4..8].try_into().unwrap()),
-            u32::from_le_bytes(value[8..12].try_into().unwrap()),
-            u32::from_le_bytes(value[12..16].try_into().unwrap()),
-            u32::from_le_bytes(value[16..20].try_into().unwrap()),
-            u32::from_le_bytes(value[20..24].try_into().unwrap()),
-            u32::from_le_bytes(value[24..28].try_into().unwrap()),
-            u32::from_le_bytes(value[28..32].try_into().unwrap()),
-            u32::from_le_bytes(value[32..36].try_into().unwrap()),
-            u32::from_le_bytes(value[36..40].try_into().unwrap()),
-            u32::from_le_bytes(value[40..44].try_into().unwrap()),
-            u32::from_le_bytes(value[44..48].try_into().unwrap()),
-            u32::from_le_bytes(value[48..52].try_into().unwrap()),
-            u32::from_le_bytes(value[52..56].try_into().unwrap()),
-            u32::from_le_bytes(value[56..60].try_into().unwrap()),
-            u32::from_le_bytes(value[60..64].try_into().unwrap()),
-        ];
+        let (chunks, _) = value.as_chunks::<4>();
+        let mut words = [0u32; 16];
+        for (i, chunk) in chunks.iter().enumerate().take(16) {
+            words[i] = u32::from_le_bytes(*chunk);
+        }
         let mut lo = Self::ZERO;
         let mut hi = Self::ZERO;
         lo[0] = words[0] & Self::MASK;

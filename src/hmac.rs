@@ -20,12 +20,12 @@ impl<H: Hasher> Hmac<H> {
             let key_digest = hasher.finalize();
             k.as_mut()
                 .get_mut(..key_digest.as_ref().len())
-                .unwrap()
+                .expect("HMAC key digest should fit within a block")
                 .copy_from_slice(key_digest.as_ref());
         } else {
             k.as_mut()
                 .get_mut(..key.len())
-                .unwrap()
+                .expect("HMAC key should fit within a block")
                 .copy_from_slice(key);
         }
         let mut inner_key = H::Block::new();

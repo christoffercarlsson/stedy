@@ -17,10 +17,10 @@ mod tests {
         let b = [0; 16];
         let c = [1; 16];
         let verified = unsafe { stedy_verify(a.as_ptr(), b.as_ptr(), 16) };
-        assert_eq!(verified, true);
+        assert!(verified);
         let verified = unsafe { stedy_verify(a.as_ptr(), c.as_ptr(), 16) };
-        assert_eq!(verified, false);
+        assert!(!verified);
         let verified = unsafe { stedy_verify(b.as_ptr(), c.as_ptr(), 16) };
-        assert_eq!(verified, false);
+        assert!(!verified);
     }
 }

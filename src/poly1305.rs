@@ -53,7 +53,7 @@ impl Poly1305 {
 
 impl KeyInit for Poly1305 {
     fn new(key: &[u8]) -> Self {
-        let key = <&[u8; 32]>::try_from(key).unwrap();
+        let key = <&[u8; 32]>::try_from(key).expect("Poly1305 keys should be 32 bytes");
         Self::new(key)
     }
 }
@@ -289,13 +289,12 @@ impl MulAssign for Poly1305FieldElement {
 
 impl From<[u8; 17]> for Poly1305FieldElement {
     fn from(value: [u8; 17]) -> Self {
-        let words = [
-            u32::from_le_bytes(value[0..4].try_into().unwrap()) as u64,
-            u32::from_le_bytes(value[4..8].try_into().unwrap()) as u64,
-            u32::from_le_bytes(value[8..12].try_into().unwrap()) as u64,
-            u32::from_le_bytes(value[12..16].try_into().unwrap()) as u64,
-            value[16] as u64,
-        ];
+        let mut words = [0u64; 5];
+        let (chunks, remainder) = value.as_chunks::<4>();
+        for (i, chunk) in chunks.iter().enumerate() {
+            words[i] = u32::from_le_bytes(*chunk) as u64;
+        }
+        words[4] = remainder[0] as u64;
         let mut fe = Self([
             words[0],
             words[0] >> 26 | (words[1] << 6),
