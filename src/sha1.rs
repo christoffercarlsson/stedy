@@ -20,7 +20,7 @@ impl Sha1 {
 
     pub fn new() -> Self {
         Self {
-            h: [0x67452301, 0xefcdaB89, 0x98badcfe, 0x10325476, 0xc3d2E1f0],
+            h: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0],
             block: Block::<64>::new(),
             total_size: 0,
         }
@@ -46,6 +46,12 @@ impl Sha1 {
         let mut digest = [0u8; 20];
         self.finalize_into(&mut digest);
         digest
+    }
+}
+
+impl Default for Sha1 {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -85,24 +91,24 @@ impl Hasher for Sha1 {
 
 impl Sha1 {
     fn process_block(&mut self, block: &[u8]) {
-        let w = Self::schedule(block);
-        self.compress(&w);
+        let words = Self::schedule(block);
+        self.compress(&words);
         self.total_size += block.len() as u64;
     }
 
-    fn compress(&mut self, w: &[u32]) {
+    fn compress(&mut self, words: &[u32]) {
         let mut a = self.h[0];
         let mut b = self.h[1];
         let mut c = self.h[2];
         let mut d = self.h[3];
         let mut e = self.h[4];
-        for i in 0..80 {
+        for (i, &w) in words.iter().enumerate().take(80) {
             let t = a
                 .rotate_left(5)
                 .wrapping_add(Self::f(i, b, c, d))
                 .wrapping_add(e)
                 .wrapping_add(Self::k(i))
-                .wrapping_add(w[i]);
+                .wrapping_add(w);
             e = d;
             d = c;
             c = b.rotate_left(30);

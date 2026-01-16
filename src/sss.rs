@@ -105,18 +105,18 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
         rng: &mut impl CryptoRng,
         secret: [u8; 32],
     ) -> [F; K] {
-        let mut c = [[0u8; 32]; K];
-        c[0] = secret;
-        for i in 1..K {
-            rng.fill(&mut c[i]);
+        let mut coefficients = [[0u8; 32]; K];
+        coefficients[0] = secret;
+        for coefficient in coefficients.iter_mut().take(K).skip(1) {
+            rng.fill(coefficient);
         }
-        c.map(|bytes| F::from(bytes))
+        coefficients.map(|bytes| F::from(bytes))
     }
 
-    fn calculate_share<const K: usize>(x: u32, c: &[F; K]) -> [u8; 32] {
-        let mut t = c[0];
-        for i in 1..K {
-            t += c[i] * F::from(x.pow(i as u32));
+    fn calculate_share<const K: usize>(x: u32, coefficients: &[F; K]) -> [u8; 32] {
+        let mut t = coefficients[0];
+        for (i, &coefficient) in coefficients.iter().enumerate().take(K).skip(1) {
+            t += coefficient * F::from(x.pow(i as u32));
         }
         t.into()
     }
@@ -127,7 +127,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
             return None;
         }
         let payload_size = share_size - 4;
-        if payload_size % 32 != 0 {
+        if !payload_size.is_multiple_of(32) {
             return None;
         }
         if !shares[1..].iter().all(|share| share.len() == share_size) {
@@ -143,15 +143,14 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
 
     fn combine_column<const K: usize>(pairs: [(F, F); K]) -> [u8; 32] {
         let mut secret = F::ZERO;
-        for j in 0..K {
-            let xj = pairs[j].0;
-            let yj = pairs[j].1;
+        for (j, &pair) in pairs.iter().enumerate().take(K) {
+            let (xj, yj) = pair;
             let mut lambda = F::ONE;
-            for m in 0..K {
+            for (m, &pair) in pairs.iter().enumerate().take(K) {
                 if m == j {
                     continue;
                 }
-                let xm = pairs[m].0;
+                let (xm, _) = pair;
                 lambda *= xm / (xm - xj);
             }
             secret += yj * lambda;

@@ -45,7 +45,7 @@ pub unsafe extern "C" fn stedy_ed25519_verify(
     let message = slice::from_raw_parts(message, message_size);
     let public_key: &[u8; 32] = slice::from_raw_parts(public_key, 32).try_into().unwrap();
     let signature: &[u8; 64] = slice::from_raw_parts(signature, 64).try_into().unwrap();
-    Ed25519::verify(message, &public_key, &signature)
+    Ed25519::verify(message, public_key, signature)
 }
 
 #[cfg(test)]

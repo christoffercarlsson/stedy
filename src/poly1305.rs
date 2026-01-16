@@ -196,13 +196,13 @@ impl Poly1305FieldElement {
     }
 
     fn canonical(&mut self) {
-        let mut reduced = self.clone();
+        let mut reduced = *self;
         reduced[0] += 5;
         reduced.carry();
         reduced[4] = reduced[4].wrapping_sub(1 << 26);
         let borrow = reduced[4] >> 63;
         reduced.mask();
-        *self = Self::select(&reduced, &self, borrow);
+        *self = Self::select(&reduced, self, borrow);
     }
 
     fn select(a: &Self, b: &Self, condition: u64) -> Self {

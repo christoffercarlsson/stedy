@@ -233,7 +233,7 @@ impl Projective25519 {
         Completed25519 { x, y, t, z }
     }
 
-    fn to_extended(self) -> Edwards25519 {
+    fn to_extended(&self) -> Edwards25519 {
         Edwards25519 {
             x: self.x * self.z,
             y: self.y * self.z,
@@ -251,7 +251,7 @@ struct Completed25519 {
 }
 
 impl Completed25519 {
-    fn to_projective(self) -> Projective25519 {
+    fn to_projective(&self) -> Projective25519 {
         Projective25519 {
             x: self.x * self.t,
             y: self.y * self.z,
@@ -259,7 +259,7 @@ impl Completed25519 {
         }
     }
 
-    fn to_extended(self) -> Edwards25519 {
+    fn to_extended(&self) -> Edwards25519 {
         Edwards25519 {
             x: self.x * self.t,
             y: self.y * self.z,

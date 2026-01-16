@@ -58,6 +58,12 @@ impl Sha512 {
     }
 }
 
+impl Default for Sha512 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Init for Sha512 {
     fn new() -> Self {
         Self::new()
@@ -177,12 +183,12 @@ impl Sha512 {
     ];
 
     fn process_block(&mut self, block: &[u8]) {
-        let w = Self::schedule(block);
-        self.compress(&w);
+        let words = Self::schedule(block);
+        self.compress(&words);
         self.total_size += block.len() as u64;
     }
 
-    fn compress(&mut self, w: &[u64]) {
+    fn compress(&mut self, words: &[u64]) {
         let mut a = self.h[0];
         let mut b = self.h[1];
         let mut c = self.h[2];
@@ -191,12 +197,12 @@ impl Sha512 {
         let mut f = self.h[5];
         let mut g = self.h[6];
         let mut h = self.h[7];
-        for i in 0..80 {
+        for (i, &w) in words.iter().enumerate().take(80) {
             let t1 = h
                 .wrapping_add(Self::big_sigma1(e))
                 .wrapping_add(Self::ch(e, f, g))
                 .wrapping_add(Self::K[i])
-                .wrapping_add(w[i]);
+                .wrapping_add(w);
             let t2 = Self::big_sigma0(a).wrapping_add(Self::maj(a, b, c));
             h = g;
             g = f;

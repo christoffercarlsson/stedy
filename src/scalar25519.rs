@@ -1,14 +1,14 @@
-#[cfg(target_pointer_width = "32")]
-mod scalar32;
 #[cfg(target_pointer_width = "64")]
+mod scalar32;
+#[cfg(target_pointer_width = "32")]
 mod scalar64;
 
 use {crate::traits::Scalar, core::ops::Mul};
 
-#[cfg(target_pointer_width = "32")]
+#[cfg(target_pointer_width = "64")]
 pub use scalar32::Scalar25519;
 
-#[cfg(target_pointer_width = "64")]
+#[cfg(target_pointer_width = "32")]
 pub use scalar64::Scalar25519;
 
 impl Scalar25519 {

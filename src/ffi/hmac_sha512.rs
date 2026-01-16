@@ -79,7 +79,7 @@ pub unsafe extern "C" fn stedy_hmac_sha512_final_verify(
 ) -> bool {
     let state = state as *const Hmac<Sha512>;
     let code: &[u8; 64] = slice::from_raw_parts(code, 64).try_into().unwrap();
-    ptr::read(state).verify(&code)
+    ptr::read(state).verify(code)
 }
 
 #[cfg(test)]

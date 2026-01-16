@@ -346,7 +346,7 @@ impl Scalar25519 {
             diff[i] = d2 & Self::MASK;
             borrow = (b1 | b2) as u32;
         }
-        *self = Self::select(&diff, &self, borrow);
+        *self = Self::select(&diff, self, borrow);
     }
 
     fn select(a: &Self, b: &Self, condition: u32) -> Self {

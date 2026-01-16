@@ -12,7 +12,7 @@ pub fn pad<'a>(unpadded: &[u8], block_size: usize, padded: &'a mut [u8]) -> Opti
     Some(&padded[..padded_size])
 }
 
-pub fn unpad<'a>(padded: &'a [u8], block_size: usize) -> Option<&'a [u8]> {
+pub fn unpad(padded: &[u8], block_size: usize) -> Option<&[u8]> {
     let size = calculate_unpadded_size(padded, block_size);
     if size == 0 {
         None
@@ -23,7 +23,7 @@ pub fn unpad<'a>(padded: &'a [u8], block_size: usize) -> Option<&'a [u8]> {
 
 fn calculate_unpadded_size(padded: &[u8], block_size: usize) -> usize {
     let size = padded.len();
-    if size == 0 || (size % block_size) > 0 {
+    if size == 0 || !size.is_multiple_of(block_size) {
         return 0;
     }
     let mut found_marker = 0;

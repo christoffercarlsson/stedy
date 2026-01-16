@@ -1,3 +1,4 @@
+#![allow(clippy::missing_safety_doc)]
 mod base;
 mod blake2b160;
 mod blake2b256;

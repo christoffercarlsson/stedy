@@ -251,13 +251,13 @@ impl Curve25519 {
     }
 
     fn canonical(&mut self) {
-        let mut reduced = self.clone();
+        let mut reduced = *self;
         reduced[0] += 19;
         reduced.carry();
         reduced[4] = reduced[4].wrapping_sub(1 << 51);
         let borrow = reduced[4] >> 63;
         reduced.mask();
-        *self = Self::select(&reduced, &self, borrow);
+        *self = Self::select(&reduced, self, borrow);
     }
 }
 
