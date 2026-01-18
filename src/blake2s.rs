@@ -4,11 +4,6 @@ use crate::{
     verify::verify,
 };
 
-pub type Blake2s256 = Blake2s<32>;
-pub type Blake2s224 = Blake2s<28>;
-pub type Blake2s160 = Blake2s<20>;
-pub type Blake2s128 = Blake2s<16>;
-
 #[repr(C, align(8))]
 #[derive(Clone)]
 pub struct Blake2s<const N: usize> {
@@ -96,23 +91,36 @@ impl<const N: usize> Digest for Blake2s<N> {
     }
 }
 
-impl<const N: usize> Hasher for Blake2s<N> {
-    const BLOCK_SIZE: usize = 64;
-
-    type Block = [u8; 64];
-
-    fn digest(message: &[u8]) -> Self::Output {
-        Self::digest(message)
-    }
-}
-
-impl<const N: usize> Prf for Blake2s<N> {}
-
 impl<const N: usize> Mac for Blake2s<N> {
     fn verify(self, code: &[u8; N]) -> bool {
         self.verify(code)
     }
 }
+
+pub type Blake2s256 = Blake2s<32>;
+pub type Blake2s224 = Blake2s<28>;
+pub type Blake2s160 = Blake2s<20>;
+pub type Blake2s128 = Blake2s<16>;
+
+macro_rules! impl_hasher_prf {
+    ($($t:ty),*) => {
+        $(
+            impl Hasher for $t {
+                const BLOCK_SIZE: usize = 64;
+
+                type Block = [u8; 64];
+
+                fn digest(message: &[u8]) -> Self::Output {
+                    Self::digest(message)
+                }
+            }
+
+            impl Prf for $t {}
+        )*
+    };
+}
+
+impl_hasher_prf!(Blake2s256, Blake2s224, Blake2s160, Blake2s128);
 
 impl<const N: usize> Blake2s<N> {
     const IV: [u32; 8] = [
