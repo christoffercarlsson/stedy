@@ -78,6 +78,10 @@ impl Rng {
             .expect("CSPRNG should be seeded using the system's preferred entropy source");
         Self::from(seed)
     }
+
+    pub fn reseed(&mut self) {
+        *self = Self::seed();
+    }
 }
 
 #[cfg(test)]
@@ -88,15 +92,19 @@ mod tests {
     #[test]
     fn test_seed() {
         let mut rng = Rng::seed();
-        let mut bytes = [0u8; 32];
-        rng.fill(&mut bytes);
+        let mut a = [0u8; 32];
+        rng.fill(&mut a);
         assert_ne!(
-            bytes,
+            a,
             [
                 89, 151, 243, 239, 17, 196, 251, 133, 30, 56, 89, 220, 74, 144, 209, 105, 150, 125,
                 139, 44, 132, 127, 191, 13, 64, 39, 240, 246, 10, 240, 124, 104
             ]
         );
+        rng.reseed();
+        let mut b = [0u8; 32];
+        rng.fill(&mut b);
+        assert_ne!(a, b);
     }
 
     #[test]

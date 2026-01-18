@@ -16,6 +16,12 @@ pub unsafe extern "C" fn stedy_rng_seed(state: *mut StedyRngState) {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn stedy_rng_reseed(state: *mut StedyRngState) {
+    let state = &mut *(state as *mut Rng);
+    state.reseed();
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn stedy_rng_from(seed: *const u8, state: *mut StedyRngState) {
     let seed: &[u8; 128] = slice::from_raw_parts(seed, 128).try_into().unwrap();
     let dest = state as *mut Rng;
@@ -45,6 +51,26 @@ pub unsafe extern "C" fn stedy_rng_next_u64(state: *mut StedyRngState) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_stedy_rng_seed() {
+        let mut state = StedyRngState { opaque: [0u8; 132] };
+        let state = &mut state as *mut _;
+        unsafe { stedy_rng_seed(state) };
+        let mut a = [0u8; 32];
+        unsafe { stedy_rng_fill(state, a.as_mut_ptr(), a.len()) };
+        assert_ne!(
+            a,
+            [
+                89, 151, 243, 239, 17, 196, 251, 133, 30, 56, 89, 220, 74, 144, 209, 105, 150, 125,
+                139, 44, 132, 127, 191, 13, 64, 39, 240, 246, 10, 240, 124, 104
+            ]
+        );
+        unsafe { stedy_rng_reseed(state) };
+        let mut b = [0u8; 32];
+        unsafe { stedy_rng_fill(state, b.as_mut_ptr(), b.len()) };
+        assert_ne!(a, b);
+    }
 
     #[test]
     fn test_stedy_rng_fill() {
