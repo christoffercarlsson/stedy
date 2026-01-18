@@ -1,6 +1,6 @@
 use crate::{
     hmac::Hmac,
-    traits::{Hasher, Init},
+    traits::{ByteArray, Hasher},
 };
 
 pub struct Hkdf<H: Hasher> {

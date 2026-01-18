@@ -2,7 +2,7 @@ use {
     crate::{
         block::Block,
         chacha::{ChaCha20, XChaCha20},
-        traits::{Authenticator, Digest, Init, KeyInit, Mac, SeekableStreamCipher},
+        traits::{Authenticator, ByteArray, Digest, KeyInit, Mac, SeekableStreamCipher},
         verify::verify,
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},

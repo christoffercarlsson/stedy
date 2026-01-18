@@ -1,5 +1,5 @@
 use {
-    crate::traits::{ByteArray, CryptoRng, EdwardsPoint, FieldElement, Hasher, Init, Scalar},
+    crate::traits::{ByteArray, CryptoRng, EdwardsPoint, FieldElement, Hasher, Scalar},
     core::marker::PhantomData,
 };
 

@@ -1,5 +1,5 @@
 use crate::{
-    traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
+    traits::{ByteArray, Digest, Hasher, KeyInit, Mac, Prf},
     verify::verify,
     xor::xor,
 };

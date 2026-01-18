@@ -4,7 +4,9 @@ use core::{
 };
 
 #[allow(private_bounds)]
-pub trait ByteArray: Copy + Ord + AsRef<[u8]> + AsMut<[u8]> + Sealed + Init {
+pub trait ByteArray: Copy + Ord + AsRef<[u8]> + AsMut<[u8]> + Sealed {
+    fn new() -> Self;
+
     fn from_slice(slice: &[u8]) -> &Self;
 
     fn from_slice_checked(slice: &[u8]) -> Option<&Self>;
@@ -160,6 +162,10 @@ impl<const N: usize> Init for [u8; N] {
 }
 
 impl<const N: usize> ByteArray for [u8; N] {
+    fn new() -> Self {
+        [0u8; N]
+    }
+
     fn from_slice(slice: &[u8]) -> &Self {
         Self::from_slice_checked(slice).unwrap_or(&[0u8; N])
     }

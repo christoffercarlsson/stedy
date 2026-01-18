@@ -1,4 +1,4 @@
-use crate::traits::{Authenticator, CryptoRng, Init, SeekableStreamCipher};
+use crate::traits::{Authenticator, ByteArray, CryptoRng, SeekableStreamCipher};
 
 pub struct Aead<C: SeekableStreamCipher, M: Authenticator<C>> {
     cipher: C,
