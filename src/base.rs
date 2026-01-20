@@ -272,11 +272,11 @@ mod tests {
         let encoded = b"666f6f626172";
         let mut buffer = [0u8; 12];
         assert_eq!(
-            encode(Encoding::Hex, decoded, &mut buffer).expect("Should encode Hex correctly"),
+            encode(Encoding::Hex, decoded, &mut buffer).unwrap(),
             encoded
         );
         assert_eq!(
-            encode(Encoding::Base16, decoded, &mut buffer).expect("Should encode Base16 correctly"),
+            encode(Encoding::Base16, decoded, &mut buffer).unwrap(),
             encoded
         );
     }
@@ -287,11 +287,11 @@ mod tests {
         let decoded = b"foobar";
         let mut buffer = [0u8; 6];
         assert_eq!(
-            decode(Encoding::Hex, encoded, &mut buffer).expect("Should decode Hex correctly"),
+            decode(Encoding::Hex, encoded, &mut buffer).unwrap(),
             decoded
         );
         assert_eq!(
-            decode(Encoding::Base16, encoded, &mut buffer).expect("Should decode Base16 correctly"),
+            decode(Encoding::Base16, encoded, &mut buffer).unwrap(),
             decoded
         );
     }
@@ -303,12 +303,11 @@ mod tests {
         let encoded_unpadded = b"MZXW6YTBOI";
         let mut buffer = [0u8; 16];
         assert_eq!(
-            encode(Encoding::Base32, decoded, &mut buffer).expect("Should encode Base32 correctly"),
+            encode(Encoding::Base32, decoded, &mut buffer).unwrap(),
             encoded_padded
         );
         assert_eq!(
-            encode(Encoding::Base32Unpadded, decoded, &mut buffer)
-                .expect("Should encode unpadded Base32 correctly"),
+            encode(Encoding::Base32Unpadded, decoded, &mut buffer).unwrap(),
             encoded_unpadded
         );
     }
@@ -320,13 +319,11 @@ mod tests {
         let decoded = b"foobar";
         let mut buffer = [0u8; 6];
         assert_eq!(
-            decode(Encoding::Base32, encoded_padded, &mut buffer)
-                .expect("Should decode Base32 correctly"),
+            decode(Encoding::Base32, encoded_padded, &mut buffer).unwrap(),
             decoded
         );
         assert_eq!(
-            decode(Encoding::Base32Unpadded, encoded_unpadded, &mut buffer)
-                .expect("Should decode unpadded Base32 correctly"),
+            decode(Encoding::Base32Unpadded, encoded_unpadded, &mut buffer).unwrap(),
             decoded
         );
     }
@@ -338,12 +335,11 @@ mod tests {
         let encoded_unpadded = b"Zm9vYg";
         let mut buffer = [0u8; 8];
         assert_eq!(
-            encode(Encoding::Base64, decoded, &mut buffer).expect("Should encode Base64 correctly"),
+            encode(Encoding::Base64, decoded, &mut buffer).unwrap(),
             encoded_padded
         );
         assert_eq!(
-            encode(Encoding::Base64Unpadded, decoded, &mut buffer)
-                .expect("Should encode unpadded Base64 correctly"),
+            encode(Encoding::Base64Unpadded, decoded, &mut buffer).unwrap(),
             encoded_unpadded
         );
     }
@@ -355,13 +351,11 @@ mod tests {
         let decoded = b"foob";
         let mut buffer = [0u8; 4];
         assert_eq!(
-            decode(Encoding::Base64Url, encoded_padded, &mut buffer)
-                .expect("Should decode Base64 correctly"),
+            decode(Encoding::Base64Url, encoded_padded, &mut buffer).unwrap(),
             decoded
         );
         assert_eq!(
-            decode(Encoding::Base64UrlUnpadded, encoded_unpadded, &mut buffer)
-                .expect("Should decode unpadded Base64 correctly"),
+            decode(Encoding::Base64UrlUnpadded, encoded_unpadded, &mut buffer).unwrap(),
             decoded
         );
     }
@@ -381,13 +375,11 @@ mod tests {
         ];
         let mut buffer = [0u8; 24];
         assert_eq!(
-            encode(Encoding::Base64Url, &decoded, &mut buffer)
-                .expect("Should encode URL-safe Base64 correctly"),
+            encode(Encoding::Base64Url, &decoded, &mut buffer).unwrap(),
             encoded_padded
         );
         assert_eq!(
-            encode(Encoding::Base64UrlUnpadded, &decoded, &mut buffer)
-                .expect("Should encode unpadded URL-safe Base64 correctly"),
+            encode(Encoding::Base64UrlUnpadded, &decoded, &mut buffer).unwrap(),
             encoded_unpadded
         );
     }
@@ -407,13 +399,11 @@ mod tests {
         ];
         let mut buffer = [0u8; 16];
         assert_eq!(
-            decode(Encoding::Base64Url, &encoded_padded, &mut buffer)
-                .expect("Should decode URL-safe Base64 correctly"),
+            decode(Encoding::Base64Url, &encoded_padded, &mut buffer).unwrap(),
             decoded
         );
         assert_eq!(
-            decode(Encoding::Base64UrlUnpadded, &encoded_unpadded, &mut buffer)
-                .expect("Should decode unpadded URL-safe Base64 correctly"),
+            decode(Encoding::Base64UrlUnpadded, &encoded_unpadded, &mut buffer).unwrap(),
             decoded
         );
     }

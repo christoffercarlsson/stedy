@@ -93,10 +93,8 @@ impl Scalar for Scalar25519 {
     }
 
     fn split(bytes: &[u8; 64]) -> (&[u8; 32], &[u8; 32]) {
-        let a = <&[u8; 32]>::try_from(&bytes[..32])
-            .expect("WideBytes should be twice the size of Bytes");
-        let b = <&[u8; 32]>::try_from(&bytes[32..])
-            .expect("WideBytes should be twice the size of Bytes");
+        let a = <&[u8; 32]>::try_from(&bytes[..32]).expect("Bytes is half the size of WideBytes");
+        let b = <&[u8; 32]>::try_from(&bytes[32..]).expect("Bytes is half the size of WideBytes");
         (a, b)
     }
 

@@ -45,10 +45,9 @@ impl From<&[u8; 48]> for ChaCha20 {
     fn from(seed: &[u8; 48]) -> Self {
         let (key, remaining) = seed.split_at(32);
         let (nonce, counter) = remaining.split_at(12);
-        let key = <&[u8; 32]>::try_from(key).expect("ChaCha20 seed should contain key bytes");
-        let nonce = <&[u8; 12]>::try_from(nonce).expect("ChaCha20 seed should contain nonce bytes");
-        let counter =
-            <&[u8; 4]>::try_from(counter).expect("ChaCha20 seed should contain counter bytes");
+        let key = <&[u8; 32]>::try_from(key).expect("ChaCha20 key fits within the seed");
+        let nonce = <&[u8; 12]>::try_from(nonce).expect("ChaCha20 nonce fits within the seed");
+        let counter = <&[u8; 4]>::try_from(counter).expect("ChaCha20 counter fits within the seed");
         let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
@@ -190,11 +189,10 @@ impl From<&[u8; 60]> for XChaCha20 {
     fn from(seed: &[u8; 60]) -> Self {
         let (key, remaining) = seed.split_at(32);
         let (nonce, counter) = remaining.split_at(24);
-        let key = <&[u8; 32]>::try_from(key).expect("XChaCha20 seed should contain key bytes");
-        let nonce =
-            <&[u8; 24]>::try_from(nonce).expect("XChaCha20 seed should contain nonce bytes");
+        let key = <&[u8; 32]>::try_from(key).expect("XChaCha20 key fits within the seed");
+        let nonce = <&[u8; 24]>::try_from(nonce).expect("XChaCha20 nonce fits within the seed");
         let counter =
-            <&[u8; 4]>::try_from(counter).expect("XChaCha20 seed should contain counter bytes");
+            <&[u8; 4]>::try_from(counter).expect("XChaCha20 counter fits within the seed");
         let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);

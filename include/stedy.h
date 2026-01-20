@@ -289,11 +289,14 @@ void stedy_hmac_sha512_final(const stedy_hmac_sha512_state *state,
 bool stedy_hmac_sha512_final_verify(const stedy_hmac_sha512_state *state,
                                     const uint8_t code[64]);
 
-size_t stedy_pad(const uint8_t *unpadded, size_t unpadded_size,
-                 size_t block_size, uint8_t *padded, size_t padded_size);
+size_t stedy_pad_to_capacity(const uint8_t *unpadded, size_t unpadded_size,
+                             uint8_t *buffer, size_t buffer_size);
 
-size_t stedy_unpad(const uint8_t *padded, size_t padded_size,
-                   size_t block_size);
+size_t stedy_pad_to_block(const uint8_t *unpadded, size_t unpadded_size,
+                          uint8_t *buffer, size_t buffer_size,
+                          size_t block_size);
+
+size_t stedy_unpad(const uint8_t *padded, size_t padded_size);
 
 void stedy_pbkdf2_hmac_sha256(const uint8_t *password, size_t password_size,
                               const uint8_t *salt, size_t salt_size,

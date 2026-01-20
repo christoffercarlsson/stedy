@@ -1,7 +1,7 @@
 use {
     crate::{
         curve25519::Curve25519,
-        pad::{pad, unpad},
+        pad::{pad_to_capacity, unpad},
         traits::{CryptoRng, FieldElement},
         wipe::wipe,
     },
@@ -25,7 +25,7 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
         }
         for (i, chunk) in secret.chunks(30).enumerate() {
             let mut padded = [0u8; 32];
-            pad(chunk, 32, &mut padded);
+            pad_to_capacity(chunk, &mut padded);
             Self::split_chunk::<N, K>(rng, share_size, i, padded, output);
         }
         let shares: [&'a [u8]; N] = from_fn(|i| {
@@ -169,13 +169,13 @@ impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
                 let index = u32::from_be_bytes([share[0], share[1], share[2], share[3]]);
                 let bytes: [u8; 32] = share[begin..end]
                     .try_into()
-                    .expect("Each Shamir secret column should be 32 bytes");
+                    .expect("Each secret column is 32 bytes");
                 let x = F::from(index);
                 let y = F::from(bytes);
                 (x, y)
             });
             let src = Self::combine_column(pairs);
-            let unpadded = unpad(&src, 32).unwrap_or(&src[..30]);
+            let unpadded = unpad(&src).unwrap_or(&src[..30]);
             let size = unpadded.len();
             secret[offset..offset + size].copy_from_slice(unpadded);
             offset += size;
@@ -189,13 +189,12 @@ mod tests {
     use {super::*, crate::csprng::Rng};
 
     #[test]
-    fn test_sss() {
+    fn test_shamir_secret_sharing() {
         let mut rng = Rng::from(&[0u8; 128]);
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 204];
-        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output)
-            .expect("Buffer should have enough space for all generated shares");
+        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(shares.len(), 3);
         assert_eq!(shares[0].len(), 68);
         assert_eq!(shares[1].len(), 68);
@@ -204,22 +203,19 @@ mod tests {
         assert_eq!(shares[1][..4], [0, 0, 0, 2]);
         assert_eq!(shares[2][..4], [0, 0, 0, 3]);
         let mut buffer = [0u8; 60];
-        let result = shamir_combine([shares[2], shares[1]], &mut buffer)
-            .expect("Buffer should have enough space to combine secret");
+        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
     #[test]
-    fn test_sss_long_arrays() {
+    fn test_shamir_secret_sharing_long_arrays() {
         let mut rng = Rng::from(&[0u8; 128]);
         let mut secret = [0u8; 32];
         rng.fill(&mut secret);
         let mut output = [0u8; 1024];
-        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output)
-            .expect("Buffer should have enough space for all generated shares");
+        let shares = shamir_split::<3, 2>(&mut rng, &secret, &mut output).unwrap();
         let mut buffer = [0u8; 1024];
-        let result = shamir_combine([shares[2], shares[1]], &mut buffer)
-            .expect("Buffer should have enough space to combine secret");
+        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 }

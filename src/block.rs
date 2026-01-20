@@ -72,7 +72,7 @@ impl<'a, const BLOCK_SIZE: usize> Iterator for BlockIterator<'a, BLOCK_SIZE> {
         if end <= self.end {
             self.begin = end;
             let slice = <&[u8; BLOCK_SIZE]>::try_from(&self.tail[begin..end])
-                .expect("Each block should be BLOCK_SIZE bytes");
+                .expect("Each block is BLOCK_SIZE bytes");
             Some(slice)
         } else {
             None

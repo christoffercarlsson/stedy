@@ -53,7 +53,7 @@ impl Poly1305 {
 
 impl KeyInit for Poly1305 {
     fn new(key: &[u8]) -> Self {
-        let key = <&[u8; 32]>::try_from(key).expect("Poly1305 keys should be 32 bytes");
+        let key = <&[u8; 32]>::try_from(key).expect("Poly1305 keys are always 32 bytes");
         Self::new(key)
     }
 }
