@@ -23,6 +23,7 @@ name = "stedy"
 [[bench]]
 name = "stedy"
 harness = false
+path = "benchmarks/main.rs"
 
 [dependencies]
 getrandom = { version = "0.3.4", default-features = false, optional = true }
