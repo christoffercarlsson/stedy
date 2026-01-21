@@ -4,7 +4,7 @@ name = "stedy"
 version = "1.0.0"
 edition = "2021"
 
-description = "Easy-to-use primitives for modern cryptographic protocols"
+description = "Easy-to-use primitives for modern cryptographic tools and protocols"
 keywords = [
     "cryptography",
     "primitives",
@@ -21,7 +21,7 @@ license = "MIT"
 name = "stedy"
 
 [[bench]]
-name = "bench"
+name = "stedy"
 harness = false
 
 [dependencies]
