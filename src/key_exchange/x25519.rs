@@ -48,13 +48,13 @@ mod tests {
             74, 93, 157, 91, 164, 206, 45, 225, 114, 142, 59, 244, 128, 53, 15, 37, 224, 126, 33,
             201, 71, 209, 158, 51, 118, 240, 155, 60, 30, 22, 23, 66,
         ];
-        let public_key = X25519::public_key(&alice_private_key);
+        let public_key = X25519::public_key(&alice_private_key).unwrap();
         assert_eq!(public_key, alice_public_key);
-        let public_key = X25519::public_key(&bob_private_key);
+        let public_key = X25519::public_key(&bob_private_key).unwrap();
         assert_eq!(public_key, bob_public_key);
-        let secret = X25519::key_exchange(&alice_private_key, &bob_public_key);
+        let secret = X25519::key_exchange(&alice_private_key, &bob_public_key).unwrap();
         assert_eq!(secret, shared_secret);
-        let secret = X25519::key_exchange(&bob_private_key, &alice_public_key);
+        let secret = X25519::key_exchange(&bob_private_key, &alice_public_key).unwrap();
         assert_eq!(secret, shared_secret);
     }
 
@@ -70,7 +70,7 @@ mod tests {
             230, 219, 104, 103, 88, 48, 48, 219, 53, 148, 193, 164, 36, 177, 95, 124, 114, 102, 36,
             236, 38, 179, 53, 59, 16, 169, 3, 166, 208, 171, 28, 76,
         ];
-        let result = X25519::key_exchange(&k, &u);
+        let result = X25519::key_exchange(&k, &u).unwrap();
         assert_eq!(
             result,
             [
@@ -90,7 +90,7 @@ mod tests {
             229, 33, 15, 18, 120, 104, 17, 211, 244, 183, 149, 157, 5, 56, 174, 44, 49, 219, 231,
             16, 111, 192, 60, 62, 252, 76, 213, 73, 199, 21, 164, 147,
         ];
-        let result = X25519::key_exchange(&k, &u);
+        let result = X25519::key_exchange(&k, &u).unwrap();
         assert_eq!(
             result,
             [
@@ -110,7 +110,7 @@ mod tests {
             9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0,
         ];
-        let result = X25519::key_exchange(&k, &u);
+        let result = X25519::key_exchange(&k, &u).unwrap();
         assert_eq!(
             result,
             [
@@ -131,7 +131,7 @@ mod tests {
             0, 0, 0,
         ];
         for _ in 0..1000 {
-            let result = X25519::key_exchange(&k, &u);
+            let result = X25519::key_exchange(&k, &u).unwrap();
             u = k;
             k = result;
         }
@@ -155,7 +155,7 @@ mod tests {
     //         0, 0, 0,
     //     ];
     //     for _ in 0..1000000 {
-    //         let result = X25519::key_exchange(&k, &u);
+    //         let result = X25519::key_exchange(&k, &u).unwrap();
     //         u = k;
     //         k = result;
     //     }

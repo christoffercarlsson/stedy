@@ -1,4 +1,7 @@
-use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
+use {
+    crate::utils::wipe,
+    core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub},
+};
 
 pub trait Authenticator<C: SeekableStreamCipher> {
     type Output;
@@ -29,6 +32,42 @@ pub trait CryptoRng {
     fn next_u64(&mut self) -> u64;
 }
 
+pub trait Curve {
+    type Point;
+    type PointBytes: ByteArray;
+    type Scalar;
+    type ScalarBytes: ByteArray;
+
+    fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {
+        loop {
+            let mut bytes = Self::ScalarBytes::new();
+            rng.fill(bytes.as_mut());
+            let result = Self::scalar_from_bytes(&bytes);
+            wipe(bytes.as_mut());
+            if let Some(scalar) = result {
+                return scalar;
+            }
+        }
+    }
+
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
+        Self::scalar_mult(scalar, &Self::base_point())
+            .expect("scalar_mult_base is always a valid point")
+    }
+
+    fn base_point() -> Self::Point;
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point>;
+
+    fn point_to_bytes(point: &Self::Point) -> Self::PointBytes;
+
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar>;
+
+    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes;
+
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point>;
+}
+
 pub trait Digest {
     const OUTPUT_SIZE: usize;
 
@@ -51,7 +90,8 @@ pub trait EdwardsPoint<F: FieldElement, S: Scalar>:
 
     fn compress(self) -> S::Bytes;
 
-    fn vartime_double_base(a: &S, p: Self, b: &S) -> Self;
+    #[allow(non_snake_case)]
+    fn vartime_double_base(a: &S, A: Self, b: &S) -> Self;
 }
 
 pub trait FieldElement:

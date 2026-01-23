@@ -4,7 +4,10 @@ mod field32;
 mod field64;
 
 use {
-    crate::traits::FieldElement,
+    crate::{
+        elliptic_curves::Scalar25519,
+        traits::{Curve, FieldElement, Scalar},
+    },
     core::ops::{Add, AddAssign, Div, Mul, MulAssign},
 };
 
@@ -105,6 +108,12 @@ impl From<[u64; 5]> for Curve25519 {
     }
 }
 
+impl From<&Curve25519> for [u8; 32] {
+    fn from(value: &Curve25519) -> Self {
+        Self::from(*value)
+    }
+}
+
 impl FieldElement for Curve25519 {
     const ONE: Self = Self::ONE;
     const ZERO: Self = Self::ZERO;
@@ -144,5 +153,69 @@ impl FieldElement for Curve25519 {
         let valid = e | f;
         r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
+    }
+}
+
+impl Curve for Curve25519 {
+    type Point = Self;
+    type PointBytes = [u8; 32];
+    type Scalar = [u8; 32];
+    type ScalarBytes = [u8; 32];
+
+    fn base_point() -> Self::Point {
+        Self::from(9)
+    }
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
+        Some(Self::from(bytes))
+    }
+
+    fn point_to_bytes(point: &Self::Point) -> Self::PointBytes {
+        point.into()
+    }
+
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
+        Some(*bytes)
+    }
+
+    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
+        *scalar
+    }
+
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
+        let mut scalar = *scalar;
+        Scalar25519::clamp(&mut scalar);
+        let x1 = *point;
+        let mut x2 = Self::ONE;
+        let mut z2 = Self::ZERO;
+        let mut x3 = *point;
+        let mut z3 = Self::ONE;
+        let mut swap = 0u64;
+        for i in (0..255).rev() {
+            let byte_index = i / 8;
+            let bit_index = i % 8;
+            let bit = ((scalar[byte_index] >> bit_index) & 1) as u64;
+            swap ^= bit;
+            Self::swap(&mut x2, &mut x3, swap);
+            Self::swap(&mut z2, &mut z3, swap);
+            swap = bit;
+            let a = x2 + z2;
+            let aa = a.square();
+            let b = x2 - z2;
+            let bb = b.square();
+            let e = aa - bb;
+            let c = x3 + z3;
+            let d = x3 - z3;
+            let da = d * a;
+            let cb = c * b;
+            x3 = (da + cb).square();
+            z3 = x1 * (da - cb).square();
+            x2 = aa * bb;
+            let a24 = Self::from(121665);
+            z2 = e * (aa + a24 * e);
+        }
+        Self::swap(&mut x2, &mut x3, swap);
+        Self::swap(&mut z2, &mut z3, swap);
+        Some(x2 / z2)
     }
 }

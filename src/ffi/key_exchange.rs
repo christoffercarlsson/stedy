@@ -18,7 +18,7 @@ pub unsafe extern "C" fn stedy_x25519_generate_key_pair(
 #[no_mangle]
 pub unsafe extern "C" fn stedy_x25519_public_key(private_key: *const u8, public_key: *mut u8) {
     let private_key: &[u8; 32] = slice::from_raw_parts(private_key, 32).try_into().unwrap();
-    let _public_key = X25519::public_key(private_key);
+    let _public_key = X25519::public_key(private_key).unwrap();
     ptr::copy(_public_key.as_ptr(), public_key, 32);
 }
 
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn stedy_x25519_key_exchange(
 ) {
     let private_key: &[u8; 32] = slice::from_raw_parts(private_key, 32).try_into().unwrap();
     let public_key: &[u8; 32] = slice::from_raw_parts(public_key, 32).try_into().unwrap();
-    let _shared_secret = X25519::key_exchange(private_key, public_key);
+    let _shared_secret = X25519::key_exchange(private_key, public_key).unwrap();
     ptr::copy(_shared_secret.as_ptr(), shared_secret, 32);
 }
 
