@@ -158,8 +158,8 @@ impl FieldElement for Curve25519 {
 
 impl Curve for Curve25519 {
     type Point = Self;
-    type PointBytes = [u8; 32];
     type Scalar = [u8; 32];
+    type PointBytes = [u8; 32];
     type ScalarBytes = [u8; 32];
 
     fn base_point() -> Self::Point {

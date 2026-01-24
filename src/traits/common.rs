@@ -34,8 +34,8 @@ pub trait CryptoRng {
 
 pub trait Curve {
     type Point;
-    type PointBytes: ByteArray;
     type Scalar;
+    type PointBytes: ByteArray;
     type ScalarBytes: ByteArray;
 
     fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {

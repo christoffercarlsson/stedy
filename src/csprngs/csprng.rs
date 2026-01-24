@@ -3,12 +3,20 @@ use {
     core::marker::PhantomData,
 };
 
-pub struct Csprng<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> {
+pub struct Csprng<C, H>
+where
+    C: SeekableStreamCipher,
+    H: Hasher<Output = C::Seed>,
+{
     cipher: C,
-    _h: PhantomData<H>,
+    _marker: PhantomData<H>,
 }
 
-impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
+impl<C, H> Csprng<C, H>
+where
+    C: SeekableStreamCipher,
+    H: Hasher<Output = C::Seed>,
+{
     pub fn fill(&mut self, bytes: &mut [u8]) {
         self.cipher.apply_keystream(bytes);
     }
@@ -26,7 +34,11 @@ impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
     }
 }
 
-impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> CryptoRng for Csprng<C, H> {
+impl<C, H> CryptoRng for Csprng<C, H>
+where
+    C: SeekableStreamCipher,
+    H: Hasher<Output = C::Seed>,
+{
     fn fill(&mut self, bytes: &mut [u8]) {
         self.fill(bytes);
     }
@@ -40,14 +52,18 @@ impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> CryptoRng for Csprng<
     }
 }
 
-impl<C: SeekableStreamCipher, H: Hasher<Output = C::Seed>> Csprng<C, H> {
+impl<C, H> Csprng<C, H>
+where
+    C: SeekableStreamCipher,
+    H: Hasher<Output = C::Seed>,
+{
     pub(crate) fn new(seed: &[u8]) -> Self {
         let mut hasher = H::new();
         hasher.update(seed);
         let seed = hasher.finalize();
         Self {
             cipher: C::seed(&seed),
-            _h: PhantomData::<H>,
+            _marker: PhantomData::<H>,
         }
     }
 }

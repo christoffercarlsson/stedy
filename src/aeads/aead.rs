@@ -1,11 +1,19 @@
 use crate::traits::{Authenticator, ByteArray, CryptoRng, SeekableStreamCipher};
 
-pub struct Aead<C: SeekableStreamCipher, M: Authenticator<C>> {
+pub struct Aead<C, M>
+where
+    C: SeekableStreamCipher,
+    M: Authenticator<C>,
+{
     cipher: C,
     mac: M,
 }
 
-impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
+impl<C, M> Aead<C, M>
+where
+    C: SeekableStreamCipher,
+    M: Authenticator<C>,
+{
     pub fn encrypt(
         key: &C::Key,
         nonce: &C::Nonce,

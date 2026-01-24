@@ -8,7 +8,7 @@ use {
 };
 
 pub struct Shamir<F: FieldElement<Bytes = [u8; 32]>> {
-    _f: PhantomData<F>,
+    _marker: PhantomData<F>,
 }
 
 impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
