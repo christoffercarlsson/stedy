@@ -6,7 +6,7 @@ ROOT_DIR := $(shell pwd)
 BUILD_DIR := $(ROOT_DIR)/target/ffi
 HEADER_DIR := $(BUILD_DIR)/include
 
-.PHONY: all build install uninstall clean
+.PHONY: all build install uninstall clean docs
 
 all: build
 
@@ -25,3 +25,6 @@ uninstall:
 
 clean:
 	@cargo clean --quiet
+
+docs:
+	@RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --features docs --open

@@ -17,13 +17,13 @@ repository = "https://github.com/christoffercarlsson/stedy"
 authors = ["Christoffer Carlsson <cc@christoffercarlsson.com>"]
 license = "MIT"
 
-[lib]
-name = "stedy"
-
-[[bench]]
-name = "stedy"
-harness = false
-path = "benchmarks/main.rs"
+[features]
+default = []
+docs = ["getrandom", "hazmat", "secret_sharing"]
+ffi = ["getrandom"]
+getrandom = ["dep:getrandom"]
+hazmat = []
+secret_sharing = []
 
 [dependencies]
 getrandom = { version = "0.3.4", default-features = false, optional = true }
@@ -31,9 +31,27 @@ getrandom = { version = "0.3.4", default-features = false, optional = true }
 [dev-dependencies]
 criterion = "0.8.1"
 
-[features]
-default = []
-ffi = ["getrandom"]
-getrandom = ["dep:getrandom"]
-hazmat = []
-secret_sharing = []
+[profile.release]
+debug = false
+debug-assertions = false
+lto = true
+opt-level = 3
+overflow-checks = false
+strip = true
+
+[profile.ffi]
+inherits = "release"
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
+features = ["docs"]
+
+[lib]
+name = "stedy"
+
+[[bench]]
+name = "stedy"
+harness = false
+path = "benchmarks/main.rs"
