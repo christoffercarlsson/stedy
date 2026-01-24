@@ -2,10 +2,19 @@ use crate::{
     aeads::Aead,
     ciphers::{ChaCha20, XChaCha20},
     macs::Poly1305,
+    traits::CryptoRng,
 };
 
 pub type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
 pub type XChaCha20Poly1305 = Aead<XChaCha20, Poly1305>;
+
+impl XChaCha20Poly1305 {
+    pub fn generate_nonce(rng: &mut impl CryptoRng) -> [u8; 24] {
+        let mut nonce = [0u8; 24];
+        rng.fill(&mut nonce);
+        nonce
+    }
+}
 
 #[cfg(test)]
 mod tests {

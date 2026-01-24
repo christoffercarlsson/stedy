@@ -17,7 +17,7 @@ pub struct Edwards25519 {
     z: Curve25519,
 }
 
-impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
+impl EdwardsPoint<Scalar25519> for Edwards25519 {
     const BASE_POINT: Self = Self {
         x: Curve25519::from_51bit([
             1738742601995546,
@@ -49,9 +49,11 @@ impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
         t: Curve25519::ZERO,
     };
 
-    fn decompress(scalar: &[u8; 32]) -> (Self, u64) {
-        let sign = (scalar[31] >> 7) as u64;
-        let mut bytes = *scalar;
+    type Bytes = [u8; 32];
+
+    fn decompress(bytes: &Self::Bytes) -> (Self, u64) {
+        let sign = (bytes[31] >> 7) as u64;
+        let mut bytes = *bytes;
         bytes[31] &= 127;
         let y = Curve25519::from(&bytes);
         let y2 = y.square();
@@ -72,7 +74,7 @@ impl EdwardsPoint<Curve25519, Scalar25519> for Edwards25519 {
         (point, valid)
     }
 
-    fn compress(self) -> [u8; 32] {
+    fn compress(self) -> Self::Bytes {
         let zi = self.z.invert();
         let x = self.x * zi;
         let y = self.y * zi;

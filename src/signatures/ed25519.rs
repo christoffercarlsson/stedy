@@ -1,10 +1,10 @@
 use crate::{
-    elliptic_curves::{Curve25519, Edwards25519, Scalar25519},
+    elliptic_curves::{Edwards25519, Scalar25519},
     hashes::Sha512,
     signatures::Eddsa,
 };
 
-pub type Ed25519 = Eddsa<Curve25519, Sha512, Edwards25519, Scalar25519>;
+pub type Ed25519 = Eddsa<Sha512, Edwards25519, Scalar25519, 64>;
 
 #[cfg(test)]
 mod tests {

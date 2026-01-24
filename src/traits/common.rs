@@ -80,15 +80,17 @@ pub trait Digest {
     fn finalize_into(self, output: &mut Self::Output);
 }
 
-pub trait EdwardsPoint<F: FieldElement, S: Scalar>:
+pub trait EdwardsPoint<S: Scalar>:
     Sized + Copy + Eq + Add<Self, Output = Self> + Mul<S, Output = Self>
 {
     const BASE_POINT: Self;
     const IDENTITY: Self;
 
-    fn decompress(scalar: &S::Bytes) -> (Self, u64);
+    type Bytes: ByteArray;
 
-    fn compress(self) -> S::Bytes;
+    fn decompress(bytes: &Self::Bytes) -> (Self, u64);
+
+    fn compress(self) -> Self::Bytes;
 
     #[allow(non_snake_case)]
     fn vartime_double_base(a: &S, A: Self, b: &S) -> Self;
@@ -159,8 +161,6 @@ pub trait Scalar:
     type Bytes: ByteArray;
     type WideBytes: ByteArray;
 
-    fn concat(a: &Self::Bytes, b: &Self::Bytes) -> Self::WideBytes;
-
     fn split(bytes: &Self::WideBytes) -> (&Self::Bytes, &Self::Bytes);
 
     fn clamp(bytes: &mut Self::Bytes);
@@ -198,7 +198,7 @@ impl<const N: usize> ByteArray for [u8; N] {
     }
 
     fn from_slice(slice: &[u8]) -> &Self {
-        Self::from_slice_checked(slice).unwrap_or(&[0u8; N])
+        Self::from_slice_checked(slice).expect("Slice size matches array size")
     }
 
     fn from_slice_checked(slice: &[u8]) -> Option<&Self> {

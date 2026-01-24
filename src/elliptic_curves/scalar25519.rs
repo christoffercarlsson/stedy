@@ -85,13 +85,6 @@ impl Scalar for Scalar25519 {
     type Bytes = [u8; 32];
     type WideBytes = [u8; 64];
 
-    fn concat(a: &[u8; 32], b: &[u8; 32]) -> [u8; 64] {
-        let mut bytes = [0u8; 64];
-        bytes[..32].copy_from_slice(a);
-        bytes[32..].copy_from_slice(b);
-        bytes
-    }
-
     fn split(bytes: &[u8; 64]) -> (&[u8; 32], &[u8; 32]) {
         let a = <&[u8; 32]>::try_from(&bytes[..32]).expect("Bytes is half the size of WideBytes");
         let b = <&[u8; 32]>::try_from(&bytes[32..]).expect("Bytes is half the size of WideBytes");

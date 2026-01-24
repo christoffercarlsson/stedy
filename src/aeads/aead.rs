@@ -33,7 +33,7 @@ impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
         }
     }
 
-    pub fn generate_key<R: CryptoRng>(rng: &mut R) -> C::Key {
+    pub fn generate_key(rng: &mut impl CryptoRng) -> C::Key {
         let mut key = C::Key::new();
         rng.fill(key.as_mut());
         key
@@ -47,14 +47,6 @@ impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
             carry = sum >> 8;
         }
         carry == 0
-    }
-}
-
-impl<C: SeekableStreamCipher<Nonce = [u8; 24]>, M: Authenticator<C>> Aead<C, M> {
-    pub fn generate_nonce<R: CryptoRng>(rng: &mut R) -> C::Nonce {
-        let mut nonce = C::Nonce::new();
-        rng.fill(nonce.as_mut());
-        nonce
     }
 }
 

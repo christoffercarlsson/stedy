@@ -4,7 +4,7 @@ use {
 };
 
 pub struct Ecdh<C: Curve> {
-    _f: PhantomData<C>,
+    _c: PhantomData<C>,
 }
 
 impl<C: Curve> Ecdh<C> {
