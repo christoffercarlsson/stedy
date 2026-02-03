@@ -1,13 +1,13 @@
 use {
-    crate::traits::{CryptoRng, Curve},
+    crate::traits::{CryptoRng, EllipticCurve},
     core::marker::PhantomData,
 };
 
-pub struct Ecdh<C: Curve> {
+pub struct Ecdh<C: EllipticCurve> {
     _marker: PhantomData<C>,
 }
 
-impl<C: Curve> Ecdh<C> {
+impl<C: EllipticCurve> Ecdh<C> {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (C::ScalarBytes, C::PointBytes) {
         let scalar = C::generate_scalar(rng);
         let point = C::scalar_mult_base(&scalar);

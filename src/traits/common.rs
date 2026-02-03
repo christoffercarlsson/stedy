@@ -1,6 +1,6 @@
 use {
     crate::utils::wipe,
-    core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub},
+    core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 pub trait Authenticator<C: SeekableStreamCipher> {
@@ -32,7 +32,53 @@ pub trait CryptoRng {
     fn next_u64(&mut self) -> u64;
 }
 
-pub trait Curve {
+pub trait Digest {
+    const OUTPUT_SIZE: usize;
+
+    type Output: ByteArray;
+
+    fn update(&mut self, message: &[u8]);
+
+    fn finalize(self) -> Self::Output;
+
+    fn finalize_into(self, output: &mut Self::Output);
+}
+
+pub trait EdwardsParams<F: FieldElement> {
+    const D: F;
+    const D2: F;
+    const BASE_POINT_X: F;
+    const BASE_POINT_Y: F;
+    const BASE_POINT_T: F;
+}
+
+pub trait EdwardsScalar:
+    Sized
+    + Copy
+    + From<Self::Bytes>
+    + From<Self::WideBytes>
+    + Into<Self::Bytes>
+    + Add<Self, Output = Self>
+    + Mul<Self, Output = Self>
+    + Neg<Output = Self>
+{
+    type Bytes: ByteArray;
+    type WideBytes: ByteArray;
+    type Radix16: AsRef<[i8]>;
+    type Naf5: AsRef<[i8]>;
+
+    fn split(bytes: &Self::WideBytes) -> (&Self::Bytes, &Self::Bytes);
+
+    fn clamp(bytes: &mut Self::Bytes);
+
+    fn as_radix_16(&self) -> Self::Radix16;
+
+    fn non_adjacent_form_5(&self) -> Self::Naf5;
+}
+
+pub trait EllipticCurve {
+    const BASE_POINT: Self::Point;
+
     type Point;
     type Scalar;
     type PointBytes: ByteArray;
@@ -51,11 +97,9 @@ pub trait Curve {
     }
 
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
-        Self::scalar_mult(scalar, &Self::base_point())
-            .expect("scalar_mult_base is always a valid point")
+        Self::scalar_mult(scalar, &Self::BASE_POINT)
+            .expect("scalar_mult_base always produces a valid point")
     }
-
-    fn base_point() -> Self::Point;
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point>;
 
@@ -68,34 +112,6 @@ pub trait Curve {
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point>;
 }
 
-pub trait Digest {
-    const OUTPUT_SIZE: usize;
-
-    type Output: ByteArray;
-
-    fn update(&mut self, message: &[u8]);
-
-    fn finalize(self) -> Self::Output;
-
-    fn finalize_into(self, output: &mut Self::Output);
-}
-
-pub trait EdwardsPoint<S: Scalar>:
-    Sized + Copy + Eq + Add<Self, Output = Self> + Mul<S, Output = Self>
-{
-    const BASE_POINT: Self;
-    const IDENTITY: Self;
-
-    type Bytes: ByteArray;
-
-    fn decompress(bytes: &Self::Bytes) -> (Self, u64);
-
-    fn compress(self) -> Self::Bytes;
-
-    #[allow(non_snake_case)]
-    fn vartime_double_base(a: &S, A: Self, b: &S) -> Self;
-}
-
 pub trait FieldElement:
     Sized
     + Copy
@@ -103,9 +119,11 @@ pub trait FieldElement:
     + Add<Output = Self>
     + AddAssign
     + Sub<Output = Self>
+    + SubAssign
     + Mul<Output = Self>
     + MulAssign
     + Div<Output = Self>
+    + DivAssign
     + Neg<Output = Self>
     + From<Self::Bytes>
     + Into<Self::Bytes>
@@ -147,24 +165,16 @@ pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> bool;
 }
 
-pub trait Prf: KeyInit + Digest {}
-
-pub trait Scalar:
-    Copy
-    + From<Self::Bytes>
-    + From<Self::WideBytes>
-    + Into<Self::Bytes>
-    + Add<Self, Output = Self>
-    + Mul<Self, Output = Self>
-    + Neg<Output = Self>
-{
-    type Bytes: ByteArray;
-    type WideBytes: ByteArray;
-
-    fn split(bytes: &Self::WideBytes) -> (&Self::Bytes, &Self::Bytes);
-
-    fn clamp(bytes: &mut Self::Bytes);
+pub trait MontgomeryParams<const LIMBS: usize>: Copy + Clone {
+    const BITS: u32;
+    const TOP_BITS: u32;
+    const MOD: [u64; LIMBS];
+    const R: [u64; LIMBS];
+    const R2: [u64; LIMBS];
+    const N0: u64;
 }
+
+pub trait Prf: KeyInit + Digest {}
 
 pub trait StreamCipher {
     const KEY_SIZE: usize;

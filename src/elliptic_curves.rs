@@ -1,5 +1,11 @@
 mod curve25519;
-mod edwards25519;
-mod scalar25519;
+mod edwards;
+mod montgomery;
 
-pub use {curve25519::*, edwards25519::*, scalar25519::*};
+#[allow(unused_imports)]
+pub(crate) use {edwards::*, montgomery::*};
+
+pub use curve25519::*;
+
+#[cfg(feature = "hazmat")]
+pub use montgomery::*;

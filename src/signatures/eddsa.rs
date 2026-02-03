@@ -1,39 +1,42 @@
 #![allow(non_snake_case)]
 use {
-    crate::traits::{ByteArray, CryptoRng, EdwardsPoint, Hasher, Scalar},
+    crate::{
+        elliptic_curves::Edwards,
+        traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
+    },
     core::marker::PhantomData,
 };
 
-pub struct Eddsa<H, P, S, const SIGNATURE_SIZE: usize>
+pub struct Eddsa<F, H, S, const SIGNATURE_SIZE: usize>
 where
+    F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = S::WideBytes>,
-    P: EdwardsPoint<S>,
-    S: Scalar,
+    S: EdwardsScalar,
 {
-    _marker: PhantomData<(H, P, S)>,
+    _marker: PhantomData<(F, H, S)>,
 }
 
-impl<H, P, S, const SIGNATURE_SIZE: usize> Eddsa<H, P, S, SIGNATURE_SIZE>
+impl<F, H, S, const SIGNATURE_SIZE: usize> Eddsa<F, H, S, SIGNATURE_SIZE>
 where
+    F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = S::WideBytes>,
-    P: EdwardsPoint<S>,
-    S: Scalar,
+    S: EdwardsScalar,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S::Bytes, P::Bytes) {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S::Bytes, F::Bytes) {
         let mut private_key = S::Bytes::new();
         rng.fill(private_key.as_mut());
         let public_key = Self::public_key(&private_key);
         (private_key, public_key)
     }
 
-    pub fn public_key(private_key: &S::Bytes) -> P::Bytes {
-        let g = P::BASE_POINT;
+    pub fn public_key(private_key: &S::Bytes) -> F::Bytes {
+        let g = Edwards::<F, S>::BASE_POINT;
         let (a, _) = Self::expand(private_key);
         (g * a).compress()
     }
 
     pub fn sign(private_key: &S::Bytes, message: &[u8]) -> [u8; SIGNATURE_SIZE] {
-        let B = P::BASE_POINT;
+        let B = Edwards::<F, S>::BASE_POINT;
         let (a, prefix) = Self::expand(private_key);
         let A = (B * a).compress();
         let mut state = H::new();
@@ -50,29 +53,29 @@ where
         Self::create_signature(&R, &s)
     }
 
-    pub fn verify(message: &[u8], public_key: &P::Bytes, signature: &[u8; SIGNATURE_SIZE]) -> bool {
+    pub fn verify(message: &[u8], public_key: &F::Bytes, signature: &[u8; SIGNATURE_SIZE]) -> bool {
         let (r, s) = Self::read_signature(signature);
-        let (A, valid_a) = P::decompress(public_key);
-        let (R, valid_r) = P::decompress(r);
+        let (A, valid_a) = Edwards::<F, S>::decompress(public_key);
+        let (R, valid_r) = Edwards::<F, S>::decompress(r);
         let mut state = H::new();
         state.update(r.as_ref());
         state.update(public_key.as_ref());
         state.update(message);
         let k = S::from(state.finalize());
         let s = S::from(*s);
-        let r2 = P::vartime_double_base(&k.neg(), A, &s);
+        let r2 = Edwards::<F, S>::vartime_double_base(&k.neg(), A, &s);
         let verified = (r2 == R) as u64;
         (verified & valid_a & valid_r) == 1
     }
 }
 
-impl<H, P, S, const SIGNATURE_SIZE: usize> Eddsa<H, P, S, SIGNATURE_SIZE>
+impl<F, H, S, const SIGNATURE_SIZE: usize> Eddsa<F, H, S, SIGNATURE_SIZE>
 where
+    F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = S::WideBytes>,
-    P: EdwardsPoint<S>,
-    S: Scalar,
+    S: EdwardsScalar,
 {
-    const POINT_BYTES_SIZE: usize = size_of::<P::Bytes>();
+    const POINT_BYTES_SIZE: usize = size_of::<F::Bytes>();
 
     fn expand(private_key: &S::Bytes) -> (S, S::Bytes) {
         let digest = H::digest(private_key.as_ref());
@@ -82,7 +85,7 @@ where
         (S::from(a), *prefix)
     }
 
-    fn create_signature(r_bytes: &P::Bytes, s_bytes: &S::Bytes) -> [u8; SIGNATURE_SIZE] {
+    fn create_signature(r_bytes: &F::Bytes, s_bytes: &S::Bytes) -> [u8; SIGNATURE_SIZE] {
         let mut signature = [0u8; SIGNATURE_SIZE];
         let (r, s) =
             Self::signature_from_components_mut(&mut signature).expect("SIGNATURE_SIZE is correct");
@@ -93,16 +96,16 @@ where
 
     fn signature_from_components_mut(
         signature: &mut [u8; SIGNATURE_SIZE],
-    ) -> Option<(&mut P::Bytes, &mut S::Bytes)> {
+    ) -> Option<(&mut F::Bytes, &mut S::Bytes)> {
         let (r, s) = signature.split_at_mut_checked(Self::POINT_BYTES_SIZE)?;
-        let r = P::Bytes::from_slice_mut_checked(r)?;
+        let r = F::Bytes::from_slice_mut_checked(r)?;
         let s = S::Bytes::from_slice_mut_checked(s)?;
         Some((r, s))
     }
 
-    fn read_signature(signature: &[u8; SIGNATURE_SIZE]) -> (&P::Bytes, &S::Bytes) {
+    fn read_signature(signature: &[u8; SIGNATURE_SIZE]) -> (&F::Bytes, &S::Bytes) {
         let (r, s) = signature.split_at(Self::POINT_BYTES_SIZE);
-        let r = P::Bytes::from_slice(r);
+        let r = F::Bytes::from_slice(r);
         let s = S::Bytes::from_slice(s);
         (r, s)
     }

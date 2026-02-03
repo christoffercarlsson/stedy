@@ -48,6 +48,10 @@ impl Poly1305 {
         self.a += self.s;
         self.a.into()
     }
+
+    pub fn verify(self, code: &[u8; 16]) -> bool {
+        verify(&self.finalize(), code)
+    }
 }
 
 impl KeyInit for Poly1305 {
@@ -77,7 +81,7 @@ impl Digest for Poly1305 {
 
 impl Mac for Poly1305 {
     fn verify(self, code: &Self::Output) -> bool {
-        verify(&self.finalize(), code)
+        self.verify(code)
     }
 }
 
@@ -165,11 +169,12 @@ impl Poly1305 {
 struct Poly1305FieldElement([u64; 5]);
 
 impl Poly1305FieldElement {
-    const MASK: u64 = (1u64 << 26) - 1;
+    const MASK: u64 = (1 << 26) - 1;
     const R: Self = Self([67108863, 67108611, 67092735, 66076671, 1048575]);
     const ZERO: Self = Self([0; 5]);
 
     fn reduce(&mut self) {
+        self.carry();
         let carry = self[4] >> 26;
         self.mask();
         self[0] += carry * 5;
@@ -237,7 +242,6 @@ impl AddAssign for Poly1305FieldElement {
         self[2] += rhs[2];
         self[3] += rhs[3];
         self[4] += rhs[4];
-        self.carry();
         self.reduce();
     }
 }
@@ -280,7 +284,6 @@ impl MulAssign for Poly1305FieldElement {
         r[4] += self[2] * rhs[2];
         r[4] += self[1] * rhs[3];
         r[4] += self[0] * rhs[4];
-        r.carry();
         r.reduce();
         *self = r;
     }

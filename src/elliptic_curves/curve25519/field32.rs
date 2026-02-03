@@ -1,12 +1,15 @@
-use core::{
-    cmp::PartialEq,
-    ops::{Add, Index, IndexMut, Mul, Neg, Sub},
+use {
+    crate::utils::signed_mul as m,
+    core::{
+        array::from_fn,
+        ops::{Index, IndexMut},
+    },
 };
 
 #[derive(Clone, Copy)]
-pub struct Curve25519([i32; 10]);
+pub struct Field25519([i32; 10]);
 
-impl Index<usize> for Curve25519 {
+impl Index<usize> for Field25519 {
     type Output = i32;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -14,55 +17,114 @@ impl Index<usize> for Curve25519 {
     }
 }
 
-impl IndexMut<usize> for Curve25519 {
+impl IndexMut<usize> for Field25519 {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
     }
 }
 
-impl PartialEq for Curve25519 {
-    fn eq(&self, other: &Self) -> bool {
-        let mut diff = self.sub(*other);
-        diff.canonical();
-        let result = diff[0]
-            | diff[1]
-            | diff[2]
-            | diff[3]
-            | diff[4]
-            | diff[5]
-            | diff[6]
-            | diff[7]
-            | diff[8]
-            | diff[9];
-        result == 0
+impl Field25519 {
+    pub(super) const ONE: Self = Self([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    pub(super) const ZERO: Self = Self([0; 10]);
+
+    pub(crate) const fn from_limbs(value: [u64; 5]) -> Self {
+        Self([
+            (value[0] as i32) & Self::MASK_26,
+            ((value[0] >> 26) as i32) & Self::MASK_25,
+            (value[1] as i32) & Self::MASK_26,
+            ((value[1] >> 26) as i32) & Self::MASK_25,
+            (value[2] as i32) & Self::MASK_26,
+            ((value[2] >> 26) as i32) & Self::MASK_25,
+            (value[3] as i32) & Self::MASK_26,
+            ((value[3] >> 26) as i32) & Self::MASK_25,
+            (value[4] as i32) & Self::MASK_26,
+            ((value[4] >> 26) as i32) & Self::MASK_25,
+        ])
     }
-}
 
-impl Add for Curve25519 {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut result = Self([
-            self[0] + rhs[0],
-            self[1] + rhs[1],
-            self[2] + rhs[2],
-            self[3] + rhs[3],
-            self[4] + rhs[4],
-            self[5] + rhs[5],
-            self[6] + rhs[6],
-            self[7] + rhs[7],
-            self[8] + rhs[8],
-            self[9] + rhs[9],
-        ]);
-        result.reduce();
-        result
+    pub(super) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
+        let mask = ((condition != 0) as i32).wrapping_neg();
+        for i in 0..10 {
+            let t = mask & (a.0[i] ^ b.0[i]);
+            a.0[i] ^= t;
+            b.0[i] ^= t;
+        }
     }
-}
 
-impl Mul for Curve25519 {
-    type Output = Self;
+    pub(super) fn square(self) -> Self {
+        let s0_2 = 2 * self[0];
+        let s1_2 = 2 * self[1];
+        let s2_2 = 2 * self[2];
+        let s3_2 = 2 * self[3];
+        let s4_2 = 2 * self[4];
+        let s5_2 = 2 * self[5];
+        let s6_2 = 2 * self[6];
+        let s7_2 = 2 * self[7];
+        let s5_38 = 38 * self[5];
+        let s6_19 = 19 * self[6];
+        let s7_38 = 38 * self[7];
+        let s8_19 = 19 * self[8];
+        let s9_38 = 38 * self[9];
+        let mut t = [0i64; 10];
+        t[0] = m(self[0], self[0])
+            + m(s1_2, s9_38)
+            + m(s2_2, s8_19)
+            + m(s3_2, s7_38)
+            + m(s4_2, s6_19)
+            + m(self[5], s5_38);
+        t[1] = m(s0_2, self[1])
+            + m(self[2], s9_38)
+            + m(s3_2, s8_19)
+            + m(self[4], s7_38)
+            + m(s5_2, s6_19);
+        t[2] = m(s0_2, self[2])
+            + m(s1_2, self[1])
+            + m(s3_2, s9_38)
+            + m(s4_2, s8_19)
+            + m(s5_2, s7_38)
+            + m(self[6], s6_19);
+        t[3] = m(s0_2, self[3])
+            + m(s1_2, self[2])
+            + m(self[4], s9_38)
+            + m(s5_2, s8_19)
+            + m(self[6], s7_38);
+        t[4] = m(s0_2, self[4])
+            + m(s1_2, s3_2)
+            + m(self[2], self[2])
+            + m(s5_2, s9_38)
+            + m(s6_2, s8_19)
+            + m(self[7], s7_38);
+        t[5] = m(s0_2, self[5])
+            + m(s1_2, self[4])
+            + m(s2_2, self[3])
+            + m(self[6], s9_38)
+            + m(s7_2, s8_19);
+        t[6] = m(s0_2, self[6])
+            + m(s1_2, s5_2)
+            + m(s2_2, self[4])
+            + m(s3_2, self[3])
+            + m(s7_2, s9_38)
+            + m(self[8], s8_19);
+        t[7] = m(s0_2, self[7])
+            + m(s1_2, self[6])
+            + m(s2_2, self[5])
+            + m(s3_2, self[4])
+            + m(self[8], s9_38);
+        t[8] = m(s0_2, self[8])
+            + m(s1_2, s7_2)
+            + m(s2_2, self[6])
+            + m(s3_2, s5_2)
+            + m(self[4], self[4])
+            + m(self[9], s9_38);
+        t[9] = m(s0_2, self[9])
+            + m(s1_2, self[8])
+            + m(s2_2, self[7])
+            + m(s3_2, self[6])
+            + m(s4_2, self[5]);
+        Self::reduce_wide(t)
+    }
 
-    fn mul(self, rhs: Self) -> Self::Output {
+    pub(super) fn mul(self, rhs: Self) -> Self {
         let r1_19 = rhs[1] * 19;
         let r2_19 = rhs[2] * 19;
         let r3_19 = rhs[3] * 19;
@@ -178,79 +240,81 @@ impl Mul for Curve25519 {
             + m(self[7], rhs[2])
             + m(self[8], rhs[1])
             + m(self[9], rhs[0]);
-        Self::new(t)
+        Self::reduce_wide(t)
     }
-}
 
-impl Neg for Curve25519 {
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        let mut result = Self([
-            -self[0], -self[1], -self[2], -self[3], -self[4], -self[5], -self[6], -self[7],
-            -self[8], -self[9],
-        ]);
+    pub(super) fn add(self, rhs: Self) -> Self {
+        let mut result = Self(from_fn(|i| self[i] + rhs[i]));
         result.reduce();
         result
     }
-}
 
-impl Sub for Curve25519 {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        let mut result = Self([
-            self[0] - rhs[0],
-            self[1] - rhs[1],
-            self[2] - rhs[2],
-            self[3] - rhs[3],
-            self[4] - rhs[4],
-            self[5] - rhs[5],
-            self[6] - rhs[6],
-            self[7] - rhs[7],
-            self[8] - rhs[8],
-            self[9] - rhs[9],
-        ]);
+    pub(super) fn sub(self, rhs: Self) -> Self {
+        let mut result = Self(from_fn(|i| self[i] - rhs[i]));
         result.reduce();
         result
     }
-}
 
-impl From<&[u8; 32]> for Curve25519 {
-    fn from(value: &[u8; 32]) -> Self {
+    pub(super) fn neg(self) -> Self {
+        let mut result = Self(from_fn(|i| -self[i]));
+        result.reduce();
+        result
+    }
+
+    pub(super) fn eq(&self, other: &Self) -> bool {
+        let mut diff = self.sub(*other);
+        diff.canonical();
+        let result = diff[0]
+            | diff[1]
+            | diff[2]
+            | diff[3]
+            | diff[4]
+            | diff[5]
+            | diff[6]
+            | diff[7]
+            | diff[8]
+            | diff[9];
+        result == 0
+    }
+
+    pub(super) const fn from_u32(n: u32) -> Self {
+        let mut words = [0i64; 10];
+        words[0] = n as i64;
+        Self::reduce_wide(words)
+    }
+
+    pub(super) fn from_bytes(bytes: &[u8; 32]) -> Self {
         let mut words = [0u32; 8];
-        let (chunks, _) = value.as_chunks::<4>();
+        let (chunks, _) = bytes.as_chunks::<4>();
         for (i, chunk) in chunks.iter().enumerate() {
             words[i] = u32::from_le_bytes(*chunk);
         }
-        let mut r = Self::ZERO;
-        r[0] = (words[0]) as i32;
-        r[1] = ((words[0] >> 26) | (words[1] << 6)) as i32;
-        r[2] = ((words[1] >> 19) | (words[2] << 13)) as i32;
-        r[3] = ((words[2] >> 13) | (words[3] << 19)) as i32;
-        r[4] = (words[3] >> 6) as i32;
-        r[5] = (words[4]) as i32;
-        r[6] = ((words[4] >> 25) | (words[5] << 7)) as i32;
-        r[7] = ((words[5] >> 19) | (words[6] << 13)) as i32;
-        r[8] = ((words[6] >> 12) | (words[7] << 20)) as i32;
-        r[9] = (words[7] >> 6) as i32;
-        r.mask();
-        r
+        let mut result = Self::ZERO;
+        result[0] = (words[0]) as i32;
+        result[1] = ((words[0] >> 26) | (words[1] << 6)) as i32;
+        result[2] = ((words[1] >> 19) | (words[2] << 13)) as i32;
+        result[3] = ((words[2] >> 13) | (words[3] << 19)) as i32;
+        result[4] = (words[3] >> 6) as i32;
+        result[5] = (words[4]) as i32;
+        result[6] = ((words[4] >> 25) | (words[5] << 7)) as i32;
+        result[7] = ((words[5] >> 19) | (words[6] << 13)) as i32;
+        result[8] = ((words[6] >> 12) | (words[7] << 20)) as i32;
+        result[9] = (words[7] >> 6) as i32;
+        result.mask();
+        result
     }
-}
 
-impl From<Curve25519> for [u8; 32] {
-    fn from(mut value: Curve25519) -> Self {
-        value.canonical();
+    pub(super) fn to_bytes(mut self) -> [u8; 32] {
+        self.canonical();
         let words = [
-            (value[0] as u32) | ((value[1] as u32) << 26),
-            ((value[1] as u32) >> 6) | ((value[2] as u32) << 19),
-            ((value[2] as u32) >> 13) | ((value[3] as u32) << 13),
-            ((value[3] as u32) >> 19) | ((value[4] as u32) << 6),
-            (value[5] as u32) | ((value[6] as u32) << 25),
-            ((value[6] as u32) >> 7) | ((value[7] as u32) << 19),
-            ((value[7] as u32) >> 13) | ((value[8] as u32) << 12),
-            ((value[8] as u32) >> 20) | ((value[9] as u32) << 6),
+            (self[0] as u32) | ((self[1] as u32) << 26),
+            ((self[1] as u32) >> 6) | ((self[2] as u32) << 19),
+            ((self[2] as u32) >> 13) | ((self[3] as u32) << 13),
+            ((self[3] as u32) >> 19) | ((self[4] as u32) << 6),
+            (self[5] as u32) | ((self[6] as u32) << 25),
+            ((self[6] as u32) >> 7) | ((self[7] as u32) << 19),
+            ((self[7] as u32) >> 13) | ((self[8] as u32) << 12),
+            ((self[8] as u32) >> 20) | ((self[9] as u32) << 6),
         ];
         let mut bytes = [0u8; 32];
         let (chunks, _) = bytes.as_chunks_mut::<4>();
@@ -261,116 +325,13 @@ impl From<Curve25519> for [u8; 32] {
     }
 }
 
-impl Curve25519 {
-    pub(super) const ONE: Self = Self([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    pub(super) const ZERO: Self = Self([0; 10]);
-    pub(super) const SQRT_M1: Self = Self([
-        -32595792, -7943725, 9377950, 3500415, 12389472, -272473, -25146209, -2005654, 326686,
-        11406482,
-    ]);
+impl Field25519 {
     const BIAS_25: i32 = 1 << 24;
     const BIAS_26: i32 = 1 << 25;
     const MASK_25: i32 = (1 << 25) - 1;
     const MASK_26: i32 = (1 << 26) - 1;
 
-    pub(crate) const fn from_51bit(value: [u64; 5]) -> Self {
-        Self([
-            (value[0] as i32) & Self::MASK_26,
-            ((value[0] >> 26) as i32) & Self::MASK_25,
-            (value[1] as i32) & Self::MASK_26,
-            ((value[1] >> 26) as i32) & Self::MASK_25,
-            (value[2] as i32) & Self::MASK_26,
-            ((value[2] >> 26) as i32) & Self::MASK_25,
-            (value[3] as i32) & Self::MASK_26,
-            ((value[3] >> 26) as i32) & Self::MASK_25,
-            (value[4] as i32) & Self::MASK_26,
-            ((value[4] >> 26) as i32) & Self::MASK_25,
-        ])
-    }
-
-    pub(super) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
-        let mask = ((condition != 0) as i32).wrapping_neg();
-        for i in 0..10 {
-            let t = mask & (a.0[i] ^ b.0[i]);
-            a.0[i] ^= t;
-            b.0[i] ^= t;
-        }
-    }
-
-    pub(super) fn square(self) -> Self {
-        let s0_2 = 2 * self[0];
-        let s1_2 = 2 * self[1];
-        let s2_2 = 2 * self[2];
-        let s3_2 = 2 * self[3];
-        let s4_2 = 2 * self[4];
-        let s5_2 = 2 * self[5];
-        let s6_2 = 2 * self[6];
-        let s7_2 = 2 * self[7];
-        let s5_38 = 38 * self[5];
-        let s6_19 = 19 * self[6];
-        let s7_38 = 38 * self[7];
-        let s8_19 = 19 * self[8];
-        let s9_38 = 38 * self[9];
-        let mut t = [0i64; 10];
-        t[0] = m(self[0], self[0])
-            + m(s1_2, s9_38)
-            + m(s2_2, s8_19)
-            + m(s3_2, s7_38)
-            + m(s4_2, s6_19)
-            + m(self[5], s5_38);
-        t[1] = m(s0_2, self[1])
-            + m(self[2], s9_38)
-            + m(s3_2, s8_19)
-            + m(self[4], s7_38)
-            + m(s5_2, s6_19);
-        t[2] = m(s0_2, self[2])
-            + m(s1_2, self[1])
-            + m(s3_2, s9_38)
-            + m(s4_2, s8_19)
-            + m(s5_2, s7_38)
-            + m(self[6], s6_19);
-        t[3] = m(s0_2, self[3])
-            + m(s1_2, self[2])
-            + m(self[4], s9_38)
-            + m(s5_2, s8_19)
-            + m(self[6], s7_38);
-        t[4] = m(s0_2, self[4])
-            + m(s1_2, s3_2)
-            + m(self[2], self[2])
-            + m(s5_2, s9_38)
-            + m(s6_2, s8_19)
-            + m(self[7], s7_38);
-        t[5] = m(s0_2, self[5])
-            + m(s1_2, self[4])
-            + m(s2_2, self[3])
-            + m(self[6], s9_38)
-            + m(s7_2, s8_19);
-        t[6] = m(s0_2, self[6])
-            + m(s1_2, s5_2)
-            + m(s2_2, self[4])
-            + m(s3_2, self[3])
-            + m(s7_2, s9_38)
-            + m(self[8], s8_19);
-        t[7] = m(s0_2, self[7])
-            + m(s1_2, self[6])
-            + m(s2_2, self[5])
-            + m(s3_2, self[4])
-            + m(self[8], s9_38);
-        t[8] = m(s0_2, self[8])
-            + m(s1_2, s7_2)
-            + m(s2_2, self[6])
-            + m(s3_2, s5_2)
-            + m(self[4], self[4])
-            + m(self[9], s9_38);
-        t[9] = m(s0_2, self[9])
-            + m(s1_2, self[8])
-            + m(s2_2, self[7])
-            + m(s3_2, self[6])
-            + m(s4_2, self[5]);
-        Self::new(t)
-    }
-
-    fn new(mut words: [i64; 10]) -> Self {
+    const fn reduce_wide(mut words: [i64; 10]) -> Self {
         let mut carry = (words[0] + Self::BIAS_26 as i64) >> 26;
         words[1] += carry;
         words[0] -= carry << 26;
@@ -422,7 +383,7 @@ impl Curve25519 {
     }
 
     fn reduce(&mut self) {
-        *self = Self::new([
+        *self = Self::reduce_wide([
             self[0] as i64,
             self[1] as i64,
             self[2] as i64,
@@ -476,8 +437,4 @@ impl Curve25519 {
         self.carry();
         self.mask();
     }
-}
-
-fn m(x: i32, y: i32) -> i64 {
-    (x as i64) * (y as i64)
 }

@@ -1,6 +1,6 @@
 use {
     crate::{
-        elliptic_curves::Curve25519,
+        elliptic_curves::Field25519,
         traits::{CryptoRng, FieldElement},
         utils::{pad_to_capacity, unpad, wipe},
     },
@@ -56,14 +56,14 @@ pub fn shamir_split<'a, const N: usize, const K: usize>(
     secret: &[u8],
     output: &'a mut [u8],
 ) -> Option<[&'a [u8]; N]> {
-    Shamir::<Curve25519>::split::<N, K>(rng, secret, output)
+    Shamir::<Field25519>::split::<N, K>(rng, secret, output)
 }
 
 pub fn shamir_combine<'a, const K: usize>(
     shares: [&[u8]; K],
     secret: &'a mut [u8],
 ) -> Option<&'a [u8]> {
-    Shamir::<Curve25519>::combine::<K>(shares, secret)
+    Shamir::<Field25519>::combine::<K>(shares, secret)
 }
 
 impl<F: FieldElement<Bytes = [u8; 32]>> Shamir<F> {
