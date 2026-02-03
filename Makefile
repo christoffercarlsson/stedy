@@ -27,4 +27,4 @@ clean:
 	@cargo clean --quiet
 
 docs:
-	@RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --features docs --open
+	@RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --quiet --features docs --open
