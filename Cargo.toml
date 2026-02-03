@@ -1,10 +1,10 @@
 [package]
 publish = false
 name = "stedy"
-version = "1.0.0-rc.1"
+version = "1.0.0-beta.5"
 edition = "2021"
 
-description = "Easy-to-use primitives for modern cryptographic tools and protocols"
+description = "A solid foundation for modern cryptographic tools and protocols"
 keywords = [
     "cryptography",
     "primitives",

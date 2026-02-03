@@ -1,6 +1,6 @@
 # Stedy
 
-Easy-to-use primitives for modern cryptographic tools and protocols.
+A solid foundation for modern cryptographic tools and protocols.
 
 > [!WARNING]\
 > The security of this library has yet to be independently audited. Make your
