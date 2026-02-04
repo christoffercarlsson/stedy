@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use {
     crate::utils::wipe,
     core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -186,6 +187,14 @@ pub trait StreamCipher {
     fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self;
 
     fn apply_keystream(&mut self, message: &mut [u8]);
+}
+
+pub trait SeedableCryptoRng: CryptoRng + Sized {
+    fn new(seed: &[u8]) -> Self;
+
+    fn reseed(&mut self, seed: &[u8]) {
+        *self = Self::new(seed);
+    }
 }
 
 pub trait SeekableStreamCipher: StreamCipher {

@@ -1,9 +1,9 @@
 use {
-    crate::traits::{CryptoRng, Hasher, SeekableStreamCipher},
+    crate::traits::{CryptoRng, Hasher, SeedableCryptoRng, SeekableStreamCipher},
     core::marker::PhantomData,
 };
 
-pub struct Csprng<C, H>
+pub struct StreamCipherRng<C, H>
 where
     C: SeekableStreamCipher,
     H: Hasher<Output = C::Seed>,
@@ -12,11 +12,15 @@ where
     _marker: PhantomData<H>,
 }
 
-impl<C, H> Csprng<C, H>
+impl<C, H> StreamCipherRng<C, H>
 where
     C: SeekableStreamCipher,
     H: Hasher<Output = C::Seed>,
 {
+    pub fn new(seed: &[u8]) -> Self {
+        Self::init(seed).expect("Provided seed is large enough for StreamCipherRng")
+    }
+
     pub fn fill(&mut self, bytes: &mut [u8]) {
         self.cipher.apply_keystream(bytes);
     }
@@ -34,7 +38,7 @@ where
     }
 }
 
-impl<C, H> CryptoRng for Csprng<C, H>
+impl<C, H> CryptoRng for StreamCipherRng<C, H>
 where
     C: SeekableStreamCipher,
     H: Hasher<Output = C::Seed>,
@@ -52,18 +56,41 @@ where
     }
 }
 
-impl<C, H> Csprng<C, H>
+impl<C, H> SeedableCryptoRng for StreamCipherRng<C, H>
 where
     C: SeekableStreamCipher,
     H: Hasher<Output = C::Seed>,
 {
-    pub(crate) fn new(seed: &[u8]) -> Self {
+    fn new(seed: &[u8]) -> Self {
+        Self::new(seed)
+    }
+}
+
+impl<C, H> From<&[u8]> for StreamCipherRng<C, H>
+where
+    C: SeekableStreamCipher,
+    H: Hasher<Output = C::Seed>,
+{
+    fn from(seed: &[u8]) -> Self {
+        Self::new(seed)
+    }
+}
+
+impl<C, H> StreamCipherRng<C, H>
+where
+    C: SeekableStreamCipher,
+    H: Hasher<Output = C::Seed>,
+{
+    fn init(seed: &[u8]) -> Option<Self> {
+        if seed.len() < H::OUTPUT_SIZE * 2 {
+            return None;
+        }
         let mut hasher = H::new();
         hasher.update(seed);
         let seed = hasher.finalize();
-        Self {
+        Some(Self {
             cipher: C::seed(&seed),
             _marker: PhantomData::<H>,
-        }
+        })
     }
 }

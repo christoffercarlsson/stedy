@@ -1,4 +1,4 @@
-# Stedy
+# Stedy (Beta)
 
 A solid foundation for modern cryptographic tools and protocols.
 

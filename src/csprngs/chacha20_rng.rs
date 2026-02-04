@@ -1,25 +1,28 @@
-use crate::{ciphers::ChaCha20, csprngs::Csprng, hashes::Blake2b384};
+use crate::{ciphers::ChaCha20, csprngs::StreamCipherRng, hashes::Blake2b384};
 
-pub type Rng = Csprng<ChaCha20, Blake2b384>;
+pub type ChaCha20Rng = StreamCipherRng<ChaCha20, Blake2b384>;
 
-impl From<&[u8; 128]> for Rng {
+pub type Rng = ChaCha20Rng;
+
+impl From<&[u8; 128]> for ChaCha20Rng {
     fn from(seed: &[u8; 128]) -> Self {
-        Self::new(seed)
+        Self::from(seed.as_slice())
     }
 }
 
-impl From<[u8; 128]> for Rng {
+impl From<[u8; 128]> for ChaCha20Rng {
     fn from(seed: [u8; 128]) -> Self {
         Self::from(&seed)
     }
 }
 
 #[cfg(feature = "getrandom")]
-impl Rng {
+impl ChaCha20Rng {
     pub fn seed() -> Self {
         let mut seed = [0u8; 128];
-        getrandom::fill(&mut seed)
-            .expect("CSPRNG should be seeded using the system's preferred entropy source");
+        getrandom::fill(&mut seed).expect(
+            "ChaCha20Rng should be successfully seeded using the system's preferred entropy source",
+        );
         Self::from(seed)
     }
 
