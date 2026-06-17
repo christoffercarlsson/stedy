@@ -4,7 +4,7 @@ use crate::{
     signatures::Eddsa,
 };
 
-pub type Ed25519 = Eddsa<Field25519, Sha512, Scalar25519, 64>;
+pub type Ed25519 = Eddsa<Scalar25519, Field25519, Sha512, [u8; 64]>;
 
 #[cfg(test)]
 mod tests {
