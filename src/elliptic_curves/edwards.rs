@@ -60,7 +60,7 @@ where
         let last = slice.len() - 1;
         let sign = (slice[last] >> 7) as u64;
         let mut bytes = *bytes;
-        bytes.as_mut()[last] &= 127;
+        bytes[last] &= 127;
         let y = F::from(bytes);
         let y2 = y.square();
         let u = y2 - F::ONE;
@@ -69,7 +69,7 @@ where
         let is_zero = (x == F::ZERO) as u64;
         valid &= (is_zero & sign) ^ 1;
         let xs: F::Bytes = x.into();
-        let negate = (xs.as_ref()[0] as u64 & 1) ^ sign;
+        let negate = (xs[0] as u64 & 1) ^ sign;
         x = F::select(&x, &x.neg(), negate);
         let point = Self::new(x, y, x * y, F::ONE);
         (point, valid)
@@ -81,10 +81,10 @@ where
         let y = self.y * zi;
         let xs: F::Bytes = x.into();
         let mut ys: F::Bytes = y.into();
-        let sign = xs.as_ref()[0] & 1;
+        let sign = xs[0] & 1;
         let last = ys.as_ref().len() - 1;
-        ys.as_mut()[last] &= 127;
-        ys.as_mut()[last] |= sign << 7;
+        ys[last] &= 127;
+        ys[last] |= sign << 7;
         ys
     }
 
@@ -177,10 +177,11 @@ where
         let window = Window::from(self);
         let digits = rhs.as_radix_16();
         let digits = digits.as_ref();
+        let size = digits.len() - 1;
         let mut t2: Projective<F, S>;
         let mut t3 = Self::IDENTITY;
-        let mut t1 = t3 + window.select(digits[digits.len() - 1]);
-        for i in (0..63).rev() {
+        let mut t1 = t3 + window.select(digits[size]);
+        for i in (0..size).rev() {
             t2 = t1.to_projective();
             t1 = t2.double();
             t2 = t1.to_projective();
@@ -408,13 +409,13 @@ where
     fn from(point: Edwards<F, S>) -> Self {
         let mut p = [Edwards::<F, S>::IDENTITY; 9];
         p[1] = point;
-        p[2] = p[1].add(point);
-        p[3] = p[2].add(point);
-        p[4] = p[3].add(point);
-        p[5] = p[4].add(point);
-        p[6] = p[5].add(point);
-        p[7] = p[6].add(point);
-        p[8] = p[7].add(point);
+        p[2] = p[1] + point;
+        p[3] = p[2] + point;
+        p[4] = p[3] + point;
+        p[5] = p[4] + point;
+        p[6] = p[5] + point;
+        p[7] = p[6] + point;
+        p[8] = p[7] + point;
         let t: [ProjectiveNiels<F>; 8] = from_fn(|i| p[i + 1].into());
         Self(t)
     }
@@ -452,7 +453,10 @@ where
     }
 }
 
-impl<F: FieldElement + EdwardsParams<F>> NafWindow<F> {
+impl<F> NafWindow<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
     fn select(&self, x: i8) -> ProjectiveNiels<F> {
         if x == 0 {
             return ProjectiveNiels::<F>::IDENTITY;

@@ -1,6 +1,6 @@
 use {
     crate::traits::EdwardsScalar,
-    core::ops::{Add, Mul, Neg},
+    core::ops::{Add, AddAssign, Mul, MulAssign, Neg},
 };
 
 #[cfg_attr(target_pointer_width = "32", path = "scalar32.rs")]
@@ -17,11 +17,23 @@ impl Add for Scalar25519 {
     }
 }
 
+impl AddAssign for Scalar25519 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.add(rhs);
+    }
+}
+
 impl Mul for Scalar25519 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
         self.mul(rhs)
+    }
+}
+
+impl MulAssign for Scalar25519 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = self.mul(rhs);
     }
 }
 

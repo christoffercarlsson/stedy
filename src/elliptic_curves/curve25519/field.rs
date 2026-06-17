@@ -36,35 +36,28 @@ impl Field25519 {
     }
 
     fn invert(self) -> Self {
-        let a = self.pow22523();
-        let b = a.pow2n(3);
-        let c = self * self.square();
-        b * c
+        let x = self;
+        let x3 = x * x.square();
+        x3 * x.pow22523().pow2n(3)
     }
 
     fn pow22523(self) -> Self {
-        let mut a = self.square();
-        let mut b = a.square();
-        b = self * b.square();
-        a *= b;
-        let mut c = a.square();
-        b *= c;
-        c = b.pow2n(5);
-        b = c * b;
-        c = b.pow2n(10);
-        c *= b;
-        let mut d = c.pow2n(20);
-        c = d * c;
-        c = c.pow2n(10);
-        b = c * b;
-        c = b.pow2n(50);
-        c *= b;
-        d = c.pow2n(100);
-        c = d * c;
-        c = c.pow2n(50);
-        b = c * b;
-        b = b.pow2n(2);
-        self * b
+        let x = self;
+        let x2 = x.square();
+        let x4 = x2.square();
+        let x8 = x4.square();
+        let x9 = x * x8;
+        let x11 = x2 * x9;
+        let x22 = x11.square();
+        let x31 = x9 * x22;
+        let x10 = x31 * x31.pow2n(5);
+        let x20 = x10 * x10.pow2n(10);
+        let x40 = x20 * x20.pow2n(20);
+        let x50 = x10 * x40.pow2n(10);
+        let x100 = x50 * x50.pow2n(50);
+        let x200 = x100 * x100.pow2n(100);
+        let x250 = x50 * x200.pow2n(50);
+        x * x250.pow2n(2)
     }
 
     fn pow2n(self, n: usize) -> Self {
@@ -77,17 +70,17 @@ impl Field25519 {
 
     fn sqrt(self, b: Self) -> (Self, u64) {
         let a = self;
-        let b3 = b.square() * b;
-        let b7 = b3.square() * b;
+        let b3 = b * b.square();
+        let b7 = b * b3.square();
         let u = a * b3 * (a * b7).pow22523();
         let v = u * Self::SQRT_M1;
         let c = b * u.square();
         let d = b * v.square();
         let e = (c == a) as u64;
         let f = (d == a) as u64;
-        let mut r = Self::select(&v, &u, e);
         let valid = e | f;
-        r = Self::select(&Self::ZERO, &r, valid);
+        let r = Self::select(&v, &u, e);
+        let r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
 }

@@ -33,7 +33,7 @@ impl MontgomeryParams<5> for Scalar25519Params {
 pub type Scalar25519 = Montgomery<5, Scalar25519Params>;
 
 impl Scalar25519 {
-    pub(super) fn from_bytes(bytes: &[u8; 32]) -> Self {
+    pub(crate) fn from_bytes(bytes: &[u8; 32]) -> Self {
         let (chunks, _) = bytes.as_chunks::<8>();
         let mut words = [0u64; 4];
         for (i, chunk) in chunks.iter().enumerate() {
@@ -45,10 +45,10 @@ impl Scalar25519 {
         s[2] = ((words[1] >> 40) | (words[2] << 24)) & Self::MASK;
         s[3] = ((words[2] >> 28) | (words[3] << 36)) & Self::MASK;
         s[4] = (words[3] >> 16) & Self::TOP_MASK;
-        s
+        s.enter_montgomery()
     }
 
-    pub(super) fn from_wide_bytes(bytes: &[u8; 64]) -> Self {
+    pub(crate) fn from_wide_bytes(bytes: &[u8; 64]) -> Self {
         let (chunks, _) = bytes.as_chunks::<8>();
         let mut words = [0u64; 8];
         for (i, chunk) in chunks.iter().enumerate() {
@@ -66,17 +66,18 @@ impl Scalar25519 {
         hi[2] = ((words[5] >> 44) | (words[6] << 20)) & Self::MASK;
         hi[3] = ((words[6] >> 32) | (words[7] << 32)) & Self::MASK;
         hi[4] = words[7] >> 20;
-        lo = lo.montgomery_mul(Self::R);
-        hi = hi.montgomery_mul(Self::R2);
-        hi.add(lo)
+        lo *= Self::R;
+        hi *= Self::R2;
+        (hi + lo).enter_montgomery()
     }
 
-    pub(super) fn to_bytes(self) -> [u8; 32] {
+    pub(crate) fn to_bytes(self) -> [u8; 32] {
+        let s = self.exit_montgomery();
         let words = [
-            self[0] | (self[1] << 52),
-            (self[1] >> 12) | (self[2] << 40),
-            (self[2] >> 24) | (self[3] << 28),
-            (self[3] >> 36) | (self[4] << 16),
+            s[0] | (s[1] << 52),
+            (s[1] >> 12) | (s[2] << 40),
+            (s[2] >> 24) | (s[3] << 28),
+            (s[3] >> 36) | (s[4] << 16),
         ];
         let mut bytes = [0u8; 32];
         let (chunks, _) = bytes.as_chunks_mut::<8>();

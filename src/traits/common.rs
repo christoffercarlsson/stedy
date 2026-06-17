@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 use {
     crate::utils::wipe,
-    core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    core::ops::{
+        Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
+        SubAssign,
+    },
 };
 
 pub trait Authenticator<C: SeekableStreamCipher> {
@@ -15,7 +18,18 @@ pub trait Authenticator<C: SeekableStreamCipher> {
 }
 
 #[allow(private_bounds)]
-pub trait ByteArray: Copy + Ord + AsRef<[u8]> + AsMut<[u8]> + Sealed {
+pub trait ByteArray:
+    Copy
+    + Sized
+    + Ord
+    + AsRef<[u8]>
+    + AsMut<[u8]>
+    + Index<usize, Output = u8>
+    + Index<RangeFrom<usize>, Output = [u8]>
+    + IndexMut<usize, Output = u8>
+    + IndexMut<RangeFrom<usize>, Output = [u8]>
+    + Sealed
+{
     fn new() -> Self;
 
     fn from_slice(slice: &[u8]) -> &Self;
@@ -60,7 +74,9 @@ pub trait EdwardsScalar:
     + From<Self::WideBytes>
     + Into<Self::Bytes>
     + Add<Self, Output = Self>
+    + AddAssign
     + Mul<Self, Output = Self>
+    + MulAssign
     + Neg<Output = Self>
 {
     type Bytes: ByteArray;
@@ -99,7 +115,7 @@ pub trait EllipticCurve {
 
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
         Self::scalar_mult(scalar, &Self::BASE_POINT)
-            .expect("scalar_mult_base always produces a valid point")
+            .expect("scalar_mult_base always produce valid points")
     }
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point>;

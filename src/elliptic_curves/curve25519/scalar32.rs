@@ -23,10 +23,10 @@ impl MontgomeryParams<10> for Scalar25519Params {
 pub type Scalar25519 = Montgomery<10, Scalar25519Params>;
 
 impl Scalar25519 {
-    pub(super) fn from_bytes(bytes: &[u8; 32]) -> Self {
+    pub(crate) fn from_bytes(bytes: &[u8; 32]) -> Self {
         let (chunks, _) = bytes.as_chunks::<4>();
         let mut words = [0u32; 8];
-        for (i, chunk) in chunks.iter().enumerate().take(8) {
+        for (i, chunk) in chunks.iter().enumerate() {
             words[i] = u32::from_le_bytes(*chunk);
         }
         let mut s = Self::ZERO;
@@ -40,13 +40,13 @@ impl Scalar25519 {
         s[7] = ((words[5] >> 22) | (words[6] << 10)) & Self::MASK;
         s[8] = ((words[6] >> 16) | (words[7] << 16)) & Self::MASK;
         s[9] = (words[7] >> 10) & Self::TOP_MASK;
-        s
+        s.enter_montgomery()
     }
 
-    pub(super) fn from_wide_bytes(bytes: &[u8; 64]) -> Self {
+    pub(crate) fn from_wide_bytes(bytes: &[u8; 64]) -> Self {
         let (chunks, _) = bytes.as_chunks::<4>();
         let mut words = [0u32; 16];
-        for (i, chunk) in chunks.iter().enumerate().take(16) {
+        for (i, chunk) in chunks.iter().enumerate() {
             words[i] = u32::from_le_bytes(*chunk);
         }
         let mut lo = Self::ZERO;
@@ -71,21 +71,22 @@ impl Scalar25519 {
         hi[7] = ((words[13] >> 26) | (words[14] << 6)) & Self::MASK;
         hi[8] = ((words[14] >> 20) | (words[15] << 12)) & Self::MASK;
         hi[9] = words[15] >> 14;
-        lo = lo.montgomery_mul(Self::R);
-        hi = hi.montgomery_mul(Self::R2);
-        hi.add(lo)
+        lo *= Self::R;
+        hi *= Self::R2;
+        (hi + lo).enter_montgomery()
     }
 
-    pub(super) fn to_bytes(self) -> [u8; 32] {
+    pub(crate) fn to_bytes(self) -> [u8; 32] {
+        let s = self.exit_montgomery();
         let words = [
-            self[0] | (self[1] << 26),
-            (self[1] >> 6) | (self[2] << 20),
-            (self[2] >> 12) | (self[3] << 14),
-            (self[3] >> 18) | (self[4] << 8),
-            (self[4] >> 24) | (self[5] << 2) | (self[6] << 28),
-            (self[6] >> 4) | (self[7] << 22),
-            (self[7] >> 10) | (self[8] << 16),
-            (self[8] >> 16) | (self[9] << 10),
+            s[0] | (s[1] << 26),
+            (s[1] >> 6) | (s[2] << 20),
+            (s[2] >> 12) | (s[3] << 14),
+            (s[3] >> 18) | (s[4] << 8),
+            (s[4] >> 24) | (s[5] << 2) | (self[6] << 28),
+            (s[6] >> 4) | (s[7] << 22),
+            (s[7] >> 10) | (s[8] << 16),
+            (s[8] >> 16) | (s[9] << 10),
         ];
         let mut bytes = [0u8; 32];
         let (chunks, _) = bytes.as_chunks_mut::<4>();
