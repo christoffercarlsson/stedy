@@ -3,6 +3,4 @@
 A solid foundation for modern cryptographic tools and protocols.
 
 > [!WARNING]\
-> The security of this library has yet to be independently audited. Make your
-> own judgement on whether or not the current state of this project is a good
-> fit for you. USE AT YOUR OWN RISK!
+> The security of this library has yet to be independently audited. USE AT YOUR OWN RISK!
