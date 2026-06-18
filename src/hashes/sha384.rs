@@ -4,14 +4,14 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct Sha512 {
+pub struct Sha384 {
     h: [u64; 8],
     block: Block<128>,
     total_size: u64,
 }
 
-impl Sha512 {
-    pub fn digest(message: &[u8]) -> [u8; 64] {
+impl Sha384 {
+    pub fn digest(message: &[u8]) -> [u8; 48] {
         let mut hasher = Self::new();
         hasher.update(message);
         hasher.finalize()
@@ -20,14 +20,14 @@ impl Sha512 {
     pub fn new() -> Self {
         Self {
             h: [
-                0x6a09e667f3bcc908,
-                0xbb67ae8584caa73b,
-                0x3c6ef372fe94f82b,
-                0xa54ff53a5f1d36f1,
-                0x510e527fade682d1,
-                0x9b05688c2b3e6c1f,
-                0x1f83d9abfb41bd6b,
-                0x5be0cd19137e2179,
+                0xcbbb9d5dc1059ed8,
+                0x629a292a367cd507,
+                0x9159015a3070dd17,
+                0x152fecd8f70e5939,
+                0x67332667ffc00b31,
+                0x8eb44a8768581511,
+                0xdb0c2e0d64f98fa7,
+                0x47b5481dbefa4fa4,
             ],
             block: Block::<128>::new(),
             total_size: 0,
@@ -43,34 +43,34 @@ impl Sha512 {
         }
     }
 
-    pub fn finalize_into(mut self, digest: &mut [u8; 64]) {
+    pub fn finalize_into(mut self, digest: &mut [u8; 48]) {
         self.pad();
         for (i, word) in digest.chunks_mut(8).enumerate() {
             word.copy_from_slice(&self.h[i].to_be_bytes());
         }
     }
 
-    pub fn finalize(self) -> [u8; 64] {
-        let mut digest = [0u8; 64];
+    pub fn finalize(self) -> [u8; 48] {
+        let mut digest = [0u8; 48];
         self.finalize_into(&mut digest);
         digest
     }
 }
 
-impl Default for Sha512 {
+impl Default for Sha384 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Init for Sha512 {
+impl Init for Sha384 {
     fn new() -> Self {
         Self::new()
     }
 }
 
-impl Digest for Sha512 {
-    const OUTPUT_SIZE: usize = 64;
+impl Digest for Sha384 {
+    const OUTPUT_SIZE: usize = 48;
 
     type Output = [u8; Self::OUTPUT_SIZE];
 
@@ -87,7 +87,7 @@ impl Digest for Sha512 {
     }
 }
 
-impl Hasher for Sha512 {
+impl Hasher for Sha384 {
     const BLOCK_SIZE: usize = 128;
 
     type Block = [u8; Self::BLOCK_SIZE];
@@ -97,7 +97,7 @@ impl Hasher for Sha512 {
     }
 }
 
-impl Sha512 {
+impl Sha384 {
     const K: [u64; 80] = [
         0x428a2f98d728ae22,
         0x7137449123ef65cd,
@@ -285,65 +285,61 @@ mod tests {
     // https://www.di-mgt.com.au/sha_testvectors.html
 
     #[test]
-    fn test_sha512_0bits() {
-        let digest = Sha512::digest(b"");
+    fn test_sha384_0bits() {
+        let digest = Sha384::digest(b"");
         assert_eq!(
             digest,
             [
-                207, 131, 225, 53, 126, 239, 184, 189, 241, 84, 40, 80, 214, 109, 128, 7, 214, 32,
-                228, 5, 11, 87, 21, 220, 131, 244, 169, 33, 211, 108, 233, 206, 71, 208, 209, 60,
-                93, 133, 242, 176, 255, 131, 24, 210, 135, 126, 236, 47, 99, 185, 49, 189, 71, 65,
-                122, 129, 165, 56, 50, 122, 249, 39, 218, 62,
+                56, 176, 96, 167, 81, 172, 150, 56, 76, 217, 50, 126, 177, 177, 227, 106, 33, 253,
+                183, 17, 20, 190, 7, 67, 76, 12, 199, 191, 99, 246, 225, 218, 39, 78, 222, 191,
+                231, 111, 101, 251, 213, 26, 210, 241, 72, 152, 185, 91
             ]
         );
     }
 
     #[test]
-    fn test_sha512_24bits() {
-        let digest = Sha512::digest(b"abc");
+    fn test_sha384_24bits() {
+        let digest = Sha384::digest(b"abc");
         assert_eq!(
             digest,
             [
-                221, 175, 53, 161, 147, 97, 122, 186, 204, 65, 115, 73, 174, 32, 65, 49, 18, 230,
-                250, 78, 137, 169, 126, 162, 10, 158, 238, 230, 75, 85, 211, 154, 33, 146, 153, 42,
-                39, 79, 193, 168, 54, 186, 60, 35, 163, 254, 235, 189, 69, 77, 68, 35, 100, 60,
-                232, 14, 42, 154, 201, 79, 165, 76, 164, 159,
+                203, 0, 117, 63, 69, 163, 94, 139, 181, 160, 61, 105, 154, 198, 80, 7, 39, 44, 50,
+                171, 14, 222, 209, 99, 26, 139, 96, 90, 67, 255, 91, 237, 128, 134, 7, 43, 161,
+                231, 204, 35, 88, 186, 236, 161, 52, 200, 37, 167
             ]
         );
     }
 
     #[test]
-    fn test_sha512_448bits() {
-        let digest = Sha512::digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
+    fn test_sha384_448bits() {
+        let digest = Sha384::digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         assert_eq!(
             digest,
             [
-                32, 74, 143, 198, 221, 168, 47, 10, 12, 237, 123, 235, 142, 8, 164, 22, 87, 193,
-                110, 244, 104, 178, 40, 168, 39, 155, 227, 49, 167, 3, 195, 53, 150, 253, 21, 193,
-                59, 27, 7, 249, 170, 29, 59, 234, 87, 120, 156, 160, 49, 173, 133, 199, 167, 29,
-                215, 3, 84, 236, 99, 18, 56, 202, 52, 69,
+                51, 145, 253, 221, 252, 141, 199, 57, 55, 7, 166, 91, 27, 71, 9, 57, 124, 248, 177,
+                209, 98, 175, 5, 171, 254, 143, 69, 13, 229, 243, 107, 198, 176, 69, 90, 133, 32,
+                188, 78, 111, 95, 233, 91, 31, 227, 200, 69, 43
             ]
         );
     }
 
     #[test]
-    fn test_sha512_896bits() {
+    fn test_sha384_896bits() {
         let digest =
-            Sha512::digest(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
+            Sha384::digest(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         assert_eq!(
             digest,
             [
-                142, 149, 155, 117, 218, 227, 19, 218, 140, 244, 247, 40, 20, 252, 20, 63, 143,
-                119, 121, 198, 235, 159, 127, 161, 114, 153, 174, 173, 182, 136, 144, 24, 80, 29,
-                40, 158, 73, 0, 247, 228, 51, 27, 153, 222, 196, 181, 67, 58, 199, 211, 41, 238,
-                182, 221, 38, 84, 94, 150, 229, 91, 135, 75, 233, 9,
+                9, 51, 12, 51, 247, 17, 71, 232, 61, 25, 47, 199, 130, 205, 27, 71, 83, 17, 27, 23,
+                59, 59, 5, 210, 47, 160, 128, 134, 227, 176, 247, 18, 252, 199, 199, 26, 85, 126,
+                45, 185, 102, 195, 233, 250, 145, 116, 96, 57
             ]
         );
     }
 
     #[test]
-    fn test_sha512_1m() {
-        let mut hasher = Sha512::new();
+    fn test_sha384_1m() {
+        let mut hasher = Sha384::new();
         for _ in 0..1000000 {
             hasher.update(b"a");
         }
@@ -351,10 +347,9 @@ mod tests {
         assert_eq!(
             digest,
             [
-                231, 24, 72, 61, 12, 231, 105, 100, 78, 46, 66, 199, 188, 21, 180, 99, 142, 31,
-                152, 177, 59, 32, 68, 40, 86, 50, 168, 3, 175, 169, 115, 235, 222, 15, 242, 68,
-                135, 126, 166, 10, 76, 176, 67, 44, 229, 119, 195, 27, 235, 0, 156, 92, 44, 73,
-                170, 46, 78, 173, 178, 23, 173, 140, 192, 155,
+                157, 14, 24, 9, 113, 100, 116, 203, 8, 110, 131, 78, 49, 10, 74, 28, 237, 20, 158,
+                156, 0, 242, 72, 82, 121, 114, 206, 197, 112, 76, 42, 91, 7, 184, 179, 220, 56,
+                236, 196, 235, 174, 151, 221, 216, 127, 61, 137, 133
             ]
         );
     }

@@ -173,9 +173,7 @@ mod tests {
 
     #[test]
     fn test_sha1_0bits() {
-        let mut hasher = Sha1::new();
-        hasher.update(b"");
-        let digest = hasher.finalize();
+        let digest = Sha1::digest(b"");
         assert_eq!(
             digest,
             [
@@ -187,9 +185,7 @@ mod tests {
 
     #[test]
     fn test_sha1_24bits() {
-        let mut hasher = Sha1::new();
-        hasher.update(b"abc");
-        let digest = hasher.finalize();
+        let digest = Sha1::digest(b"abc");
         assert_eq!(
             digest,
             [
@@ -201,9 +197,7 @@ mod tests {
 
     #[test]
     fn test_sha1_448bits() {
-        let mut hasher = Sha1::new();
-        hasher.update(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
-        let digest = hasher.finalize();
+        let digest = Sha1::digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         assert_eq!(
             digest,
             [
@@ -215,9 +209,7 @@ mod tests {
 
     #[test]
     fn test_sha1_896bits() {
-        let mut hasher = Sha1::new();
-        hasher.update(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
-        let digest = hasher.finalize();
+        let digest = Sha1::digest(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         assert_eq!(
             digest,
             [
