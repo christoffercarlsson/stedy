@@ -13,8 +13,6 @@ mod elliptic_curves;
 #[cfg(feature = "hazmat")]
 pub mod elliptic_curves;
 pub mod encoding;
-#[cfg(feature = "ffi")]
-mod ffi;
 pub mod hashes;
 pub mod kdfs;
 pub mod key_exchange;
@@ -24,6 +22,3 @@ pub mod secret_sharing;
 pub mod signatures;
 pub mod traits;
 pub mod utils;
-
-#[cfg(feature = "ffi")]
-pub use crate::ffi::*;
