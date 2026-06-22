@@ -46,7 +46,7 @@ macro_rules! impl_montgomery {
             pub(crate) const MASK: Word = Self::MASKS[0];
             pub(crate) const TOP_MASK: Word = Self::MASKS[$LIMBS - 1];
 
-            const fn from_limbs(limbs: [u64; $LIMBS]) -> Self {
+            pub(crate) const fn from_limbs(limbs: [u64; $LIMBS]) -> Self {
                 let mut words = [0 as Word; $LIMBS];
                 let mut i = 0;
                 while i < $LIMBS {
@@ -160,7 +160,7 @@ macro_rules! impl_montgomery {
 
             fn mask(&mut self) {
                 for i in 0..$LIMBS {
-                    self[i] &= Self::MASKS[i];
+                    self[i] &= Self::MASK;
                 }
             }
 

@@ -38,6 +38,7 @@ impl<H: Hasher> HmacDrbg<H> {
             self.v = mac.finalize();
             chunk.copy_from_slice(&self.v.as_ref()[..chunk.len()]);
         }
+        self.update(&[], &[]);
         self.reseed_counter += 1;
         true
     }

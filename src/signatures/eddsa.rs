@@ -78,8 +78,6 @@ where
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
 {
-    const POINT_BYTES_SIZE: usize = size_of::<F::Bytes>();
-
     fn expand(private_key: &E::Bytes) -> (E, E::Bytes) {
         let digest = H::digest(private_key.as_ref());
         let (a, prefix) = E::split(&digest);
@@ -100,14 +98,14 @@ where
     fn signature_from_components_mut(signature: &mut S) -> Option<(&mut F::Bytes, &mut E::Bytes)> {
         let (r, s) = signature
             .as_mut()
-            .split_at_mut_checked(Self::POINT_BYTES_SIZE)?;
+            .split_at_mut_checked(F::Bytes::SIZE)?;
         let r = F::Bytes::from_slice_mut_checked(r)?;
         let s = E::Bytes::from_slice_mut_checked(s)?;
         Some((r, s))
     }
 
     fn read_signature(signature: &S) -> (&F::Bytes, &E::Bytes) {
-        let (r, s) = signature.as_ref().split_at(Self::POINT_BYTES_SIZE);
+        let (r, s) = signature.as_ref().split_at(F::Bytes::SIZE);
         let r = F::Bytes::from_slice(r);
         let s = E::Bytes::from_slice(s);
         (r, s)

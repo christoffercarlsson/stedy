@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use {
-    crate::utils::wipe,
+    crate::utils::{is_zero, less_than, wipe},
     core::ops::{
         Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
         SubAssign,
@@ -30,6 +30,8 @@ pub trait ByteArray:
     + IndexMut<RangeFrom<usize>, Output = [u8]>
     + Sealed
 {
+    const SIZE: usize;
+
     fn new() -> Self;
 
     fn from_slice(slice: &[u8]) -> &Self;
@@ -129,6 +131,8 @@ pub trait EllipticCurve {
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point>;
 }
 
+pub trait EcdsaCurve: EllipticCurve {}
+
 pub trait FieldElement:
     Sized
     + Copy
@@ -223,11 +227,59 @@ pub trait SeekableStreamCipher: StreamCipher {
     fn seek(&mut self, counter: u32);
 }
 
+pub trait WeierstrassParams<F: FieldElement> {
+    const A: F;
+    const B: F;
+    const BASE_POINT_X: F;
+    const BASE_POINT_Y: F;
+
+    type PointBytes: ByteArray;
+}
+
+pub trait WeierstrassScalar:
+    Sized
+    + Copy
+    + PartialEq
+    + Eq
+    + From<Self::Bytes>
+    + Into<Self::Bytes>
+    + Add<Self, Output = Self>
+    + AddAssign
+    + Sub<Self, Output = Self>
+    + SubAssign
+    + Mul<Self, Output = Self>
+    + MulAssign
+    + Neg<Output = Self>
+{
+    const ORDER_BITS: usize;
+    const ORDER: Self::Bytes;
+
+    type Bytes: ByteArray;
+    type Radix16: AsRef<[i8]>;
+    type Naf5: AsRef<[i8]>;
+
+    fn is_zero(&self) -> bool;
+
+    fn invert(self) -> Self;
+
+    fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
+        let non_zero = !is_zero(bytes.as_ref());
+        let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
+        (non_zero & below).then(|| Self::from(*bytes))
+    }
+
+    fn as_radix_16(&self) -> Self::Radix16;
+
+    fn non_adjacent_form_5(&self) -> Self::Naf5;
+}
+
 trait Sealed {}
 
 impl<const N: usize> Sealed for [u8; N] {}
 
 impl<const N: usize> ByteArray for [u8; N] {
+    const SIZE: usize = N;
+
     fn new() -> Self {
         [0u8; N]
     }

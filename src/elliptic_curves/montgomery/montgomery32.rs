@@ -8,6 +8,7 @@ use {
 };
 
 impl_montgomery!(10);
+impl_montgomery!(14);
 impl_montgomery!(18);
 
 impl<P> Montgomery<10, P>
@@ -789,6 +790,377 @@ where
         let mut s = Self::from_limbs([
             t[18], t[19], t[20], t[21], t[22], t[23], t[24], t[25], t[26], t[27], t[28], t[29],
             t[30], t[31], t[32], t[33], t[34], t[35],
+        ]);
+        s.mask();
+        s.reduce();
+        s
+    }
+}
+
+impl<P> Montgomery<14, P>
+where
+    P: MontgomeryParams<14>,
+{
+    fn montgomery_mul(self, rhs: Self) -> Self {
+        let mut t = [0u64; 28];
+        t[0] = m(self[0], rhs[0]);
+        t[1] = m(self[0], rhs[1]) + m(self[1], rhs[0]);
+        t[2] = m(self[0], rhs[2]) + m(self[1], rhs[1]) + m(self[2], rhs[0]);
+        t[3] = m(self[0], rhs[3]) + m(self[1], rhs[2]) + m(self[2], rhs[1]) + m(self[3], rhs[0]);
+        t[4] = m(self[0], rhs[4])
+            + m(self[1], rhs[3])
+            + m(self[2], rhs[2])
+            + m(self[3], rhs[1])
+            + m(self[4], rhs[0]);
+        t[5] = m(self[0], rhs[5])
+            + m(self[1], rhs[4])
+            + m(self[2], rhs[3])
+            + m(self[3], rhs[2])
+            + m(self[4], rhs[1])
+            + m(self[5], rhs[0]);
+        t[6] = m(self[0], rhs[6])
+            + m(self[1], rhs[5])
+            + m(self[2], rhs[4])
+            + m(self[3], rhs[3])
+            + m(self[4], rhs[2])
+            + m(self[5], rhs[1])
+            + m(self[6], rhs[0]);
+        t[7] = m(self[0], rhs[7])
+            + m(self[1], rhs[6])
+            + m(self[2], rhs[5])
+            + m(self[3], rhs[4])
+            + m(self[4], rhs[3])
+            + m(self[5], rhs[2])
+            + m(self[6], rhs[1])
+            + m(self[7], rhs[0]);
+        t[8] = m(self[0], rhs[8])
+            + m(self[1], rhs[7])
+            + m(self[2], rhs[6])
+            + m(self[3], rhs[5])
+            + m(self[4], rhs[4])
+            + m(self[5], rhs[3])
+            + m(self[6], rhs[2])
+            + m(self[7], rhs[1])
+            + m(self[8], rhs[0]);
+        t[9] = m(self[0], rhs[9])
+            + m(self[1], rhs[8])
+            + m(self[2], rhs[7])
+            + m(self[3], rhs[6])
+            + m(self[4], rhs[5])
+            + m(self[5], rhs[4])
+            + m(self[6], rhs[3])
+            + m(self[7], rhs[2])
+            + m(self[8], rhs[1])
+            + m(self[9], rhs[0]);
+        t[10] = m(self[0], rhs[10])
+            + m(self[1], rhs[9])
+            + m(self[2], rhs[8])
+            + m(self[3], rhs[7])
+            + m(self[4], rhs[6])
+            + m(self[5], rhs[5])
+            + m(self[6], rhs[4])
+            + m(self[7], rhs[3])
+            + m(self[8], rhs[2])
+            + m(self[9], rhs[1])
+            + m(self[10], rhs[0]);
+        t[11] = m(self[0], rhs[11])
+            + m(self[1], rhs[10])
+            + m(self[2], rhs[9])
+            + m(self[3], rhs[8])
+            + m(self[4], rhs[7])
+            + m(self[5], rhs[6])
+            + m(self[6], rhs[5])
+            + m(self[7], rhs[4])
+            + m(self[8], rhs[3])
+            + m(self[9], rhs[2])
+            + m(self[10], rhs[1])
+            + m(self[11], rhs[0]);
+        t[12] = m(self[0], rhs[12])
+            + m(self[1], rhs[11])
+            + m(self[2], rhs[10])
+            + m(self[3], rhs[9])
+            + m(self[4], rhs[8])
+            + m(self[5], rhs[7])
+            + m(self[6], rhs[6])
+            + m(self[7], rhs[5])
+            + m(self[8], rhs[4])
+            + m(self[9], rhs[3])
+            + m(self[10], rhs[2])
+            + m(self[11], rhs[1])
+            + m(self[12], rhs[0]);
+        t[13] = m(self[0], rhs[13])
+            + m(self[1], rhs[12])
+            + m(self[2], rhs[11])
+            + m(self[3], rhs[10])
+            + m(self[4], rhs[9])
+            + m(self[5], rhs[8])
+            + m(self[6], rhs[7])
+            + m(self[7], rhs[6])
+            + m(self[8], rhs[5])
+            + m(self[9], rhs[4])
+            + m(self[10], rhs[3])
+            + m(self[11], rhs[2])
+            + m(self[12], rhs[1])
+            + m(self[13], rhs[0]);
+        t[14] = m(self[1], rhs[13])
+            + m(self[2], rhs[12])
+            + m(self[3], rhs[11])
+            + m(self[4], rhs[10])
+            + m(self[5], rhs[9])
+            + m(self[6], rhs[8])
+            + m(self[7], rhs[7])
+            + m(self[8], rhs[6])
+            + m(self[9], rhs[5])
+            + m(self[10], rhs[4])
+            + m(self[11], rhs[3])
+            + m(self[12], rhs[2])
+            + m(self[13], rhs[1]);
+        t[15] = m(self[2], rhs[13])
+            + m(self[3], rhs[12])
+            + m(self[4], rhs[11])
+            + m(self[5], rhs[10])
+            + m(self[6], rhs[9])
+            + m(self[7], rhs[8])
+            + m(self[8], rhs[7])
+            + m(self[9], rhs[6])
+            + m(self[10], rhs[5])
+            + m(self[11], rhs[4])
+            + m(self[12], rhs[3])
+            + m(self[13], rhs[2]);
+        t[16] = m(self[3], rhs[13])
+            + m(self[4], rhs[12])
+            + m(self[5], rhs[11])
+            + m(self[6], rhs[10])
+            + m(self[7], rhs[9])
+            + m(self[8], rhs[8])
+            + m(self[9], rhs[7])
+            + m(self[10], rhs[6])
+            + m(self[11], rhs[5])
+            + m(self[12], rhs[4])
+            + m(self[13], rhs[3]);
+        t[17] = m(self[4], rhs[13])
+            + m(self[5], rhs[12])
+            + m(self[6], rhs[11])
+            + m(self[7], rhs[10])
+            + m(self[8], rhs[9])
+            + m(self[9], rhs[8])
+            + m(self[10], rhs[7])
+            + m(self[11], rhs[6])
+            + m(self[12], rhs[5])
+            + m(self[13], rhs[4]);
+        t[18] = m(self[5], rhs[13])
+            + m(self[6], rhs[12])
+            + m(self[7], rhs[11])
+            + m(self[8], rhs[10])
+            + m(self[9], rhs[9])
+            + m(self[10], rhs[8])
+            + m(self[11], rhs[7])
+            + m(self[12], rhs[6])
+            + m(self[13], rhs[5]);
+        t[19] = m(self[6], rhs[13])
+            + m(self[7], rhs[12])
+            + m(self[8], rhs[11])
+            + m(self[9], rhs[10])
+            + m(self[10], rhs[9])
+            + m(self[11], rhs[8])
+            + m(self[12], rhs[7])
+            + m(self[13], rhs[6]);
+        t[20] = m(self[7], rhs[13])
+            + m(self[8], rhs[12])
+            + m(self[9], rhs[11])
+            + m(self[10], rhs[10])
+            + m(self[11], rhs[9])
+            + m(self[12], rhs[8])
+            + m(self[13], rhs[7]);
+        t[21] = m(self[8], rhs[13])
+            + m(self[9], rhs[12])
+            + m(self[10], rhs[11])
+            + m(self[11], rhs[10])
+            + m(self[12], rhs[9])
+            + m(self[13], rhs[8]);
+        t[22] = m(self[9], rhs[13])
+            + m(self[10], rhs[12])
+            + m(self[11], rhs[11])
+            + m(self[12], rhs[10])
+            + m(self[13], rhs[9]);
+        t[23] = m(self[10], rhs[13])
+            + m(self[11], rhs[12])
+            + m(self[12], rhs[11])
+            + m(self[13], rhs[10]);
+        t[24] = m(self[11], rhs[13]) + m(self[12], rhs[12]) + m(self[13], rhs[11]);
+        t[25] = m(self[12], rhs[13]) + m(self[13], rhs[12]);
+        t[26] = m(self[13], rhs[13]);
+        Self::montgomery_reduce(&mut t)
+    }
+
+    fn montgomery_square(self) -> Self {
+        let mut t = [0u64; 28];
+        let d0 = m(self[0], self[0]);
+        let d1 = m(self[1], self[1]);
+        let d2 = m(self[2], self[2]);
+        let d3 = m(self[3], self[3]);
+        let d4 = m(self[4], self[4]);
+        let d5 = m(self[5], self[5]);
+        let d6 = m(self[6], self[6]);
+        let d7 = m(self[7], self[7]);
+        let d8 = m(self[8], self[8]);
+        let d9 = m(self[9], self[9]);
+        let d10 = m(self[10], self[10]);
+        let d11 = m(self[11], self[11]);
+        let d12 = m(self[12], self[12]);
+        let d13 = m(self[13], self[13]);
+        let c01 = m(self[0], self[1]) << 1;
+        let c02 = m(self[0], self[2]) << 1;
+        let c03 = m(self[0], self[3]) << 1;
+        let c04 = m(self[0], self[4]) << 1;
+        let c05 = m(self[0], self[5]) << 1;
+        let c06 = m(self[0], self[6]) << 1;
+        let c07 = m(self[0], self[7]) << 1;
+        let c08 = m(self[0], self[8]) << 1;
+        let c09 = m(self[0], self[9]) << 1;
+        let c010 = m(self[0], self[10]) << 1;
+        let c011 = m(self[0], self[11]) << 1;
+        let c012 = m(self[0], self[12]) << 1;
+        let c013 = m(self[0], self[13]) << 1;
+        let c12 = m(self[1], self[2]) << 1;
+        let c13 = m(self[1], self[3]) << 1;
+        let c14 = m(self[1], self[4]) << 1;
+        let c15 = m(self[1], self[5]) << 1;
+        let c16 = m(self[1], self[6]) << 1;
+        let c17 = m(self[1], self[7]) << 1;
+        let c18 = m(self[1], self[8]) << 1;
+        let c19 = m(self[1], self[9]) << 1;
+        let c110 = m(self[1], self[10]) << 1;
+        let c111 = m(self[1], self[11]) << 1;
+        let c112 = m(self[1], self[12]) << 1;
+        let c113 = m(self[1], self[13]) << 1;
+        let c23 = m(self[2], self[3]) << 1;
+        let c24 = m(self[2], self[4]) << 1;
+        let c25 = m(self[2], self[5]) << 1;
+        let c26 = m(self[2], self[6]) << 1;
+        let c27 = m(self[2], self[7]) << 1;
+        let c28 = m(self[2], self[8]) << 1;
+        let c29 = m(self[2], self[9]) << 1;
+        let c210 = m(self[2], self[10]) << 1;
+        let c211 = m(self[2], self[11]) << 1;
+        let c212 = m(self[2], self[12]) << 1;
+        let c213 = m(self[2], self[13]) << 1;
+        let c34 = m(self[3], self[4]) << 1;
+        let c35 = m(self[3], self[5]) << 1;
+        let c36 = m(self[3], self[6]) << 1;
+        let c37 = m(self[3], self[7]) << 1;
+        let c38 = m(self[3], self[8]) << 1;
+        let c39 = m(self[3], self[9]) << 1;
+        let c310 = m(self[3], self[10]) << 1;
+        let c311 = m(self[3], self[11]) << 1;
+        let c312 = m(self[3], self[12]) << 1;
+        let c313 = m(self[3], self[13]) << 1;
+        let c45 = m(self[4], self[5]) << 1;
+        let c46 = m(self[4], self[6]) << 1;
+        let c47 = m(self[4], self[7]) << 1;
+        let c48 = m(self[4], self[8]) << 1;
+        let c49 = m(self[4], self[9]) << 1;
+        let c410 = m(self[4], self[10]) << 1;
+        let c411 = m(self[4], self[11]) << 1;
+        let c412 = m(self[4], self[12]) << 1;
+        let c413 = m(self[4], self[13]) << 1;
+        let c56 = m(self[5], self[6]) << 1;
+        let c57 = m(self[5], self[7]) << 1;
+        let c58 = m(self[5], self[8]) << 1;
+        let c59 = m(self[5], self[9]) << 1;
+        let c510 = m(self[5], self[10]) << 1;
+        let c511 = m(self[5], self[11]) << 1;
+        let c512 = m(self[5], self[12]) << 1;
+        let c513 = m(self[5], self[13]) << 1;
+        let c67 = m(self[6], self[7]) << 1;
+        let c68 = m(self[6], self[8]) << 1;
+        let c69 = m(self[6], self[9]) << 1;
+        let c610 = m(self[6], self[10]) << 1;
+        let c611 = m(self[6], self[11]) << 1;
+        let c612 = m(self[6], self[12]) << 1;
+        let c613 = m(self[6], self[13]) << 1;
+        let c78 = m(self[7], self[8]) << 1;
+        let c79 = m(self[7], self[9]) << 1;
+        let c710 = m(self[7], self[10]) << 1;
+        let c711 = m(self[7], self[11]) << 1;
+        let c712 = m(self[7], self[12]) << 1;
+        let c713 = m(self[7], self[13]) << 1;
+        let c89 = m(self[8], self[9]) << 1;
+        let c810 = m(self[8], self[10]) << 1;
+        let c811 = m(self[8], self[11]) << 1;
+        let c812 = m(self[8], self[12]) << 1;
+        let c813 = m(self[8], self[13]) << 1;
+        let c910 = m(self[9], self[10]) << 1;
+        let c911 = m(self[9], self[11]) << 1;
+        let c912 = m(self[9], self[12]) << 1;
+        let c913 = m(self[9], self[13]) << 1;
+        let c1011 = m(self[10], self[11]) << 1;
+        let c1012 = m(self[10], self[12]) << 1;
+        let c1013 = m(self[10], self[13]) << 1;
+        let c1112 = m(self[11], self[12]) << 1;
+        let c1113 = m(self[11], self[13]) << 1;
+        let c1213 = m(self[12], self[13]) << 1;
+        t[0] = d0;
+        t[1] = c01;
+        t[2] = c02 + d1;
+        t[3] = c03 + c12;
+        t[4] = c04 + c13 + d2;
+        t[5] = c05 + c14 + c23;
+        t[6] = c06 + c15 + c24 + d3;
+        t[7] = c07 + c16 + c25 + c34;
+        t[8] = c08 + c17 + c26 + c35 + d4;
+        t[9] = c09 + c18 + c27 + c36 + c45;
+        t[10] = c010 + c19 + c28 + c37 + c46 + d5;
+        t[11] = c011 + c110 + c29 + c38 + c47 + c56;
+        t[12] = c012 + c111 + c210 + c39 + c48 + c57 + d6;
+        t[13] = c013 + c112 + c211 + c310 + c49 + c58 + c67;
+        t[14] = c113 + c212 + c311 + c410 + c59 + c68 + d7;
+        t[15] = c213 + c312 + c411 + c510 + c69 + c78;
+        t[16] = c313 + c412 + c511 + c610 + c79 + d8;
+        t[17] = c413 + c512 + c611 + c710 + c89;
+        t[18] = c513 + c612 + c711 + c810 + d9;
+        t[19] = c613 + c712 + c811 + c910;
+        t[20] = c713 + c812 + c911 + d10;
+        t[21] = c813 + c912 + c1011;
+        t[22] = c913 + c1012 + d11;
+        t[23] = c1013 + c1112;
+        t[24] = c1113 + d12;
+        t[25] = c1213;
+        t[26] = d13;
+        Self::montgomery_reduce(&mut t)
+    }
+
+    fn montgomery_reduce(t: &mut [u64; 28]) -> Self {
+        Self::round(t, 0);
+        Self::round(t, 1);
+        Self::round(t, 2);
+        Self::round(t, 3);
+        Self::round(t, 4);
+        Self::round(t, 5);
+        Self::round(t, 6);
+        Self::round(t, 7);
+        Self::round(t, 8);
+        Self::round(t, 9);
+        Self::round(t, 10);
+        Self::round(t, 11);
+        Self::round(t, 12);
+        Self::round(t, 13);
+        t[15] += t[14] >> P::BITS;
+        t[16] += t[15] >> P::BITS;
+        t[17] += t[16] >> P::BITS;
+        t[18] += t[17] >> P::BITS;
+        t[19] += t[18] >> P::BITS;
+        t[20] += t[19] >> P::BITS;
+        t[21] += t[20] >> P::BITS;
+        t[22] += t[21] >> P::BITS;
+        t[23] += t[22] >> P::BITS;
+        t[24] += t[23] >> P::BITS;
+        t[25] += t[24] >> P::BITS;
+        t[26] += t[25] >> P::BITS;
+        t[27] += t[26] >> P::BITS;
+        let mut s = Self::from_limbs([
+            t[14], t[15], t[16], t[17], t[18], t[19], t[20], t[21], t[22], t[23], t[24], t[25],
+            t[26], t[27],
         ]);
         s.mask();
         s.reduce();

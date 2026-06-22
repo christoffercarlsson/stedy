@@ -1,4 +1,7 @@
-use {criterion::Criterion, stedy::key_exchange::X25519};
+use {
+    criterion::Criterion,
+    stedy::key_exchange::{P256, P384, P521, X25519},
+};
 
 pub fn bench(c: &mut Criterion) {
     let alice_private_key = [
@@ -16,5 +19,62 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("x25519_key_exchange", |b| {
         b.iter(|| X25519::key_exchange(&alice_private_key, &bob_public_key))
+    });
+
+    let p256_private_key = [
+        1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
+        148, 155, 162, 169, 176, 183, 190, 197, 204, 211, 218,
+    ];
+    let p256_peer_public_key = [
+        2, 43, 63, 184, 25, 80, 184, 115, 27, 22, 252, 116, 136, 38, 89, 32, 81, 14, 136, 57, 81,
+        40, 1, 55, 65, 241, 129, 217, 2, 124, 83, 221, 41,
+    ];
+
+    c.bench_function("ecdh_p256_public_key", |b| {
+        b.iter(|| P256::public_key(&p256_private_key))
+    });
+
+    c.bench_function("ecdh_p256_key_exchange", |b| {
+        b.iter(|| P256::key_exchange(&p256_private_key, &p256_peer_public_key))
+    });
+
+    let p384_private_key = [
+        1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
+        148, 155, 162, 169, 176, 183, 190, 197, 204, 211, 218, 225, 232, 239, 246, 253, 4, 11, 18,
+        25, 32, 39, 46, 53, 60, 67, 74,
+    ];
+    let p384_peer_public_key = [
+        3, 59, 199, 196, 169, 116, 224, 239, 124, 81, 149, 179, 149, 241, 36, 68, 45, 78, 86, 172,
+        139, 77, 146, 132, 76, 252, 185, 201, 72, 34, 59, 50, 26, 171, 166, 170, 186, 207, 52, 150,
+        76, 212, 102, 232, 56, 104, 89, 167, 0,
+    ];
+
+    c.bench_function("ecdh_p384_public_key", |b| {
+        b.iter(|| P384::public_key(&p384_private_key))
+    });
+
+    c.bench_function("ecdh_p384_key_exchange", |b| {
+        b.iter(|| P384::key_exchange(&p384_private_key, &p384_peer_public_key))
+    });
+
+    let p521_private_key = [
+        1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
+        148, 155, 162, 169, 176, 183, 190, 197, 204, 211, 218, 225, 232, 239, 246, 253, 4, 11, 18,
+        25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123, 130, 137, 144, 151, 158,
+        165, 172, 179, 186, 193, 200,
+    ];
+    let p521_peer_public_key = [
+        2, 0, 98, 233, 93, 172, 157, 163, 15, 37, 122, 17, 160, 81, 119, 61, 20, 210, 170, 191,
+        242, 219, 203, 152, 203, 166, 4, 165, 150, 161, 216, 31, 153, 18, 62, 15, 100, 141, 84, 47,
+        32, 246, 39, 66, 229, 19, 199, 143, 26, 62, 78, 135, 190, 167, 198, 240, 76, 125, 210, 49,
+        71, 84, 145, 103, 62, 111, 222,
+    ];
+
+    c.bench_function("ecdh_p521_public_key", |b| {
+        b.iter(|| P521::public_key(&p521_private_key))
+    });
+
+    c.bench_function("ecdh_p521_key_exchange", |b| {
+        b.iter(|| P521::key_exchange(&p521_private_key, &p521_peer_public_key))
     });
 }
