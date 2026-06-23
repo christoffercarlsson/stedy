@@ -24,10 +24,10 @@ name = "stedy"
 path = "benchmarks/main.rs"
 
 [dependencies]
-getrandom = { version = "0.3.4", default-features = false, optional = true }
+getrandom = { version = "0.4.3", default-features = false, optional = true }
 
 [dev-dependencies]
-criterion = "0.8.1"
+criterion = "0.8.2"
 
 [features]
 default = []
