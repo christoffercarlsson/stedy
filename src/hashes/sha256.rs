@@ -204,7 +204,7 @@ impl Sha256 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, hex_literal::hex};
 
     // https://www.di-mgt.com.au/sha_testvectors.html
 
@@ -213,10 +213,7 @@ mod tests {
         let digest = Sha256::digest(b"");
         assert_eq!(
             digest,
-            [
-                227, 176, 196, 66, 152, 252, 28, 20, 154, 251, 244, 200, 153, 111, 185, 36, 39,
-                174, 65, 228, 100, 155, 147, 76, 164, 149, 153, 27, 120, 82, 184, 85,
-            ]
+            hex!("e3b0c442 98fc1c14 9afbf4c8 996fb924 27ae41e4 649b934c a495991b 7852b855")
         );
     }
 
@@ -225,10 +222,7 @@ mod tests {
         let digest = Sha256::digest(b"abc");
         assert_eq!(
             digest,
-            [
-                186, 120, 22, 191, 143, 1, 207, 234, 65, 65, 64, 222, 93, 174, 34, 35, 176, 3, 97,
-                163, 150, 23, 122, 156, 180, 16, 255, 97, 242, 0, 21, 173,
-            ]
+            hex!("ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad")
         );
     }
 
@@ -237,10 +231,7 @@ mod tests {
         let digest = Sha256::digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         assert_eq!(
             digest,
-            [
-                36, 141, 106, 97, 210, 6, 56, 184, 229, 192, 38, 147, 12, 62, 96, 57, 163, 60, 228,
-                89, 100, 255, 33, 103, 246, 236, 237, 212, 25, 219, 6, 193,
-            ]
+            hex!("248d6a61 d20638b8 e5c02693 0c3e6039 a33ce459 64ff2167 f6ecedd4 19db06c1")
         );
     }
 
@@ -249,10 +240,7 @@ mod tests {
         let digest = Sha256::digest(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         assert_eq!(
             digest,
-            [
-                207, 91, 22, 167, 120, 175, 131, 128, 3, 108, 229, 158, 123, 4, 146, 55, 11, 36,
-                155, 17, 232, 240, 122, 81, 175, 172, 69, 3, 122, 254, 233, 209,
-            ]
+            hex!("cf5b16a7 78af8380 036ce59e 7b049237 0b249b11 e8f07a51 afac4503 7afee9d1")
         );
     }
 
@@ -265,10 +253,7 @@ mod tests {
         let digest = hasher.finalize();
         assert_eq!(
             digest,
-            [
-                205, 199, 110, 92, 153, 20, 251, 146, 129, 161, 199, 226, 132, 215, 62, 103, 241,
-                128, 154, 72, 164, 151, 32, 14, 4, 109, 57, 204, 199, 17, 44, 208,
-            ]
+            hex!("cdc76e5c 9914fb92 81a1c7e2 84d73e67 f1809a48 a497200e 046d39cc c7112cd0")
         );
     }
 }

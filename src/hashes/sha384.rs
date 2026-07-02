@@ -280,7 +280,7 @@ impl Sha384 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, hex_literal::hex};
 
     // https://www.di-mgt.com.au/sha_testvectors.html
 
@@ -289,11 +289,7 @@ mod tests {
         let digest = Sha384::digest(b"");
         assert_eq!(
             digest,
-            [
-                56, 176, 96, 167, 81, 172, 150, 56, 76, 217, 50, 126, 177, 177, 227, 106, 33, 253,
-                183, 17, 20, 190, 7, 67, 76, 12, 199, 191, 99, 246, 225, 218, 39, 78, 222, 191,
-                231, 111, 101, 251, 213, 26, 210, 241, 72, 152, 185, 91
-            ]
+            hex!("38b060a751ac9638 4cd9327eb1b1e36a 21fdb71114be0743 4c0cc7bf63f6e1da 274edebfe76f65fb d51ad2f14898b95b")
         );
     }
 
@@ -302,11 +298,7 @@ mod tests {
         let digest = Sha384::digest(b"abc");
         assert_eq!(
             digest,
-            [
-                203, 0, 117, 63, 69, 163, 94, 139, 181, 160, 61, 105, 154, 198, 80, 7, 39, 44, 50,
-                171, 14, 222, 209, 99, 26, 139, 96, 90, 67, 255, 91, 237, 128, 134, 7, 43, 161,
-                231, 204, 35, 88, 186, 236, 161, 52, 200, 37, 167
-            ]
+            hex!("cb00753f45a35e8b b5a03d699ac65007 272c32ab0eded163 1a8b605a43ff5bed 8086072ba1e7cc23 58baeca134c825a7")
         );
     }
 
@@ -315,11 +307,7 @@ mod tests {
         let digest = Sha384::digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         assert_eq!(
             digest,
-            [
-                51, 145, 253, 221, 252, 141, 199, 57, 55, 7, 166, 91, 27, 71, 9, 57, 124, 248, 177,
-                209, 98, 175, 5, 171, 254, 143, 69, 13, 229, 243, 107, 198, 176, 69, 90, 133, 32,
-                188, 78, 111, 95, 233, 91, 31, 227, 200, 69, 43
-            ]
+            hex!("3391fdddfc8dc739 3707a65b1b470939 7cf8b1d162af05ab fe8f450de5f36bc6 b0455a8520bc4e6f 5fe95b1fe3c8452b")
         );
     }
 
@@ -329,11 +317,7 @@ mod tests {
             Sha384::digest(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         assert_eq!(
             digest,
-            [
-                9, 51, 12, 51, 247, 17, 71, 232, 61, 25, 47, 199, 130, 205, 27, 71, 83, 17, 27, 23,
-                59, 59, 5, 210, 47, 160, 128, 134, 227, 176, 247, 18, 252, 199, 199, 26, 85, 126,
-                45, 185, 102, 195, 233, 250, 145, 116, 96, 57
-            ]
+            hex!("09330c33f71147e8 3d192fc782cd1b47 53111b173b3b05d2 2fa08086e3b0f712 fcc7c71a557e2db9 66c3e9fa91746039"),
         );
     }
 
@@ -346,11 +330,7 @@ mod tests {
         let digest = hasher.finalize();
         assert_eq!(
             digest,
-            [
-                157, 14, 24, 9, 113, 100, 116, 203, 8, 110, 131, 78, 49, 10, 74, 28, 237, 20, 158,
-                156, 0, 242, 72, 82, 121, 114, 206, 197, 112, 76, 42, 91, 7, 184, 179, 220, 56,
-                236, 196, 235, 174, 151, 221, 216, 127, 61, 137, 133
-            ]
+            hex!("9d0e1809716474cb 086e834e310a4a1c ed149e9c00f24852 7972cec5704c2a5b 07b8b3dc38ecc4eb ae97ddd87f3d8985")
         );
     }
 }

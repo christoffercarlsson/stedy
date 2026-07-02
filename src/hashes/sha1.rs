@@ -167,56 +167,32 @@ impl Sha1 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, hex_literal::hex};
 
     // https://www.di-mgt.com.au/sha_testvectors.html
 
     #[test]
     fn test_sha1_0bits() {
         let digest = Sha1::digest(b"");
-        assert_eq!(
-            digest,
-            [
-                218, 57, 163, 238, 94, 107, 75, 13, 50, 85, 191, 239, 149, 96, 24, 144, 175, 216,
-                7, 9
-            ]
-        );
+        assert_eq!(digest, hex!("da39a3ee 5e6b4b0d 3255bfef 95601890 afd80709"));
     }
 
     #[test]
     fn test_sha1_24bits() {
         let digest = Sha1::digest(b"abc");
-        assert_eq!(
-            digest,
-            [
-                169, 153, 62, 54, 71, 6, 129, 106, 186, 62, 37, 113, 120, 80, 194, 108, 156, 208,
-                216, 157
-            ]
-        );
+        assert_eq!(digest, hex!("a9993e36 4706816a ba3e2571 7850c26c 9cd0d89d"));
     }
 
     #[test]
     fn test_sha1_448bits() {
         let digest = Sha1::digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
-        assert_eq!(
-            digest,
-            [
-                132, 152, 62, 68, 28, 59, 210, 110, 186, 174, 74, 161, 249, 81, 41, 229, 229, 70,
-                112, 241
-            ]
-        );
+        assert_eq!(digest, hex!("84983e44 1c3bd26e baae4aa1 f95129e5 e54670f1"));
     }
 
     #[test]
     fn test_sha1_896bits() {
         let digest = Sha1::digest(b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
-        assert_eq!(
-            digest,
-            [
-                164, 155, 36, 70, 160, 44, 100, 91, 244, 25, 249, 149, 182, 112, 145, 37, 58, 4,
-                162, 89
-            ]
-        );
+        assert_eq!(digest, hex!("a49b2446 a02c645b f419f995 b6709125 3a04a259"));
     }
 
     #[test]
@@ -226,12 +202,6 @@ mod tests {
             hasher.update(b"a");
         }
         let digest = hasher.finalize();
-        assert_eq!(
-            digest,
-            [
-                52, 170, 151, 60, 212, 196, 218, 164, 246, 30, 235, 43, 219, 173, 39, 49, 101, 52,
-                1, 111
-            ]
-        );
+        assert_eq!(digest, hex!("34aa973c d4c4daa4 f61eeb2b dbad2731 6534016f"));
     }
 }

@@ -209,21 +209,21 @@ impl<const N: usize> Blake2b<N> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, hex_literal::hex};
 
-    // https://datatracker.ietf.org/doc/html/rfc7693
+    // https://datatracker.ietf.org/doc/html/rfc7693#appendix-A
 
     #[test]
     fn test_blake2b512() {
         let digest = Blake2b512::digest(b"abc");
         assert_eq!(
             digest,
-            [
-                186, 128, 165, 63, 152, 28, 77, 13, 106, 39, 151, 182, 159, 18, 246, 233, 76, 33,
-                47, 20, 104, 90, 196, 183, 75, 18, 187, 111, 219, 255, 162, 209, 125, 135, 197, 57,
-                42, 171, 121, 45, 194, 82, 213, 222, 69, 51, 204, 149, 24, 211, 138, 168, 219, 241,
-                146, 90, 185, 35, 134, 237, 212, 0, 153, 35
-            ]
+            hex!(
+                "BA 80 A5 3F 98 1C 4D 0D 6A 27 97 B6 9F 12 F6 E9
+                4C 21 2F 14 68 5A C4 B7 4B 12 BB 6F DB FF A2 D1
+                7D 87 C5 39 2A AB 79 2D C2 52 D5 DE 45 33 CC 95
+                18 D3 8A A8 DB F1 92 5A B9 23 86 ED D4 00 99 23"
+            )
         );
     }
 }
