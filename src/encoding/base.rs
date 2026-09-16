@@ -1,4 +1,4 @@
-use crate::utils::{wipe, Block};
+use crate::utils::{choice, eq_word, mask, select_word, wipe, Block};
 
 const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";
 const BASE32_ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -130,25 +130,21 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         let mut err = 1;
         for (i, &a) in self.alphabet.iter().enumerate() {
             let byte = Self::normalize(byte);
-            let condition = (byte == a) as u8;
-            let mask = condition.wrapping_neg();
-            index = (index & !mask) | ((i as u8) & mask);
-            err &= condition ^ 1;
+            let condition = eq_word(byte, a);
+            index = select_word(index, i as u8, condition);
+            err &= (condition as u8) ^ 1;
         }
         *error |= err;
         index
     }
 
     fn normalize(byte: u8) -> u8 {
-        let is_base16_uppercase =
-            ((BITS == 4) as u8) & ((byte >= b'A') as u8) & ((byte <= b'F') as u8);
-        let mask = (is_base16_uppercase.wrapping_neg()) & 32;
-        byte ^ mask
+        let is_base16_uppercase = choice(BITS == 4) & choice(byte >= b'A') & choice(byte <= b'F');
+        byte ^ (mask::<u8>(is_base16_uppercase) & 32)
     }
 
     fn is_padding(byte: u8) -> usize {
-        let diff = (byte as usize) ^ (PADDING_BYTE as usize);
-        1 ^ ((diff | diff.wrapping_neg()) >> (usize::BITS - 1))
+        eq_word(byte, PADDING_BYTE) as usize
     }
 
     fn from_binary(chunk: &[u8]) -> u8 {

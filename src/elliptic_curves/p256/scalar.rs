@@ -103,7 +103,7 @@ impl MulAssign for ScalarP256 {
 
 impl PartialEq for ScalarP256 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 

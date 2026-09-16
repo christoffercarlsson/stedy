@@ -1,6 +1,6 @@
 use crate::{
     traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
-    utils::{verify, Block},
+    utils::{mask, verify, Block},
 };
 
 #[derive(Clone)]
@@ -178,7 +178,7 @@ impl<const N: usize> Blake2b<N> {
         v[8..16].copy_from_slice(&Self::IV);
         v[12] ^= self.t[0];
         v[13] ^= self.t[1];
-        v[14] ^= is_final.wrapping_neg();
+        v[14] ^= mask::<u64>(is_final);
         for i in 0..12 {
             let s = &Self::SIGMA[i % 10];
             Self::g(&mut v, 0, 4, 8, 12, m[s[0]], m[s[1]]);

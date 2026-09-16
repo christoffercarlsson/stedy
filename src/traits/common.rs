@@ -159,6 +159,12 @@ pub trait FieldElement:
 
     fn select(a: &Self, b: &Self, condition: u64) -> Self;
 
+    fn ct_eq(&self, other: &Self) -> u64;
+
+    fn ct_is_zero(&self) -> u64 {
+        self.ct_eq(&Self::ZERO)
+    }
+
     fn square(self) -> Self;
 
     fn invert(self) -> Self;
@@ -263,9 +269,9 @@ pub trait WeierstrassScalar:
     fn invert(self) -> Self;
 
     fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
-        let non_zero = !is_zero(bytes.as_ref());
+        let non_zero = 1 ^ is_zero(bytes.as_ref());
         let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
-        (non_zero & below).then(|| Self::from(*bytes))
+        ((non_zero & below) == 1).then(|| Self::from(*bytes))
     }
 
     fn as_radix_16(&self) -> Self::Radix16;

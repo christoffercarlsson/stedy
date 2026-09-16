@@ -32,7 +32,6 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| Ed25519::verify(&message, &public_key, &signature))
     });
 
-    // RFC 6979 vectors for message b"sample".
     let message = b"sample";
 
     let p256_private_key = [

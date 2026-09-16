@@ -1,5 +1,8 @@
 use {
-    crate::traits::{ByteArray, FieldElement, WeierstrassParams, WeierstrassScalar},
+    crate::{
+        traits::{ByteArray, FieldElement, WeierstrassParams, WeierstrassScalar},
+        utils::{abs_i8, eq_word},
+    },
     core::{
         array::from_fn,
         marker::PhantomData,
@@ -43,8 +46,8 @@ where
     pub(crate) const BASE_POINT: Self = Self::new(F::BASE_POINT_X, F::BASE_POINT_Y, F::ONE);
     const IDENTITY: Self = Self::new(F::ZERO, F::ONE, F::ZERO);
 
-    pub(crate) fn is_identity(&self) -> bool {
-        self.z == F::ZERO
+    pub(crate) fn is_identity(&self) -> u64 {
+        self.z.ct_is_zero()
     }
 
     pub(crate) fn compress(&self) -> F::PointBytes {
@@ -62,7 +65,7 @@ where
 
     pub(crate) fn decompress(bytes: &F::PointBytes) -> (Self, u64) {
         let prefix = bytes[0];
-        let valid_prefix = ((prefix == 2) | (prefix == 3)) as u64;
+        let valid_prefix = eq_word(prefix, 2u8) | eq_word(prefix, 3u8);
         let sign = (prefix & 1) as u64;
         let x = F::from(*F::Bytes::from_slice(&bytes[1..]));
         let x2 = x.square();
@@ -97,10 +100,10 @@ where
             let da = na[i];
             let db = nb[i];
             if da != 0 {
-                r = r + wa.select(da);
+                r = r + wa.vartime_select(da);
             }
             if db != 0 {
-                r = r + wb.select(db);
+                r = r + wb.vartime_select(db);
             }
             if i == 0 {
                 break;
@@ -160,14 +163,14 @@ where
     S: WeierstrassScalar,
 {
     fn eq(&self, other: &Self) -> bool {
-        let is_identity = self.is_identity() as u64 & other.is_identity() as u64;
+        let is_identity = self.is_identity() & other.is_identity();
         let z1z1 = self.z.square();
         let z2z2 = other.z.square();
         let x1 = self.x * z2z2;
         let x2 = other.x * z1z1;
         let y1 = self.y * other.z * z2z2;
         let y2 = other.y * self.z * z1z1;
-        let is_equal = (x1 == x2) as u64 & (y1 == y2) as u64;
+        let is_equal = x1.ct_eq(&x2) & y1.ct_eq(&y2);
         (is_identity | is_equal) == 1
     }
 }
@@ -203,10 +206,10 @@ where
         let y3 = r * (v - x3) - two * s1 * j;
         let z3 = ((self.z + rhs.z).square() - z1z1 - z2z2) * h;
         let sum = Self::new(x3, y3, z3);
-        let coincident = (h == F::ZERO) as u64 & (s1 == s2) as u64;
+        let coincident = h.ct_is_zero() & s1.ct_eq(&s2);
         let result = Self::select(&sum, &self.double(), coincident);
-        let result = Self::select(&result, &rhs, self.is_identity() as u64);
-        Self::select(&result, &self, rhs.is_identity() as u64)
+        let result = Self::select(&result, &rhs, self.is_identity());
+        Self::select(&result, &self, rhs.is_identity())
     }
 }
 
@@ -234,7 +237,7 @@ where
         let z3 = (self.z + h).square() - z1z1 - hh;
         let sum = Self::new(x3, y3, z3);
         let lifted = Self::new(rhs.x, rhs.y, F::ONE);
-        Self::select(&sum, &lifted, self.is_identity() as u64)
+        Self::select(&sum, &lifted, self.is_identity())
     }
 }
 
@@ -324,7 +327,7 @@ where
     S: WeierstrassScalar,
 {
     fn from(point: Weierstrass<F, S>) -> Self {
-        let z = F::select(&point.z, &F::ONE, point.is_identity() as u64);
+        let z = F::select(&point.z, &F::ONE, point.is_identity());
         let zi = z.invert();
         let zi2 = zi.square();
         let zi3 = zi2 * zi;
@@ -346,15 +349,12 @@ where
     S: WeierstrassScalar,
 {
     fn select(&self, x: i8) -> Weierstrass<F, S> {
-        let xn = x as i16;
-        let sign = xn >> 15;
-        let idx = ((xn ^ sign) - sign) as u8;
+        let (idx, negate) = abs_i8(x);
         let mut t = Weierstrass::<F, S>::IDENTITY;
         for j in 0u8..8 {
-            let is_index = (((j + 1) ^ idx) == 0) as u64;
+            let is_index = eq_word(j + 1, idx);
             t = Weierstrass::<F, S>::select(&t, &self.0[j as usize], is_index);
         }
-        let negate = (sign & 1) as u64;
         Weierstrass::<F, S>::select(&t, &t.neg(), negate)
     }
 }
@@ -414,7 +414,7 @@ impl<F> NafWindow<F>
 where
     F: FieldElement + WeierstrassParams<F>,
 {
-    fn select(&self, x: i8) -> Affine<F> {
+    fn vartime_select(&self, x: i8) -> Affine<F> {
         if x == 0 {
             return Affine::<F>::IDENTITY;
         }

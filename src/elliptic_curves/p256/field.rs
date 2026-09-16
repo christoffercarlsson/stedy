@@ -49,7 +49,7 @@ impl FieldP256 {
         let v3 = v2 * v;
         let r = u * v * (u * v3).pow_p_minus_3_div_4();
         let c = v * r.square();
-        let valid = (u == c) as u64;
+        let valid = u.ct_eq(&c);
         let r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
@@ -121,7 +121,7 @@ impl DivAssign for FieldP256 {
 
 impl PartialEq for FieldP256 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 
@@ -177,6 +177,14 @@ impl FieldElement for FieldP256 {
         Self::select(a, b, condition)
     }
 
+    fn ct_eq(&self, other: &Self) -> u64 {
+        self.ct_eq(other)
+    }
+
+    fn ct_is_zero(&self) -> u64 {
+        self.ct_is_zero()
+    }
+
     fn square(self) -> Self {
         self.square()
     }
@@ -191,28 +199,28 @@ impl FieldElement for FieldP256 {
 }
 
 impl WeierstrassParams<FieldP256> for FieldP256 {
-    const A: FieldP256 = FieldP256::from_limbs([
+    const A: FieldP256 = FieldP256::from_wide_limbs([
         4503599627370447,
         862017116176383,
         0,
         3367254360064,
         281474973499392,
     ]);
-    const B: FieldP256 = FieldP256::from_limbs([
+    const B: FieldP256 = FieldP256::from_wide_limbs([
         3929803208777213,
         3562985424476316,
         583760861921372,
         2309067332692983,
         214406409308276,
     ]);
-    const BASE_POINT_X: FieldP256 = FieldP256::from_limbs([
+    const BASE_POINT_X: FieldP256 = FieldP256::from_wide_limbs([
         859000078943169,
         3465582099921383,
         1726581271406943,
         1625533376047991,
         150658718847861,
     ]);
-    const BASE_POINT_Y: FieldP256 = FieldP256::from_limbs([
+    const BASE_POINT_Y: FieldP256 = FieldP256::from_wide_limbs([
         1466185490456744,
         1189782786727410,
         597251050482574,

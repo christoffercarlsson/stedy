@@ -28,13 +28,6 @@ impl Field25519 {
         Self::from(&bytes)
     }
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mut x = *a;
-        let mut y = *b;
-        Self::swap(&mut x, &mut y, condition);
-        x
-    }
-
     fn invert(self) -> Self {
         let x = self;
         let x3 = x * x.square();
@@ -76,8 +69,8 @@ impl Field25519 {
         let v = u * Self::SQRT_M1;
         let c = b * u.square();
         let d = b * v.square();
-        let e = (c == a) as u64;
-        let f = (d == a) as u64;
+        let e = c.ct_eq(&a);
+        let f = d.ct_eq(&a);
         let valid = e | f;
         let r = Self::select(&v, &u, e);
         let r = Self::select(&Self::ZERO, &r, valid);
@@ -151,7 +144,7 @@ impl DivAssign for Field25519 {
 
 impl PartialEq for Field25519 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 
@@ -205,6 +198,10 @@ impl FieldElement for Field25519 {
 
     fn select(a: &Self, b: &Self, condition: u64) -> Self {
         Self::select(a, b, condition)
+    }
+
+    fn ct_eq(&self, other: &Self) -> u64 {
+        self.ct_eq(other)
     }
 
     fn square(self) -> Self {

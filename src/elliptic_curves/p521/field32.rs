@@ -1,5 +1,5 @@
 use {
-    crate::utils::unsigned_mul as m,
+    crate::utils::{is_zero_limbs, msb, select_limbs, swap_limbs, unsigned_mul as m},
     core::{
         array::from_fn,
         ops::{Index, IndexMut},
@@ -39,19 +39,11 @@ impl FieldP521 {
     }
 
     pub(super) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
-        let mask = ((condition != 0) as u32).wrapping_neg();
-        for i in 0..18 {
-            let t = mask & (a.0[i] ^ b.0[i]);
-            a.0[i] ^= t;
-            b.0[i] ^= t;
-        }
+        swap_limbs(&mut a.0, &mut b.0, condition);
     }
 
     pub(super) fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mut x = *a;
-        let mut y = *b;
-        Self::swap(&mut x, &mut y, condition);
-        x
+        Self(select_limbs(&a.0, &b.0, condition))
     }
 
     pub(super) fn square(self) -> Self {
@@ -613,14 +605,10 @@ impl FieldP521 {
         result
     }
 
-    pub(super) fn eq(&self, other: &Self) -> bool {
+    pub(super) fn ct_eq(&self, other: &Self) -> u64 {
         let mut diff = self.sub(*other);
         diff.canonical();
-        let mut result = 0u32;
-        for i in 0..18 {
-            result |= diff[i];
-        }
-        result == 0
+        is_zero_limbs(&diff.0)
     }
 
     pub(super) fn from_u32(n: u32) -> Self {
@@ -760,9 +748,9 @@ impl FieldP521 {
         reduced[0] += 1;
         reduced.carry();
         reduced[17] = reduced[17].wrapping_sub(1 << 28);
-        let borrow = reduced[17] >> 31;
+        let borrow = msb(reduced[17]);
         reduced.mask();
-        *self = Self::select(&reduced, self, borrow as u64);
+        *self = Self::select(&reduced, self, borrow);
     }
 
     const fn reduce_wide(mut words: [u64; 18]) -> Self {
@@ -783,11 +771,14 @@ impl FieldP521 {
         words[15] += words[14] >> 29;
         words[16] += words[15] >> 29;
         words[17] += words[16] >> 29;
-        let carry = (words[17] >> 28) as u32;
-        let mut t = [
-            (words[0] as u32) & Self::MASK,
-            (words[1] as u32) & Self::MASK,
-            (words[2] as u32) & Self::MASK,
+        let carry = words[17] >> 28;
+        let w0 = (words[0] & Self::MASK as u64) + carry;
+        let w1 = (words[1] & Self::MASK as u64) + (w0 >> 29);
+        let w2 = (words[2] & Self::MASK as u64) + (w1 >> 29);
+        let t = [
+            (w0 & Self::MASK as u64) as u32,
+            (w1 & Self::MASK as u64) as u32,
+            w2 as u32,
             (words[3] as u32) & Self::MASK,
             (words[4] as u32) & Self::MASK,
             (words[5] as u32) & Self::MASK,
@@ -804,11 +795,6 @@ impl FieldP521 {
             (words[16] as u32) & Self::MASK,
             (words[17] as u32) & Self::TOP_MASK,
         ];
-        t[0] += carry;
-        t[1] += t[0] >> 29;
-        t[2] += t[1] >> 29;
-        t[0] &= Self::MASK;
-        t[1] &= Self::MASK;
         Self(t)
     }
 }

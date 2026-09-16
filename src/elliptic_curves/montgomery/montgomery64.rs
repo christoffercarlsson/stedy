@@ -11,6 +11,22 @@ impl_montgomery!(5);
 impl_montgomery!(7);
 impl_montgomery!(9);
 
+macro_rules! impl_from_wide_limbs {
+    ($LIMBS:literal) => {
+        impl<P> Montgomery<$LIMBS, P>
+        where
+            P: MontgomeryParams<$LIMBS>,
+        {
+            pub(crate) const fn from_wide_limbs(value: [u64; $LIMBS]) -> Self {
+                Self::from_limbs(value)
+            }
+        }
+    };
+}
+
+impl_from_wide_limbs!(5);
+impl_from_wide_limbs!(7);
+
 impl<P> Montgomery<5, P>
 where
     P: MontgomeryParams<5>,

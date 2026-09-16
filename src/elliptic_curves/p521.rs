@@ -46,7 +46,7 @@ impl EllipticCurve for P521 {
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
         let result = point * scalar;
-        if result.is_identity() {
+        if result.is_identity() == 1 {
             None
         } else {
             Some(result)

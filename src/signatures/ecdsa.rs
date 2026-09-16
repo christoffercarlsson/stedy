@@ -65,7 +65,7 @@ where
         let u1 = e * w;
         let u2 = r * w;
         let R = Weierstrass::<F, S>::vartime_double_base(&u2, q, &u1);
-        if R.is_identity() {
+        if R.is_identity() == 1 {
             return false;
         }
         Self::affine_x_mod_order(&R) == r

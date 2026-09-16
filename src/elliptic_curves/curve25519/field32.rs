@@ -1,5 +1,5 @@
 use {
-    crate::utils::signed_mul as m,
+    crate::utils::{is_zero_limbs, select_limbs, signed_mul as m, swap_limbs},
     core::{
         array::from_fn,
         ops::{Index, IndexMut},
@@ -43,12 +43,11 @@ impl Field25519 {
     }
 
     pub(super) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
-        let mask = ((condition != 0) as i32).wrapping_neg();
-        for i in 0..10 {
-            let t = mask & (a.0[i] ^ b.0[i]);
-            a.0[i] ^= t;
-            b.0[i] ^= t;
-        }
+        swap_limbs(&mut a.0, &mut b.0, condition);
+    }
+
+    pub(super) fn select(a: &Self, b: &Self, condition: u64) -> Self {
+        Self(select_limbs(&a.0, &b.0, condition))
     }
 
     pub(super) fn square(self) -> Self {
@@ -261,20 +260,10 @@ impl Field25519 {
         result
     }
 
-    pub(super) fn eq(&self, other: &Self) -> bool {
+    pub(super) fn ct_eq(&self, other: &Self) -> u64 {
         let mut diff = self.sub(*other);
         diff.canonical();
-        let result = diff[0]
-            | diff[1]
-            | diff[2]
-            | diff[3]
-            | diff[4]
-            | diff[5]
-            | diff[6]
-            | diff[7]
-            | diff[8]
-            | diff[9];
-        result == 0
+        is_zero_limbs(&diff.0)
     }
 
     pub(super) const fn from_u32(n: u32) -> Self {

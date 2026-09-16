@@ -23,7 +23,8 @@ pub type FieldP256 = Montgomery<10, FieldP256Params>;
 impl FieldP256 {
     pub(super) fn from_u32(value: u32) -> Self {
         let mut s = Self::ZERO;
-        s[0] = value as u64;
+        s[0] = value & Self::MASK;
+        s[1] = value >> 26;
         s.enter_montgomery()
     }
 

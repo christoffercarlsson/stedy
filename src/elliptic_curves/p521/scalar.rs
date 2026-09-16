@@ -110,7 +110,7 @@ impl MulAssign for ScalarP521 {
 
 impl PartialEq for ScalarP521 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 

@@ -56,32 +56,28 @@ macro_rules! impl_montgomery {
                 Self(words, PhantomData::<P>)
             }
 
-            pub(crate) fn swap(a: &mut Self, b: &mut Self, condition: Word) {
-                let mask = ((condition != 0) as Word).wrapping_neg();
-                for i in 0..$LIMBS {
-                    let t = mask & (a[i] ^ b[i]);
-                    a.0[i] ^= t;
-                    b.0[i] ^= t;
-                }
+            #[allow(dead_code)]
+            pub(crate) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
+                crate::utils::swap_limbs(&mut a.0, &mut b.0, condition);
             }
 
-            pub(crate) fn select(a: &Self, b: &Self, condition: Word) -> Self {
-                let mut x = *a;
-                let mut y = *b;
-                Self::swap(&mut x, &mut y, condition);
-                x
+            pub(crate) fn select(a: &Self, b: &Self, condition: u64) -> Self {
+                Self(
+                    crate::utils::select_limbs(&a.0, &b.0, condition),
+                    PhantomData::<P>,
+                )
             }
 
-            pub(crate) fn eq(&self, other: &Self) -> bool {
-                let mut result = 0;
-                for i in 0..$LIMBS {
-                    result |= self[i] ^ other[i];
-                }
-                result == 0
+            pub(crate) fn ct_eq(&self, other: &Self) -> u64 {
+                crate::utils::eq_limbs(&self.0, &other.0)
+            }
+
+            pub(crate) fn ct_is_zero(&self) -> u64 {
+                crate::utils::is_zero_limbs(&self.0)
             }
 
             pub(crate) fn is_zero(&self) -> bool {
-                self.eq(&Self::ZERO)
+                self.ct_is_zero() == 1
             }
 
             pub(crate) fn add(self, rhs: Self) -> Self {
@@ -97,14 +93,14 @@ macro_rules! impl_montgomery {
 
             pub(crate) fn sub(self, rhs: Self) -> Self {
                 let mut diff = Self::ZERO;
-                let mut borrow = 0 as Word;
+                let mut borrow = 0u64;
                 for i in 0..$LIMBS {
                     let (d1, b1) = self[i].overflowing_sub(rhs[i]);
-                    let (d2, b2) = d1.overflowing_sub(borrow);
+                    let (d2, b2) = d1.overflowing_sub(borrow as Word);
                     diff[i] = d2 & Self::MASKS[i];
-                    borrow = (b1 | b2) as Word;
+                    borrow = crate::utils::choice(b1 | b2);
                 }
-                let mask = borrow.wrapping_neg();
+                let mask = <Word as crate::utils::CtWord>::mask(borrow);
                 let mut carry = 0 as Word;
                 for i in 0..$LIMBS {
                     let sum = diff[i] as WideWord
@@ -125,7 +121,7 @@ macro_rules! impl_montgomery {
                     diff[i] = d2 & Self::MASKS[i];
                     borrow = (b1 | b2) as Word;
                 }
-                Self::select(&diff, &Self::ZERO, self.is_zero() as Word)
+                Self::select(&diff, &Self::ZERO, self.ct_is_zero())
             }
 
             pub(crate) fn enter_montgomery(self) -> Self {
@@ -166,12 +162,12 @@ macro_rules! impl_montgomery {
 
             fn reduce(&mut self) {
                 let mut diff = Self::ZERO;
-                let mut borrow = 0 as Word;
+                let mut borrow = 0u64;
                 for i in 0..$LIMBS {
                     let (d1, b1) = self[i].overflowing_sub(P::MOD[i] as Word);
-                    let (d2, b2) = d1.overflowing_sub(borrow);
+                    let (d2, b2) = d1.overflowing_sub(borrow as Word);
                     diff[i] = d2 & Self::MASKS[i];
-                    borrow = (b1 | b2) as Word;
+                    borrow = crate::utils::choice(b1 | b2);
                 }
                 *self = Self::select(&diff, self, borrow);
             }

@@ -58,7 +58,7 @@ impl FieldP521 {
         let v3 = v2 * v;
         let r = u * v * (u * v3).pow25191();
         let c = v * r.square();
-        let valid = (u == c) as u64;
+        let valid = u.ct_eq(&c);
         let r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
@@ -130,7 +130,7 @@ impl DivAssign for FieldP521 {
 
 impl PartialEq for FieldP521 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 
@@ -184,6 +184,10 @@ impl FieldElement for FieldP521 {
 
     fn select(a: &Self, b: &Self, condition: u64) -> Self {
         Self::select(a, b, condition)
+    }
+
+    fn ct_eq(&self, other: &Self) -> u64 {
+        self.ct_eq(other)
     }
 
     fn square(self) -> Self {

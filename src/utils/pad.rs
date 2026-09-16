@@ -1,4 +1,4 @@
-use crate::utils::wipe;
+use crate::utils::{eq_word, wipe};
 
 pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Option<&'a [u8]> {
     pad(unpadded, buffer, buffer.len())
@@ -48,8 +48,7 @@ fn pad<'a>(unpadded: &[u8], buffer: &'a mut [u8], padded_size: usize) -> Option<
 }
 
 fn is_byte(a: u8, b: u8) -> usize {
-    let diff = (a as usize) ^ (b as usize);
-    1 ^ ((diff | diff.wrapping_neg()) >> (usize::BITS - 1))
+    eq_word(a, b) as usize
 }
 
 #[cfg(test)]

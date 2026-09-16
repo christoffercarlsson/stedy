@@ -66,7 +66,7 @@ where
         let k = E::from(state.finalize());
         let s = E::from(*s);
         let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
-        let verified = (r2 == R) as u64;
+        let verified = r2.ct_eq(&R);
         (verified & valid_a & valid_r) == 1
     }
 }
@@ -96,9 +96,7 @@ where
     }
 
     fn signature_from_components_mut(signature: &mut S) -> Option<(&mut F::Bytes, &mut E::Bytes)> {
-        let (r, s) = signature
-            .as_mut()
-            .split_at_mut_checked(F::Bytes::SIZE)?;
+        let (r, s) = signature.as_mut().split_at_mut_checked(F::Bytes::SIZE)?;
         let r = F::Bytes::from_slice_mut_checked(r)?;
         let s = E::Bytes::from_slice_mut_checked(s)?;
         Some((r, s))

@@ -1,5 +1,8 @@
 use {
-    crate::traits::{EdwardsParams, EdwardsScalar, FieldElement},
+    crate::{
+        traits::{EdwardsParams, EdwardsScalar, FieldElement},
+        utils::{abs_i8, eq_word},
+    },
     core::{
         array::from_fn,
         marker::PhantomData,
@@ -55,6 +58,10 @@ where
         }
     }
 
+    pub(crate) fn ct_eq(&self, other: &Self) -> u64 {
+        (self.x * other.z).ct_eq(&(other.x * self.z))
+    }
+
     pub(crate) fn decompress(bytes: &F::Bytes) -> (Self, u64) {
         let slice = bytes.as_ref();
         let last = slice.len() - 1;
@@ -66,7 +73,7 @@ where
         let u = y2 - F::ONE;
         let v = F::D * y2 + F::ONE;
         let (mut x, mut valid) = u.sqrt(v);
-        let is_zero = (x == F::ZERO) as u64;
+        let is_zero = x.ct_is_zero();
         valid &= (is_zero & sign) ^ 1;
         let xs: F::Bytes = x.into();
         let negate = (xs[0] as u64 & 1) ^ sign;
@@ -110,10 +117,10 @@ where
             let da = na[i];
             let db = nb[i];
             if da != 0 {
-                t = t.to_extended() + wa.select(da);
+                t = t.to_extended() + wa.vartime_select(da);
             }
             if db != 0 {
-                t = t.to_extended() + wb.select(db);
+                t = t.to_extended() + wb.vartime_select(db);
             }
             r = t.to_projective();
             if i == 0 {
@@ -131,7 +138,7 @@ where
     S: EdwardsScalar,
 {
     fn eq(&self, other: &Self) -> bool {
-        (self.x * other.z) == (other.x * self.z)
+        self.ct_eq(other) == 1
     }
 }
 
@@ -380,15 +387,12 @@ where
     F: FieldElement + EdwardsParams<F>,
 {
     fn select(&self, x: i8) -> ProjectiveNiels<F> {
-        let y = x as i16;
-        let z = y >> 15;
-        let i = ((y ^ z) - z) as u8;
+        let (idx, negate) = abs_i8(x);
         let mut t = ProjectiveNiels::<F>::IDENTITY;
-        for j in 0..8 {
-            let is_index = (((j + 1) ^ i) == 0) as u64;
+        for j in 0u8..8 {
+            let is_index = eq_word(j + 1, idx);
             t = ProjectiveNiels::<F>::select(&t, &self[j as usize], is_index);
         }
-        let negate = (z & 1) as u64;
         ProjectiveNiels::<F>::select(&t, &t.neg(), negate)
     }
 }
@@ -457,7 +461,7 @@ impl<F> NafWindow<F>
 where
     F: FieldElement + EdwardsParams<F>,
 {
-    fn select(&self, x: i8) -> ProjectiveNiels<F> {
+    fn vartime_select(&self, x: i8) -> ProjectiveNiels<F> {
         if x == 0 {
             return ProjectiveNiels::<F>::IDENTITY;
         }

@@ -105,7 +105,7 @@ impl MulAssign for ScalarP384 {
 
 impl PartialEq for ScalarP384 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 

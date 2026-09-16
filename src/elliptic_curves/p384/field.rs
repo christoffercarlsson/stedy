@@ -55,7 +55,7 @@ impl FieldP384 {
         let v3 = v2 * v;
         let r = u * v * (u * v3).pow_p_minus_3_div_4();
         let c = v * r.square();
-        let valid = (u == c) as u64;
+        let valid = u.ct_eq(&c);
         let r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
@@ -127,7 +127,7 @@ impl DivAssign for FieldP384 {
 
 impl PartialEq for FieldP384 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.ct_eq(other) == 1
     }
 }
 
@@ -183,6 +183,14 @@ impl FieldElement for FieldP384 {
         Self::select(a, b, condition)
     }
 
+    fn ct_eq(&self, other: &Self) -> u64 {
+        self.ct_eq(other)
+    }
+
+    fn ct_is_zero(&self) -> u64 {
+        self.ct_is_zero()
+    }
+
     fn square(self) -> Self {
         self.square()
     }
@@ -197,7 +205,7 @@ impl FieldElement for FieldP384 {
 }
 
 impl WeierstrassParams<FieldP384> for FieldP384 {
-    const A: FieldP384 = FieldP384::from_limbs([
+    const A: FieldP384 = FieldP384::from_wide_limbs([
         3302829849855,
         71212069596168192,
         72057593987530751,
@@ -206,7 +214,7 @@ impl WeierstrassParams<FieldP384> for FieldP384 {
         72057594037927935,
         281474976710655,
     ]);
-    const B: FieldP384 = FieldP384::from_limbs([
+    const B: FieldP384 = FieldP384::from_wide_limbs([
         38404636581678285,
         61158462543628305,
         7072068181174701,
@@ -215,7 +223,7 @@ impl WeierstrassParams<FieldP384> for FieldP384 {
         70287565570449154,
         8870372069311,
     ]);
-    const BASE_POINT_X: FieldP384 = FieldP384::from_limbs([
+    const BASE_POINT_X: FieldP384 = FieldP384::from_wide_limbs([
         33044708514408525,
         63874851575184848,
         23673917422822264,
@@ -224,7 +232,7 @@ impl WeierstrassParams<FieldP384> for FieldP384 {
         5490067567239502,
         64517961260565,
     ]);
-    const BASE_POINT_Y: FieldP384 = FieldP384::from_limbs([
+    const BASE_POINT_Y: FieldP384 = FieldP384::from_wide_limbs([
         17360326591053355,
         53945015422690052,
         13092642221768616,
