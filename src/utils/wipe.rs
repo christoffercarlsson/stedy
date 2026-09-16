@@ -5,10 +5,20 @@ use core::{
 
 #[inline(never)]
 pub fn wipe(data: &mut [u8]) {
+    wipe_volatile(data);
+}
+
+#[inline(never)]
+pub(crate) fn wipe_words(data: &mut [u64]) {
+    wipe_volatile(data);
+}
+
+#[inline(always)]
+fn wipe_volatile<T: Copy + Default>(data: &mut [T]) {
     let p = data.as_mut_ptr();
     for i in 0..data.len() {
         unsafe {
-            ptr::write_volatile(p.add(i), 0u8);
+            ptr::write_volatile(p.add(i), T::default());
         }
     }
     compiler_fence(Ordering::SeqCst);

@@ -7,6 +7,12 @@ use {
     },
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ByteOrder {
+    BigEndian,
+    LittleEndian,
+}
+
 pub trait Authenticator<C: SeekableStreamCipher> {
     type Output;
 
@@ -152,6 +158,10 @@ pub trait FieldElement:
 {
     const ZERO: Self;
     const ONE: Self;
+
+    const BITS: usize;
+
+    const BYTE_ORDER: ByteOrder;
 
     type Bytes: ByteArray;
 

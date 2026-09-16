@@ -1,5 +1,5 @@
 use {
-    crate::traits::{FieldElement, WeierstrassParams},
+    crate::traits::{ByteOrder, FieldElement, WeierstrassParams},
     core::{
         cmp::PartialEq,
         ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -166,6 +166,9 @@ impl From<&FieldP256> for [u8; 32] {
 impl FieldElement for FieldP256 {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::R;
+
+    const BITS: usize = 256;
+    const BYTE_ORDER: ByteOrder = ByteOrder::BigEndian;
 
     type Bytes = [u8; 32];
 
