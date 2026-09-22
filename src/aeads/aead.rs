@@ -20,6 +20,10 @@ where
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> M::Output {
+        assert!(
+            M::ACCEPTS_AAD || aad.is_none(),
+            "this AEAD takes no associated data"
+        );
         let mut aead = Self::new(key, nonce);
         aead.cipher.apply_keystream(message);
         aead.mac.tag(message, aad)
@@ -32,6 +36,10 @@ where
         message: &mut [u8],
         tag: &M::Output,
     ) -> bool {
+        assert!(
+            M::ACCEPTS_AAD || aad.is_none(),
+            "this AEAD takes no associated data"
+        );
         let mut aead = Self::new(key, nonce);
         if aead.mac.verify(message, aad, tag) {
             aead.cipher.apply_keystream(message);

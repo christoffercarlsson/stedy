@@ -43,16 +43,17 @@ impl Sha384 {
         }
     }
 
-    pub fn finalize_into(mut self, digest: &mut [u8; 48]) {
+    pub fn finalize_into(mut self, digest: &mut [u8]) {
         self.pad();
-        for (i, word) in digest.chunks_mut(8).enumerate() {
-            word.copy_from_slice(&self.h[i].to_be_bytes());
+        for (i, dest) in digest.chunks_mut(8).take(6).enumerate() {
+            let src = self.h[i].to_be_bytes();
+            dest.copy_from_slice(&src[..dest.len()]);
         }
     }
 
     pub fn finalize(self) -> [u8; 48] {
         let mut digest = [0u8; 48];
-        self.finalize_into(&mut digest);
+        self.finalize_into(digest.as_mut());
         digest
     }
 }
@@ -82,7 +83,7 @@ impl Digest for Sha384 {
         self.finalize()
     }
 
-    fn finalize_into(self, output: &mut Self::Output) {
+    fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
 }

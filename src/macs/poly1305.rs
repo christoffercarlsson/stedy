@@ -1,6 +1,6 @@
 use {
     crate::{
-        ciphers::{ChaCha20, XChaCha20},
+        ciphers::{ChaCha20, XChaCha20, XSalsa20},
         traits::{Authenticator, ByteArray, Digest, KeyInit, Mac, SeekableStreamCipher},
         utils::{verify, Block},
     },
@@ -35,8 +35,10 @@ impl Poly1305 {
         }
     }
 
-    pub fn finalize_into(self, output: &mut [u8; 16]) {
-        output.copy_from_slice(&self.finalize());
+    pub fn finalize_into(self, output: &mut [u8]) {
+        let tag = self.finalize();
+        let size = output.len().min(tag.len());
+        output[..size].copy_from_slice(&tag[..size]);
     }
 
     pub fn finalize(mut self) -> [u8; 16] {
@@ -45,7 +47,8 @@ impl Poly1305 {
             let n = Self::read_block(remaining);
             self.process_element(n);
         }
-        self.a += self.s;
+        self.a.canonical();
+        self.a.add_truncating(self.s);
         self.a.into()
     }
 
@@ -74,7 +77,7 @@ impl Digest for Poly1305 {
         self.finalize()
     }
 
-    fn finalize_into(self, output: &mut Self::Output) {
+    fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
 }
@@ -117,6 +120,28 @@ impl Authenticator<XChaCha20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
+        Mac::verify(self, tag)
+    }
+}
+
+impl Authenticator<XSalsa20> for Poly1305 {
+    const ACCEPTS_AAD: bool = false;
+
+    type Output = [u8; 16];
+
+    fn new(cipher: &mut XSalsa20) -> Self {
+        let mut key = [0u8; 32];
+        cipher.apply_keystream(&mut key);
+        Self::new(&key)
+    }
+
+    fn tag(mut self, ciphertext: &[u8], _aad: Option<&[u8]>) -> Self::Output {
+        self.update(ciphertext);
+        self.finalize()
+    }
+
+    fn verify(mut self, ciphertext: &[u8], _aad: Option<&[u8]>, tag: &Self::Output) -> bool {
+        self.update(ciphertext);
         Mac::verify(self, tag)
     }
 }
@@ -197,6 +222,16 @@ impl Poly1305FieldElement {
         self[2] &= Self::MASK;
         self[3] &= Self::MASK;
         self[4] &= Self::MASK;
+    }
+
+    fn add_truncating(&mut self, rhs: Self) {
+        self[0] += rhs[0];
+        self[1] += rhs[1];
+        self[2] += rhs[2];
+        self[3] += rhs[3];
+        self[4] += rhs[4];
+        self.carry();
+        self.mask();
     }
 
     fn canonical(&mut self) {
@@ -318,8 +353,7 @@ impl From<&[u8]> for Poly1305FieldElement {
 }
 
 impl From<Poly1305FieldElement> for [u8; 16] {
-    fn from(mut fe: Poly1305FieldElement) -> Self {
-        fe.canonical();
+    fn from(fe: Poly1305FieldElement) -> Self {
         let words = [
             (fe[0] | (fe[1] << 26)) as u32,
             (fe[1] >> 6 | (fe[2] << 20)) as u32,
@@ -337,26 +371,39 @@ impl From<Poly1305FieldElement> for [u8; 16] {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, hex_literal::hex};
 
     // https://datatracker.ietf.org/doc/html/rfc7539#section-2.5.2
 
     #[test]
     fn test_poly1305() {
-        let key = [
-            133, 214, 190, 120, 87, 85, 109, 51, 127, 68, 82, 254, 66, 213, 6, 168, 1, 3, 128, 138,
-            251, 13, 178, 253, 74, 191, 246, 175, 65, 73, 245, 27,
-        ];
-        let message = [
-            67, 114, 121, 112, 116, 111, 103, 114, 97, 112, 104, 105, 99, 32, 70, 111, 114, 117,
-            109, 32, 82, 101, 115, 101, 97, 114, 99, 104, 32, 71, 114, 111, 117, 112,
-        ];
+        let key = hex!("85d6be7857556d337f4452fe42d506a80103808afb0db2fd4abff6af4149f51b");
+        let message = hex!("43727970746f6772617068696320466f72756d2052657365617263682047726f7570");
+        let tag = hex!("a8061dc1305136c6c22b8baf0c0127a9");
         let mut mac = Poly1305::new(&key);
         mac.update(&message);
-        let tag = mac.finalize();
-        assert_eq!(
-            tag,
-            [168, 6, 29, 193, 48, 81, 54, 198, 194, 43, 139, 175, 12, 1, 39, 169]
-        );
+        assert_eq!(mac.finalize(), tag);
+    }
+
+    // https://datatracker.ietf.org/doc/html/rfc8439#appendix-A.3
+
+    #[test]
+    fn test_poly1305_s_overflow() {
+        let key = hex!("02000000000000000000000000000000ffffffffffffffffffffffffffffffff");
+        let message = hex!("02000000000000000000000000000000");
+        let tag = hex!("03000000000000000000000000000000");
+        let mut mac = Poly1305::new(&key);
+        mac.update(&message);
+        assert_eq!(mac.finalize(), tag);
+    }
+
+    #[test]
+    fn test_poly1305_sum_above_prime() {
+        let key = hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        let message = hex!("00000000000000000000000000000000");
+        let tag = hex!("faffff13fbffff13fbffff13fbffff13");
+        let mut mac = Poly1305::new(&key);
+        mac.update(&message);
+        assert_eq!(mac.finalize(), tag);
     }
 }

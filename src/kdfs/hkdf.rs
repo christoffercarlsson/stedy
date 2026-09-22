@@ -32,7 +32,7 @@ impl<H: Hasher> Hkdf<H> {
             }
             mac.update(info);
             mac.update(&[(i + 1) as u8]);
-            mac.finalize_into(&mut t);
+            mac.finalize_into(t.as_mut());
             let slice = &t.as_ref()[..chunk.len()];
             chunk.copy_from_slice(slice);
         }

@@ -43,7 +43,7 @@ impl<H: Hasher> Hmac<H> {
         self.inner.update(message);
     }
 
-    pub fn finalize_into(mut self, code: &mut H::Output) {
+    pub fn finalize_into(mut self, code: &mut [u8]) {
         let digest = self.inner.finalize();
         self.outer.update(digest.as_ref());
         self.outer.finalize_into(code);
@@ -51,7 +51,7 @@ impl<H: Hasher> Hmac<H> {
 
     pub fn finalize(self) -> H::Output {
         let mut code = H::Output::new();
-        self.finalize_into(&mut code);
+        self.finalize_into(code.as_mut());
         code
     }
 
@@ -79,7 +79,7 @@ impl<H: Hasher> Digest for Hmac<H> {
         self.finalize()
     }
 
-    fn finalize_into(self, output: &mut Self::Output) {
+    fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
 }

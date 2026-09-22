@@ -8,6 +8,8 @@ use {
 };
 
 pub trait Authenticator<C: SeekableStreamCipher> {
+    const ACCEPTS_AAD: bool = true;
+
     type Output;
 
     fn new(cipher: &mut C) -> Self;
@@ -58,7 +60,7 @@ pub trait Digest {
 
     fn finalize(self) -> Self::Output;
 
-    fn finalize_into(self, output: &mut Self::Output);
+    fn finalize_into(self, output: &mut [u8]);
 }
 
 pub trait EdwardsParams<F: FieldElement> {

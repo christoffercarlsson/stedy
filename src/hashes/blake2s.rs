@@ -36,7 +36,7 @@ impl<const N: usize> Blake2s<N> {
         }
     }
 
-    pub fn finalize_into(mut self, digest: &mut [u8; N]) {
+    pub fn finalize_into(mut self, digest: &mut [u8]) {
         let remaining = self.block.remaining();
         let mut block = [0u8; 64];
         block[..remaining.len()].copy_from_slice(remaining);
@@ -84,7 +84,7 @@ impl<const N: usize> Digest for Blake2s<N> {
         self.finalize()
     }
 
-    fn finalize_into(self, output: &mut Self::Output) {
+    fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
 }
