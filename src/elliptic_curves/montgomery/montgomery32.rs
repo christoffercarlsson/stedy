@@ -11,6 +11,30 @@ impl_montgomery!(10);
 impl_montgomery!(14);
 impl_montgomery!(18);
 
+macro_rules! impl_from_wide_limbs {
+    ($LIMBS:literal, $WIDE:literal) => {
+        impl<P> Montgomery<$LIMBS, P>
+        where
+            P: MontgomeryParams<$LIMBS>,
+        {
+            pub(crate) const fn from_wide_limbs(value: [u64; $WIDE]) -> Self {
+                let mask = (1u64 << P::BITS) - 1;
+                let mut limbs = [0u64; $LIMBS];
+                let mut i = 0;
+                while i < $WIDE {
+                    limbs[i * 2] = value[i] & mask;
+                    limbs[i * 2 + 1] = (value[i] >> P::BITS) & mask;
+                    i += 1;
+                }
+                Self::from_limbs(limbs)
+            }
+        }
+    };
+}
+
+impl_from_wide_limbs!(10, 5);
+impl_from_wide_limbs!(14, 7);
+
 impl<P> Montgomery<10, P>
 where
     P: MontgomeryParams<10>,

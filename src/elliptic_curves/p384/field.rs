@@ -1,5 +1,5 @@
 use {
-    crate::traits::{FieldElement, WeierstrassParams},
+    crate::traits::{ByteOrder, FieldElement, WeierstrassParams},
     core::{
         cmp::PartialEq,
         ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -173,6 +173,9 @@ impl FieldElement for FieldP384 {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::R;
 
+    const CAPACITY: usize = 383;
+    const BYTE_ORDER: ByteOrder = ByteOrder::BigEndian;
+
     type Bytes = [u8; 48];
 
     fn swap(a: &mut Self, b: &mut Self, condition: u64) {
@@ -197,7 +200,7 @@ impl FieldElement for FieldP384 {
 }
 
 impl WeierstrassParams<FieldP384> for FieldP384 {
-    const A: FieldP384 = FieldP384::from_limbs([
+    const A: FieldP384 = FieldP384::from_wide_limbs([
         3302829849855,
         71212069596168192,
         72057593987530751,
@@ -206,7 +209,7 @@ impl WeierstrassParams<FieldP384> for FieldP384 {
         72057594037927935,
         281474976710655,
     ]);
-    const B: FieldP384 = FieldP384::from_limbs([
+    const B: FieldP384 = FieldP384::from_wide_limbs([
         38404636581678285,
         61158462543628305,
         7072068181174701,
@@ -215,7 +218,7 @@ impl WeierstrassParams<FieldP384> for FieldP384 {
         70287565570449154,
         8870372069311,
     ]);
-    const BASE_POINT_X: FieldP384 = FieldP384::from_limbs([
+    const BASE_POINT_X: FieldP384 = FieldP384::from_wide_limbs([
         33044708514408525,
         63874851575184848,
         23673917422822264,
@@ -224,7 +227,7 @@ impl WeierstrassParams<FieldP384> for FieldP384 {
         5490067567239502,
         64517961260565,
     ]);
-    const BASE_POINT_Y: FieldP384 = FieldP384::from_limbs([
+    const BASE_POINT_Y: FieldP384 = FieldP384::from_wide_limbs([
         17360326591053355,
         53945015422690052,
         13092642221768616,

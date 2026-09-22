@@ -1,5 +1,5 @@
 use {
-    crate::traits::{EdwardsParams, FieldElement},
+    crate::traits::{EdwardsParams, ByteOrder, FieldElement},
     core::{
         cmp::PartialEq,
         ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -196,6 +196,9 @@ impl From<&Field25519> for [u8; 32] {
 impl FieldElement for Field25519 {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
+
+    const CAPACITY: usize = 254;
+    const BYTE_ORDER: ByteOrder = ByteOrder::LittleEndian;
 
     type Bytes = [u8; 32];
 

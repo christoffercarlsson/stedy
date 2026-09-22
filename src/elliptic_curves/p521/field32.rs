@@ -783,11 +783,14 @@ impl FieldP521 {
         words[15] += words[14] >> 29;
         words[16] += words[15] >> 29;
         words[17] += words[16] >> 29;
-        let carry = (words[17] >> 28) as u32;
-        let mut t = [
-            (words[0] as u32) & Self::MASK,
-            (words[1] as u32) & Self::MASK,
-            (words[2] as u32) & Self::MASK,
+        let carry = words[17] >> 28;
+        let w0 = (words[0] & Self::MASK as u64) + carry;
+        let w1 = (words[1] & Self::MASK as u64) + (w0 >> 29);
+        let w2 = (words[2] & Self::MASK as u64) + (w1 >> 29);
+        let t = [
+            (w0 & Self::MASK as u64) as u32,
+            (w1 & Self::MASK as u64) as u32,
+            w2 as u32,
             (words[3] as u32) & Self::MASK,
             (words[4] as u32) & Self::MASK,
             (words[5] as u32) & Self::MASK,
@@ -804,11 +807,6 @@ impl FieldP521 {
             (words[16] as u32) & Self::MASK,
             (words[17] as u32) & Self::TOP_MASK,
         ];
-        t[0] += carry;
-        t[1] += t[0] >> 29;
-        t[2] += t[1] >> 29;
-        t[0] &= Self::MASK;
-        t[1] &= Self::MASK;
         Self(t)
     }
 }

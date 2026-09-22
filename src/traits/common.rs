@@ -135,6 +135,12 @@ pub trait EllipticCurve {
 
 pub trait EcdsaCurve: EllipticCurve {}
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ByteOrder {
+    BigEndian,
+    LittleEndian,
+}
+
 pub trait FieldElement:
     Sized
     + Copy
@@ -152,6 +158,9 @@ pub trait FieldElement:
     + Into<Self::Bytes>
     + From<u32>
 {
+    const CAPACITY: usize;
+    const BYTE_ORDER: ByteOrder;
+
     const ZERO: Self;
     const ONE: Self;
 

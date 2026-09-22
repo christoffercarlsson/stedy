@@ -1,5 +1,5 @@
 use {
-    crate::traits::{FieldElement, WeierstrassParams},
+    crate::traits::{ByteOrder, FieldElement, WeierstrassParams},
     core::{
         cmp::PartialEq,
         ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -167,6 +167,9 @@ impl FieldElement for FieldP256 {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::R;
 
+    const CAPACITY: usize = 255;
+    const BYTE_ORDER: ByteOrder = ByteOrder::BigEndian;
+
     type Bytes = [u8; 32];
 
     fn swap(a: &mut Self, b: &mut Self, condition: u64) {
@@ -191,28 +194,28 @@ impl FieldElement for FieldP256 {
 }
 
 impl WeierstrassParams<FieldP256> for FieldP256 {
-    const A: FieldP256 = FieldP256::from_limbs([
+    const A: FieldP256 = FieldP256::from_wide_limbs([
         4503599627370447,
         862017116176383,
         0,
         3367254360064,
         281474973499392,
     ]);
-    const B: FieldP256 = FieldP256::from_limbs([
+    const B: FieldP256 = FieldP256::from_wide_limbs([
         3929803208777213,
         3562985424476316,
         583760861921372,
         2309067332692983,
         214406409308276,
     ]);
-    const BASE_POINT_X: FieldP256 = FieldP256::from_limbs([
+    const BASE_POINT_X: FieldP256 = FieldP256::from_wide_limbs([
         859000078943169,
         3465582099921383,
         1726581271406943,
         1625533376047991,
         150658718847861,
     ]);
-    const BASE_POINT_Y: FieldP256 = FieldP256::from_limbs([
+    const BASE_POINT_Y: FieldP256 = FieldP256::from_wide_limbs([
         1466185490456744,
         1189782786727410,
         597251050482574,
