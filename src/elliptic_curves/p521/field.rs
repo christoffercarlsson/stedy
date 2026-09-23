@@ -1,5 +1,5 @@
 use {
-    crate::traits::{FieldElement, ByteOrder, WeierstrassParams},
+    crate::traits::{ByteOrder, FieldElement, WeierstrassParams},
     core::{
         cmp::PartialEq,
         ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},

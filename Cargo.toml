@@ -27,15 +27,17 @@ path = "benchmarks/main.rs"
 getrandom = { version = "0.4.3", default-features = false, optional = true }
 
 [dev-dependencies]
-criterion = "0.8.2"
+criterion = { version = "0.8.2", default-features = false }
 hex-literal = "1.1.0"
 
 [features]
 default = []
-docs = ["getrandom", "hazmat", "secret_sharing"]
+argon2 = ["std"]
+docs = ["argon2", "getrandom", "hazmat", "secret_sharing"]
 getrandom = ["dep:getrandom"]
 hazmat = []
 secret_sharing = []
+std = []
 
 [profile.release]
 opt-level = 3
@@ -44,8 +46,3 @@ strip = true
 debug-assertions = false
 overflow-checks = false
 lto = true
-
-[profile.ffi]
-inherits = "release"
-panic = "abort"
-codegen-units = 1

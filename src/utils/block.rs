@@ -16,22 +16,14 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         &mut self,
         data: &'a [u8],
     ) -> Option<([u8; BLOCK_SIZE], BlockIterator<'a, BLOCK_SIZE>)> {
-        let data_size = data.len();
-        let begin = data_size.min(BLOCK_SIZE - self.buffer_size as usize);
-        let end = data_size - (data_size - begin) % BLOCK_SIZE;
-        self.buffer_chunk(&data[..begin]);
-        if (self.buffer_size as usize) < BLOCK_SIZE {
-            return None;
-        }
-        let head = self.buffer;
-        let tail = BlockIterator::<BLOCK_SIZE> {
-            tail: data,
-            begin,
-            end,
-        };
-        self.buffer_size = 0;
-        self.buffer_chunk(&data[end..]);
-        Some((head, tail))
+        self.split(data, 0)
+    }
+
+    pub fn blocks_except_last<'a>(
+        &mut self,
+        data: &'a [u8],
+    ) -> Option<([u8; BLOCK_SIZE], BlockIterator<'a, BLOCK_SIZE>)> {
+        self.split(data, 1)
     }
 
     pub fn remaining(&self) -> &[u8] {
@@ -47,6 +39,30 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         let mut block = [0u8; BLOCK_SIZE];
         block[..size].copy_from_slice(remaining);
         Some((block, size))
+    }
+
+    fn split<'a>(
+        &mut self,
+        data: &'a [u8],
+        keep: usize,
+    ) -> Option<([u8; BLOCK_SIZE], BlockIterator<'a, BLOCK_SIZE>)> {
+        let total = self.buffer_size as usize + data.len();
+        if total < BLOCK_SIZE + keep {
+            self.buffer_chunk(data);
+            return None;
+        }
+        let begin = BLOCK_SIZE - self.buffer_size as usize;
+        let end = data.len() - keep - (total - keep) % BLOCK_SIZE;
+        self.buffer_chunk(&data[..begin]);
+        let head = self.buffer;
+        let tail = BlockIterator::<BLOCK_SIZE> {
+            tail: data,
+            begin,
+            end,
+        };
+        self.buffer_size = 0;
+        self.buffer_chunk(&data[end..]);
+        Some((head, tail))
     }
 
     fn buffer_chunk(&mut self, chunk: &[u8]) {

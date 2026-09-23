@@ -4,11 +4,7 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct Blake2s<const N: usize> {
-    h: [u32; 8],
-    t: u64,
-    block: Block<64>,
-}
+pub struct Blake2s<const N: usize>(Blake2sCore);
 
 impl<const N: usize> Blake2s<N> {
     pub fn digest(message: &[u8]) -> [u8; N] {
@@ -18,39 +14,21 @@ impl<const N: usize> Blake2s<N> {
     }
 
     pub fn new(key: Option<&[u8]>) -> Self {
-        let mut state = Self {
-            h: Self::IV,
-            t: 0,
-            block: Block::<64>::new(),
-        };
-        state.init(key);
-        state
+        Self(Blake2sCore::new(key, N))
     }
 
     pub fn update(&mut self, message: &[u8]) {
-        if let Some((head, tail)) = self.block.blocks(message) {
-            self.process_block(&head);
-            for block in tail {
-                self.process_block(block);
-            }
-        }
+        self.0.update(message);
     }
 
-    pub fn finalize_into(mut self, digest: &mut [u8]) {
-        let remaining = self.block.remaining();
-        let mut block = [0u8; 64];
-        block[..remaining.len()].copy_from_slice(remaining);
-        self.t += remaining.len() as u64;
-        self.compress(&block, 1);
-        for (i, dest) in digest.chunks_mut(4).take(8).enumerate() {
-            let src = self.h[i].to_le_bytes();
-            dest.copy_from_slice(&src[..dest.len()]);
-        }
+    pub fn finalize_into(self, digest: &mut [u8]) {
+        let size = digest.len().min(N);
+        self.0.finalize_into(&mut digest[..size]);
     }
 
     pub fn finalize(self) -> [u8; N] {
         let mut digest = [0u8; N];
-        self.finalize_into(&mut digest);
+        self.finalize_into(digest.as_mut());
         digest
     }
 
@@ -120,7 +98,63 @@ macro_rules! impl_hasher_prf {
 
 impl_hasher_prf!(Blake2s256, Blake2s224, Blake2s160, Blake2s128);
 
-impl<const N: usize> Blake2s<N> {
+#[derive(Clone)]
+pub struct Blake2sVar {
+    core: Blake2sCore,
+    output_size: usize,
+}
+
+impl Blake2sVar {
+    pub fn new(key: Option<&[u8]>, output_size: usize) -> Option<Self> {
+        let key_size = match key {
+            Some(key) => key.len(),
+            None => 0,
+        };
+        if output_size == 0
+            || output_size > Blake2sCore::MAX_OUTPUT_SIZE
+            || key_size > Blake2sCore::MAX_KEY_SIZE
+        {
+            return None;
+        }
+        Some(Self {
+            core: Blake2sCore::new(key, output_size),
+            output_size,
+        })
+    }
+
+    pub fn digest(message: &[u8], digest: &mut [u8]) -> bool {
+        let Some(mut hasher) = Self::new(None, digest.len()) else {
+            return false;
+        };
+        hasher.update(message);
+        hasher.finalize_into(digest);
+        true
+    }
+
+    pub fn output_size(&self) -> usize {
+        self.output_size
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.core.update(message);
+    }
+
+    pub fn finalize_into(self, digest: &mut [u8]) {
+        let size = digest.len().min(self.output_size);
+        self.core.finalize_into(&mut digest[..size]);
+    }
+}
+
+#[derive(Clone)]
+struct Blake2sCore {
+    h: [u32; 8],
+    t: u64,
+    block: Block<64>,
+}
+
+impl Blake2sCore {
+    const MAX_OUTPUT_SIZE: usize = 32;
+    const MAX_KEY_SIZE: usize = 32;
     const IV: [u32; 8] = [
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
         0x5be0cd19,
@@ -138,21 +172,52 @@ impl<const N: usize> Blake2s<N> {
         [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
     ];
 
-    fn init(&mut self, key: Option<&[u8]>) {
+    fn new(key: Option<&[u8]>, output_size: usize) -> Self {
         let key = key.unwrap_or_default();
-        let kk = key.len().min(32);
-        let nn = N.min(32);
-        self.h[0] ^= 0x01010000 ^ ((kk as u32) << 8) ^ (nn as u32);
-        if !key.is_empty() {
+        let kk = key.len().min(Self::MAX_KEY_SIZE);
+        let nn = output_size.min(Self::MAX_OUTPUT_SIZE);
+        let mut state = Self {
+            h: Self::IV,
+            t: 0,
+            block: Block::<64>::new(),
+        };
+        state.h[0] ^= 0x01010000 ^ ((kk as u32) << 8) ^ (nn as u32);
+        if kk > 0 {
             let mut block = [0u8; 64];
             block[..kk].copy_from_slice(&key[..kk]);
-            self.update(&block);
+            state.update(&block);
+        }
+        state
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        if let Some((head, tail)) = self.block.blocks_except_last(message) {
+            self.process_block(&head);
+            for block in tail {
+                self.process_block(block);
+            }
+        }
+    }
+
+    fn finalize_into(mut self, digest: &mut [u8]) {
+        let remaining = self.block.remaining();
+        let mut block = [0u8; 64];
+        block[..remaining.len()].copy_from_slice(remaining);
+        self.accumulate(remaining.len());
+        self.compress(&block, 1);
+        for (i, dest) in digest.chunks_mut(4).take(8).enumerate() {
+            let src = self.h[i].to_le_bytes();
+            dest.copy_from_slice(&src[..dest.len()]);
         }
     }
 
     fn process_block(&mut self, block: &[u8]) {
-        self.t += block.len() as u64;
+        self.accumulate(block.len());
         self.compress(block, 0);
+    }
+
+    fn accumulate(&mut self, size: usize) {
+        self.t += size as u64;
     }
 
     fn compress(&mut self, block: &[u8], is_final: u32) {
@@ -202,7 +267,7 @@ mod tests {
     // https://datatracker.ietf.org/doc/html/rfc7693#appendix-B
 
     #[test]
-    fn test_blake2s() {
+    fn test_blake2s256() {
         let digest = Blake2s256::digest(b"abc");
         assert_eq!(
             digest,

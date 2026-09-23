@@ -96,9 +96,7 @@ where
     }
 
     fn signature_from_components_mut(signature: &mut S) -> Option<(&mut F::Bytes, &mut E::Bytes)> {
-        let (r, s) = signature
-            .as_mut()
-            .split_at_mut_checked(F::Bytes::SIZE)?;
+        let (r, s) = signature.as_mut().split_at_mut_checked(F::Bytes::SIZE)?;
         let r = F::Bytes::from_slice_mut_checked(r)?;
         let s = E::Bytes::from_slice_mut_checked(s)?;
         Some((r, s))

@@ -7,6 +7,9 @@ use {
     },
 };
 
+#[cfg(feature = "argon2")]
+use stedy::kdfs::{argon2, Argon2Params, Argon2Variant};
+
 pub fn bench(c: &mut Criterion) {
     let ikm = [
         11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
@@ -45,4 +48,54 @@ pub fn bench(c: &mut Criterion) {
             pbkdf2::<Hmac<Sha512>>(password, salt, iterations, &mut output);
         })
     });
+
+    #[cfg(feature = "argon2")]
+    {
+        let password = [1u8; 32];
+        let salt = [2u8; 16];
+        let secret = [3u8; 8];
+        let associated_data = [4u8; 12];
+
+        c.bench_function("argon2d", |b| {
+            b.iter(|| {
+                let mut output = [0u8; 32];
+                argon2(
+                    Argon2Params::new(Argon2Variant::Argon2d),
+                    &password,
+                    &salt,
+                    Some(&secret),
+                    Some(&associated_data),
+                    &mut output,
+                )
+            })
+        });
+
+        c.bench_function("argon2i", |b| {
+            b.iter(|| {
+                let mut output = [0u8; 32];
+                argon2(
+                    Argon2Params::new(Argon2Variant::Argon2i),
+                    &password,
+                    &salt,
+                    Some(&secret),
+                    Some(&associated_data),
+                    &mut output,
+                )
+            })
+        });
+
+        c.bench_function("argon2id", |b| {
+            b.iter(|| {
+                let mut output = [0u8; 32];
+                argon2(
+                    Argon2Params::new(Argon2Variant::Argon2id),
+                    &password,
+                    &salt,
+                    Some(&secret),
+                    Some(&associated_data),
+                    &mut output,
+                )
+            })
+        });
+    }
 }

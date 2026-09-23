@@ -4,11 +4,11 @@ use core::{
 };
 
 #[inline(never)]
-pub fn wipe(data: &mut [u8]) {
+pub fn wipe<T: Copy + Default>(data: &mut [T]) {
     let p = data.as_mut_ptr();
     for i in 0..data.len() {
         unsafe {
-            ptr::write_volatile(p.add(i), 0u8);
+            ptr::write_volatile(p.add(i), T::default());
         }
     }
     compiler_fence(Ordering::SeqCst);
