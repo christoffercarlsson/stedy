@@ -144,6 +144,21 @@ where
         Self::new(x3, y3, z3)
     }
 
+    fn mul(self, rhs: S) -> Self {
+        let window = Window::from(self);
+        let digits = rhs.as_radix_16();
+        let digits = digits.as_ref();
+        let mut r = Self::IDENTITY;
+        for &digit in digits.iter().rev() {
+            r = r.double();
+            r = r.double();
+            r = r.double();
+            r = r.double();
+            r = r + window.select(digit);
+        }
+        r
+    }
+
     fn is_odd(f: &F) -> u64 {
         let bytes: F::Bytes = (*f).into();
         let lsb = bytes
@@ -258,18 +273,7 @@ where
     type Output = Self;
 
     fn mul(self, rhs: S) -> Self::Output {
-        let window = Window::from(self);
-        let digits = rhs.as_radix_16();
-        let digits = digits.as_ref();
-        let mut r = Self::IDENTITY;
-        for &digit in digits.iter().rev() {
-            r = r.double();
-            r = r.double();
-            r = r.double();
-            r = r.double();
-            r = r + window.select(digit);
-        }
-        r
+        self.mul(rhs)
     }
 }
 
