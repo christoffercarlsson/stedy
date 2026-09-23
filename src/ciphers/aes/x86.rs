@@ -1,11 +1,15 @@
 #![forbid(unsafe_code)]
-use {
-    core::arch::x86_64::{
-        __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_clmulepi64_si128, _mm_cvtsi128_si64,
-        _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_unpackhi_epi64, _mm_xor_si128,
-    },
-    std::arch::is_x86_feature_detected,
+#[cfg(target_arch = "x86")]
+use core::arch::x86::{
+    __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_clmulepi64_si128, _mm_cvtsi128_si32,
+    _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
 };
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::{
+    __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_clmulepi64_si128, _mm_cvtsi128_si32,
+    _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
+};
+use std::arch::is_x86_feature_detected;
 
 pub(super) fn is_supported() -> bool {
     is_x86_feature_detected!("aes") && is_x86_feature_detected!("pclmulqdq")
@@ -58,9 +62,11 @@ fn split(value: u128) -> __m128i {
 
 #[target_feature(enable = "sse2")]
 fn join(value: __m128i) -> u128 {
-    let lo = _mm_cvtsi128_si64(value) as u64;
-    let hi = _mm_cvtsi128_si64(_mm_unpackhi_epi64(value, value)) as u64;
-    (hi as u128) << 64 | lo as u128
+    let a = _mm_cvtsi128_si32(value) as u32;
+    let b = _mm_cvtsi128_si32(_mm_srli_si128::<4>(value)) as u32;
+    let c = _mm_cvtsi128_si32(_mm_srli_si128::<8>(value)) as u32;
+    let d = _mm_cvtsi128_si32(_mm_srli_si128::<12>(value)) as u32;
+    (d as u128) << 96 | (c as u128) << 64 | (b as u128) << 32 | a as u128
 }
 
 #[target_feature(enable = "sse2")]

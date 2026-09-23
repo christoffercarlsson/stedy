@@ -1,7 +1,7 @@
 use crate::traits::{SeekableStreamCipher, StreamCipher};
 
 #[cfg_attr(target_arch = "aarch64", path = "aes/aarch64.rs")]
-#[cfg_attr(target_arch = "x86_64", path = "aes/x86_64.rs")]
+#[cfg_attr(any(target_arch = "x86", target_arch = "x86_64"), path = "aes/x86.rs")]
 mod backend;
 
 pub(crate) fn is_supported() -> bool {
