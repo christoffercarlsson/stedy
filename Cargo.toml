@@ -32,8 +32,9 @@ hex-literal = "1.1.0"
 
 [features]
 default = []
+aes = ["std"]
 argon2 = ["std"]
-docs = ["argon2", "getrandom", "hazmat", "secret_sharing"]
+docs = ["aes", "argon2", "getrandom", "hazmat", "secret_sharing"]
 getrandom = ["dep:getrandom"]
 hazmat = []
 secret_sharing = []
