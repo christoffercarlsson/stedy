@@ -1,0 +1,99 @@
+name: ci
+
+on: push
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: test / ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-latest
+            target: i686-unknown-linux-gnu
+            apt: gcc-multilib
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update && rustup default stable
+      - run: rustup target add ${{ matrix.target }}
+      - if: matrix.apt != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.apt }}
+      - run: cargo test --target ${{ matrix.target }}
+      - run: cargo test --target ${{ matrix.target }} --all-features
+      - run: cargo test --target ${{ matrix.target }} --all-features --release
+
+  build:
+    name: build / ${{ matrix.target }} ${{ matrix.flags }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: wasm32-unknown-unknown, flags: '' }
+          - { target: wasm32-unknown-unknown, flags: --features secret_sharing }
+          - { target: wasm32-unknown-unknown, flags: --features hazmat }
+          - { target: wasm32-unknown-unknown, flags: --features argon2 }
+          - { target: thumbv7em-none-eabihf, flags: '' }
+          - { target: thumbv7em-none-eabihf, flags: --features secret_sharing }
+          - { target: thumbv7em-none-eabihf, flags: --features hazmat }
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update && rustup default stable
+      - run: rustup target add ${{ matrix.target }}
+      - run: cargo build --target ${{ matrix.target }} ${{ matrix.flags }}
+
+  features:
+    name: features / ${{ matrix.flags }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flags:
+          - --no-default-features
+          - --features aes
+          - --features argon2
+          - --features secret_sharing
+          - --features hazmat
+          - --all-features
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update && rustup default stable
+      - run: cargo test ${{ matrix.flags }}
+
+  msrv:
+    name: msrv
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: msrv
+        run: echo "version=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)" >> "$GITHUB_OUTPUT"
+      - run: rustup toolchain install ${{ steps.msrv.outputs.version }} --profile minimal --no-self-update
+      - run: cargo +${{ steps.msrv.outputs.version }} test --all-features
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update && rustup default stable
+      - run: rustup component add rustfmt clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
