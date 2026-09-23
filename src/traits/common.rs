@@ -92,6 +92,8 @@ pub trait EdwardsScalar:
 
     fn clamp(bytes: &mut Self::Bytes);
 
+    fn is_canonical(bytes: &Self::Bytes) -> bool;
+
     fn as_radix_16(&self) -> Self::Radix16;
 
     fn non_adjacent_form_5(&self) -> Self::Naf5;
@@ -104,6 +106,7 @@ pub trait EllipticCurve {
     type Scalar;
     type PointBytes: ByteArray;
     type ScalarBytes: ByteArray;
+    type SharedSecretBytes: ByteArray;
 
     fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {
         loop {
@@ -125,6 +128,8 @@ pub trait EllipticCurve {
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point>;
 
     fn point_to_bytes(point: &Self::Point) -> Self::PointBytes;
+
+    fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes;
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar>;
 

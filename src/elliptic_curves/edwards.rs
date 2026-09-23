@@ -131,7 +131,9 @@ where
     S: EdwardsScalar,
 {
     fn eq(&self, other: &Self) -> bool {
-        (self.x * other.z) == (other.x * self.z)
+        let x = (self.x * other.z) == (other.x * self.z);
+        let y = (self.y * other.z) == (other.y * self.z);
+        x & y
     }
 }
 

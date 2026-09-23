@@ -3,7 +3,7 @@ mod scalar;
 
 use crate::{
     elliptic_curves::weierstrass::Weierstrass,
-    traits::{EcdsaCurve, EllipticCurve},
+    traits::{EcdsaCurve, EllipticCurve, WeierstrassScalar},
 };
 pub use {field::*, scalar::*};
 
@@ -18,6 +18,7 @@ impl EllipticCurve for P521 {
     type Scalar = ScalarP521;
     type PointBytes = [u8; 67];
     type ScalarBytes = [u8; 66];
+    type SharedSecretBytes = [u8; 66];
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
         let (point, valid) = Point::decompress(bytes);
@@ -32,12 +33,12 @@ impl EllipticCurve for P521 {
         point.compress()
     }
 
+    fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
+        point.affine_x()
+    }
+
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        let s = ScalarP521::from(*bytes);
-        if s.is_zero() {
-            return None;
-        }
-        Some(s)
+        ScalarP521::from_canonical(bytes)
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {

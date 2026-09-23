@@ -35,19 +35,19 @@ where
         (private_key, public_key)
     }
 
-    pub fn public_key(private_key: &S::Bytes) -> F::PointBytes {
-        let d = S::from(*private_key);
-        Self::public_key_from_scalar(&d)
+    pub fn public_key(private_key: &S::Bytes) -> Option<F::PointBytes> {
+        let d = S::from_canonical(private_key)?;
+        Some(Self::public_key_from_scalar(&d))
     }
 
-    pub fn sign(private_key: &S::Bytes, message: &[u8]) -> B {
-        let d = S::from(*private_key);
+    pub fn sign(private_key: &S::Bytes, message: &[u8]) -> Option<B> {
+        let d = S::from_canonical(private_key)?;
         let e = Self::message_representative(message);
         let mut drbg = HmacDrbg::<H>::instantiate(d.into().as_ref(), e.into().as_ref());
         loop {
             let k = Self::next_scalar(&mut drbg);
             if let Some(signature) = Self::try_sign(&k, &d, &e) {
-                return signature;
+                return Some(signature);
             }
         }
     }

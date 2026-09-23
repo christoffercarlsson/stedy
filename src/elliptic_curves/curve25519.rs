@@ -19,12 +19,17 @@ impl EllipticCurve for Curve25519 {
     type Scalar = [u8; 32];
     type PointBytes = [u8; 32];
     type ScalarBytes = [u8; 32];
+    type SharedSecretBytes = [u8; 32];
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
         Some(Field25519::from(bytes))
     }
 
     fn point_to_bytes(point: &Self::Point) -> Self::PointBytes {
+        point.into()
+    }
+
+    fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
         point.into()
     }
 
@@ -69,6 +74,7 @@ impl EllipticCurve for Curve25519 {
         }
         Field25519::swap(&mut x2, &mut x3, swap);
         Field25519::swap(&mut z2, &mut z3, swap);
-        Some(x2 / z2)
+        let u = x2 / z2;
+        (u != Field25519::ZERO).then_some(u)
     }
 }

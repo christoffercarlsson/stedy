@@ -26,10 +26,10 @@ impl<C: EllipticCurve> Ecdh<C> {
     pub fn key_exchange(
         private_key: &C::ScalarBytes,
         public_key: &C::PointBytes,
-    ) -> Option<C::PointBytes> {
+    ) -> Option<C::SharedSecretBytes> {
         let scalar = C::scalar_from_bytes(private_key)?;
         let point = C::point_from_bytes(public_key)?;
         let shared_secret = C::scalar_mult(&scalar, &point)?;
-        Some(C::point_to_bytes(&shared_secret))
+        Some(C::shared_secret_bytes(&shared_secret))
     }
 }

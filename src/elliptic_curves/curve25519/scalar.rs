@@ -9,6 +9,11 @@ mod scalar25519;
 
 pub use scalar25519::Scalar25519;
 
+const ORDER: [u8; 32] = [
+    0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+];
+
 impl Add for Scalar25519 {
     type Output = Self;
 
@@ -85,6 +90,17 @@ impl EdwardsScalar for Scalar25519 {
         bytes[0] &= 248;
         bytes[31] &= 127;
         bytes[31] |= 64;
+    }
+
+    fn is_canonical(bytes: &[u8; 32]) -> bool {
+        let mut borrow = 0u16;
+        for (byte, order) in bytes.iter().zip(ORDER.iter()) {
+            let diff = (*byte as u16)
+                .wrapping_sub(*order as u16)
+                .wrapping_sub(borrow);
+            borrow = (diff >> 8) & 1;
+        }
+        borrow == 1
     }
 
     fn as_radix_16(&self) -> Self::Radix16 {

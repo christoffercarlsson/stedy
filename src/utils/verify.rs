@@ -1,4 +1,7 @@
 pub fn verify(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
     let mut result = 0;
     for (x, y) in a.iter().zip(b) {
         result |= x ^ y;
@@ -18,5 +21,6 @@ mod tests {
         assert!(verify(&a, &b));
         assert!(!verify(&a, &c));
         assert!(!verify(&b, &c));
+        assert!(!verify(&a[..15], &b));
     }
 }

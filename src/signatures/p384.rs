@@ -37,13 +37,13 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p384_public_key() {
-        assert_eq!(P384::public_key(&PRIVATE_KEY), PUBLIC_KEY);
+        assert_eq!(P384::public_key(&PRIVATE_KEY), Some(PUBLIC_KEY));
     }
 
     #[test]
     fn test_ecdsa_p384_sign() {
-        assert_eq!(P384::sign(&PRIVATE_KEY, b"sample"), SIGNATURE_SAMPLE);
-        assert_eq!(P384::sign(&PRIVATE_KEY, b"test"), SIGNATURE_TEST);
+        assert_eq!(P384::sign(&PRIVATE_KEY, b"sample"), Some(SIGNATURE_SAMPLE));
+        assert_eq!(P384::sign(&PRIVATE_KEY, b"test"), Some(SIGNATURE_TEST));
     }
 
     #[test]
@@ -69,7 +69,7 @@ mod tests {
     fn test_ecdsa_p384_round_trip() {
         let mut rng = Rng::from(&[7u8; 128]);
         let (private_key, public_key) = P384::generate_key_pair(&mut rng);
-        let signature = P384::sign(&private_key, b"round trip message");
+        let signature = P384::sign(&private_key, b"round trip message").unwrap();
         assert!(P384::verify(b"round trip message", &public_key, &signature));
         assert!(!P384::verify(b"another message", &public_key, &signature));
     }
