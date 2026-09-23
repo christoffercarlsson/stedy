@@ -56,7 +56,7 @@ macro_rules! impl_montgomery {
                 Self(words, PhantomData::<P>)
             }
 
-            pub(crate) fn swap(a: &mut Self, b: &mut Self, condition: Word) {
+            pub(crate) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
                 let mask = ((condition != 0) as Word).wrapping_neg();
                 for i in 0..$LIMBS {
                     let t = mask & (a[i] ^ b[i]);
@@ -65,7 +65,7 @@ macro_rules! impl_montgomery {
                 }
             }
 
-            pub(crate) fn select(a: &Self, b: &Self, condition: Word) -> Self {
+            pub(crate) fn select(a: &Self, b: &Self, condition: u64) -> Self {
                 let mut x = *a;
                 let mut y = *b;
                 Self::swap(&mut x, &mut y, condition);
@@ -125,7 +125,7 @@ macro_rules! impl_montgomery {
                     diff[i] = d2 & Self::MASKS[i];
                     borrow = (b1 | b2) as Word;
                 }
-                Self::select(&diff, &Self::ZERO, self.is_zero() as Word)
+                Self::select(&diff, &Self::ZERO, self.is_zero() as u64)
             }
 
             pub(crate) fn enter_montgomery(self) -> Self {
@@ -173,7 +173,7 @@ macro_rules! impl_montgomery {
                     diff[i] = d2 & Self::MASKS[i];
                     borrow = (b1 | b2) as Word;
                 }
-                *self = Self::select(&diff, self, borrow);
+                *self = Self::select(&diff, self, borrow as u64);
             }
 
             fn round(t: &mut [WideWord], i: usize) {
