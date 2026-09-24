@@ -1,5 +1,5 @@
 use {
-    crate::traits::WeierstrassScalar,
+    crate::{traits::WeierstrassScalar, utils::wipe, Secret, SecretDigits},
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -8,8 +8,9 @@ use {
 mod scalar_p384;
 
 pub use scalar_p384::ScalarP384;
+use scalar_p384::ScalarP384Inner;
 
-impl ScalarP384 {
+impl ScalarP384Inner {
     const ORDER: [u8; 48] = [
         255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
         255, 255, 255, 255, 255, 255, 199, 99, 77, 129, 244, 55, 45, 223, 88, 26, 13, 178, 72, 176,
@@ -25,19 +26,19 @@ impl ScalarP384 {
         let mut bytes = [0u8; 48];
         let size = slice.len().min(48);
         bytes[..size].copy_from_slice(&slice[..size]);
-        Self::from(&bytes)
+        Self::from_bytes(&bytes)
     }
 
     fn invert(self) -> Self {
         let mut table = [Self::R; 16];
         table[1] = self;
         for i in 2..16 {
-            table[i] = table[i - 1] * self;
+            table[i] = table[i - 1].mul(self);
         }
         let mut result = Self::R;
         for byte in Self::ORDER_MINUS_2 {
-            result = result.pow2n(4) * table[(byte >> 4) as usize];
-            result = result.pow2n(4) * table[(byte & 0x0f) as usize];
+            result = result.pow2n(4).mul(table[(byte >> 4) as usize]);
+            result = result.pow2n(4).mul(table[(byte & 0x0f) as usize]);
         }
         result
     }
@@ -57,13 +58,13 @@ impl Add for ScalarP384 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        self.add(rhs)
+        Secret::from((*self.get()).add(*rhs.get()))
     }
 }
 
 impl AddAssign for ScalarP384 {
     fn add_assign(&mut self, rhs: Self) {
-        *self = self.add(rhs);
+        *self = Secret::from((*self.get()).add(*rhs.get()));
     }
 }
 
@@ -71,13 +72,13 @@ impl Sub for ScalarP384 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        self.sub(rhs)
+        Secret::from((*self.get()).sub(*rhs.get()))
     }
 }
 
 impl SubAssign for ScalarP384 {
     fn sub_assign(&mut self, rhs: Self) {
-        *self = self.sub(rhs);
+        *self = Secret::from((*self.get()).sub(*rhs.get()));
     }
 }
 
@@ -85,7 +86,7 @@ impl Neg for ScalarP384 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        self.neg()
+        Secret::from((*self.get()).neg())
     }
 }
 
@@ -93,19 +94,19 @@ impl Mul for ScalarP384 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        self.mul(rhs)
+        Secret::from((*self.get()).mul(*rhs.get()))
     }
 }
 
 impl MulAssign for ScalarP384 {
     fn mul_assign(&mut self, rhs: Self) {
-        *self = self.mul(rhs);
+        *self = Secret::from((*self.get()).mul(*rhs.get()));
     }
 }
 
 impl PartialEq for ScalarP384 {
     fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
+        self.get().eq(other.get())
     }
 }
 
@@ -113,7 +114,7 @@ impl Eq for ScalarP384 {}
 
 impl From<&[u8; 48]> for ScalarP384 {
     fn from(value: &[u8; 48]) -> Self {
-        Self::from_bytes(value)
+        Secret::from(ScalarP384Inner::from_bytes(value))
     }
 }
 
@@ -125,41 +126,41 @@ impl From<[u8; 48]> for ScalarP384 {
 
 impl From<&[u8]> for ScalarP384 {
     fn from(value: &[u8]) -> Self {
-        Self::from_slice(value)
+        Secret::from(ScalarP384Inner::from_slice(value))
     }
 }
 
 impl From<ScalarP384> for [u8; 48] {
     fn from(value: ScalarP384) -> Self {
-        value.to_bytes()
+        value.get().to_bytes()
     }
 }
 
 impl From<&ScalarP384> for [u8; 48] {
     fn from(value: &ScalarP384) -> Self {
-        Self::from(*value)
+        value.get().to_bytes()
     }
 }
 
 impl WeierstrassScalar for ScalarP384 {
     const ORDER_BITS: usize = 384;
-    const ORDER: Self::Bytes = Self::ORDER;
+    const ORDER: Self::Bytes = ScalarP384Inner::ORDER;
 
     type Bytes = [u8; 48];
-    type Radix16 = [i8; 97];
+    type Radix16 = SecretDigits<97>;
     type Naf5 = [i8; 385];
 
     fn is_zero(&self) -> bool {
-        self.is_zero()
+        self.get().is_zero()
     }
 
     fn invert(self) -> Self {
-        self.invert()
+        Secret::from(self.get().invert())
     }
 
     fn as_radix_16(&self) -> Self::Radix16 {
-        let s = (*self).to_le_bytes();
-        let mut t = [0i8; 97];
+        let mut s = self.get().to_le_bytes();
+        let mut t = Secret::from([0i8; 97]);
         for i in 0..48 {
             t[2 * i] = (s[i] & 15) as i8;
             t[2 * i + 1] = ((s[i] >> 4) & 15) as i8;
@@ -169,12 +170,13 @@ impl WeierstrassScalar for ScalarP384 {
             t[i] -= carry << 4;
             t[i + 1] += carry;
         }
+        wipe(&mut s);
         t
     }
 
     fn non_adjacent_form_5(&self) -> Self::Naf5 {
         let mut words = [0u64; 7];
-        words[..6].copy_from_slice(&self.to_le_words());
+        words[..6].copy_from_slice(&self.get().to_le_words());
         let mut naf = [0i8; 385];
         let mut pos = 0usize;
         let mut carry = 0u64;

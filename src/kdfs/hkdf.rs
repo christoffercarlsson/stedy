@@ -1,6 +1,7 @@
 use crate::{
     macs::Hmac,
     traits::{ByteArray, Hasher},
+    utils::wipe,
 };
 
 pub struct Hkdf<H: Hasher> {
@@ -36,6 +37,12 @@ impl<H: Hasher> Hkdf<H> {
             let slice = &t.as_ref()[..chunk.len()];
             chunk.copy_from_slice(slice);
         }
+    }
+}
+
+impl<H: Hasher> Drop for Hkdf<H> {
+    fn drop(&mut self) {
+        wipe(self.prk.as_mut());
     }
 }
 

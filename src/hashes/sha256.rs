@@ -1,11 +1,12 @@
 use crate::{
     traits::{Digest, Hasher, Init},
     utils::Block,
+    Secret,
 };
 
 #[derive(Clone)]
 pub struct Sha256 {
-    h: [u32; 8],
+    h: Secret<[u32; 8]>,
     block: Block<64>,
     total_size: u64,
 }
@@ -19,10 +20,10 @@ impl Sha256 {
 
     pub fn new() -> Self {
         Self {
-            h: [
+            h: Secret::from([
                 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
                 0x5be0cd19,
-            ],
+            ]),
             block: Block::<64>::new(),
             total_size: 0,
         }

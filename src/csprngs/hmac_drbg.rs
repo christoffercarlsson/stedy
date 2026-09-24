@@ -1,6 +1,7 @@
 use crate::{
     macs::Hmac,
     traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng},
+    utils::wipe,
 };
 
 pub struct HmacDrbg<H: Hasher> {
@@ -115,5 +116,12 @@ impl<H: Hasher> HmacDrbg<H> {
         let mut mac = Hmac::<H>::new(self.k.as_ref());
         mac.update(self.v.as_ref());
         self.v = mac.finalize();
+    }
+}
+
+impl<H: Hasher> Drop for HmacDrbg<H> {
+    fn drop(&mut self) {
+        wipe(self.k.as_mut());
+        wipe(self.v.as_mut());
     }
 }

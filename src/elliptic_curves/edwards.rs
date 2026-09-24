@@ -59,7 +59,7 @@ where
         let slice = bytes.as_ref();
         let last = slice.len() - 1;
         let sign = (slice[last] >> 7) as u64;
-        let mut bytes = *bytes;
+        let mut bytes = bytes.clone();
         bytes[last] &= 127;
         let y = F::from(bytes);
         let y2 = y.square();

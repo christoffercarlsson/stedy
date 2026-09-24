@@ -1,13 +1,14 @@
+use crate::Secret;
 #[derive(Clone)]
 pub struct Block<const BLOCK_SIZE: usize> {
-    buffer: [u8; BLOCK_SIZE],
+    buffer: Secret<[u8; BLOCK_SIZE]>,
     buffer_size: u32,
 }
 
 impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
     pub fn new() -> Self {
         Self {
-            buffer: [0u8; BLOCK_SIZE],
+            buffer: Secret::from([0u8; BLOCK_SIZE]),
             buffer_size: 0,
         }
     }
@@ -27,7 +28,7 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
     }
 
     pub fn remaining(&self) -> &[u8] {
-        &self.buffer[..self.buffer_size as usize]
+        &self.buffer.get()[..self.buffer_size as usize]
     }
 
     pub fn remaining_block(&self) -> Option<([u8; BLOCK_SIZE], usize)> {
@@ -54,7 +55,7 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         let begin = BLOCK_SIZE - self.buffer_size as usize;
         let end = data.len() - keep - (total - keep) % BLOCK_SIZE;
         self.buffer_chunk(&data[..begin]);
-        let head = self.buffer;
+        let head = *self.buffer.get();
         let tail = BlockIterator::<BLOCK_SIZE> {
             tail: data,
             begin,

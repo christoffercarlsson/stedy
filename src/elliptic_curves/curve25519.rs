@@ -1,4 +1,7 @@
-use crate::traits::{EdwardsScalar, EllipticCurve, FieldElement};
+use crate::{
+    traits::{EdwardsScalar, EllipticCurve, FieldElement},
+    Secret,
+};
 
 mod field;
 mod scalar;
@@ -16,10 +19,10 @@ impl EllipticCurve for Curve25519 {
     const BASE_POINT: Field25519 = Self::BASE_POINT;
 
     type Point = Field25519;
-    type Scalar = [u8; 32];
+    type Scalar = Secret<[u8; 32]>;
     type PointBytes = [u8; 32];
-    type ScalarBytes = [u8; 32];
-    type SharedSecretBytes = [u8; 32];
+    type ScalarBytes = Secret<[u8; 32]>;
+    type SharedSecretBytes = Secret<[u8; 32]>;
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
         Some(Field25519::from(bytes))
@@ -30,19 +33,20 @@ impl EllipticCurve for Curve25519 {
     }
 
     fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
-        point.into()
+        let bytes: [u8; 32] = point.into();
+        Secret::from(bytes)
     }
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        Some(*bytes)
+        Some(bytes.clone())
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        *scalar
+        scalar.clone()
     }
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
-        let mut scalar = *scalar;
+        let mut scalar = scalar.clone();
         Scalar25519::clamp(&mut scalar);
         let x1 = *point;
         let mut x2 = Field25519::ONE;

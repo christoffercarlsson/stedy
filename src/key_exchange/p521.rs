@@ -4,7 +4,10 @@ pub type P521 = Ecdh<P521Curve>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {
+        super::*,
+        crate::{csprngs::Rng, Secret},
+    };
 
     const ALICE_PRIVATE_KEY: [u8; 66] = [
         1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
@@ -40,18 +43,21 @@ mod tests {
     #[test]
     fn test_ecdh_p521_public_key() {
         assert_eq!(
-            P521::public_key(&ALICE_PRIVATE_KEY).unwrap(),
+            P521::public_key(&Secret::from(ALICE_PRIVATE_KEY)).unwrap(),
             ALICE_PUBLIC_KEY
         );
-        assert_eq!(P521::public_key(&BOB_PRIVATE_KEY).unwrap(), BOB_PUBLIC_KEY);
+        assert_eq!(
+            P521::public_key(&Secret::from(BOB_PRIVATE_KEY)).unwrap(),
+            BOB_PUBLIC_KEY
+        );
     }
 
     #[test]
     fn test_ecdh_p521_key_exchange() {
-        let alice = P521::key_exchange(&ALICE_PRIVATE_KEY, &BOB_PUBLIC_KEY).unwrap();
-        let bob = P521::key_exchange(&BOB_PRIVATE_KEY, &ALICE_PUBLIC_KEY).unwrap();
-        assert_eq!(alice, SHARED_SECRET);
-        assert_eq!(bob, SHARED_SECRET);
+        let alice = P521::key_exchange(&Secret::from(ALICE_PRIVATE_KEY), &BOB_PUBLIC_KEY).unwrap();
+        let bob = P521::key_exchange(&Secret::from(BOB_PRIVATE_KEY), &ALICE_PUBLIC_KEY).unwrap();
+        assert_eq!(alice.as_ref(), &SHARED_SECRET);
+        assert_eq!(bob.as_ref(), &SHARED_SECRET);
     }
 
     #[test]
@@ -63,6 +69,6 @@ mod tests {
 
     #[test]
     fn test_ecdh_p521_rejects_zero_private_key() {
-        assert!(P521::public_key(&[0u8; 66]).is_none());
+        assert!(P521::public_key(&Secret::from([0u8; 66])).is_none());
     }
 }

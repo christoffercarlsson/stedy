@@ -18,8 +18,12 @@ pub mod hashes;
 pub mod kdfs;
 pub mod key_exchange;
 pub mod macs;
+mod secret;
 #[cfg(feature = "secret_sharing")]
 pub mod secret_sharing;
 pub mod signatures;
 pub mod traits;
 pub mod utils;
+
+pub use secret::Secret;
+pub(crate) use secret::SecretDigits;

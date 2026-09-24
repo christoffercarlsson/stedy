@@ -4,7 +4,10 @@ pub type P384 = Ecdh<P384Curve>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {
+        super::*,
+        crate::{csprngs::Rng, Secret},
+    };
 
     const ALICE_PRIVATE_KEY: [u8; 48] = [
         1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
@@ -35,18 +38,21 @@ mod tests {
     #[test]
     fn test_ecdh_p384_public_key() {
         assert_eq!(
-            P384::public_key(&ALICE_PRIVATE_KEY).unwrap(),
+            P384::public_key(&Secret::from(ALICE_PRIVATE_KEY)).unwrap(),
             ALICE_PUBLIC_KEY
         );
-        assert_eq!(P384::public_key(&BOB_PRIVATE_KEY).unwrap(), BOB_PUBLIC_KEY);
+        assert_eq!(
+            P384::public_key(&Secret::from(BOB_PRIVATE_KEY)).unwrap(),
+            BOB_PUBLIC_KEY
+        );
     }
 
     #[test]
     fn test_ecdh_p384_key_exchange() {
-        let alice = P384::key_exchange(&ALICE_PRIVATE_KEY, &BOB_PUBLIC_KEY).unwrap();
-        let bob = P384::key_exchange(&BOB_PRIVATE_KEY, &ALICE_PUBLIC_KEY).unwrap();
-        assert_eq!(alice, SHARED_SECRET);
-        assert_eq!(bob, SHARED_SECRET);
+        let alice = P384::key_exchange(&Secret::from(ALICE_PRIVATE_KEY), &BOB_PUBLIC_KEY).unwrap();
+        let bob = P384::key_exchange(&Secret::from(BOB_PRIVATE_KEY), &ALICE_PUBLIC_KEY).unwrap();
+        assert_eq!(alice.as_ref(), &SHARED_SECRET);
+        assert_eq!(bob.as_ref(), &SHARED_SECRET);
     }
 
     #[test]
@@ -58,6 +64,6 @@ mod tests {
 
     #[test]
     fn test_ecdh_p384_rejects_zero_private_key() {
-        assert!(P384::public_key(&[0u8; 48]).is_none());
+        assert!(P384::public_key(&Secret::from([0u8; 48])).is_none());
     }
 }

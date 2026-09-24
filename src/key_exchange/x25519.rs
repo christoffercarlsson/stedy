@@ -4,15 +4,19 @@ pub type X25519 = Ecdh<Curve25519>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng, hex_literal::hex};
+    use {
+        super::*,
+        crate::{csprngs::Rng, Secret},
+        hex_literal::hex,
+    };
 
     #[test]
     fn test_x25519_generate_key_pair() {
         let mut rng = Rng::from(&[0u8; 128]);
         let (private_key, public_key) = X25519::generate_key_pair(&mut rng);
         assert_eq!(
-            private_key,
-            [
+            private_key.as_ref(),
+            &[
                 253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217, 162, 213,
                 40, 127, 15, 170, 40, 184, 218, 178, 64, 246, 99, 149, 165, 24
             ]
@@ -28,18 +32,18 @@ mod tests {
 
     #[test]
     fn test_x25519() {
-        let alice_private_key = [
+        let alice_private_key = Secret::from([
             119, 7, 109, 10, 115, 24, 165, 125, 60, 22, 193, 114, 81, 178, 102, 69, 223, 76, 47,
             135, 235, 192, 153, 42, 177, 119, 251, 165, 29, 185, 44, 42,
-        ];
+        ]);
         let alice_public_key = [
             133, 32, 240, 9, 137, 48, 167, 84, 116, 139, 125, 220, 180, 62, 247, 90, 13, 191, 58,
             13, 38, 56, 26, 244, 235, 164, 169, 142, 170, 155, 78, 106,
         ];
-        let bob_private_key = [
+        let bob_private_key = Secret::from([
             93, 171, 8, 126, 98, 74, 138, 75, 121, 225, 127, 139, 131, 128, 14, 230, 111, 59, 177,
             41, 38, 24, 182, 253, 28, 47, 139, 39, 255, 136, 224, 235,
-        ];
+        ]);
         let bob_public_key = [
             222, 158, 219, 125, 123, 125, 193, 180, 211, 91, 97, 194, 236, 228, 53, 55, 63, 131,
             67, 200, 91, 120, 103, 77, 173, 252, 126, 20, 111, 136, 43, 79,
@@ -53,9 +57,9 @@ mod tests {
         let public_key = X25519::public_key(&bob_private_key).unwrap();
         assert_eq!(public_key, bob_public_key);
         let secret = X25519::key_exchange(&alice_private_key, &bob_public_key).unwrap();
-        assert_eq!(secret, shared_secret);
+        assert_eq!(secret.as_ref(), shared_secret.as_ref());
         let secret = X25519::key_exchange(&bob_private_key, &alice_public_key).unwrap();
-        assert_eq!(secret, shared_secret);
+        assert_eq!(secret.as_ref(), shared_secret.as_ref());
     }
 
     // https://datatracker.ietf.org/doc/html/rfc7748#section-5.2
@@ -64,10 +68,10 @@ mod tests {
     fn test_scalar_mult_tc1() {
         let k = hex!("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4");
         let u = hex!("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c");
-        let result = X25519::key_exchange(&k, &u).unwrap();
+        let result = X25519::key_exchange(&Secret::from(k), &u).unwrap();
         assert_eq!(
-            result,
-            hex!("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552")
+            result.as_ref(),
+            &hex!("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552")
         );
     }
 
@@ -75,10 +79,10 @@ mod tests {
     fn test_scalar_mult_tc2() {
         let k = hex!("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d");
         let u = hex!("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493");
-        let result = X25519::key_exchange(&k, &u).unwrap();
+        let result = X25519::key_exchange(&Secret::from(k), &u).unwrap();
         assert_eq!(
-            result,
-            hex!("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957")
+            result.as_ref(),
+            &hex!("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957")
         );
     }
 
@@ -86,10 +90,10 @@ mod tests {
     fn test_x25519_iter() {
         let k = hex!("0900000000000000000000000000000000000000000000000000000000000000");
         let u = hex!("0900000000000000000000000000000000000000000000000000000000000000");
-        let result = X25519::key_exchange(&k, &u).unwrap();
+        let result = X25519::key_exchange(&Secret::from(k), &u).unwrap();
         assert_eq!(
-            result,
-            hex!("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079")
+            result.as_ref(),
+            &hex!("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079")
         );
     }
 
@@ -98,9 +102,9 @@ mod tests {
         let mut k = hex!("0900000000000000000000000000000000000000000000000000000000000000");
         let mut u = hex!("0900000000000000000000000000000000000000000000000000000000000000");
         for _ in 0..1000 {
-            let result = X25519::key_exchange(&k, &u).unwrap();
+            let result = X25519::key_exchange(&Secret::from(k), &u).unwrap();
             u = k;
-            k = result;
+            k = *result.get();
         }
         assert_eq!(
             k,
@@ -119,7 +123,7 @@ mod tests {
     //         0, 0, 0,
     //     ];
     //     for _ in 0..1000000 {
-    //         let result = X25519::key_exchange(&k, &u).unwrap();
+    //         let result = X25519::key_exchange(&Secret::from(k), &u).unwrap();
     //         u = k;
     //         k = result;
     //     }

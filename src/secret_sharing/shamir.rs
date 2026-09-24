@@ -115,7 +115,7 @@ impl<F: FieldElement> Shamir<F> {
         secret: F::Bytes,
         output: &[u8],
     ) -> [F; K] {
-        let mut coefficients = [F::Bytes::new(); K];
+        let mut coefficients: [F::Bytes; K] = from_fn(|_| F::Bytes::new());
         coefficients[0] = Self::reverse_if_big_endian(secret);
         let offset = 4 + index * Self::ELEMENT_SIZE;
         for (i, coefficient) in coefficients.iter_mut().enumerate().skip(1) {
@@ -183,7 +183,7 @@ impl<F: FieldElement> Shamir<F> {
             let end = begin + Self::ELEMENT_SIZE;
             let pairs: [(F, F); K] = from_fn(|j| {
                 let share = shares[j];
-                let bytes = *F::Bytes::from_slice_checked(&share[begin..end])
+                let bytes = F::Bytes::from_slice_checked(&share[begin..end])
                     .expect("Each secret column is one field element");
                 let x = F::from(Self::index(share));
                 let y = F::from(bytes);

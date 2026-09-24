@@ -64,7 +64,7 @@ where
         let prefix = bytes[0];
         let valid_prefix = ((prefix == 2) | (prefix == 3)) as u64;
         let sign = (prefix & 1) as u64;
-        let x = F::from(*F::Bytes::from_slice(&bytes[1..]));
+        let x = F::from(F::Bytes::from_slice(&bytes[1..]));
         let x2 = x.square();
         let x3 = x2 * x;
         let rhs = x3 + F::A * x + F::B;
@@ -285,7 +285,7 @@ where
     type Output = Weierstrass<F, S>;
 
     fn mul(self, rhs: &S) -> Self::Output {
-        *self * *rhs
+        *self * rhs.clone()
     }
 }
 

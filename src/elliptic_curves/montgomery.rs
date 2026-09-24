@@ -1,4 +1,10 @@
-use {crate::traits::MontgomeryParams, core::marker::PhantomData};
+use {
+    crate::{
+        traits::MontgomeryParams,
+        utils::{wipe, Wipe},
+    },
+    core::marker::PhantomData,
+};
 
 #[cfg(target_pointer_width = "32")]
 mod words {
@@ -18,6 +24,12 @@ use words::*;
 pub struct Montgomery<const LIMBS: usize, P>([Word; LIMBS], PhantomData<P>)
 where
     P: MontgomeryParams<LIMBS>;
+
+impl<const LIMBS: usize, P: MontgomeryParams<LIMBS>> Wipe for Montgomery<LIMBS, P> {
+    fn wipe(&mut self) {
+        wipe(&mut self.0);
+    }
+}
 
 macro_rules! impl_montgomery {
     ($LIMBS:literal) => {

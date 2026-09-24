@@ -2,7 +2,7 @@ use {
     crate::{
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
         traits::{Authenticator, ByteArray, Digest, KeyInit, Mac, SeekableStreamCipher},
-        utils::{verify, Block},
+        utils::{verify, wipe, Block},
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
@@ -143,6 +143,14 @@ impl Authenticator<XSalsa20> for Poly1305 {
     fn verify(mut self, ciphertext: &[u8], _aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.update(ciphertext);
         Mac::verify(self, tag)
+    }
+}
+
+impl Drop for Poly1305 {
+    fn drop(&mut self) {
+        wipe(&mut self.a.0);
+        wipe(&mut self.r.0);
+        wipe(&mut self.s.0);
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{elliptic_curves::Montgomery, traits::MontgomeryParams};
+use crate::{elliptic_curves::Montgomery, traits::MontgomeryParams, Secret};
 
 #[derive(Clone, Copy)]
 pub struct ScalarP521Params;
@@ -23,9 +23,10 @@ impl MontgomeryParams<18> for ScalarP521Params {
     const N0: u64 = 430544327;
 }
 
-pub type ScalarP521 = Montgomery<18, ScalarP521Params>;
+pub(crate) type ScalarP521Inner = Montgomery<18, ScalarP521Params>;
+pub type ScalarP521 = Secret<ScalarP521Inner>;
 
-impl ScalarP521 {
+impl ScalarP521Inner {
     pub(super) fn from_bytes(bytes: &[u8; 66]) -> Self {
         let mut bytes = *bytes;
         bytes.reverse();

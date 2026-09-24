@@ -30,7 +30,7 @@ where
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S::Bytes, F::PointBytes) {
         let d = Self::next_scalar(rng);
-        let private_key: S::Bytes = d.into();
+        let private_key: S::Bytes = d.clone().into();
         let public_key = Self::public_key_from_scalar(&d);
         (private_key, public_key)
     }
@@ -43,7 +43,8 @@ where
     pub fn sign(private_key: &S::Bytes, message: &[u8]) -> Option<B> {
         let d = S::from_canonical(private_key)?;
         let e = Self::message_representative(message);
-        let mut drbg = HmacDrbg::<H>::instantiate(d.into().as_ref(), e.into().as_ref());
+        let mut drbg =
+            HmacDrbg::<H>::instantiate(d.clone().into().as_ref(), e.clone().into().as_ref());
         loop {
             let k = Self::next_scalar(&mut drbg);
             if let Some(signature) = Self::try_sign(&k, &d, &e) {
@@ -62,8 +63,8 @@ where
         }
         let e = Self::message_representative(message);
         let w = s.invert();
-        let u1 = e * w;
-        let u2 = r * w;
+        let u1 = e * w.clone();
+        let u2 = r.clone() * w;
         let R = Weierstrass::<F, S>::vartime_double_base(&u2, q, &u1);
         if R.is_identity() {
             return false;
@@ -93,13 +94,13 @@ where
     }
 
     fn public_key_from_scalar(d: &S) -> F::PointBytes {
-        (Weierstrass::<F, S>::BASE_POINT * *d).compress()
+        (Weierstrass::<F, S>::BASE_POINT * d.clone()).compress()
     }
 
     fn try_sign(k: &S, d: &S, e: &S) -> Option<B> {
-        let point = Weierstrass::<F, S>::BASE_POINT * *k;
+        let point = Weierstrass::<F, S>::BASE_POINT * k.clone();
         let r = Self::affine_x_mod_order(&point);
-        let s = k.invert() * (*e + r * *d);
+        let s = k.clone().invert() * (e.clone() + r.clone() * d.clone());
         let valid = !r.is_zero() & !s.is_zero();
         valid.then(|| Self::create_signature(&r.into(), &s.into()))
     }
@@ -108,28 +109,26 @@ where
         let mut signature = B::new();
         let (r, s) =
             Self::signature_from_components_mut(&mut signature).expect("Signature size is correct");
-        r.as_mut().copy_from_slice(r_bytes.as_ref());
-        s.as_mut().copy_from_slice(s_bytes.as_ref());
+        r.copy_from_slice(r_bytes.as_ref());
+        s.copy_from_slice(s_bytes.as_ref());
         signature
     }
 
-    fn signature_from_components_mut(signature: &mut B) -> Option<(&mut S::Bytes, &mut S::Bytes)> {
+    fn signature_from_components_mut(signature: &mut B) -> Option<(&mut [u8], &mut [u8])> {
         let (r, s) = signature.as_mut().split_at_mut_checked(S::Bytes::SIZE)?;
-        let r = S::Bytes::from_slice_mut_checked(r)?;
-        let s = S::Bytes::from_slice_mut_checked(s)?;
-        Some((r, s))
+        (s.len() == S::Bytes::SIZE).then_some((r, s))
     }
 
     fn read_signature(signature: &B) -> Option<(S, S)> {
         let (r, s) = signature.as_ref().split_at(S::Bytes::SIZE);
-        let r = S::from_canonical(S::Bytes::from_slice(r))?;
-        let s = S::from_canonical(S::Bytes::from_slice(s))?;
+        let r = S::from_canonical(&S::Bytes::from_slice(r))?;
+        let s = S::from_canonical(&S::Bytes::from_slice(s))?;
         Some((r, s))
     }
 
     fn affine_x_mod_order(point: &Weierstrass<F, S>) -> S {
         let x = point.affine_x();
-        let bytes = *S::Bytes::from_slice(x.as_ref());
+        let bytes = S::Bytes::from_slice(x.as_ref());
         S::from(bytes)
     }
 

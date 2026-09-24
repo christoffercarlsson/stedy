@@ -1,11 +1,12 @@
 use crate::{
     traits::{Digest, Hasher, Init},
     utils::Block,
+    Secret,
 };
 
 #[derive(Clone)]
 pub struct Sha384 {
-    h: [u64; 8],
+    h: Secret<[u64; 8]>,
     block: Block<128>,
     total_size: u64,
 }
@@ -19,7 +20,7 @@ impl Sha384 {
 
     pub fn new() -> Self {
         Self {
-            h: [
+            h: Secret::from([
                 0xcbbb9d5dc1059ed8,
                 0x629a292a367cd507,
                 0x9159015a3070dd17,
@@ -28,7 +29,7 @@ impl Sha384 {
                 0x8eb44a8768581511,
                 0xdb0c2e0d64f98fa7,
                 0x47b5481dbefa4fa4,
-            ],
+            ]),
             block: Block::<128>::new(),
             total_size: 0,
         }

@@ -1,5 +1,9 @@
 use {
-    crate::hashes::{Blake2b512, Blake2bVar},
+    crate::{
+        hashes::{Blake2b512, Blake2bVar},
+        utils::{wipe, Wipe},
+        Secret,
+    },
     core::ops::{BitXorAssign, Index, IndexMut},
     std::thread,
 };
@@ -93,10 +97,10 @@ pub fn argon2(
         return false;
     }
     let h0 = params.initial_hash(password, salt, secret, associated_data, output);
-    let mut memory = vec![Argon2Block::ZERO; params.blocks()];
-    params.fill_first_blocks(&mut memory, &h0);
-    params.fill_memory(&mut memory);
-    params.calculate_output(&memory, output);
+    let mut memory = Secret::from(vec![Argon2Block::ZERO; params.blocks()]);
+    params.fill_first_blocks(memory.get_mut(), h0.get());
+    params.fill_memory(memory.get_mut());
+    params.calculate_output(memory.get(), output);
     true
 }
 
@@ -125,7 +129,7 @@ impl Argon2Params {
         secret: &[u8],
         associated_data: &[u8],
         output: &[u8],
-    ) -> [u8; 64] {
+    ) -> Secret<[u8; 64]> {
         let mut hasher = Blake2b512::new(None);
         hasher.update(&self.lanes.to_le_bytes());
         hasher.update(&(output.len() as u32).to_le_bytes());
@@ -141,20 +145,20 @@ impl Argon2Params {
         hasher.update(secret);
         hasher.update(&(associated_data.len() as u32).to_le_bytes());
         hasher.update(associated_data);
-        hasher.finalize()
+        Secret::from(hasher.finalize())
     }
 
     fn fill_first_blocks(&self, memory: &mut [Argon2Block], h0: &[u8; 64]) {
         let lane_length = self.lane_length();
-        let mut bytes = [0u8; Argon2Block::SIZE];
+        let mut bytes = Secret::from([0u8; Argon2Block::SIZE]);
         for lane in 0..self.lanes {
             for column in 0u32..2 {
                 Self::hash_variable(
                     &[h0, &column.to_le_bytes(), &lane.to_le_bytes()],
-                    &mut bytes,
+                    bytes.get_mut(),
                 );
                 memory[(lane as usize) * lane_length + column as usize] =
-                    Argon2Block::from_bytes(&bytes);
+                    Argon2Block::from_bytes(bytes.get());
             }
         }
     }
@@ -198,7 +202,8 @@ impl Argon2Params {
         let segment_length = self.segment_length();
         let lane_length = self.lane_length();
         let data_independent = self.is_data_independent(pass, slice);
-        let mut addresses = Argon2Block::ZERO;
+        let mut addresses = Secret::from(Argon2Block::ZERO);
+        let mut block = Secret::from(Argon2Block::ZERO);
         let mut input = self.address_input(pass, lane, slice);
         let start = if pass == 0 && slice == 0 { 2 } else { 0 };
         let first = lane * lane_length + slice * segment_length;
@@ -215,12 +220,12 @@ impl Argon2Params {
                 view.block(previous)[0]
             };
             let reference = self.reference_block(j, pass, lane, slice, index);
-            let block = Argon2Block::compress(view.block(previous), view.block(reference));
+            Argon2Block::compress(view.block(previous), view.block(reference), block.get_mut());
             let destination = view.block_mut(current);
             if pass == 0 {
-                *destination = block;
+                *destination = block.get().clone();
             } else {
-                *destination ^= block;
+                *destination ^= block.get();
             }
         }
     }
@@ -245,15 +250,16 @@ impl Argon2Params {
     }
 
     fn next_address(
-        addresses: &mut Argon2Block,
+        addresses: &mut Secret<Argon2Block>,
         input: &mut Argon2Block,
         start: usize,
         index: usize,
     ) -> u64 {
         if index == start || index.is_multiple_of(Argon2Block::WORDS) {
             input[6] += 1;
-            let first = Argon2Block::compress(&Argon2Block::ZERO, input);
-            *addresses = Argon2Block::compress(&Argon2Block::ZERO, &first);
+            let mut first = Secret::from(Argon2Block::ZERO);
+            Argon2Block::compress(&Argon2Block::ZERO, input, first.get_mut());
+            Argon2Block::compress(&Argon2Block::ZERO, first.get(), addresses.get_mut());
         }
         addresses[index % Argon2Block::WORDS]
     }
@@ -313,12 +319,12 @@ impl Argon2Params {
     fn calculate_output(&self, memory: &[Argon2Block], output: &mut [u8]) {
         let lanes = self.lanes as usize;
         let lane_length = self.lane_length();
-        let mut c = memory[lane_length - 1];
+        let mut c = Secret::from(memory[lane_length - 1].clone());
         for lane in 1..lanes {
-            c ^= memory[lane * lane_length + lane_length - 1];
+            *c.get_mut() ^= &memory[lane * lane_length + lane_length - 1];
         }
-        let bytes = c.to_bytes();
-        Self::hash_variable(&[&bytes], output);
+        let bytes = Secret::from(c.get().to_bytes());
+        Self::hash_variable(&[bytes.as_ref()], output);
     }
 
     fn hash_variable(inputs: &[&[u8]], output: &mut [u8]) {
@@ -326,18 +332,18 @@ impl Argon2Params {
             Self::hash_prefixed(inputs, output.len(), output);
             return;
         }
-        let mut v = [0u8; 64];
-        Self::hash_prefixed(inputs, output.len(), &mut v);
+        let mut v = Secret::<[u8; 64]>::from([0u8; 64]);
+        Self::hash_prefixed(inputs, output.len(), v.get_mut());
         let halves = (output.len() - 33) / 32;
         let (head, tail) = output.split_at_mut(32 * halves);
         for (i, chunk) in head.chunks_mut(32).enumerate() {
             if i > 0 {
-                v = Blake2b512::digest(&v);
+                v = Secret::from(Blake2b512::digest(v.as_ref()));
             }
             chunk.copy_from_slice(&v[..32]);
         }
         let mut hasher = Blake2bVar::new(None, tail.len()).expect("H' digest length is 1 to 64");
-        hasher.update(&v);
+        hasher.update(v.as_ref());
         hasher.finalize_into(tail);
     }
 
@@ -376,7 +382,7 @@ impl Argon2Segment<'_> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct Argon2Block([u64; Self::WORDS]);
 
 impl Argon2Block {
@@ -394,7 +400,7 @@ impl Argon2Block {
         block
     }
 
-    fn to_bytes(self) -> [u8; Self::SIZE] {
+    fn to_bytes(&self) -> [u8; Self::SIZE] {
         let mut bytes = [0u8; Self::SIZE];
         let (chunks, _) = bytes.as_chunks_mut::<8>();
         for (i, chunk) in chunks.iter_mut().enumerate() {
@@ -403,28 +409,27 @@ impl Argon2Block {
         bytes
     }
 
-    fn compress(x: &Self, y: &Self) -> Self {
-        let mut r = *x;
-        r ^= *y;
-        let mut q = r;
+    fn compress(x: &Self, y: &Self, q: &mut Self) {
+        q.0 = x.0;
+        *q ^= y;
         let (chunks, _) = q.0.as_chunks_mut::<16>();
         for chunk in chunks {
             Self::permute(chunk);
         }
-        let mut v = [0u64; 16];
+        let mut v = Secret::from([0u64; 16]);
         for column in 0..8 {
             for k in 0..8 {
                 v[2 * k] = q[16 * k + 2 * column];
                 v[2 * k + 1] = q[16 * k + 2 * column + 1];
             }
-            Self::permute(&mut v);
+            Self::permute(v.get_mut());
             for k in 0..8 {
                 q[16 * k + 2 * column] = v[2 * k];
                 q[16 * k + 2 * column + 1] = v[2 * k + 1];
             }
         }
-        q ^= r;
-        q
+        *q ^= x;
+        *q ^= y;
     }
 
     fn permute(v: &mut [u64; 16]) {
@@ -471,11 +476,17 @@ impl IndexMut<usize> for Argon2Block {
     }
 }
 
-impl BitXorAssign for Argon2Block {
-    fn bitxor_assign(&mut self, rhs: Self) {
-        for (a, b) in self.0.iter_mut().zip(rhs.0) {
+impl BitXorAssign<&Argon2Block> for Argon2Block {
+    fn bitxor_assign(&mut self, rhs: &Self) {
+        for (a, b) in self.0.iter_mut().zip(&rhs.0) {
             *a ^= b;
         }
+    }
+}
+
+impl Wipe for Argon2Block {
+    fn wipe(&mut self) {
+        wipe(&mut self.0);
     }
 }
 

@@ -3,6 +3,7 @@ use {
     crate::{
         elliptic_curves::Edwards,
         traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
+        utils::wipe,
     },
     core::marker::PhantomData,
 };
@@ -24,28 +25,28 @@ where
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (E::Bytes, F::Bytes) {
-        let mut private_key = E::Bytes::new();
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (E::SecretBytes, F::Bytes) {
+        let mut private_key = E::SecretBytes::new();
         rng.fill(private_key.as_mut());
         let public_key = Self::public_key(&private_key);
         (private_key, public_key)
     }
 
-    pub fn public_key(private_key: &E::Bytes) -> F::Bytes {
+    pub fn public_key(private_key: &E::SecretBytes) -> F::Bytes {
         let g = Edwards::<F, E>::BASE_POINT;
         let (a, _) = Self::expand(private_key);
         (g * a).compress()
     }
 
-    pub fn sign(private_key: &E::Bytes, message: &[u8]) -> S {
+    pub fn sign(private_key: &E::SecretBytes, message: &[u8]) -> S {
         let B = Edwards::<F, E>::BASE_POINT;
         let (a, prefix) = Self::expand(private_key);
-        let A = (B * a).compress();
+        let A = (B * a.clone()).compress();
         let mut state = H::new();
         state.update(prefix.as_ref());
         state.update(message);
         let r = E::from(state.finalize());
-        let R = (B * r).compress();
+        let R = (B * r.clone()).compress();
         let mut state = H::new();
         state.update(R.as_ref());
         state.update(A.as_ref());
@@ -57,15 +58,15 @@ where
 
     pub fn verify(message: &[u8], public_key: &F::Bytes, signature: &S) -> bool {
         let (r, s) = Self::read_signature(signature);
-        let valid_s = E::is_canonical(s) as u64;
+        let valid_s = E::is_canonical(&s) as u64;
         let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
-        let (R, valid_r) = Edwards::<F, E>::decompress(r);
+        let (R, valid_r) = Edwards::<F, E>::decompress(&r);
         let mut state = H::new();
         state.update(r.as_ref());
         state.update(public_key.as_ref());
         state.update(message);
         let k = E::from(state.finalize());
-        let s = E::from(*s);
+        let s = E::from(s);
         let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
         let verified = (r2 == R) as u64;
         (verified & valid_a & valid_r & valid_s) == 1
@@ -79,31 +80,29 @@ where
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
 {
-    fn expand(private_key: &E::Bytes) -> (E, E::Bytes) {
-        let digest = H::digest(private_key.as_ref());
-        let (a, prefix) = E::split(&digest);
-        let mut a = *a;
+    fn expand(private_key: &E::SecretBytes) -> (E, E::SecretBytes) {
+        let mut digest = H::digest(private_key.as_ref());
+        let (mut a, prefix) = E::split(&digest);
+        wipe(digest.as_mut());
         E::clamp(&mut a);
-        (E::from(a), *prefix)
+        (E::from(a), prefix)
     }
 
     fn create_signature(r_bytes: &F::Bytes, s_bytes: &E::Bytes) -> S {
         let mut signature = S::new();
         let (r, s) =
             Self::signature_from_components_mut(&mut signature).expect("Signature size is correct");
-        r.as_mut().copy_from_slice(r_bytes.as_ref());
-        s.as_mut().copy_from_slice(s_bytes.as_ref());
+        r.copy_from_slice(r_bytes.as_ref());
+        s.copy_from_slice(s_bytes.as_ref());
         signature
     }
 
-    fn signature_from_components_mut(signature: &mut S) -> Option<(&mut F::Bytes, &mut E::Bytes)> {
+    fn signature_from_components_mut(signature: &mut S) -> Option<(&mut [u8], &mut [u8])> {
         let (r, s) = signature.as_mut().split_at_mut_checked(F::Bytes::SIZE)?;
-        let r = F::Bytes::from_slice_mut_checked(r)?;
-        let s = E::Bytes::from_slice_mut_checked(s)?;
-        Some((r, s))
+        (s.len() == E::Bytes::SIZE).then_some((r, s))
     }
 
-    fn read_signature(signature: &S) -> (&F::Bytes, &E::Bytes) {
+    fn read_signature(signature: &S) -> (F::Bytes, E::Bytes) {
         let (r, s) = signature.as_ref().split_at(F::Bytes::SIZE);
         let r = F::Bytes::from_slice(r);
         let s = E::Bytes::from_slice(s);

@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 use {
-    crate::utils::{is_zero, less_than, wipe},
+    crate::{
+        utils::{is_zero, less_than, wipe},
+        Secret,
+    },
     core::ops::{
         Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
         SubAssign,
@@ -21,9 +24,8 @@ pub trait Authenticator<C: SeekableStreamCipher> {
 
 #[allow(private_bounds)]
 pub trait ByteArray:
-    Copy
+    Clone
     + Sized
-    + Ord
     + AsRef<[u8]>
     + AsMut<[u8]>
     + Index<usize, Output = u8>
@@ -36,11 +38,9 @@ pub trait ByteArray:
 
     fn new() -> Self;
 
-    fn from_slice(slice: &[u8]) -> &Self;
+    fn from_slice(slice: &[u8]) -> Self;
 
-    fn from_slice_checked(slice: &[u8]) -> Option<&Self>;
-
-    fn from_slice_mut_checked(slice: &mut [u8]) -> Option<&mut Self>;
+    fn from_slice_checked(slice: &[u8]) -> Option<Self>;
 }
 
 pub trait CryptoRng {
@@ -73,8 +73,9 @@ pub trait EdwardsParams<F: FieldElement> {
 
 pub trait EdwardsScalar:
     Sized
-    + Copy
+    + Clone
     + From<Self::Bytes>
+    + From<Self::SecretBytes>
     + From<Self::WideBytes>
     + Into<Self::Bytes>
     + Add<Self, Output = Self>
@@ -84,13 +85,14 @@ pub trait EdwardsScalar:
     + Neg<Output = Self>
 {
     type Bytes: ByteArray;
+    type SecretBytes: ByteArray;
     type WideBytes: ByteArray;
     type Radix16: AsRef<[i8]>;
     type Naf5: AsRef<[i8]>;
 
-    fn split(bytes: &Self::WideBytes) -> (&Self::Bytes, &Self::Bytes);
+    fn split(bytes: &Self::WideBytes) -> (Self::SecretBytes, Self::SecretBytes);
 
-    fn clamp(bytes: &mut Self::Bytes);
+    fn clamp(bytes: &mut Self::SecretBytes);
 
     fn is_canonical(bytes: &Self::Bytes) -> bool;
 
@@ -254,7 +256,7 @@ pub trait WeierstrassParams<F: FieldElement> {
 
 pub trait WeierstrassScalar:
     Sized
-    + Copy
+    + Clone
     + PartialEq
     + Eq
     + From<Self::Bytes>
@@ -281,12 +283,30 @@ pub trait WeierstrassScalar:
     fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
         let non_zero = !is_zero(bytes.as_ref());
         let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
-        (non_zero & below).then(|| Self::from(*bytes))
+        (non_zero & below).then(|| Self::from(bytes.clone()))
     }
 
     fn as_radix_16(&self) -> Self::Radix16;
 
     fn non_adjacent_form_5(&self) -> Self::Naf5;
+}
+
+impl<const N: usize> Sealed for Secret<[u8; N]> {}
+
+impl<const N: usize> ByteArray for Secret<[u8; N]> {
+    const SIZE: usize = N;
+
+    fn new() -> Self {
+        Secret::from([0u8; N])
+    }
+
+    fn from_slice(slice: &[u8]) -> Self {
+        Self::from_slice_checked(slice).expect("Slice size matches array size")
+    }
+
+    fn from_slice_checked(slice: &[u8]) -> Option<Self> {
+        <[u8; N]>::try_from(slice).ok().map(Secret::from)
+    }
 }
 
 trait Sealed {}
@@ -300,15 +320,11 @@ impl<const N: usize> ByteArray for [u8; N] {
         [0u8; N]
     }
 
-    fn from_slice(slice: &[u8]) -> &Self {
+    fn from_slice(slice: &[u8]) -> Self {
         Self::from_slice_checked(slice).expect("Slice size matches array size")
     }
 
-    fn from_slice_checked(slice: &[u8]) -> Option<&Self> {
-        <&Self>::try_from(slice).ok()
-    }
-
-    fn from_slice_mut_checked(slice: &mut [u8]) -> Option<&mut Self> {
-        <&mut Self>::try_from(slice).ok()
+    fn from_slice_checked(slice: &[u8]) -> Option<Self> {
+        Self::try_from(slice).ok()
     }
 }

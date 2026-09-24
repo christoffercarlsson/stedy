@@ -1,6 +1,7 @@
 use crate::{
     traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
     utils::{verify, Block},
+    Secret,
 };
 
 #[derive(Clone)]
@@ -147,7 +148,7 @@ impl Blake2sVar {
 
 #[derive(Clone)]
 struct Blake2sCore {
-    h: [u32; 8],
+    h: Secret<[u32; 8]>,
     t: u64,
     block: Block<64>,
 }
@@ -177,7 +178,7 @@ impl Blake2sCore {
         let kk = key.len().min(Self::MAX_KEY_SIZE);
         let nn = output_size.min(Self::MAX_OUTPUT_SIZE);
         let mut state = Self {
-            h: Self::IV,
+            h: Secret::from(Self::IV),
             t: 0,
             block: Block::<64>::new(),
         };
@@ -227,7 +228,7 @@ impl Blake2sCore {
             m[i] = u32::from_le_bytes(*chunk);
         }
         let mut v = [0u32; 16];
-        v[0..8].copy_from_slice(&self.h);
+        v[0..8].copy_from_slice(self.h.get());
         v[8..16].copy_from_slice(&Self::IV);
         v[12] ^= self.t as u32;
         v[13] ^= (self.t >> 32) as u32;

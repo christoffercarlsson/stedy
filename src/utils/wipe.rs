@@ -14,6 +14,25 @@ pub fn wipe<T: Copy + Default>(data: &mut [T]) {
     compiler_fence(Ordering::SeqCst);
 }
 
+pub(crate) trait Wipe {
+    fn wipe(&mut self);
+}
+
+impl<T: Copy + Default, const N: usize> Wipe for [T; N] {
+    fn wipe(&mut self) {
+        wipe(self);
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: Wipe> Wipe for Vec<T> {
+    fn wipe(&mut self) {
+        for item in self.iter_mut() {
+            item.wipe();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

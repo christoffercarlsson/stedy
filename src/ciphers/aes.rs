@@ -1,4 +1,7 @@
-use crate::traits::{SeekableStreamCipher, StreamCipher};
+use crate::{
+    traits::{SeekableStreamCipher, StreamCipher},
+    Secret,
+};
 
 #[cfg_attr(target_arch = "aarch64", path = "aes/aarch64.rs")]
 #[cfg_attr(any(target_arch = "x86", target_arch = "x86_64"), path = "aes/x86.rs")]
@@ -26,10 +29,10 @@ pub type Aes128Ctr = AesCtr<16>;
 pub type Aes256Ctr = AesCtr<32>;
 
 pub struct AesCtr<const KEY_SIZE: usize> {
-    round_keys: [[u8; 16]; 15],
+    round_keys: Secret<[[u8; 16]; 15]>,
     nonce: [u8; 12],
     counter: u32,
-    keystream: [u8; 16],
+    keystream: Secret<[u8; 16]>,
     offset: u8,
     wrap: bool,
 }
@@ -45,10 +48,10 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
             "CPU supports AES and carry-less multiply instructions"
         );
         Self {
-            round_keys: Self::expand_key(key),
+            round_keys: Secret::from(Self::expand_key(key)),
             nonce: *nonce,
             counter: 1,
-            keystream: [0u8; 16],
+            keystream: Secret::from([0u8; 16]),
             offset: 16,
             wrap: false,
         }
@@ -150,8 +153,8 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     fn encrypt_blocks<const N: usize>(&self, blocks: &[[u8; 16]; N], data: &mut [[u8; 16]; N]) {
         let keys = &self.round_keys;
         match KEY_SIZE {
-            16 => encrypt_blocks::<10, N>(keys, blocks, data),
-            _ => encrypt_blocks::<14, N>(keys, blocks, data),
+            16 => encrypt_blocks::<10, N>(keys.get(), blocks, data),
+            _ => encrypt_blocks::<14, N>(keys.get(), blocks, data),
         }
     }
 
@@ -167,7 +170,7 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
             self.wrap || self.counter != 0,
             "AES-GCM message limit not exceeded"
         );
-        self.keystream = self.encrypt_block(self.counter_block(self.counter));
+        self.keystream = Secret::from(self.encrypt_block(self.counter_block(self.counter)));
         self.counter = self.counter.wrapping_add(1);
         self.offset = 0;
     }

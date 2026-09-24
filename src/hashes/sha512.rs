@@ -1,11 +1,12 @@
 use crate::{
     traits::{Digest, Hasher, Init},
     utils::Block,
+    Secret,
 };
 
 #[derive(Clone)]
 pub struct Sha512 {
-    h: [u64; 8],
+    h: Secret<[u64; 8]>,
     block: Block<128>,
     total_size: u64,
 }
@@ -19,7 +20,7 @@ impl Sha512 {
 
     pub fn new() -> Self {
         Self {
-            h: [
+            h: Secret::from([
                 0x6a09e667f3bcc908,
                 0xbb67ae8584caa73b,
                 0x3c6ef372fe94f82b,
@@ -28,7 +29,7 @@ impl Sha512 {
                 0x9b05688c2b3e6c1f,
                 0x1f83d9abfb41bd6b,
                 0x5be0cd19137e2179,
-            ],
+            ]),
             block: Block::<128>::new(),
             total_size: 0,
         }

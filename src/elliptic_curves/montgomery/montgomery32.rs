@@ -1,6 +1,6 @@
 use {
     super::{Montgomery, WideWord, Word},
-    crate::{traits::MontgomeryParams, utils::unsigned_mul as m},
+    crate::{traits::MontgomeryParams, utils::unsigned_mul as m, Secret},
     core::{
         marker::PhantomData,
         ops::{Index, IndexMut},
@@ -40,7 +40,7 @@ where
     P: MontgomeryParams<10>,
 {
     pub(crate) fn montgomery_mul(self, rhs: Self) -> Self {
-        let mut t = [0u64; 20];
+        let mut t = Secret::from([0u64; 20]);
         t[0] = m(self[0], rhs[0]);
         t[1] = m(self[0], rhs[1]) + m(self[1], rhs[0]);
         t[2] = m(self[0], rhs[2]) + m(self[1], rhs[1]) + m(self[2], rhs[0]);
@@ -129,11 +129,11 @@ where
         t[16] = m(self[7], rhs[9]) + m(self[8], rhs[8]) + m(self[9], rhs[7]);
         t[17] = m(self[8], rhs[9]) + m(self[9], rhs[8]);
         t[18] = m(self[9], rhs[9]);
-        Self::montgomery_reduce(&mut t)
+        Self::montgomery_reduce(t.get_mut())
     }
 
     pub(crate) fn montgomery_square(self) -> Self {
-        let mut t = [0u64; 20];
+        let mut t = Secret::from([0u64; 20]);
         let d0 = m(self[0], self[0]);
         let d1 = m(self[1], self[1]);
         let d2 = m(self[2], self[2]);
@@ -208,7 +208,7 @@ where
         t[16] = c79 + d8;
         t[17] = c89;
         t[18] = d9;
-        Self::montgomery_reduce(&mut t)
+        Self::montgomery_reduce(t.get_mut())
     }
 
     fn montgomery_reduce(t: &mut [u64; 20]) -> Self {
@@ -245,7 +245,7 @@ where
     P: MontgomeryParams<18>,
 {
     pub(crate) fn montgomery_mul(self, rhs: Self) -> Self {
-        let mut t = [0u64; 36];
+        let mut t = Secret::from([0u64; 36]);
         t[0] = m(self[0], rhs[0]);
         t[1] = m(self[0], rhs[1]) + m(self[1], rhs[0]);
         t[2] = m(self[0], rhs[2]) + m(self[1], rhs[1]) + m(self[2], rhs[0]);
@@ -561,11 +561,11 @@ where
         t[32] = m(self[15], rhs[17]) + m(self[16], rhs[16]) + m(self[17], rhs[15]);
         t[33] = m(self[16], rhs[17]) + m(self[17], rhs[16]);
         t[34] = m(self[17], rhs[17]);
-        Self::montgomery_reduce(&mut t)
+        Self::montgomery_reduce(t.get_mut())
     }
 
     pub(crate) fn montgomery_square(self) -> Self {
-        let mut t = [0u64; 36];
+        let mut t = Secret::from([0u64; 36]);
         let d0 = m(self[0], self[0]);
         let d1 = m(self[1], self[1]);
         let d2 = m(self[2], self[2]);
@@ -772,7 +772,7 @@ where
         t[32] = cfh + d16;
         t[33] = cgh;
         t[34] = d17;
-        Self::montgomery_reduce(&mut t)
+        Self::montgomery_reduce(t.get_mut())
     }
 
     fn montgomery_reduce(t: &mut [u64; 36]) -> Self {
@@ -826,7 +826,7 @@ where
     P: MontgomeryParams<14>,
 {
     fn montgomery_mul(self, rhs: Self) -> Self {
-        let mut t = [0u64; 28];
+        let mut t = Secret::from([0u64; 28]);
         t[0] = m(self[0], rhs[0]);
         t[1] = m(self[0], rhs[1]) + m(self[1], rhs[0]);
         t[2] = m(self[0], rhs[2]) + m(self[1], rhs[1]) + m(self[2], rhs[0]);
@@ -1014,11 +1014,11 @@ where
         t[24] = m(self[11], rhs[13]) + m(self[12], rhs[12]) + m(self[13], rhs[11]);
         t[25] = m(self[12], rhs[13]) + m(self[13], rhs[12]);
         t[26] = m(self[13], rhs[13]);
-        Self::montgomery_reduce(&mut t)
+        Self::montgomery_reduce(t.get_mut())
     }
 
     fn montgomery_square(self) -> Self {
-        let mut t = [0u64; 28];
+        let mut t = Secret::from([0u64; 28]);
         let d0 = m(self[0], self[0]);
         let d1 = m(self[1], self[1]);
         let d2 = m(self[2], self[2]);
@@ -1151,7 +1151,7 @@ where
         t[24] = c1113 + d12;
         t[25] = c1213;
         t[26] = d13;
-        Self::montgomery_reduce(&mut t)
+        Self::montgomery_reduce(t.get_mut())
     }
 
     fn montgomery_reduce(t: &mut [u64; 28]) -> Self {

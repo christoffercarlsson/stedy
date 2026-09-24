@@ -1,8 +1,11 @@
-use crate::traits::{SeekableStreamCipher, StreamCipher};
+use crate::{
+    traits::{SeekableStreamCipher, StreamCipher},
+    Secret,
+};
 
 pub struct ChaCha20 {
-    state: [u32; 16],
-    keystream: [u8; 64],
+    state: Secret<[u32; 16]>,
+    keystream: Secret<[u8; 64]>,
     offset: u8,
 }
 
@@ -93,8 +96,8 @@ impl ChaCha20 {
         state[4..12].copy_from_slice(key);
         state[13..16].copy_from_slice(nonce);
         Self {
-            state,
-            keystream: [0u8; 64],
+            state: Secret::from(state),
+            keystream: Secret::from([0u8; 64]),
             offset: 64,
         }
     }
@@ -117,13 +120,13 @@ impl ChaCha20 {
     }
 
     fn next(&mut self) {
-        let mut block = self.state;
-        Self::rounds(&mut block);
-        for (i, b) in block.iter_mut().enumerate() {
+        let mut block = self.state.clone();
+        Self::rounds(block.get_mut());
+        for (i, b) in block.get_mut().iter_mut().enumerate() {
             *b = b.wrapping_add(self.state[i]);
         }
         self.state[12] = self.state[12].wrapping_add(1);
-        let (chunks, _) = self.keystream.as_chunks_mut::<4>();
+        let (chunks, _) = self.keystream.as_mut().as_chunks_mut::<4>();
         for (i, chunk) in chunks.iter_mut().enumerate() {
             chunk.copy_from_slice(&block[i].to_le_bytes());
         }

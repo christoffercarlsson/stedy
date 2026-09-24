@@ -1,4 +1,4 @@
-use crate::{elliptic_curves::Montgomery, traits::MontgomeryParams};
+use crate::{elliptic_curves::Montgomery, traits::MontgomeryParams, Secret};
 
 #[derive(Clone, Copy)]
 pub struct Scalar25519Params;
@@ -20,9 +20,10 @@ impl MontgomeryParams<10> for Scalar25519Params {
     const N0: u64 = 39091739;
 }
 
-pub type Scalar25519 = Montgomery<10, Scalar25519Params>;
+pub(crate) type Scalar25519Inner = Montgomery<10, Scalar25519Params>;
+pub type Scalar25519 = Secret<Scalar25519Inner>;
 
-impl Scalar25519 {
+impl Scalar25519Inner {
     pub(crate) fn from_bytes(bytes: &[u8; 32]) -> Self {
         let (chunks, _) = bytes.as_chunks::<4>();
         let mut words = [0u32; 8];
@@ -71,9 +72,9 @@ impl Scalar25519 {
         hi[7] = ((words[13] >> 26) | (words[14] << 6)) & Self::MASK;
         hi[8] = ((words[14] >> 20) | (words[15] << 12)) & Self::MASK;
         hi[9] = words[15] >> 14;
-        lo *= Self::R;
-        hi *= Self::R2;
-        (hi + lo).enter_montgomery()
+        lo = lo.mul(Self::R);
+        hi = hi.mul(Self::R2);
+        hi.add(lo).enter_montgomery()
     }
 
     pub(crate) fn to_bytes(self) -> [u8; 32] {
