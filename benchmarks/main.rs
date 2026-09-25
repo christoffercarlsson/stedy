@@ -5,6 +5,7 @@ mod csprngs;
 mod encoding;
 mod hashes;
 mod kdfs;
+mod kems;
 mod key_exchange;
 mod macs;
 mod signatures;
@@ -16,6 +17,7 @@ criterion_group!(
     encoding::bench,
     hashes::bench,
     kdfs::bench,
+    kems::bench,
     macs::bench,
     key_exchange::bench,
     signatures::bench,

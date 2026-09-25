@@ -4,7 +4,7 @@ use {
 };
 
 #[allow(private_bounds)]
-pub struct Secret<T: Wipe>(T);
+pub struct Secret<T: Wipe>(pub(crate) T);
 
 #[allow(private_bounds)]
 impl<T: Wipe> Secret<T> {

@@ -16,6 +16,7 @@ pub mod elliptic_curves;
 pub mod encoding;
 pub mod hashes;
 pub mod kdfs;
+pub mod kems;
 pub mod key_exchange;
 pub mod macs;
 mod secret;
@@ -26,4 +27,3 @@ pub mod traits;
 pub mod utils;
 
 pub use secret::Secret;
-pub(crate) use secret::SecretDigits;

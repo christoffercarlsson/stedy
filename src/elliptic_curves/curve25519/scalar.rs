@@ -1,5 +1,5 @@
 use {
-    crate::{traits::EdwardsScalar, utils::wipe, Secret, SecretDigits},
+    crate::{secret::SecretDigits, traits::EdwardsScalar, utils::wipe, Secret},
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg},
 };
 

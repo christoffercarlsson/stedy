@@ -1,7 +1,42 @@
-use crate::hashes::keccak::Sponge;
+use crate::{
+    hashes::keccak::Sponge,
+    traits::{Init, Xof, XofReader},
+};
 
 pub type Shake128 = Shake<168>;
 pub type Shake256 = Shake<136>;
+
+impl<const RATE: usize> Init for Shake<RATE> {
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl<const RATE: usize> Xof for Shake<RATE> {
+    type Reader = ShakeReader<RATE>;
+
+    fn digest(message: &[u8], output: &mut [u8]) {
+        Self::digest(message, output);
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize_into(self, output: &mut [u8]) {
+        self.finalize_into(output);
+    }
+
+    fn finalize_xof(self) -> ShakeReader<RATE> {
+        self.finalize_xof()
+    }
+}
+
+impl<const RATE: usize> XofReader for ShakeReader<RATE> {
+    fn read(&mut self, output: &mut [u8]) {
+        self.read(output);
+    }
+}
 
 #[derive(Clone)]
 pub struct Shake<const RATE: usize>(Sponge<RATE>);

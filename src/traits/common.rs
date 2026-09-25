@@ -204,6 +204,17 @@ pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> bool;
 }
 
+pub trait MlKemParams<const K: usize> {
+    const ETA1: usize;
+    const ETA2: usize;
+    const DU: usize;
+    const DV: usize;
+
+    type PrivateKey: ByteArray;
+    type PublicKey: ByteArray;
+    type Ciphertext: ByteArray;
+}
+
 pub trait MontgomeryParams<const LIMBS: usize>: Copy + Clone {
     const BITS: u32;
     const TOP_BITS: u32;
@@ -289,6 +300,22 @@ pub trait WeierstrassScalar:
     fn as_radix_16(&self) -> Self::Radix16;
 
     fn non_adjacent_form_5(&self) -> Self::Naf5;
+}
+
+pub trait Xof: Init {
+    type Reader: XofReader;
+
+    fn digest(message: &[u8], output: &mut [u8]);
+
+    fn update(&mut self, message: &[u8]);
+
+    fn finalize_into(self, output: &mut [u8]);
+
+    fn finalize_xof(self) -> Self::Reader;
+}
+
+pub trait XofReader {
+    fn read(&mut self, output: &mut [u8]);
 }
 
 impl<const N: usize> Sealed for Secret<[u8; N]> {}
