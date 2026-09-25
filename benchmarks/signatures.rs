@@ -1,7 +1,8 @@
 use {
     criterion::Criterion,
     stedy::{
-        signatures::{Ed25519, P256, P384, P521},
+        csprngs::Rng,
+        signatures::{Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
         Secret,
     },
 };
@@ -126,5 +127,53 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ecdsa_p521_verify", |b| {
         b.iter(|| P521::verify(message, &p521_public_key, &p521_signature))
+    });
+
+    let mut rng = Rng::from(&[0u8; 128]);
+    let seed = Secret::<[u8; 32]>::from([90u8; 32]);
+
+    let (private_key, public_key) = MlDsa44::key_pair(&seed);
+    let signature = MlDsa44::sign(&private_key, message, &mut rng);
+
+    c.bench_function("ml_dsa_44_key_pair", |b| {
+        b.iter(|| MlDsa44::key_pair(&seed))
+    });
+
+    c.bench_function("ml_dsa_44_sign", |b| {
+        b.iter(|| MlDsa44::sign(&private_key, message, &mut rng))
+    });
+
+    c.bench_function("ml_dsa_44_verify", |b| {
+        b.iter(|| MlDsa44::verify(message, &public_key, &signature))
+    });
+
+    let (private_key, public_key) = MlDsa65::key_pair(&seed);
+    let signature = MlDsa65::sign(&private_key, message, &mut rng);
+
+    c.bench_function("ml_dsa_65_key_pair", |b| {
+        b.iter(|| MlDsa65::key_pair(&seed))
+    });
+
+    c.bench_function("ml_dsa_65_sign", |b| {
+        b.iter(|| MlDsa65::sign(&private_key, message, &mut rng))
+    });
+
+    c.bench_function("ml_dsa_65_verify", |b| {
+        b.iter(|| MlDsa65::verify(message, &public_key, &signature))
+    });
+
+    let (private_key, public_key) = MlDsa87::key_pair(&seed);
+    let signature = MlDsa87::sign(&private_key, message, &mut rng);
+
+    c.bench_function("ml_dsa_87_key_pair", |b| {
+        b.iter(|| MlDsa87::key_pair(&seed))
+    });
+
+    c.bench_function("ml_dsa_87_sign", |b| {
+        b.iter(|| MlDsa87::sign(&private_key, message, &mut rng))
+    });
+
+    c.bench_function("ml_dsa_87_verify", |b| {
+        b.iter(|| MlDsa87::verify(message, &public_key, &signature))
     });
 }

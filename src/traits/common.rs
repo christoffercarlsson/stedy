@@ -215,6 +215,20 @@ pub trait MlKemParams<const K: usize> {
     type Ciphertext: ByteArray;
 }
 
+pub trait MlDsaParams<const K: usize, const L: usize> {
+    const TAU: usize;
+    const LAMBDA: usize;
+    const GAMMA1: i32;
+    const GAMMA2: i32;
+    const ETA: i32;
+    const BETA: i32;
+    const OMEGA: usize;
+
+    type PrivateKey: ByteArray;
+    type PublicKey: ByteArray;
+    type Signature: ByteArray;
+}
+
 pub trait MontgomeryParams<const LIMBS: usize>: Copy + Clone {
     const BITS: u32;
     const TOP_BITS: u32;
