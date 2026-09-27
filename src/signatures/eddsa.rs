@@ -2,7 +2,10 @@
 use {
     crate::{
         elliptic_curves::Edwards,
-        traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
+        traits::{
+            ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher,
+            SecretByteArray,
+        },
         utils::wipe,
     },
     core::marker::PhantomData,
@@ -27,7 +30,7 @@ where
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (E::SecretBytes, F::Bytes) {
         let mut private_key = E::SecretBytes::new();
-        rng.fill(private_key.as_mut());
+        rng.fill(private_key.get_mut().as_mut());
         let public_key = Self::public_key(&private_key);
         (private_key, public_key)
     }
@@ -43,7 +46,7 @@ where
         let (a, prefix) = Self::expand(private_key);
         let A = (B * a.clone()).compress();
         let mut state = H::new();
-        state.update(prefix.as_ref());
+        state.update(prefix.get().as_ref());
         state.update(message);
         let r = E::from(state.finalize());
         let R = (B * r.clone()).compress();
@@ -80,7 +83,7 @@ where
     S: ByteArray,
 {
     fn expand(private_key: &E::SecretBytes) -> (E, E::SecretBytes) {
-        let mut digest = H::digest(private_key.as_ref());
+        let mut digest = H::digest(private_key.get().as_ref());
         let (mut a, prefix) = E::split(&digest);
         wipe(digest.as_mut());
         E::clamp(&mut a);

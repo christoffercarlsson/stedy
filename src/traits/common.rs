@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 use {
-    crate::{
-        utils::{is_zero, less_than, wipe, Choice},
-        Secret,
-    },
-    core::ops::{
-        Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
-        SubAssign,
+    crate::utils::{is_zero, less_than, Choice},
+    core::{
+        ops::{
+            Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
+            SubAssign,
+        },
+        ptr,
+        sync::atomic::{compiler_fence, Ordering},
     },
 };
 
@@ -85,7 +86,7 @@ pub trait EdwardsScalar:
     + Neg<Output = Self>
 {
     type Bytes: ByteArray;
-    type SecretBytes: ByteArray;
+    type SecretBytes: SecretByteArray;
     type WideBytes: ByteArray;
     type Radix16: AsRef<[i8]>;
     type Naf5: AsRef<[i8]>;
@@ -107,15 +108,15 @@ pub trait EllipticCurve {
     type Point;
     type Scalar;
     type PointBytes: ByteArray;
-    type ScalarBytes: ByteArray;
-    type SharedSecretBytes: ByteArray;
+    type ScalarBytes: SecretByteArray;
+    type SharedSecretBytes: SecretByteArray;
 
     fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {
         loop {
             let mut bytes = Self::ScalarBytes::new();
-            rng.fill(bytes.as_mut());
+            rng.fill(bytes.get_mut().as_mut());
             let result = Self::scalar_from_bytes(&bytes);
-            wipe(bytes.as_mut());
+            bytes.wipe();
             if let Some(scalar) = result {
                 return scalar;
             }
@@ -211,7 +212,9 @@ pub trait MlKemParams<const K: usize> {
     const DU: usize;
     const DV: usize;
 
-    type PrivateKey: ByteArray;
+    type Seed: SecretByteArray<Inner = [u8; 64]>;
+    type SharedSecret: SecretByteArray<Inner = [u8; 32]>;
+    type PrivateKey: SecretByteArray;
     type PublicKey: ByteArray;
     type Ciphertext: ByteArray;
 }
@@ -225,7 +228,8 @@ pub trait MlDsaParams<const K: usize, const L: usize> {
     const BETA: i32;
     const OMEGA: usize;
 
-    type PrivateKey: ByteArray;
+    type Seed: SecretByteArray<Inner = [u8; 32]>;
+    type PrivateKey: SecretByteArray;
     type PublicKey: ByteArray;
     type Signature: ByteArray;
 }
@@ -335,22 +339,50 @@ pub trait XofReader {
     fn read(&mut self, output: &mut [u8]);
 }
 
-impl<const N: usize> Sealed for Secret<[u8; N]> {}
+pub trait Wipe {
+    fn wipe(&mut self);
+}
 
-impl<const N: usize> ByteArray for Secret<[u8; N]> {
-    const SIZE: usize = N;
+macro_rules! impl_wipe {
+    ($($t:ty),* $(,)?) => {$(
+        impl Wipe for $t {
+            fn wipe(&mut self) {
+                unsafe {
+                    ptr::write_volatile(self, 0);
+                }
+            }
+        }
+    )*};
+}
 
-    fn new() -> Self {
-        Secret::from([0u8; N])
+impl_wipe!(u8, i8, u16, i16, u32, i32, u64, i64, u128, usize);
+
+impl<T: Wipe, const N: usize> Wipe for [T; N] {
+    fn wipe(&mut self) {
+        for item in self.iter_mut() {
+            item.wipe();
+        }
+        compiler_fence(Ordering::SeqCst);
     }
+}
 
-    fn from_slice(slice: &[u8]) -> Self {
-        Self::from_slice_checked(slice).expect("Slice size matches array size")
+#[cfg(feature = "std")]
+impl<T: Wipe> Wipe for Vec<T> {
+    fn wipe(&mut self) {
+        for item in self.iter_mut() {
+            item.wipe();
+        }
     }
+}
 
-    fn from_slice_checked(slice: &[u8]) -> Option<Self> {
-        <[u8; N]>::try_from(slice).ok().map(Secret::from)
-    }
+pub trait SecretByteArray: Wipe {
+    type Inner: ByteArray;
+
+    fn new() -> Self;
+
+    fn get(&self) -> &Self::Inner;
+
+    fn get_mut(&mut self) -> &mut Self::Inner;
 }
 
 pub(crate) trait Sealed {}

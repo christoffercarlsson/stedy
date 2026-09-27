@@ -1,7 +1,8 @@
 use {
     crate::{
         hashes::{Blake2b512, Blake2bVar},
-        utils::{wipe, Wipe},
+        traits::Wipe,
+        utils::wipe,
         Secret,
     },
     core::ops::{BitXorAssign, Index, IndexMut},

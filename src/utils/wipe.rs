@@ -14,44 +14,6 @@ pub fn wipe<T: Copy + Default>(data: &mut [T]) {
     compiler_fence(Ordering::SeqCst);
 }
 
-pub(crate) trait Wipe {
-    fn wipe(&mut self);
-}
-
-pub(crate) trait Primitive: Copy + Default {}
-
-impl Primitive for u8 {}
-impl Primitive for i8 {}
-impl Primitive for u16 {}
-impl Primitive for i16 {}
-impl Primitive for u32 {}
-impl Primitive for i32 {}
-impl Primitive for u64 {}
-impl Primitive for i64 {}
-impl Primitive for u128 {}
-impl Primitive for usize {}
-
-impl<T: Primitive, const N: usize> Wipe for [T; N] {
-    fn wipe(&mut self) {
-        wipe(self);
-    }
-}
-
-impl<T: Primitive, const M: usize, const N: usize> Wipe for [[T; M]; N] {
-    fn wipe(&mut self) {
-        wipe(self.as_flattened_mut());
-    }
-}
-
-#[cfg(feature = "std")]
-impl<T: Wipe> Wipe for Vec<T> {
-    fn wipe(&mut self) {
-        for item in self.iter_mut() {
-            item.wipe();
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

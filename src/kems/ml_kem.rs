@@ -1,7 +1,7 @@
 use {
     crate::{
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
-        traits::{ByteArray, CryptoRng, Hasher, MlKemParams, Xof, XofReader},
+        traits::{ByteArray, CryptoRng, Hasher, MlKemParams, SecretByteArray, Xof, XofReader},
         utils::{verify, Choice},
         Secret,
     },
@@ -22,6 +22,8 @@ impl MlKemParams<2> for MlKem512Params {
     const DU: usize = 10;
     const DV: usize = 4;
 
+    type Seed = Secret<[u8; 64]>;
+    type SharedSecret = Secret<[u8; 32]>;
     type PrivateKey = Secret<[u8; 1632]>;
     type PublicKey = [u8; 800];
     type Ciphertext = [u8; 768];
@@ -33,6 +35,8 @@ impl MlKemParams<3> for MlKem768Params {
     const DU: usize = 10;
     const DV: usize = 4;
 
+    type Seed = Secret<[u8; 64]>;
+    type SharedSecret = Secret<[u8; 32]>;
     type PrivateKey = Secret<[u8; 2400]>;
     type PublicKey = [u8; 1184];
     type Ciphertext = [u8; 1088];
@@ -44,6 +48,8 @@ impl MlKemParams<4> for MlKem1024Params {
     const DU: usize = 11;
     const DV: usize = 5;
 
+    type Seed = Secret<[u8; 64]>;
+    type SharedSecret = Secret<[u8; 32]>;
     type PrivateKey = Secret<[u8; 3168]>;
     type PublicKey = [u8; 1568];
     type Ciphertext = [u8; 1568];
@@ -69,21 +75,21 @@ where
     F: Xof,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (P::PrivateKey, P::PublicKey) {
-        let mut seed = Secret::<[u8; 64]>::new();
-        rng.fill(seed.as_mut());
+        let mut seed = P::Seed::new();
+        rng.fill(seed.get_mut().as_mut());
         Self::key_pair(&seed)
     }
 
-    pub fn key_pair(seed: &Secret<[u8; 64]>) -> (P::PrivateKey, P::PublicKey) {
+    pub fn key_pair(seed: &P::Seed) -> (P::PrivateKey, P::PublicKey) {
         let (d, z) = seed.get().split_at(32);
         let mut keys = (P::PrivateKey::new(), P::PublicKey::new());
         let (dk, ek) = &mut keys;
-        Self::key_gen_internal(d, z, ek.as_mut(), dk.as_mut());
+        Self::key_gen_internal(d, z, ek.as_mut(), dk.get_mut().as_mut());
         keys
     }
 
     pub fn public_key(private_key: &P::PrivateKey) -> P::PublicKey {
-        let (_, rest) = private_key.as_ref().split_at(384 * K);
+        let (_, rest) = private_key.get().as_ref().split_at(384 * K);
         let (ek, _) = rest.split_at(384 * K + 32);
         P::PublicKey::from_slice(ek)
     }
@@ -91,20 +97,27 @@ where
     pub fn encapsulate(
         public_key: &P::PublicKey,
         rng: &mut impl CryptoRng,
-    ) -> Option<(Secret<[u8; 32]>, P::Ciphertext)> {
+    ) -> Option<(P::SharedSecret, P::Ciphertext)> {
         Self::encapsulation_key_check(public_key.as_ref()).then(|| {
             let mut m = Secret::<[u8; 32]>::new();
             rng.fill(m.as_mut());
-            Self::encaps_internal(public_key.as_ref(), m.as_ref())
+            let (k, c) = Self::encaps_internal(public_key.as_ref(), m.as_ref());
+            let mut key = P::SharedSecret::new();
+            *key.get_mut() = *k.get();
+            (key, c)
         })
     }
 
     pub fn decapsulate(
         private_key: &P::PrivateKey,
         ciphertext: &P::Ciphertext,
-    ) -> Option<Secret<[u8; 32]>> {
-        Self::decapsulation_key_check(private_key.as_ref())
-            .then(|| Self::decaps_internal(private_key.as_ref(), ciphertext.as_ref()))
+    ) -> Option<P::SharedSecret> {
+        Self::decapsulation_key_check(private_key.get().as_ref()).then(|| {
+            let k = Self::decaps_internal(private_key.get().as_ref(), ciphertext.as_ref());
+            let mut key = P::SharedSecret::new();
+            *key.get_mut() = *k.get();
+            key
+        })
     }
 }
 
@@ -433,7 +446,7 @@ where
         let mut c_prime = P::Ciphertext::new();
         Self::k_pke_encrypt(ek_pke, m.as_ref(), r, c_prime.as_mut());
         let reject = !Choice::eq_slice(c, c_prime.as_ref());
-        let mut key = Secret::<[u8; 32]>::from_slice(k);
+        let mut key = Secret::from(<[u8; 32]>::from_slice(k));
         reject.assign(key.as_mut(), k_bar.as_ref());
         key
     }

@@ -1,12 +1,10 @@
 use {
-    crate::utils::Wipe,
+    crate::traits::{ByteArray, SecretByteArray, Wipe},
     core::ops::{Index, IndexMut},
 };
 
-#[allow(private_bounds)]
 pub struct Secret<T: Wipe>(pub(crate) T);
 
-#[allow(private_bounds)]
 impl<T: Wipe> Secret<T> {
     pub fn get(&self) -> &T {
         &self.0
@@ -26,6 +24,28 @@ impl<T: Wipe + Default> Default for Secret<T> {
 impl<T: Wipe + Clone> Clone for Secret<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
+    }
+}
+
+impl<T: Wipe> Wipe for Secret<T> {
+    fn wipe(&mut self) {
+        self.0.wipe();
+    }
+}
+
+impl<B: ByteArray + Wipe> SecretByteArray for Secret<B> {
+    type Inner = B;
+
+    fn new() -> Self {
+        Self(B::new())
+    }
+
+    fn get(&self) -> &B {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut B {
+        &mut self.0
     }
 }
 

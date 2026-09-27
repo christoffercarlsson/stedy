@@ -1,7 +1,7 @@
 use {
     crate::{
-        traits::MontgomeryParams,
-        utils::{wipe, Choice, Wipe},
+        traits::{MontgomeryParams, Wipe},
+        utils::{wipe, Choice},
     },
     core::marker::PhantomData,
 };
