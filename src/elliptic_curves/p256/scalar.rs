@@ -1,5 +1,10 @@
 use {
-    crate::{secret::SecretDigits, traits::WeierstrassScalar, utils::wipe, Secret},
+    crate::{
+        secret::SecretDigits,
+        traits::WeierstrassScalar,
+        utils::{wipe, Choice},
+        Secret,
+    },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -102,14 +107,6 @@ impl MulAssign for ScalarP256 {
     }
 }
 
-impl PartialEq for ScalarP256 {
-    fn eq(&self, other: &Self) -> bool {
-        self.get().eq(other.get())
-    }
-}
-
-impl Eq for ScalarP256 {}
-
 impl From<&[u8; 32]> for ScalarP256 {
     fn from(value: &[u8; 32]) -> Self {
         Secret::from(ScalarP256Inner::from_bytes(value))
@@ -148,8 +145,12 @@ impl WeierstrassScalar for ScalarP256 {
     type Radix16 = SecretDigits<65>;
     type Naf5 = [i8; 257];
 
-    fn is_zero(&self) -> bool {
+    fn is_zero(&self) -> Choice {
         self.get().is_zero()
+    }
+
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.get().ct_eq(other.get())
     }
 
     fn invert(self) -> Self {

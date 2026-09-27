@@ -1,6 +1,10 @@
 use {
     super::{Montgomery, WideWord, Word},
-    crate::{traits::MontgomeryParams, utils::unsigned_mul as m, Secret},
+    crate::{
+        traits::MontgomeryParams,
+        utils::{unsigned_mul as m, Choice},
+        Secret,
+    },
     core::{
         marker::PhantomData,
         ops::{Index, IndexMut},

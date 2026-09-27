@@ -1,5 +1,6 @@
 use crate::{
     traits::{EdwardsScalar, EllipticCurve, FieldElement},
+    utils::Choice,
     Secret,
 };
 
@@ -53,11 +54,11 @@ impl EllipticCurve for Curve25519 {
         let mut z2 = Field25519::ZERO;
         let mut x3 = *point;
         let mut z3 = Field25519::ONE;
-        let mut swap = 0;
+        let mut swap = Choice::FALSE;
         for i in (0..255).rev() {
             let byte_index = i / 8;
             let bit_index = i % 8;
-            let bit = ((scalar[byte_index] >> bit_index) & 1) as u64;
+            let bit = Choice::nonzero((scalar[byte_index] >> bit_index) & 1);
             swap ^= bit;
             Field25519::swap(&mut x2, &mut x3, swap);
             Field25519::swap(&mut z2, &mut z3, swap);
@@ -79,6 +80,6 @@ impl EllipticCurve for Curve25519 {
         Field25519::swap(&mut x2, &mut x3, swap);
         Field25519::swap(&mut z2, &mut z3, swap);
         let u = x2 / z2;
-        (u != Field25519::ZERO).then_some(u)
+        (!u.ct_eq(&Field25519::ZERO)).to_bool().then_some(u)
     }
 }

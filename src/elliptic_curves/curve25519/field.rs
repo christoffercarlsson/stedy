@@ -1,9 +1,9 @@
 use {
-    crate::traits::{ByteOrder, EdwardsParams, FieldElement},
-    core::{
-        cmp::PartialEq,
-        ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    crate::{
+        traits::{ByteOrder, EdwardsParams, FieldElement},
+        utils::Choice,
     },
+    core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 #[cfg_attr(target_pointer_width = "32", path = "field32.rs")]
@@ -26,13 +26,6 @@ impl Field25519 {
         let size = slice.len().min(32);
         bytes[..size].copy_from_slice(&slice[..size]);
         Self::from(&bytes)
-    }
-
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mut x = *a;
-        let mut y = *b;
-        Self::swap(&mut x, &mut y, condition);
-        x
     }
 
     fn invert(self) -> Self {
@@ -68,7 +61,7 @@ impl Field25519 {
         x
     }
 
-    fn sqrt(self, b: Self) -> (Self, u64) {
+    fn sqrt(self, b: Self) -> (Self, Choice) {
         let a = self;
         let b3 = b * b.square();
         let b7 = b * b3.square();
@@ -76,8 +69,8 @@ impl Field25519 {
         let v = u * Self::SQRT_M1;
         let c = b * u.square();
         let d = b * v.square();
-        let e = (c == a) as u64;
-        let f = (d == a) as u64;
+        let e = c.ct_eq(&a);
+        let f = d.ct_eq(&a);
         let valid = e | f;
         let r = Self::select(&v, &u, e);
         let r = Self::select(&Self::ZERO, &r, valid);
@@ -149,14 +142,6 @@ impl DivAssign for Field25519 {
     }
 }
 
-impl PartialEq for Field25519 {
-    fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
-    }
-}
-
-impl Eq for Field25519 {}
-
 impl From<&[u8; 32]> for Field25519 {
     fn from(value: &[u8; 32]) -> Self {
         Self::from_bytes(value)
@@ -202,12 +187,16 @@ impl FieldElement for Field25519 {
 
     type Bytes = [u8; 32];
 
-    fn swap(a: &mut Self, b: &mut Self, condition: u64) {
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
         Self::swap(a, b, condition);
     }
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
         Self::select(a, b, condition)
+    }
+
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.ct_eq(other)
     }
 
     fn square(self) -> Self {
@@ -218,7 +207,7 @@ impl FieldElement for Field25519 {
         self.invert()
     }
 
-    fn sqrt(self, b: Self) -> (Self, u64) {
+    fn sqrt(self, b: Self) -> (Self, Choice) {
         self.sqrt(b)
     }
 }

@@ -1,5 +1,5 @@
 use {
-    crate::utils::unsigned_mul as m,
+    crate::utils::{unsigned_mul as m, Choice},
     core::{
         array::from_fn,
         ops::{Index, IndexMut},
@@ -31,13 +31,14 @@ impl Field25519 {
         Self(value)
     }
 
-    pub(super) fn swap(a: &mut Self, b: &mut Self, condition: u64) {
-        let mask = ((condition != 0) as u64).wrapping_neg();
-        for i in 0..5 {
-            let t = mask & (a.0[i] ^ b.0[i]);
-            a.0[i] ^= t;
-            b.0[i] ^= t;
-        }
+    pub(super) fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
+        condition.swap(&mut a.0, &mut b.0);
+    }
+
+    pub(super) fn select(a: &Self, b: &Self, condition: Choice) -> Self {
+        let mut selected = *a;
+        condition.assign(&mut selected.0, &b.0);
+        selected
     }
 
     pub(super) fn square(self) -> Self {
@@ -109,11 +110,11 @@ impl Field25519 {
         result
     }
 
-    pub(super) fn eq(&self, other: &Self) -> bool {
+    pub(super) fn ct_eq(&self, other: &Self) -> Choice {
         let mut diff = self.sub(*other);
         diff.canonical();
         let result = diff[0] | diff[1] | diff[2] | diff[3] | diff[4];
-        result == 0
+        !Choice::nonzero(result)
     }
 
     pub(super) fn from_u32(n: u32) -> Self {
@@ -220,6 +221,6 @@ impl Field25519 {
         reduced[4] = reduced[4].wrapping_sub(1 << 51);
         let borrow = reduced[4] >> 63;
         reduced.mask();
-        *self = Self::select(&reduced, self, borrow);
+        *self = Self::select(&reduced, self, Choice::nonzero(borrow));
     }
 }

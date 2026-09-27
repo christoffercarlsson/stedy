@@ -58,7 +58,7 @@ where
             return false;
         };
         let (q, valid_q) = Weierstrass::<F, S>::decompress(public_key);
-        if valid_q == 0 {
+        if !valid_q.to_bool() {
             return false;
         }
         let e = Self::message_representative(message);
@@ -66,10 +66,10 @@ where
         let u1 = e * w.clone();
         let u2 = r.clone() * w;
         let R = Weierstrass::<F, S>::vartime_double_base(&u2, q, &u1);
-        if R.is_identity() {
+        if R.is_identity().to_bool() {
             return false;
         }
-        Self::affine_x_mod_order(&R) == r
+        Self::affine_x_mod_order(&R).ct_eq(&r).to_bool()
     }
 }
 
@@ -102,7 +102,9 @@ where
         let r = Self::affine_x_mod_order(&point);
         let s = k.clone().invert() * (e.clone() + r.clone() * d.clone());
         let valid = !r.is_zero() & !s.is_zero();
-        valid.then(|| Self::create_signature(&r.into(), &s.into()))
+        valid
+            .to_bool()
+            .then(|| Self::create_signature(&r.into(), &s.into()))
     }
 
     fn create_signature(r_bytes: &S::Bytes, s_bytes: &S::Bytes) -> B {

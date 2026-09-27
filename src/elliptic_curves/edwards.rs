@@ -1,5 +1,8 @@
 use {
-    crate::traits::{EdwardsParams, EdwardsScalar, FieldElement},
+    crate::{
+        traits::{EdwardsParams, EdwardsScalar, FieldElement},
+        utils::Choice,
+    },
     core::{
         array::from_fn,
         marker::PhantomData,
@@ -55,10 +58,10 @@ where
         }
     }
 
-    pub(crate) fn decompress(bytes: &F::Bytes) -> (Self, u64) {
+    pub(crate) fn decompress(bytes: &F::Bytes) -> (Self, Choice) {
         let slice = bytes.as_ref();
         let last = slice.len() - 1;
-        let sign = (slice[last] >> 7) as u64;
+        let sign = slice[last] >> 7;
         let mut bytes = bytes.clone();
         bytes[last] &= 127;
         let y = F::from(bytes);
@@ -66,13 +69,18 @@ where
         let u = y2 - F::ONE;
         let v = F::D * y2 + F::ONE;
         let (mut x, mut valid) = u.sqrt(v);
-        let is_zero = (x == F::ZERO) as u64;
-        valid &= (is_zero & sign) ^ 1;
+        valid &= !(x.ct_eq(&F::ZERO) & Choice::nonzero(sign));
         let xs: F::Bytes = x.into();
-        let negate = (xs[0] as u64 & 1) ^ sign;
+        let negate = Choice::nonzero((xs[0] & 1) ^ sign);
         x = F::select(&x, &x.neg(), negate);
         let point = Self::new(x, y, x * y, F::ONE);
         (point, valid)
+    }
+
+    pub(crate) fn ct_eq(&self, other: &Self) -> Choice {
+        let x = (self.x * other.z).ct_eq(&(other.x * self.z));
+        let y = (self.y * other.z).ct_eq(&(other.y * self.z));
+        x & y
     }
 
     pub(crate) fn compress(&self) -> F::Bytes {
@@ -123,25 +131,6 @@ where
         }
         r.to_extended()
     }
-}
-
-impl<F, S> PartialEq for Edwards<F, S>
-where
-    F: FieldElement + EdwardsParams<F>,
-    S: EdwardsScalar,
-{
-    fn eq(&self, other: &Self) -> bool {
-        let x = (self.x * other.z) == (other.x * self.z);
-        let y = (self.y * other.z) == (other.y * self.z);
-        x & y
-    }
-}
-
-impl<F, S> Eq for Edwards<F, S>
-where
-    F: FieldElement + EdwardsParams<F>,
-    S: EdwardsScalar,
-{
 }
 
 impl<F, S> Add for Edwards<F, S>
@@ -335,7 +324,7 @@ where
         t2d: F::ZERO,
     };
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
         Self {
             y_plus_x: F::select(&a.y_plus_x, &b.y_plus_x, condition),
             y_minus_x: F::select(&a.y_minus_x, &b.y_minus_x, condition),
@@ -387,10 +376,10 @@ where
         let i = ((y ^ z) - z) as u8;
         let mut t = ProjectiveNiels::<F>::IDENTITY;
         for j in 0..8 {
-            let is_index = (((j + 1) ^ i) == 0) as u64;
+            let is_index = Choice::eq(j + 1, i);
             t = ProjectiveNiels::<F>::select(&t, &self[j as usize], is_index);
         }
-        let negate = (z & 1) as u64;
+        let negate = Choice::nonzero((z & 1) as u8);
         ProjectiveNiels::<F>::select(&t, &t.neg(), negate)
     }
 }

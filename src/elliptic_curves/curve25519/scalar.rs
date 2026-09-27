@@ -1,5 +1,10 @@
 use {
-    crate::{secret::SecretDigits, traits::EdwardsScalar, utils::wipe, Secret},
+    crate::{
+        secret::SecretDigits,
+        traits::EdwardsScalar,
+        utils::{wipe, Choice},
+        Secret,
+    },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg},
 };
 
@@ -102,7 +107,7 @@ impl EdwardsScalar for Scalar25519 {
         bytes[31] |= 64;
     }
 
-    fn is_canonical(bytes: &[u8; 32]) -> bool {
+    fn is_canonical(bytes: &[u8; 32]) -> Choice {
         let mut borrow = 0u16;
         for (byte, order) in bytes.iter().zip(ORDER.iter()) {
             let diff = (*byte as u16)
@@ -110,7 +115,7 @@ impl EdwardsScalar for Scalar25519 {
                 .wrapping_sub(borrow);
             borrow = (diff >> 8) & 1;
         }
-        borrow == 1
+        Choice::nonzero(borrow)
     }
 
     fn as_radix_16(&self) -> Self::Radix16 {

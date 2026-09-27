@@ -2,7 +2,7 @@ use {
     crate::{
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
         traits::{Authenticator, ByteArray, Digest, KeyInit, Mac, SeekableStreamCipher},
-        utils::{verify, wipe, Block},
+        utils::{verify, wipe, Block, Choice},
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
@@ -247,20 +247,10 @@ impl Poly1305FieldElement {
         reduced[0] += 5;
         reduced.carry();
         reduced[4] = reduced[4].wrapping_sub(1 << 26);
-        let borrow = reduced[4] >> 63;
+        let borrow = Choice::nonzero(reduced[4] >> 63);
         reduced.mask();
-        *self = Self::select(&reduced, self, borrow);
-    }
-
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mask = ((condition != 0) as u64).wrapping_neg();
-        Self([
-            a[0] & !mask | b[0] & mask,
-            a[1] & !mask | b[1] & mask,
-            a[2] & !mask | b[2] & mask,
-            a[3] & !mask | b[3] & mask,
-            a[4] & !mask | b[4] & mask,
-        ])
+        borrow.assign(&mut reduced.0, &self.0);
+        *self = reduced;
     }
 }
 

@@ -1,9 +1,9 @@
 use {
-    crate::traits::{ByteOrder, FieldElement, WeierstrassParams},
-    core::{
-        cmp::PartialEq,
-        ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    crate::{
+        traits::{ByteOrder, FieldElement, WeierstrassParams},
+        utils::Choice,
     },
+    core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 #[cfg_attr(target_pointer_width = "32", path = "field32.rs")]
@@ -42,14 +42,14 @@ impl FieldP256 {
         f94 * acc.pow2n(94)
     }
 
-    fn sqrt(self, b: Self) -> (Self, u64) {
+    fn sqrt(self, b: Self) -> (Self, Choice) {
         let u = self;
         let v = b;
         let v2 = v.square();
         let v3 = v2 * v;
         let r = u * v * (u * v3).pow_p_minus_3_div_4();
         let c = v * r.square();
-        let valid = (u == c) as u64;
+        let valid = u.ct_eq(&c);
         let r = Self::select(&Self::ZERO, &r, valid);
         (r, valid)
     }
@@ -119,14 +119,6 @@ impl DivAssign for FieldP256 {
     }
 }
 
-impl PartialEq for FieldP256 {
-    fn eq(&self, other: &Self) -> bool {
-        self.eq(other)
-    }
-}
-
-impl Eq for FieldP256 {}
-
 impl From<&[u8; 32]> for FieldP256 {
     fn from(value: &[u8; 32]) -> Self {
         Self::from_bytes(value)
@@ -172,12 +164,16 @@ impl FieldElement for FieldP256 {
 
     type Bytes = [u8; 32];
 
-    fn swap(a: &mut Self, b: &mut Self, condition: u64) {
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
         Self::swap(a, b, condition);
     }
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
         Self::select(a, b, condition)
+    }
+
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.ct_eq(other)
     }
 
     fn square(self) -> Self {
@@ -188,7 +184,7 @@ impl FieldElement for FieldP256 {
         self.invert()
     }
 
-    fn sqrt(self, b: Self) -> (Self, u64) {
+    fn sqrt(self, b: Self) -> (Self, Choice) {
         self.sqrt(b)
     }
 }

@@ -1,5 +1,8 @@
 use {
-    crate::traits::{ByteOrder, FieldElement},
+    crate::{
+        traits::{ByteOrder, FieldElement},
+        utils::Choice,
+    },
     core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -48,21 +51,18 @@ impl Gf256 {
         x
     }
 
-    fn swap(a: &mut Self, b: &mut Self, condition: u64) {
-        let mask = ((condition != 0) as u8).wrapping_neg();
-        let t = mask & (a.0 ^ b.0);
-        a.0 ^= t;
-        b.0 ^= t;
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
+        let swapped = *a;
+        *a = Self::select(a, b, condition);
+        *b = Self::select(b, &swapped, condition);
     }
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
-        let mask = ((condition != 0) as u8).wrapping_neg();
-        Self(a.0 & !mask | b.0 & mask)
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
+        Self(condition.select(a.0, b.0))
     }
 
-    fn ct_eq(&self, other: &Self) -> u64 {
-        let result = self.0 ^ other.0;
-        1 ^ ((result | result.wrapping_neg()) >> 7) as u64
+    fn ct_eq(&self, other: &Self) -> Choice {
+        Choice::eq(self.0, other.0)
     }
 }
 
@@ -130,14 +130,6 @@ impl DivAssign for Gf256 {
     }
 }
 
-impl PartialEq for Gf256 {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other) == 1
-    }
-}
-
-impl Eq for Gf256 {}
-
 impl From<[u8; 1]> for Gf256 {
     fn from(value: [u8; 1]) -> Self {
         Self(value[0])
@@ -165,12 +157,16 @@ impl FieldElement for Gf256 {
 
     type Bytes = [u8; 1];
 
-    fn swap(a: &mut Self, b: &mut Self, condition: u64) {
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
         Self::swap(a, b, condition);
     }
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self {
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
         Self::select(a, b, condition)
+    }
+
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.ct_eq(other)
     }
 
     fn square(self) -> Self {
@@ -181,8 +177,8 @@ impl FieldElement for Gf256 {
         self.invert()
     }
 
-    fn sqrt(self, b: Self) -> (Self, u64) {
-        let valid = 1 ^ b.ct_eq(&Self::ZERO);
+    fn sqrt(self, b: Self) -> (Self, Choice) {
+        let valid = !b.ct_eq(&Self::ZERO);
         let r = self.div(b).sqrt();
         (Self::select(&Self::ZERO, &r, valid), valid)
     }
@@ -211,28 +207,30 @@ mod tests {
 
     #[test]
     fn test_gf256_mul_fips197() {
-        assert!(Gf256(0x57) * Gf256(0x83) == Gf256(0xc1));
-        assert!(Gf256(0x57) * Gf256(0x13) == Gf256(0xfe));
-        assert!(Gf256(0x53) * Gf256(0xca) == Gf256::ONE);
-        assert!(Gf256(0x53).invert() == Gf256(0xca));
+        assert!((Gf256(0x57) * Gf256(0x83)).ct_eq(&Gf256(0xc1)).to_bool());
+        assert!((Gf256(0x57) * Gf256(0x13)).ct_eq(&Gf256(0xfe)).to_bool());
+        assert!((Gf256(0x53) * Gf256(0xca)).ct_eq(&Gf256::ONE).to_bool());
+        assert!(Gf256(0x53).invert().ct_eq(&Gf256(0xca)).to_bool());
     }
 
     #[test]
     fn test_gf256_mul_exhaustive() {
         for a in 0..=255u8 {
             for b in 0..=255u8 {
-                assert!(Gf256(a) * Gf256(b) == Gf256(mul_reference(a, b)));
+                assert!((Gf256(a) * Gf256(b))
+                    .ct_eq(&Gf256(mul_reference(a, b)))
+                    .to_bool());
             }
         }
     }
 
     #[test]
     fn test_gf256_invert_exhaustive() {
-        assert!(Gf256::ZERO.invert() == Gf256::ZERO);
+        assert!(Gf256::ZERO.invert().ct_eq(&Gf256::ZERO).to_bool());
         for a in 1..=255u8 {
             let x = Gf256(a);
-            assert!(x * x.invert() == Gf256::ONE);
-            assert!(x / x == Gf256::ONE);
+            assert!((x * x.invert()).ct_eq(&Gf256::ONE).to_bool());
+            assert!((x / x).ct_eq(&Gf256::ONE).to_bool());
         }
     }
 
@@ -241,13 +239,16 @@ mod tests {
         for a in 0..=255u8 {
             let x = Gf256(a);
             let (root, valid) = FieldElement::sqrt(x, Gf256::ONE);
-            assert!(valid == 1);
-            assert!(root.square() == x);
-            assert!(FieldElement::sqrt(x.square(), Gf256::ONE).0 == x);
+            assert!(valid.to_bool());
+            assert!(root.square().ct_eq(&x).to_bool());
+            assert!(FieldElement::sqrt(x.square(), Gf256::ONE)
+                .0
+                .ct_eq(&x)
+                .to_bool());
         }
         let (root, valid) = FieldElement::sqrt(Gf256(0x57), Gf256::ZERO);
-        assert!(valid == 0);
-        assert!(root == Gf256::ZERO);
+        assert!(!valid.to_bool());
+        assert!(root.ct_eq(&Gf256::ZERO).to_bool());
     }
 
     #[test]
@@ -257,15 +258,15 @@ mod tests {
         for _ in 0..1000 {
             rng.fill(&mut bytes);
             let (a, b, c) = (Gf256(bytes[0]), Gf256(bytes[1]), Gf256(bytes[2]));
-            assert!(a + b == b + a);
-            assert!(a * b == b * a);
-            assert!((a + b) + c == a + (b + c));
-            assert!((a * b) * c == a * (b * c));
-            assert!(a * (b + c) == a * b + a * c);
-            assert!(a - b == a + b);
-            assert!(-a == a);
-            assert!(a + Gf256::ZERO == a);
-            assert!(a * Gf256::ONE == a);
+            assert!((a + b).ct_eq(&(b + a)).to_bool());
+            assert!((a * b).ct_eq(&(b * a)).to_bool());
+            assert!(((a + b) + c).ct_eq(&(a + (b + c))).to_bool());
+            assert!(((a * b) * c).ct_eq(&(a * (b * c))).to_bool());
+            assert!((a * (b + c)).ct_eq(&(a * b + a * c)).to_bool());
+            assert!((a - b).ct_eq(&(a + b)).to_bool());
+            assert!((-a).ct_eq(&a).to_bool());
+            assert!((a + Gf256::ZERO).ct_eq(&a).to_bool());
+            assert!((a * Gf256::ONE).ct_eq(&a).to_bool());
         }
     }
 }

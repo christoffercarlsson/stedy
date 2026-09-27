@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use {
     crate::{
-        utils::{is_zero, less_than, wipe},
+        utils::{is_zero, less_than, wipe, Choice},
         Secret,
     },
     core::ops::{
@@ -94,7 +94,7 @@ pub trait EdwardsScalar:
 
     fn clamp(bytes: &mut Self::SecretBytes);
 
-    fn is_canonical(bytes: &Self::Bytes) -> bool;
+    fn is_canonical(bytes: &Self::Bytes) -> Choice;
 
     fn as_radix_16(&self) -> Self::Radix16;
 
@@ -151,7 +151,6 @@ pub enum ByteOrder {
 pub trait FieldElement:
     Sized
     + Copy
-    + Eq
     + Add<Output = Self>
     + AddAssign
     + Sub<Output = Self>
@@ -173,15 +172,17 @@ pub trait FieldElement:
 
     type Bytes: ByteArray;
 
-    fn swap(a: &mut Self, b: &mut Self, condition: u64);
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice);
 
-    fn select(a: &Self, b: &Self, condition: u64) -> Self;
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self;
+
+    fn ct_eq(&self, other: &Self) -> Choice;
 
     fn square(self) -> Self;
 
     fn invert(self) -> Self;
 
-    fn sqrt(self, b: Self) -> (Self, u64);
+    fn sqrt(self, b: Self) -> (Self, Choice);
 }
 
 pub trait Hasher: Init + Digest {
@@ -282,8 +283,6 @@ pub trait WeierstrassParams<F: FieldElement> {
 pub trait WeierstrassScalar:
     Sized
     + Clone
-    + PartialEq
-    + Eq
     + From<Self::Bytes>
     + Into<Self::Bytes>
     + Add<Self, Output = Self>
@@ -301,14 +300,18 @@ pub trait WeierstrassScalar:
     type Radix16: AsRef<[i8]>;
     type Naf5: AsRef<[i8]>;
 
-    fn is_zero(&self) -> bool;
+    fn is_zero(&self) -> Choice;
+
+    fn ct_eq(&self, other: &Self) -> Choice;
 
     fn invert(self) -> Self;
 
     fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
         let non_zero = !is_zero(bytes.as_ref());
         let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
-        (non_zero & below).then(|| Self::from(bytes.clone()))
+        (non_zero & below)
+            .to_bool()
+            .then(|| Self::from(bytes.clone()))
     }
 
     fn as_radix_16(&self) -> Self::Radix16;
@@ -350,7 +353,7 @@ impl<const N: usize> ByteArray for Secret<[u8; N]> {
     }
 }
 
-trait Sealed {}
+pub(crate) trait Sealed {}
 
 impl<const N: usize> Sealed for [u8; N] {}
 

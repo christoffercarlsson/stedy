@@ -1,4 +1,4 @@
-use crate::utils::{wipe, Block};
+use crate::utils::{wipe, Block, Choice};
 
 const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";
 const BASE32_ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -86,7 +86,7 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             return None;
         }
         let mut block = Block::<8>::new();
-        let mut error = 0;
+        let mut error = Choice::FALSE;
         for byte in &encoded[..unpadded_size] {
             let index = self.find_index(&mut error, *byte);
             let digits = Self::to_binary(index);
@@ -95,11 +95,11 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
                 self.push(decoded_byte, decoded);
             }
         }
-        if error == 0 {
-            Some(&decoded[..self.offset])
-        } else {
+        if error.to_bool() {
             wipe(decoded);
             None
+        } else {
+            Some(&decoded[..self.offset])
         }
     }
 
@@ -108,47 +108,39 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
     }
 
     fn unpadded_size(encoded: &[u8]) -> Option<usize> {
-        let mut reached_padding = 0;
+        let mut reached_padding = Choice::FALSE;
         let mut padding_size = 0;
-        let mut error = 0;
+        let mut error = Choice::FALSE;
         for &b in encoded {
-            let is_padding = Self::is_padding(b);
-            error |= reached_padding & (is_padding ^ 1);
+            let is_padding = Choice::eq(b, PADDING_BYTE);
+            error |= reached_padding & !is_padding;
             reached_padding |= is_padding;
-            padding_size += is_padding;
+            padding_size += is_padding.select(0, 1);
         }
         let unpadded_size = encoded.len() - padding_size;
-        if error == 0 {
-            Some(unpadded_size)
-        } else {
-            None
-        }
+        (!error.to_bool()).then_some(unpadded_size)
     }
 
-    fn find_index(&self, error: &mut u8, byte: u8) -> u8 {
+    fn find_index(&self, error: &mut Choice, byte: u8) -> u8 {
+        let byte = Self::normalize(byte);
         let mut index = 0;
-        let mut err = 1;
+        let mut found = 0;
         for (i, &a) in self.alphabet.iter().enumerate() {
-            let byte = Self::normalize(byte);
-            let condition = (byte == a) as u8;
-            let mask = condition.wrapping_neg();
+            let difference = byte ^ a;
+            let mask = ((difference | difference.wrapping_neg()) >> 7).wrapping_sub(1);
             index = (index & !mask) | ((i as u8) & mask);
-            err &= condition ^ 1;
+            found |= mask;
         }
-        *error |= err;
+        *error |= !Choice::nonzero(found);
         index
     }
 
     fn normalize(byte: u8) -> u8 {
-        let is_base16_uppercase =
-            ((BITS == 4) as u8) & ((byte >= b'A') as u8) & ((byte <= b'F') as u8);
-        let mask = (is_base16_uppercase.wrapping_neg()) & 32;
-        byte ^ mask
-    }
-
-    fn is_padding(byte: u8) -> usize {
-        let diff = (byte as usize) ^ (PADDING_BYTE as usize);
-        1 ^ ((diff | diff.wrapping_neg()) >> (usize::BITS - 1))
+        if BITS != 4 {
+            return byte;
+        }
+        let is_uppercase = !Choice::less_than(byte, b'A') & Choice::less_than(byte, b'F' + 1);
+        byte ^ (is_uppercase.mask::<u8>() & 32)
     }
 
     fn from_binary(chunk: &[u8]) -> u8 {

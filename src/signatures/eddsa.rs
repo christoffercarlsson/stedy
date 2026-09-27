@@ -58,7 +58,7 @@ where
 
     pub fn verify(message: &[u8], public_key: &F::Bytes, signature: &S) -> bool {
         let (r, s) = Self::read_signature(signature);
-        let valid_s = E::is_canonical(&s) as u64;
+        let valid_s = E::is_canonical(&s);
         let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
         let (R, valid_r) = Edwards::<F, E>::decompress(&r);
         let mut state = H::new();
@@ -68,8 +68,7 @@ where
         let k = E::from(state.finalize());
         let s = E::from(s);
         let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
-        let verified = (r2 == R) as u64;
-        (verified & valid_a & valid_r & valid_s) == 1
+        (r2.ct_eq(&R) & valid_a & valid_r & valid_s).to_bool()
     }
 }
 

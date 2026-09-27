@@ -23,7 +23,7 @@ impl EllipticCurve for P256 {
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
         let (point, valid) = Point::decompress(bytes);
-        if valid == 1 {
+        if valid.to_bool() {
             Some(point)
         } else {
             None
@@ -50,7 +50,7 @@ impl EllipticCurve for P256 {
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
         let result = point * scalar;
-        if result.is_identity() {
+        if result.is_identity().to_bool() {
             None
         } else {
             Some(result)

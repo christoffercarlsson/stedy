@@ -2,10 +2,10 @@ use {
     crate::{
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
         traits::{ByteArray, CryptoRng, Hasher, MlKemParams, Xof, XofReader},
-        utils::verify,
+        utils::{verify, Choice},
         Secret,
     },
-    core::{hint::black_box, marker::PhantomData},
+    core::marker::PhantomData,
 };
 
 pub type MlKem512 = MlKem<2, MlKem512Params, Sha3_512, Sha3_256, Shake128, Shake256>;
@@ -432,11 +432,9 @@ where
         let k_bar = Self::j(z, c);
         let mut c_prime = P::Ciphertext::new();
         Self::k_pke_encrypt(ek_pke, m.as_ref(), r, c_prime.as_mut());
-        let mask = black_box(u8::from(verify(c, c_prime.as_ref())).wrapping_neg());
-        let mut key = Secret::<[u8; 32]>::new();
-        for (key, (k, k_bar)) in key.as_mut().iter_mut().zip(k.iter().zip(k_bar.as_ref())) {
-            *key = (k & mask) | (k_bar & !mask);
-        }
+        let reject = !Choice::eq_slice(c, c_prime.as_ref());
+        let mut key = Secret::<[u8; 32]>::from_slice(k);
+        reject.assign(key.as_mut(), k_bar.as_ref());
         key
     }
 

@@ -2,7 +2,7 @@ use {
     crate::{
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaParams, Xof, XofReader},
-        utils::verify,
+        utils::{verify, Choice},
         Secret,
     },
     core::marker::PhantomData,
@@ -266,7 +266,7 @@ where
                 Self::norm_exceeds(z.get().as_flattened().iter().copied(), P::GAMMA1 - P::BETA);
             let r0 = w.get().as_flattened().iter().map(|&w| Self::low_bits(w));
             let r0_bound = Self::norm_exceeds(r0, P::GAMMA2 - P::BETA);
-            if z_bound || r0_bound {
+            if z_bound | r0_bound {
                 continue;
             }
             let mut ones = 0;
@@ -281,7 +281,7 @@ where
                 }
                 ct0_bound |= Self::norm_exceeds(product.get().iter().copied(), P::GAMMA2);
             }
-            if !ct0_bound && ones <= P::OMEGA {
+            if !ct0_bound & (ones <= P::OMEGA) {
                 break;
             }
         }
@@ -882,22 +882,23 @@ where
         a + ((a >> 31) & Self::Q)
     }
 
+    const fn zero_mask(a: i32) -> i32 {
+        !((a | a.wrapping_neg()) >> 31)
+    }
+
     const fn centered(a: i32) -> i32 {
         let a = Self::mod_q(a);
         a - ((((Self::Q - 1) / 2 - a) >> 31) & Self::Q)
     }
 
     fn norm_exceeds(values: impl Iterator<Item = i32>, bound: i32) -> bool {
-        values.fold(0, |violation, x| {
+        Choice::nonzero(values.fold(0, |violation, x| {
             let x = Self::centered(x);
             let mask = x >> 31;
             let magnitude = (x ^ mask) - mask;
             violation | ((bound - 1 - magnitude) >> 31)
-        }) != 0
-    }
-
-    const fn zero_mask(a: i32) -> i32 {
-        !((a | a.wrapping_neg()) >> 31)
+        }))
+        .to_bool()
     }
 
     const fn montgomery_form(a: i32) -> i32 {
@@ -923,6 +924,8 @@ mod tests {
         hex_literal::hex,
     };
 
+    const MESSAGE: &[u8] = b"example";
+
     #[test]
     fn test_ml_dsa_44() {
         let mut rng = Rng::from(&[0u8; 128]);
@@ -936,12 +939,18 @@ mod tests {
             hex!("c0e23d7a0883c28e6bd1b6275d5f08c185f68d1dd6d7e2fe121c1df64b129eb4")
         );
         assert_eq!(MlDsa44::public_key(&private_key), public_key);
-        let signature = MlDsa44::sign(&private_key, b"stedy", &mut rng);
+        let signature = MlDsa44::sign(&private_key, MESSAGE, &mut rng);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("4806aec728f9f038f1b7286fae2bda4cb50976c5a60a01017059d791660087b6")
+            hex!("971579d41bc5f5b64c78e90f157f378ad7df272e057f201039e882a2d8bcfbda")
         );
-        assert!(MlDsa44::verify(b"stedy", &public_key, &signature));
+        assert!(MlDsa44::verify(MESSAGE, &public_key, &signature));
+        let signature = MlDsa44::sign_deterministic(&private_key, MESSAGE);
+        assert_eq!(
+            Sha3_256::digest(&signature),
+            hex!("981d53044f786d70725a5c60de3de3b2892b2841648427d69616095dcb2d4cf9")
+        );
+        assert!(MlDsa44::verify(MESSAGE, &public_key, &signature));
     }
 
     #[test]
@@ -957,12 +966,18 @@ mod tests {
             hex!("a816046ec8eef97e771a95f383649c3b1ca01060724e8d235e2ba7b2c0821678")
         );
         assert_eq!(MlDsa65::public_key(&private_key), public_key);
-        let signature = MlDsa65::sign(&private_key, b"stedy", &mut rng);
+        let signature = MlDsa65::sign(&private_key, MESSAGE, &mut rng);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("61ef662b1f4491b987a87316cbfca32cfbd630d8b3494dd37d34d7b586cabfb8")
+            hex!("40c13b3c43438c975c2a8b5ea1de90eac1a2936c1ce032ec660e9b103c7be919")
         );
-        assert!(MlDsa65::verify(b"stedy", &public_key, &signature));
+        assert!(MlDsa65::verify(MESSAGE, &public_key, &signature));
+        let signature = MlDsa65::sign_deterministic(&private_key, MESSAGE);
+        assert_eq!(
+            Sha3_256::digest(&signature),
+            hex!("ed7dd3c5cd4c6e15e0202c3cfa9bebd8273d2853fd6aa712de83fff668fa7de3")
+        );
+        assert!(MlDsa65::verify(MESSAGE, &public_key, &signature));
     }
 
     #[test]
@@ -978,11 +993,17 @@ mod tests {
             hex!("baa977e5732d13de8f5a0e16667667465af77949dbb5faf8c242ddb4e1a29a7c")
         );
         assert_eq!(MlDsa87::public_key(&private_key), public_key);
-        let signature = MlDsa87::sign(&private_key, b"stedy", &mut rng);
+        let signature = MlDsa87::sign(&private_key, MESSAGE, &mut rng);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("344c15504b372f696fd1afdefb946c513b0642e1e6c3fa6c78ab642053595490")
+            hex!("f3198af2e7b38e3a90774f15748ca2820800f6035206074dfdc00e84bedba475")
         );
-        assert!(MlDsa87::verify(b"stedy", &public_key, &signature));
+        assert!(MlDsa87::verify(MESSAGE, &public_key, &signature));
+        let signature = MlDsa87::sign_deterministic(&private_key, MESSAGE);
+        assert_eq!(
+            Sha3_256::digest(&signature),
+            hex!("5e68d93732e191d31530592bfa7ee30bff0d22c7331bf6781378ae2f72222388")
+        );
+        assert!(MlDsa87::verify(MESSAGE, &public_key, &signature));
     }
 }

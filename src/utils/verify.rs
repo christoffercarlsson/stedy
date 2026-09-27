@@ -1,12 +1,8 @@
-pub fn verify(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut result = 0;
-    for (x, y) in a.iter().zip(b) {
-        result |= x ^ y;
-    }
-    result == 0
+use crate::utils::{Choice, Cmov};
+
+#[allow(private_bounds)]
+pub fn verify<T: Cmov>(a: &[T], b: &[T]) -> bool {
+    Choice::eq_slice(a, b).to_bool()
 }
 
 #[cfg(test)]
@@ -22,5 +18,8 @@ mod tests {
         assert!(!verify(&a, &c));
         assert!(!verify(&b, &c));
         assert!(!verify(&a[..15], &b));
+        assert!(verify(&[u64::MAX, 1], &[u64::MAX, 1]));
+        assert!(!verify(&[u64::MAX, 1], &[u64::MAX, 2]));
+        assert!(!verify(&[-1i32], &[1]));
     }
 }
