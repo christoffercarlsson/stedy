@@ -42,6 +42,18 @@ impl Field25519 {
     }
 
     pub(super) fn square(self) -> Self {
+        Self::reduce_wide(self.square_wide())
+    }
+
+    pub(super) fn square2(self) -> Self {
+        let mut t = self.square_wide();
+        for word in t.iter_mut() {
+            *word *= 2;
+        }
+        Self::reduce_wide(t)
+    }
+
+    fn square_wide(self) -> [u128; 5] {
         let a = &self;
         let a3_19 = a[3] * 19;
         let a4_19 = a[4] * 19;
@@ -55,7 +67,7 @@ impl Field25519 {
         t[2] = m(a[1], a[1]) + m(a0_2, a[2]) + m(a[4], a3_38);
         t[3] = m(a[4], a4_19) + m(a0_2, a[3]) + m(a1_2, a[2]);
         t[4] = m(a[2], a[2]) + m(a0_2, a[4]) + m(a1_2, a[3]);
-        Self::reduce_wide(t)
+        t
     }
 
     pub(super) fn mul(self, rhs: Self) -> Self {
@@ -93,25 +105,24 @@ impl Field25519 {
     }
 
     pub(super) fn add(self, rhs: Self) -> Self {
-        let mut result = Self(from_fn(|i| self[i] + rhs[i]));
-        result.reduce();
-        result
+        Self(from_fn(|i| self[i] + rhs[i]))
     }
 
     pub(super) fn sub(self, rhs: Self) -> Self {
-        let mut result = Self(from_fn(|i| Self::P2[i] + self[i] - rhs[i]));
+        let mut result = Self(from_fn(|i| Self::P16[i] + self[i] - rhs[i]));
         result.reduce();
         result
     }
 
     pub(super) fn neg(self) -> Self {
-        let mut result = Self(from_fn(|i| Self::P2[i] - self[i]));
+        let mut result = Self(from_fn(|i| Self::P16[i] - self[i]));
         result.reduce();
         result
     }
 
     pub(super) fn ct_eq(&self, other: &Self) -> Choice {
         let mut diff = self.sub(*other);
+        diff.reduce();
         diff.canonical();
         let result = diff[0] | diff[1] | diff[2] | diff[3] | diff[4];
         !Choice::nonzero(result)
@@ -141,6 +152,7 @@ impl Field25519 {
     }
 
     pub(super) fn to_bytes(mut self) -> [u8; 32] {
+        self.reduce();
         self.canonical();
         let words = [
             self[0] | (self[1] << 51),
@@ -159,12 +171,12 @@ impl Field25519 {
 
 impl Field25519 {
     const MASK: u64 = (1 << 51) - 1;
-    const P2: Self = Self([
-        (Self::MASK << 1) - 36,
-        (Self::MASK << 1),
-        (Self::MASK << 1),
-        (Self::MASK << 1),
-        (Self::MASK << 1),
+    const P16: Self = Self([
+        (Self::MASK << 4) - 288,
+        Self::MASK << 4,
+        Self::MASK << 4,
+        Self::MASK << 4,
+        Self::MASK << 4,
     ]);
 
     const fn reduce_wide(mut words: [u128; 5]) -> Self {
@@ -215,12 +227,20 @@ impl Field25519 {
     }
 
     fn canonical(&mut self) {
-        let mut reduced = *self;
-        reduced[0] += 19;
-        reduced.carry();
-        reduced[4] = reduced[4].wrapping_sub(1 << 51);
-        let borrow = reduced[4] >> 63;
-        reduced.mask();
-        *self = Self::select(&reduced, self, Choice::nonzero(borrow));
+        let mut q = (self[0] + 19) >> 51;
+        q = (self[1] + q) >> 51;
+        q = (self[2] + q) >> 51;
+        q = (self[3] + q) >> 51;
+        q = (self[4] + q) >> 51;
+        self[0] += 19 * q;
+        self[1] += self[0] >> 51;
+        self[0] &= Self::MASK;
+        self[2] += self[1] >> 51;
+        self[1] &= Self::MASK;
+        self[3] += self[2] >> 51;
+        self[2] &= Self::MASK;
+        self[4] += self[3] >> 51;
+        self[3] &= Self::MASK;
+        self[4] &= Self::MASK;
     }
 }

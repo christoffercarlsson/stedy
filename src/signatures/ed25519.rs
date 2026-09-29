@@ -18,12 +18,13 @@ mod tests {
         let mut rng = Rng::from(&[0u8; 128]);
         let (private_key, public_key) = Ed25519::generate_key_pair(&mut rng);
         assert_eq!(
-            private_key.as_ref(),
+            &private_key.as_ref()[..32],
             &[
                 253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217, 162, 213,
                 40, 127, 15, 170, 40, 184, 218, 178, 64, 246, 99, 149, 165, 24
             ]
         );
+        assert_eq!(&private_key.as_ref()[32..], &public_key);
         assert_eq!(
             public_key,
             [
@@ -37,7 +38,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_tc1() {
-        let private_key = Secret::from([
+        let seed = Secret::from([
             157, 97, 177, 157, 239, 253, 90, 96, 186, 132, 74, 244, 146, 236, 44, 196, 68, 73, 197,
             105, 123, 50, 105, 25, 112, 59, 172, 3, 28, 174, 127, 96,
         ]);
@@ -52,8 +53,9 @@ mod tests {
             163, 59, 172, 198, 30, 57, 112, 28, 249, 180, 107, 210, 91, 245, 240, 89, 91, 190, 36,
             101, 81, 65, 67, 142, 122, 16, 11,
         ];
-        let public_key = Ed25519::public_key(&private_key);
+        let (private_key, public_key) = Ed25519::key_pair(&seed);
         assert_eq!(public_key, public_key_ref);
+        assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
         let verified = Ed25519::verify(&message, &public_key, &signature);
@@ -62,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_tc2() {
-        let private_key = Secret::from([
+        let seed = Secret::from([
             76, 205, 8, 155, 40, 255, 150, 218, 157, 182, 195, 70, 236, 17, 78, 15, 91, 138, 49,
             159, 53, 171, 166, 36, 218, 140, 246, 237, 79, 184, 166, 251,
         ]);
@@ -77,8 +79,9 @@ mod tests {
             153, 110, 69, 143, 54, 19, 208, 241, 29, 140, 56, 123, 46, 174, 180, 48, 42, 238, 176,
             13, 41, 22, 18, 187, 12, 0,
         ];
-        let public_key = Ed25519::public_key(&private_key);
+        let (private_key, public_key) = Ed25519::key_pair(&seed);
         assert_eq!(public_key, public_key_ref);
+        assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
         let verified = Ed25519::verify(&message, &public_key, &signature);
@@ -87,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_tc3() {
-        let private_key = Secret::from([
+        let seed = Secret::from([
             197, 170, 141, 244, 63, 159, 131, 123, 237, 183, 68, 47, 49, 220, 183, 177, 102, 211,
             133, 53, 7, 111, 9, 75, 133, 206, 58, 46, 11, 68, 88, 247,
         ]);
@@ -102,8 +105,9 @@ mod tests {
             144, 174, 103, 247, 96, 152, 77, 198, 89, 74, 124, 21, 233, 113, 110, 210, 141, 192,
             39, 190, 206, 234, 30, 196, 10,
         ];
-        let public_key = Ed25519::public_key(&private_key);
+        let (private_key, public_key) = Ed25519::key_pair(&seed);
         assert_eq!(public_key, public_key_ref);
+        assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
         let verified = Ed25519::verify(&message, &public_key, &signature);
@@ -112,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_tc4() {
-        let private_key = Secret::from([
+        let seed = Secret::from([
             245, 229, 118, 124, 241, 83, 49, 149, 23, 99, 15, 34, 104, 118, 184, 108, 129, 96, 204,
             88, 59, 192, 19, 116, 76, 107, 242, 85, 245, 204, 14, 229,
         ]);
@@ -183,8 +187,9 @@ mod tests {
             159, 69, 40, 236, 234, 35, 196, 54, 217, 75, 94, 143, 205, 79, 104, 30, 48, 166, 172,
             0, 169, 112, 74, 24, 138, 3,
         ];
-        let public_key = Ed25519::public_key(&private_key);
+        let (private_key, public_key) = Ed25519::key_pair(&seed);
         assert_eq!(public_key, public_key_ref);
+        assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
         let verified = Ed25519::verify(&message, &public_key, &signature);
@@ -193,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_tc5() {
-        let private_key = Secret::from([
+        let seed = Secret::from([
             131, 63, 230, 36, 9, 35, 123, 157, 98, 236, 119, 88, 117, 32, 145, 30, 154, 117, 156,
             236, 29, 25, 117, 91, 125, 169, 1, 185, 109, 202, 61, 66,
         ]);
@@ -213,8 +218,9 @@ mod tests {
             236, 253, 251, 199, 198, 100, 49, 224, 48, 61, 202, 23, 156, 19, 138, 193, 122, 217,
             190, 241, 23, 115, 49, 167, 4,
         ];
-        let public_key = Ed25519::public_key(&private_key);
+        let (private_key, public_key) = Ed25519::key_pair(&seed);
         assert_eq!(public_key, public_key_ref);
+        assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
         let verified = Ed25519::verify(&message, &public_key, &signature);

@@ -70,6 +70,8 @@ pub trait EdwardsParams<F: FieldElement> {
     const BASE_POINT_X: F;
     const BASE_POINT_Y: F;
     const BASE_POINT_T: F;
+    const BASE_COMB_LOW: [[F; 3]; 8];
+    const BASE_COMB_HIGH: [[F; 3]; 8];
 }
 
 pub trait EdwardsScalar:
@@ -100,6 +102,8 @@ pub trait EdwardsScalar:
     fn as_radix_16(&self) -> Self::Radix16;
 
     fn non_adjacent_form_5(&self) -> Self::Naf5;
+
+    fn as_signed_bits(&self) -> Self::SecretBytes;
 }
 
 pub trait EllipticCurve {
@@ -180,6 +184,11 @@ pub trait FieldElement:
     fn ct_eq(&self, other: &Self) -> Choice;
 
     fn square(self) -> Self;
+
+    fn square2(self) -> Self {
+        let square = self.square();
+        square + square
+    }
 
     fn invert(self) -> Self;
 

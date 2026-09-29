@@ -28,17 +28,17 @@ impl Field25519 {
     pub(super) const ZERO: Self = Self([0; 10]);
 
     pub(crate) const fn from_limbs(value: [u64; 5]) -> Self {
-        Self([
-            (value[0] as i32) & Self::MASK_26,
-            ((value[0] >> 26) as i32) & Self::MASK_25,
-            (value[1] as i32) & Self::MASK_26,
-            ((value[1] >> 26) as i32) & Self::MASK_25,
-            (value[2] as i32) & Self::MASK_26,
-            ((value[2] >> 26) as i32) & Self::MASK_25,
-            (value[3] as i32) & Self::MASK_26,
-            ((value[3] >> 26) as i32) & Self::MASK_25,
-            (value[4] as i32) & Self::MASK_26,
-            ((value[4] >> 26) as i32) & Self::MASK_25,
+        Self::reduce_wide([
+            ((value[0] as i32) & Self::MASK_26) as i64,
+            (((value[0] >> 26) as i32) & Self::MASK_25) as i64,
+            ((value[1] as i32) & Self::MASK_26) as i64,
+            (((value[1] >> 26) as i32) & Self::MASK_25) as i64,
+            ((value[2] as i32) & Self::MASK_26) as i64,
+            (((value[2] >> 26) as i32) & Self::MASK_25) as i64,
+            ((value[3] as i32) & Self::MASK_26) as i64,
+            (((value[3] >> 26) as i32) & Self::MASK_25) as i64,
+            ((value[4] as i32) & Self::MASK_26) as i64,
+            (((value[4] >> 26) as i32) & Self::MASK_25) as i64,
         ])
     }
 
@@ -53,6 +53,18 @@ impl Field25519 {
     }
 
     pub(super) fn square(self) -> Self {
+        Self::reduce_wide(self.square_wide())
+    }
+
+    pub(super) fn square2(self) -> Self {
+        let mut t = self.square_wide();
+        for word in t.iter_mut() {
+            *word *= 2;
+        }
+        Self::reduce_wide(t)
+    }
+
+    fn square_wide(self) -> [i64; 10] {
         let s0_2 = 2 * self[0];
         let s1_2 = 2 * self[1];
         let s2_2 = 2 * self[2];
@@ -122,7 +134,7 @@ impl Field25519 {
             + m(s2_2, self[7])
             + m(s3_2, self[6])
             + m(s4_2, self[5]);
-        Self::reduce_wide(t)
+        t
     }
 
     pub(super) fn mul(self, rhs: Self) -> Self {
@@ -245,25 +257,20 @@ impl Field25519 {
     }
 
     pub(super) fn add(self, rhs: Self) -> Self {
-        let mut result = Self(from_fn(|i| self[i] + rhs[i]));
-        result.reduce();
-        result
+        Self(from_fn(|i| self[i] + rhs[i]))
     }
 
     pub(super) fn sub(self, rhs: Self) -> Self {
-        let mut result = Self(from_fn(|i| self[i] - rhs[i]));
-        result.reduce();
-        result
+        Self(from_fn(|i| self[i] - rhs[i]))
     }
 
     pub(super) fn neg(self) -> Self {
-        let mut result = Self(from_fn(|i| -self[i]));
-        result.reduce();
-        result
+        Self(from_fn(|i| -self[i]))
     }
 
     pub(super) fn ct_eq(&self, other: &Self) -> Choice {
         let mut diff = self.sub(*other);
+        diff.reduce();
         diff.canonical();
         let result = diff[0]
             | diff[1]
@@ -302,10 +309,12 @@ impl Field25519 {
         result[8] = ((words[6] >> 12) | (words[7] << 20)) as i32;
         result[9] = (words[7] >> 6) as i32;
         result.mask();
+        result.reduce();
         result
     }
 
     pub(super) fn to_bytes(mut self) -> [u8; 32] {
+        self.reduce();
         self.canonical();
         let words = [
             (self[0] as u32) | ((self[1] as u32) << 26),
@@ -424,7 +433,8 @@ impl Field25519 {
     }
 
     fn canonical(&mut self) {
-        let mut q = (self[0] + 19) >> 26;
+        let mut q = (19 * self[9] + Self::BIAS_25) >> 25;
+        q = (self[0] + q) >> 26;
         q = (self[1] + q) >> 25;
         q = (self[2] + q) >> 26;
         q = (self[3] + q) >> 25;

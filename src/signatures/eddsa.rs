@@ -4,9 +4,10 @@ use {
         elliptic_curves::Edwards,
         traits::{
             ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher,
-            SecretByteArray,
+            SecretByteArray, Wipe,
         },
         utils::wipe,
+        Secret,
     },
     core::marker::PhantomData,
 };
@@ -16,7 +17,7 @@ where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
-    S: ByteArray,
+    S: ByteArray + Wipe,
 {
     _marker: PhantomData<(E, F, H, S)>,
 }
@@ -26,33 +27,41 @@ where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
-    S: ByteArray,
+    S: ByteArray + Wipe,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (E::SecretBytes, F::Bytes) {
-        let mut private_key = E::SecretBytes::new();
-        rng.fill(private_key.get_mut().as_mut());
-        let public_key = Self::public_key(&private_key);
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (Secret<S>, F::Bytes) {
+        let mut seed = E::SecretBytes::new();
+        rng.fill(seed.get_mut().as_mut());
+        Self::key_pair(&seed)
+    }
+
+    pub fn key_pair(seed: &E::SecretBytes) -> (Secret<S>, F::Bytes) {
+        let (a, _) = Self::expand(seed.get().as_ref());
+        let public_key = Edwards::<F, E>::mul_base(&a).compress();
+        let mut private_key = Secret::from(S::new());
+        let (s, A) = Self::private_key_components_mut(private_key.get_mut())
+            .expect("Private key size is correct");
+        s.copy_from_slice(seed.get().as_ref());
+        A.copy_from_slice(public_key.as_ref());
         (private_key, public_key)
     }
 
-    pub fn public_key(private_key: &E::SecretBytes) -> F::Bytes {
-        let g = Edwards::<F, E>::BASE_POINT;
-        let (a, _) = Self::expand(private_key);
-        (g * a).compress()
+    pub fn public_key(private_key: &Secret<S>) -> F::Bytes {
+        let (_, A) = Self::read_private_key(private_key);
+        F::Bytes::from_slice(A)
     }
 
-    pub fn sign(private_key: &E::SecretBytes, message: &[u8]) -> S {
-        let B = Edwards::<F, E>::BASE_POINT;
-        let (a, prefix) = Self::expand(private_key);
-        let A = (B * a.clone()).compress();
+    pub fn sign(private_key: &Secret<S>, message: &[u8]) -> S {
+        let (seed, A) = Self::read_private_key(private_key);
+        let (a, prefix) = Self::expand(seed);
         let mut state = H::new();
         state.update(prefix.get().as_ref());
         state.update(message);
         let r = E::from(state.finalize());
-        let R = (B * r.clone()).compress();
+        let R = Edwards::<F, E>::mul_base(&r).compress();
         let mut state = H::new();
         state.update(R.as_ref());
-        state.update(A.as_ref());
+        state.update(A);
         state.update(message);
         let k = E::from(state.finalize());
         let s: E::Bytes = (r + k * a).into();
@@ -80,14 +89,25 @@ where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
-    S: ByteArray,
+    S: ByteArray + Wipe,
 {
-    fn expand(private_key: &E::SecretBytes) -> (E, E::SecretBytes) {
-        let mut digest = H::digest(private_key.get().as_ref());
+    const SEED_SIZE: usize = <<E::SecretBytes as SecretByteArray>::Inner as ByteArray>::SIZE;
+
+    fn expand(seed: &[u8]) -> (E, E::SecretBytes) {
+        let mut digest = H::digest(seed);
         let (mut a, prefix) = E::split(&digest);
         wipe(digest.as_mut());
         E::clamp(&mut a);
         (E::from(a), prefix)
+    }
+
+    fn private_key_components_mut(private_key: &mut S) -> Option<(&mut [u8], &mut [u8])> {
+        let (seed, public_key) = private_key.as_mut().split_at_mut_checked(Self::SEED_SIZE)?;
+        (public_key.len() == F::Bytes::SIZE).then_some((seed, public_key))
+    }
+
+    fn read_private_key(private_key: &Secret<S>) -> (&[u8], &[u8]) {
+        private_key.get().as_ref().split_at(Self::SEED_SIZE)
     }
 
     fn create_signature(r_bytes: &F::Bytes, s_bytes: &E::Bytes) -> S {

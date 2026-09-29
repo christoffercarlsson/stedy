@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::{EdwardsParams, EdwardsScalar, FieldElement},
+        traits::{EdwardsParams, EdwardsScalar, FieldElement, SecretByteArray},
         utils::Choice,
     },
     core::{
@@ -94,6 +94,35 @@ where
         ys[last] &= 127;
         ys[last] |= sign << 7;
         ys
+    }
+
+    pub(crate) fn mul_base(scalar: &S) -> Self {
+        let bits = scalar.as_signed_bits();
+        let bits = bits.get().as_ref();
+        let low = &F::BASE_COMB_LOW;
+        let high = &F::BASE_COMB_HIGH;
+        let t = Self::IDENTITY + Self::comb_select(low, bits, 31);
+        let mut t = t.to_extended() + Self::comb_select(high, bits, 159);
+        for i in (0..31).rev() {
+            let p = t.to_projective().double().to_extended();
+            let p = (p + Self::comb_select(low, bits, i)).to_extended();
+            t = p + Self::comb_select(high, bits, i + 128);
+        }
+        t.to_extended()
+    }
+
+    fn comb_select(table: &[[F; 3]; 8], bits: &[u8], i: usize) -> AffineNiels<F> {
+        let bit = |k: usize| (bits[k / 8] >> (k % 8)) & 1;
+        let teeth = bit(i) | (bit(i + 32) << 1) | (bit(i + 64) << 2) | (bit(i + 96) << 3);
+        let high = teeth >> 3;
+        let index = (teeth ^ high.wrapping_sub(1)) & 7;
+        let mut t = AffineNiels::<F>::IDENTITY;
+        for (j, entry) in table.iter().enumerate() {
+            let is_index = Choice::eq(j, usize::from(index));
+            t = AffineNiels::<F>::select(&t, &AffineNiels::from(entry), is_index);
+        }
+        let negate = !Choice::nonzero(high);
+        AffineNiels::<F>::select(&t, &t.neg(), negate)
     }
 
     #[allow(non_snake_case)]
@@ -241,7 +270,7 @@ where
     fn double(self) -> Completed<F, S> {
         let a = self.x.square();
         let b = self.y.square();
-        let c = self.z.square() + self.z.square();
+        let c = self.z.square2();
         let d = self.x + self.y;
         let e = d.square();
         let y = a + b;
@@ -359,6 +388,79 @@ where
             z: point.z,
             t2d: point.t * F::D2,
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct AffineNiels<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
+    y_plus_x: F,
+    y_minus_x: F,
+    t2d: F,
+}
+
+impl<F> AffineNiels<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
+    const IDENTITY: Self = Self {
+        y_plus_x: F::ONE,
+        y_minus_x: F::ONE,
+        t2d: F::ZERO,
+    };
+
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
+        Self {
+            y_plus_x: F::select(&a.y_plus_x, &b.y_plus_x, condition),
+            y_minus_x: F::select(&a.y_minus_x, &b.y_minus_x, condition),
+            t2d: F::select(&a.t2d, &b.t2d, condition),
+        }
+    }
+}
+
+impl<F: FieldElement + EdwardsParams<F>> Neg for AffineNiels<F> {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self {
+            y_plus_x: self.y_minus_x,
+            y_minus_x: self.y_plus_x,
+            t2d: self.t2d.neg(),
+        }
+    }
+}
+
+impl<F: FieldElement + EdwardsParams<F>> From<&[F; 3]> for AffineNiels<F> {
+    fn from(entry: &[F; 3]) -> Self {
+        Self {
+            y_plus_x: entry[0],
+            y_minus_x: entry[1],
+            t2d: entry[2],
+        }
+    }
+}
+
+impl<F, S> Add<AffineNiels<F>> for Edwards<F, S>
+where
+    F: FieldElement + EdwardsParams<F>,
+    S: EdwardsScalar,
+{
+    type Output = Completed<F, S>;
+
+    fn add(self, rhs: AffineNiels<F>) -> Self::Output {
+        let a = self.y + self.x;
+        let b = self.y - self.x;
+        let c = a * rhs.y_plus_x;
+        let d = b * rhs.y_minus_x;
+        let e = self.t * rhs.t2d;
+        let g = self.z + self.z;
+        let x = c - d;
+        let y = c + d;
+        let t = g - e;
+        let z = g + e;
+        Completed::<F, S>::new(x, y, t, z)
     }
 }
 

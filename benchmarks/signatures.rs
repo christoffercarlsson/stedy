@@ -8,7 +8,7 @@ use {
 };
 
 pub fn bench(c: &mut Criterion) {
-    let private_key = Secret::from([
+    let seed = Secret::from([
         157, 97, 177, 157, 239, 253, 90, 96, 186, 132, 74, 244, 146, 236, 44, 196, 68, 73, 197,
         105, 123, 50, 105, 25, 112, 59, 172, 3, 28, 174, 127, 96,
     ]);
@@ -24,9 +24,9 @@ pub fn bench(c: &mut Criterion) {
         67, 142, 122, 16, 11,
     ];
 
-    c.bench_function("ed25519_public_key", |b| {
-        b.iter(|| Ed25519::public_key(&private_key))
-    });
+    let (private_key, _) = Ed25519::key_pair(&seed);
+
+    c.bench_function("ed25519_key_pair", |b| b.iter(|| Ed25519::key_pair(&seed)));
 
     c.bench_function("ed25519_sign", |b| {
         b.iter(|| Ed25519::sign(&private_key, &message))
