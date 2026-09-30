@@ -1,4 +1,4 @@
-use crate::Secret;
+use super::Secret;
 #[derive(Clone)]
 pub struct Block<const BLOCK_SIZE: usize> {
     buffer: Secret<[u8; BLOCK_SIZE]>,

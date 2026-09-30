@@ -1,9 +1,6 @@
 #![allow(dead_code)]
 use {
-    crate::{
-        utils::{is_zero, less_than, Choice},
-        Secret,
-    },
+    crate::utils::{is_zero, less_than, Choice, Secret},
     core::ops::{
         Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
         SubAssign,

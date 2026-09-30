@@ -1,8 +1,7 @@
 use {
     crate::{
         traits::{EdwardsScalar, MontgomeryParams},
-        utils::{wipe, Choice},
-        Secret,
+        utils::{wipe, Choice, Secret},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg},
 };

@@ -47,7 +47,6 @@ jobs:
           - { target: wasm32-unknown-unknown, flags: '' }
           - { target: wasm32-unknown-unknown, flags: --features secret_sharing }
           - { target: wasm32-unknown-unknown, flags: --features hazmat }
-          - { target: wasm32-unknown-unknown, flags: --features argon2 }
           - { target: thumbv7em-none-eabihf, flags: '' }
           - { target: thumbv7em-none-eabihf, flags: --features secret_sharing }
           - { target: thumbv7em-none-eabihf, flags: --features hazmat }
@@ -66,7 +65,6 @@ jobs:
         flags:
           - --no-default-features
           - --features aes
-          - --features argon2
           - --features secret_sharing
           - --features hazmat
           - --all-features

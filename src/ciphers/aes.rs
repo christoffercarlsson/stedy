@@ -1,6 +1,6 @@
 use crate::{
     traits::{SeekableStreamCipher, StreamCipher},
-    Secret,
+    utils::Secret,
 };
 
 #[cfg_attr(target_arch = "aarch64", path = "aes/aarch64.rs")]

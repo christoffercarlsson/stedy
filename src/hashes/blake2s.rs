@@ -1,7 +1,6 @@
 use crate::{
     traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
-    utils::{verify, Block},
-    Secret,
+    utils::{verify, Block, Secret},
 };
 
 #[derive(Clone)]

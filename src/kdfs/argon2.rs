@@ -1,11 +1,12 @@
+#[cfg(feature = "std")]
+use {crate::utils::wipe, std::thread};
 use {
     crate::{
+        encoding::{decode, encode, Encoding},
         hashes::{Blake2b512, Blake2bVar},
-        utils::wipe,
-        Secret,
+        utils::{verify, Secret},
     },
     core::ops::{BitXorAssign, Index, IndexMut},
-    std::thread,
 };
 
 #[repr(u8)]
@@ -16,7 +17,7 @@ pub enum Argon2Variant {
     Argon2id = 2,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Argon2Params {
     variant: Argon2Variant,
     memory: u32,
@@ -60,6 +61,14 @@ impl Argon2Params {
         self.threads = threads;
         self
     }
+
+    pub fn blocks(&self) -> usize {
+        let lanes = self.lanes as usize;
+        if lanes == 0 {
+            return 0;
+        }
+        (self.memory as usize) / (Self::SLICES * lanes) * Self::SLICES * lanes
+    }
 }
 
 impl Default for Argon2Params {
@@ -68,6 +77,20 @@ impl Default for Argon2Params {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct Argon2Block([u64; Self::WORDS]);
+
+impl Argon2Block {
+    pub const ZERO: Self = Self([0; Self::WORDS]);
+}
+
+impl Default for Argon2Block {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
+#[cfg(feature = "std")]
 pub fn argon2(
     params: Argon2Params,
     password: &[u8],
@@ -76,32 +99,121 @@ pub fn argon2(
     associated_data: Option<&[u8]>,
     output: &mut [u8],
 ) -> bool {
+    if !params.validate(
+        password,
+        salt,
+        secret.unwrap_or_default(),
+        associated_data.unwrap_or_default(),
+        output,
+    ) {
+        return false;
+    }
+    let mut memory = Argon2Memory(vec![Argon2Block::ZERO; params.blocks()]);
+    argon2_with_memory(
+        params,
+        password,
+        salt,
+        secret,
+        associated_data,
+        &mut memory.0,
+        output,
+    )
+}
+
+pub fn argon2_with_memory(
+    params: Argon2Params,
+    password: &[u8],
+    salt: &[u8],
+    secret: Option<&[u8]>,
+    associated_data: Option<&[u8]>,
+    memory: &mut [Argon2Block],
+    output: &mut [u8],
+) -> bool {
     let secret = secret.unwrap_or_default();
     let associated_data = associated_data.unwrap_or_default();
-    if params.lanes == 0
-        || params.lanes >= 1 << 24
-        || params.memory / 8 < params.lanes
-        || params.passes == 0
-        || params.threads == 0
-        || salt.len() < 8
-        || output.len() < 4
+    if !params.validate(password, salt, secret, associated_data, output)
+        || memory.len() < params.blocks()
     {
         return false;
     }
-    if password.len() as u64 > Argon2Params::MAX_INPUT_SIZE
-        || salt.len() as u64 > Argon2Params::MAX_INPUT_SIZE
-        || secret.len() as u64 > Argon2Params::MAX_INPUT_SIZE
-        || associated_data.len() as u64 > Argon2Params::MAX_INPUT_SIZE
-        || output.len() as u64 > Argon2Params::MAX_INPUT_SIZE
-    {
-        return false;
-    }
+    let memory = &mut memory[..params.blocks()];
     let h0 = params.initial_hash(password, salt, secret, associated_data, output);
-    let mut memory = Argon2Memory(vec![Argon2Block::ZERO; params.blocks()]);
-    params.fill_first_blocks(&mut memory.0, h0.get());
-    params.fill_memory(&mut memory.0);
-    params.calculate_output(&memory.0, output);
+    params.fill_first_blocks(memory, h0.get());
+    params.fill_memory(memory);
+    params.calculate_output(memory, output);
     true
+}
+
+#[cfg(feature = "std")]
+pub fn argon2_phc<'a>(
+    params: Argon2Params,
+    password: &[u8],
+    salt: &[u8],
+    hash_length: usize,
+    output: &'a mut [u8],
+) -> Option<&'a [u8]> {
+    if !params.validate(password, salt, &[], &[], &[0; 4]) {
+        return None;
+    }
+    let mut memory = Argon2Memory(vec![Argon2Block::ZERO; params.blocks()]);
+    argon2_phc_with_memory(params, password, salt, hash_length, &mut memory.0, output)
+}
+
+pub fn argon2_phc_with_memory<'a>(
+    params: Argon2Params,
+    password: &[u8],
+    salt: &[u8],
+    hash_length: usize,
+    memory: &mut [Argon2Block],
+    output: &'a mut [u8],
+) -> Option<&'a [u8]> {
+    if !(4..=Argon2Params::PHC_HASH_SIZE).contains(&hash_length)
+        || salt.len() > Argon2Params::PHC_SALT_SIZE
+    {
+        return None;
+    }
+    let mut hash = [0u8; Argon2Params::PHC_HASH_SIZE];
+    let hash = &mut hash[..hash_length];
+    if !argon2_with_memory(params, password, salt, None, None, memory, hash) {
+        return None;
+    }
+    params.encode_phc(salt, hash, output)
+}
+
+#[cfg(feature = "std")]
+pub fn argon2_phc_verify(password: &[u8], phc: &[u8]) -> bool {
+    let Some((params, _, _)) = Argon2Params::parse_phc(phc) else {
+        return false;
+    };
+    let mut blocks = Vec::new();
+    if blocks.try_reserve_exact(params.blocks()).is_err() {
+        return false;
+    }
+    blocks.resize(params.blocks(), Argon2Block::ZERO);
+    let mut memory = Argon2Memory(blocks);
+    argon2_phc_verify_with_memory(password, phc, &mut memory.0)
+}
+
+pub fn argon2_phc_verify_with_memory(
+    password: &[u8],
+    phc: &[u8],
+    memory: &mut [Argon2Block],
+) -> bool {
+    let Some((params, salt, hash)) = Argon2Params::parse_phc(phc) else {
+        return false;
+    };
+    let mut salt_bytes = [0u8; Argon2Params::PHC_SALT_SIZE];
+    let Some(salt) = decode(Encoding::Base64Unpadded, salt, &mut salt_bytes) else {
+        return false;
+    };
+    let mut hash_bytes = [0u8; Argon2Params::PHC_HASH_SIZE];
+    let Some(expected) = decode(Encoding::Base64Unpadded, hash, &mut hash_bytes) else {
+        return false;
+    };
+    let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
+    let computed = &mut computed[..expected.len()];
+    argon2_with_memory(params, password, salt, None, None, memory, computed)
+        && verify(computed, expected)
 }
 
 impl Argon2Params {
@@ -109,9 +221,33 @@ impl Argon2Params {
     const VERSION: u32 = 0x13;
     const MAX_INPUT_SIZE: u64 = u32::MAX as u64;
 
-    fn blocks(&self) -> usize {
-        let lanes = self.lanes as usize;
-        (self.memory as usize) / (Self::SLICES * lanes) * Self::SLICES * lanes
+    fn validate(
+        &self,
+        password: &[u8],
+        salt: &[u8],
+        secret: &[u8],
+        associated_data: &[u8],
+        output: &[u8],
+    ) -> bool {
+        if self.lanes == 0
+            || self.lanes >= 1 << 24
+            || self.memory / 8 < self.lanes
+            || self.passes == 0
+            || self.threads == 0
+            || salt.len() < 8
+            || output.len() < 4
+        {
+            return false;
+        }
+        if password.len() as u64 > Self::MAX_INPUT_SIZE
+            || salt.len() as u64 > Self::MAX_INPUT_SIZE
+            || secret.len() as u64 > Self::MAX_INPUT_SIZE
+            || associated_data.len() as u64 > Self::MAX_INPUT_SIZE
+            || output.len() as u64 > Self::MAX_INPUT_SIZE
+        {
+            return false;
+        }
+        true
     }
 
     fn lane_length(&self) -> usize {
@@ -164,6 +300,33 @@ impl Argon2Params {
     }
 
     fn fill_memory(&self, memory: &mut [Argon2Block]) {
+        #[cfg(feature = "std")]
+        if self.threads > 1 {
+            return self.fill_memory_parallel(memory);
+        }
+        let lanes = self.lanes as usize;
+        let passes = self.passes as usize;
+        let segment_length = self.segment_length();
+        for pass in 0..passes {
+            for slice in 0..Self::SLICES {
+                for lane in 0..lanes {
+                    let segment_index = lane * Self::SLICES + slice;
+                    let (before, rest) = memory.split_at_mut(segment_index * segment_length);
+                    let (current, after) = rest.split_at_mut(segment_length);
+                    let mut view = Argon2Segment {
+                        segment_length,
+                        segment_index,
+                        current,
+                        reference_area: Argon2ReferenceArea::Split { before, after },
+                    };
+                    self.fill_segment(&mut view, pass, lane, slice);
+                }
+            }
+        }
+    }
+
+    #[cfg(feature = "std")]
+    fn fill_memory_parallel(&self, memory: &mut [Argon2Block]) {
         let lanes = self.lanes as usize;
         let passes = self.passes as usize;
         let threads = (self.threads as usize).min(lanes);
@@ -188,7 +351,7 @@ impl Argon2Params {
                                 segment_length,
                                 segment_index: lane * Self::SLICES + slice,
                                 current: segment,
-                                finished: &finished,
+                                reference_area: Argon2ReferenceArea::Finished(&finished),
                             };
                             scope.spawn(move || self.fill_segment(&mut view, pass, lane, slice));
                         }
@@ -355,13 +518,140 @@ impl Argon2Params {
         }
         hasher.finalize_into(digest);
     }
+
+    const PHC_SALT_SIZE: usize = 64;
+    const PHC_HASH_SIZE: usize = 64;
+
+    fn parse_phc(phc: &[u8]) -> Option<(Self, &[u8], &[u8])> {
+        let mut fields = phc.strip_prefix(b"$")?.split(|&byte| byte == b'$');
+        let variant = match fields.next()? {
+            b"argon2d" => Argon2Variant::Argon2d,
+            b"argon2i" => Argon2Variant::Argon2i,
+            b"argon2id" => Argon2Variant::Argon2id,
+            _ => return None,
+        };
+        if Self::decimal(fields.next()?.strip_prefix(b"v=")?)? != Self::VERSION {
+            return None;
+        }
+        let mut costs = fields.next()?.split(|&byte| byte == b',');
+        let memory = Self::decimal(costs.next()?.strip_prefix(b"m=")?)?;
+        let passes = Self::decimal(costs.next()?.strip_prefix(b"t=")?)?;
+        let lanes = Self::decimal(costs.next()?.strip_prefix(b"p=")?)?;
+        if costs.next().is_some() {
+            return None;
+        }
+        let salt = fields.next()?;
+        let hash = fields.next()?;
+        if fields.next().is_some() || salt.contains(&b'=') || hash.contains(&b'=') {
+            return None;
+        }
+        let params = Self::new(variant)
+            .memory(memory)
+            .passes(passes)
+            .lanes(lanes);
+        Some((params, salt, hash))
+    }
+
+    fn encode_phc<'a>(&self, salt: &[u8], hash: &[u8], output: &'a mut [u8]) -> Option<&'a [u8]> {
+        let variant: &[u8] = match self.variant {
+            Argon2Variant::Argon2d => b"argon2d",
+            Argon2Variant::Argon2i => b"argon2i",
+            Argon2Variant::Argon2id => b"argon2id",
+        };
+        let mut writer = PhcWriter { output, length: 0 };
+        writer.bytes(b"$")?;
+        writer.bytes(variant)?;
+        writer.bytes(b"$v=")?;
+        writer.decimal(Self::VERSION)?;
+        writer.bytes(b"$m=")?;
+        writer.decimal(self.memory)?;
+        writer.bytes(b",t=")?;
+        writer.decimal(self.passes)?;
+        writer.bytes(b",p=")?;
+        writer.decimal(self.lanes)?;
+        writer.bytes(b"$")?;
+        writer.base64(salt)?;
+        writer.bytes(b"$")?;
+        writer.base64(hash)?;
+        Some(writer.finish())
+    }
+
+    fn decimal(digits: &[u8]) -> Option<u32> {
+        if digits.is_empty() || (digits.len() > 1 && digits[0] == b'0') {
+            return None;
+        }
+        let mut value: u32 = 0;
+        for &digit in digits {
+            if !digit.is_ascii_digit() {
+                return None;
+            }
+            value = value
+                .checked_mul(10)?
+                .checked_add(u32::from(digit - b'0'))?;
+        }
+        Some(value)
+    }
+}
+
+struct PhcWriter<'a> {
+    output: &'a mut [u8],
+    length: usize,
+}
+
+impl<'a> PhcWriter<'a> {
+    fn bytes(&mut self, bytes: &[u8]) -> Option<()> {
+        let end = self.length.checked_add(bytes.len())?;
+        self.output
+            .get_mut(self.length..end)?
+            .copy_from_slice(bytes);
+        self.length = end;
+        Some(())
+    }
+
+    fn decimal(&mut self, mut value: u32) -> Option<()> {
+        let mut digits = [0u8; 10];
+        let mut start = digits.len();
+        loop {
+            start -= 1;
+            digits[start] = b'0' + (value % 10) as u8;
+            value /= 10;
+            if value == 0 {
+                break;
+            }
+        }
+        self.bytes(&digits[start..])
+    }
+
+    fn base64(&mut self, bytes: &[u8]) -> Option<()> {
+        let written = encode(
+            Encoding::Base64Unpadded,
+            bytes,
+            &mut self.output[self.length..],
+        )?
+        .len();
+        self.length += written;
+        Some(())
+    }
+
+    fn finish(self) -> &'a [u8] {
+        &self.output[..self.length]
+    }
 }
 
 struct Argon2Segment<'a> {
     segment_length: usize,
     segment_index: usize,
     current: &'a mut [Argon2Block],
-    finished: &'a [Option<&'a [Argon2Block]>],
+    reference_area: Argon2ReferenceArea<'a>,
+}
+
+enum Argon2ReferenceArea<'a> {
+    Split {
+        before: &'a [Argon2Block],
+        after: &'a [Argon2Block],
+    },
+    #[cfg(feature = "std")]
+    Finished(&'a [Option<&'a [Argon2Block]>]),
 }
 
 impl Argon2Segment<'_> {
@@ -369,11 +659,21 @@ impl Argon2Segment<'_> {
         let segment = index / self.segment_length;
         let offset = index % self.segment_length;
         if segment == self.segment_index {
-            &self.current[offset]
-        } else {
-            let segment =
-                self.finished[segment].expect("in-progress segments are never referenced");
-            &segment[offset]
+            return &self.current[offset];
+        }
+        match self.reference_area {
+            Argon2ReferenceArea::Split { before, after } => {
+                if segment < self.segment_index {
+                    &before[index]
+                } else {
+                    &after[index - (self.segment_index + 1) * self.segment_length]
+                }
+            }
+            #[cfg(feature = "std")]
+            Argon2ReferenceArea::Finished(finished) => {
+                let segment = finished[segment].expect("in-progress segments are never referenced");
+                &segment[offset]
+            }
         }
     }
 
@@ -382,11 +682,10 @@ impl Argon2Segment<'_> {
     }
 }
 
-#[derive(Clone, Copy)]
-struct Argon2Block([u64; Self::WORDS]);
-
+#[cfg(feature = "std")]
 struct Argon2Memory(Vec<Argon2Block>);
 
+#[cfg(feature = "std")]
 impl Drop for Argon2Memory {
     fn drop(&mut self) {
         for block in self.0.iter_mut() {
@@ -399,7 +698,6 @@ impl Argon2Block {
     const WORDS: usize = 128;
     const SIZE: usize = Self::WORDS * 8;
     const MASK: u64 = (1 << 32) - 1;
-    const ZERO: Self = Self([0; Self::WORDS]);
 
     fn from_bytes(bytes: &[u8; Self::SIZE]) -> Self {
         let mut block = Self::ZERO;
@@ -498,6 +796,98 @@ impl BitXorAssign<&Argon2Block> for Argon2Block {
 mod tests {
     use {super::*, hex_literal::hex};
 
+    // https://github.com/P-H-C/phc-winner-argon2/blob/master/src/test.c
+
+    #[test]
+    fn test_argon2_phc() {
+        let vectors: [(Argon2Variant, u32, &[u8]); 4] = [
+            (
+                Argon2Variant::Argon2i,
+                1,
+                b"$argon2i$v=19$m=256,t=2,p=1$c29tZXNhbHQ$iekCn0Y3spW+sCcFanM2xBT63UP2sghkUoHLIUpWRS8",
+            ),
+            (
+                Argon2Variant::Argon2i,
+                2,
+                b"$argon2i$v=19$m=256,t=2,p=2$c29tZXNhbHQ$T/XOJ2mh1/TIpJHfCdQan76Q5esCFVoT5MAeIM1Oq2E",
+            ),
+            (
+                Argon2Variant::Argon2id,
+                1,
+                b"$argon2id$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
+            ),
+            (
+                Argon2Variant::Argon2id,
+                2,
+                b"$argon2id$v=19$m=256,t=2,p=2$c29tZXNhbHQ$bQk8UB/VmZZF4Oo79iDXuL5/0ttZwg2f/5U52iv1cDc",
+            ),
+        ];
+        let mut memory = [Argon2Block::ZERO; 256];
+        for (variant, lanes, expected) in vectors {
+            let params = Argon2Params::new(variant)
+                .memory(256)
+                .passes(2)
+                .lanes(lanes);
+            assert_eq!(
+                Argon2Params::parse_phc(expected).map(|(parsed, _, _)| parsed),
+                Some(params)
+            );
+            let mut output = [0u8; 128];
+            let encoded = argon2_phc_with_memory(
+                params.threads(1),
+                b"password",
+                b"somesalt",
+                32,
+                &mut memory,
+                &mut output,
+            )
+            .unwrap();
+            assert_eq!(encoded, expected);
+            assert!(argon2_phc_verify_with_memory(
+                b"password",
+                expected,
+                &mut memory
+            ));
+            assert!(!argon2_phc_verify_with_memory(
+                b"Password",
+                expected,
+                &mut memory
+            ));
+            assert!(!argon2_phc_verify_with_memory(
+                b"password",
+                &expected[..expected.len() - 1],
+                &mut memory
+            ));
+            #[cfg(feature = "std")]
+            {
+                let mut output = [0u8; 128];
+                let encoded =
+                    argon2_phc(params, b"password", b"somesalt", 32, &mut output).unwrap();
+                assert_eq!(encoded, expected);
+                assert!(argon2_phc_verify(b"password", expected));
+                assert!(!argon2_phc_verify(b"Password", expected));
+            }
+        }
+        let rejected: [&[u8]; 8] = [
+            b"",
+            b"$argon2x$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
+            b"$argon2id$v=16$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
+            b"$argon2id$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
+            b"$argon2id$v=19$m=0256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
+            b"$argon2id$v=19$m=256,t=2,p=1,keyid=AAAA$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
+            b"$argon2id$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4$",
+            b"$argon2id$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4=",
+        ];
+        for phc in rejected {
+            assert!(Argon2Params::parse_phc(phc).is_none());
+            assert!(!argon2_phc_verify_with_memory(
+                b"password",
+                phc,
+                &mut memory
+            ));
+        }
+    }
+
     // https://datatracker.ietf.org/doc/html/rfc9106#section-5
 
     #[test]
@@ -507,16 +897,30 @@ mod tests {
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
+        let mut memory = [Argon2Block::ZERO; 32];
         let mut output = [0u8; 32];
-        let success = argon2(
-            params,
+        assert!(argon2_with_memory(
+            params.threads(1),
             &password,
             &salt,
             Some(&secret),
             Some(&associated_data),
+            &mut memory,
             &mut output,
-        );
-        assert!(success);
+        ));
+        #[cfg(feature = "std")]
+        {
+            let mut parallel = [0u8; 32];
+            assert!(argon2(
+                params,
+                &password,
+                &salt,
+                Some(&secret),
+                Some(&associated_data),
+                &mut parallel,
+            ));
+            assert_eq!(parallel, output);
+        }
         assert_eq!(
             output,
             hex!("512b391b6f1162975371d30919734294f868e3be3984f3c1a13a4db9fabe4acb")
@@ -530,16 +934,30 @@ mod tests {
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
+        let mut memory = [Argon2Block::ZERO; 32];
         let mut output = [0u8; 32];
-        let success = argon2(
-            params,
+        assert!(argon2_with_memory(
+            params.threads(1),
             &password,
             &salt,
             Some(&secret),
             Some(&associated_data),
+            &mut memory,
             &mut output,
-        );
-        assert!(success);
+        ));
+        #[cfg(feature = "std")]
+        {
+            let mut parallel = [0u8; 32];
+            assert!(argon2(
+                params,
+                &password,
+                &salt,
+                Some(&secret),
+                Some(&associated_data),
+                &mut parallel,
+            ));
+            assert_eq!(parallel, output);
+        }
         assert_eq!(
             output,
             hex!("c814d9d1dc7f37aa13f0d77f2494bda1c8de6b016dd388d29952a4c4672b6ce8")
@@ -553,16 +971,30 @@ mod tests {
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
+        let mut memory = [Argon2Block::ZERO; 32];
         let mut output = [0u8; 32];
-        let success = argon2(
-            params,
+        assert!(argon2_with_memory(
+            params.threads(1),
             &password,
             &salt,
             Some(&secret),
             Some(&associated_data),
+            &mut memory,
             &mut output,
-        );
-        assert!(success);
+        ));
+        #[cfg(feature = "std")]
+        {
+            let mut parallel = [0u8; 32];
+            assert!(argon2(
+                params,
+                &password,
+                &salt,
+                Some(&secret),
+                Some(&associated_data),
+                &mut parallel,
+            ));
+            assert_eq!(parallel, output);
+        }
         assert_eq!(
             output,
             hex!("0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659")

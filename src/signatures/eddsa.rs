@@ -3,7 +3,7 @@ use {
     crate::{
         elliptic_curves::Edwards,
         traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
-        Secret,
+        utils::Secret,
     },
     core::marker::PhantomData,
 };

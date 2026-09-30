@@ -1,4 +1,4 @@
-use crate::{utils::Block, Secret};
+use crate::utils::{Block, Secret};
 
 #[derive(Clone)]
 pub struct Sponge<const RATE: usize> {

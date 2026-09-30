@@ -7,7 +7,7 @@ use {
     },
 };
 
-#[cfg(feature = "argon2")]
+#[cfg(feature = "std")]
 use stedy::kdfs::{argon2, Argon2Params, Argon2Variant};
 
 pub fn bench(c: &mut Criterion) {
@@ -49,7 +49,7 @@ pub fn bench(c: &mut Criterion) {
         })
     });
 
-    #[cfg(feature = "argon2")]
+    #[cfg(feature = "std")]
     {
         let password = [1u8; 32];
         let salt = [2u8; 16];

@@ -1,8 +1,7 @@
 use {
     crate::{
         traits::{ByteArray, FieldElement, WeierstrassParams, WeierstrassScalar},
-        utils::Choice,
-        Secret,
+        utils::{Choice, Secret},
     },
     core::{
         array::from_fn,

@@ -1,7 +1,6 @@
 use crate::{
     traits::{Digest, Hasher, Init},
-    utils::Block,
-    Secret,
+    utils::{Block, Secret},
 };
 
 #[derive(Clone)]

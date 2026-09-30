@@ -1,6 +1,6 @@
 use crate::{
     traits::{SeekableStreamCipher, StreamCipher},
-    Secret,
+    utils::Secret,
 };
 
 pub struct ChaCha20 {

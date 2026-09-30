@@ -2,8 +2,7 @@ use {
     crate::{
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaParams, Xof, XofReader},
-        utils::{verify, Choice},
-        Secret,
+        utils::{verify, Choice, Secret},
     },
     core::{array::from_fn, marker::PhantomData},
 };

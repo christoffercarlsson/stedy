@@ -1,8 +1,7 @@
 use {
     crate::{
         traits::{EdwardsParams, EdwardsScalar, FieldElement},
-        utils::Choice,
-        Secret,
+        utils::{Choice, Secret},
     },
     core::{
         array::from_fn,

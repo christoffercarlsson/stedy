@@ -1,7 +1,6 @@
 use crate::{
     traits::{EdwardsScalar, EllipticCurve, FieldElement},
-    utils::Choice,
-    Secret,
+    utils::{Choice, Secret},
 };
 
 mod field;
