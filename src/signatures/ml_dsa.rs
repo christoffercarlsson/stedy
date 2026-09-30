@@ -1,7 +1,7 @@
 use {
     crate::{
         hashes::{Shake128, Shake256},
-        traits::{ByteArray, CryptoRng, MlDsaParams, SecretByteArray, Xof, XofReader},
+        traits::{ByteArray, CryptoRng, MlDsaParams, Xof, XofReader},
         utils::{verify, Choice},
         Secret,
     },
@@ -25,8 +25,8 @@ impl MlDsaParams<4, 4> for MlDsa44Params {
     const BETA: i32 = 78;
     const OMEGA: usize = 80;
 
-    type Seed = Secret<[u8; 32]>;
-    type PrivateKey = Secret<[u8; 2560]>;
+    type Seed = [u8; 32];
+    type PrivateKey = [u8; 2560];
     type PublicKey = [u8; 1312];
     type Signature = [u8; 2420];
 }
@@ -40,8 +40,8 @@ impl MlDsaParams<6, 5> for MlDsa65Params {
     const BETA: i32 = 196;
     const OMEGA: usize = 55;
 
-    type Seed = Secret<[u8; 32]>;
-    type PrivateKey = Secret<[u8; 4032]>;
+    type Seed = [u8; 32];
+    type PrivateKey = [u8; 4032];
     type PublicKey = [u8; 1952];
     type Signature = [u8; 3309];
 }
@@ -55,8 +55,8 @@ impl MlDsaParams<8, 7> for MlDsa87Params {
     const BETA: i32 = 120;
     const OMEGA: usize = 75;
 
-    type Seed = Secret<[u8; 32]>;
-    type PrivateKey = Secret<[u8; 4896]>;
+    type Seed = [u8; 32];
+    type PrivateKey = [u8; 4896];
     type PublicKey = [u8; 2592];
     type Signature = [u8; 4627];
 }
@@ -77,20 +77,20 @@ where
     G: Xof,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (P::PrivateKey, P::PublicKey) {
-        let mut seed = P::Seed::new();
+        let mut seed = Secret::<P::Seed>::new();
         rng.fill(seed.get_mut().as_mut());
-        Self::key_pair(&seed)
+        Self::key_pair(seed.get())
     }
 
     pub fn key_pair(seed: &P::Seed) -> (P::PrivateKey, P::PublicKey) {
         let mut sk = P::PrivateKey::new();
         let mut pk = P::PublicKey::new();
-        Self::key_gen_internal(seed.get(), pk.as_mut(), sk.get_mut().as_mut());
+        Self::key_gen_internal(seed.as_ref(), pk.as_mut(), sk.as_mut());
         (sk, pk)
     }
 
     pub fn public_key(private_key: &P::PrivateKey) -> P::PublicKey {
-        let [rho, _, _, s1_bytes, s2_bytes, _] = Self::sk_parts(private_key.get().as_ref());
+        let [rho, _, _, s1_bytes, s2_bytes, _] = Self::sk_parts(private_key.as_ref());
         let mut s1 = Secret::from([[0i32; 256]; L]);
         let mut s2 = Secret::from([[0i32; 256]; K]);
         Self::unpack_s(s1_bytes, s1.get_mut());
@@ -112,7 +112,7 @@ where
         rng.fill(rnd.as_mut());
         let mut signature = P::Signature::new();
         Self::sign_internal(
-            private_key.get().as_ref(),
+            private_key.as_ref(),
             &[&[0, 0], message],
             rnd.get(),
             signature.as_mut(),
@@ -123,7 +123,7 @@ where
     pub fn sign_deterministic(private_key: &P::PrivateKey, message: &[u8]) -> P::Signature {
         let mut signature = P::Signature::new();
         Self::sign_internal(
-            private_key.get().as_ref(),
+            private_key.as_ref(),
             &[&[0, 0], message],
             &[0; 32],
             signature.as_mut(),
@@ -139,12 +139,7 @@ where
         let mut rnd = Secret::<[u8; 32]>::new();
         rng.fill(rnd.as_mut());
         let mut signature = P::Signature::new();
-        Self::sign_internal_mu(
-            private_key.get().as_ref(),
-            mu,
-            rnd.get(),
-            signature.as_mut(),
-        );
+        Self::sign_internal_mu(private_key.as_ref(), mu, rnd.get(), signature.as_mut());
         signature
     }
 
@@ -153,7 +148,7 @@ where
         mu: &[u8; 64],
     ) -> P::Signature {
         let mut signature = P::Signature::new();
-        Self::sign_internal_mu(private_key.get().as_ref(), mu, &[0; 32], signature.as_mut());
+        Self::sign_internal_mu(private_key.as_ref(), mu, &[0; 32], signature.as_mut());
         signature
     }
 

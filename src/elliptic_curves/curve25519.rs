@@ -11,6 +11,9 @@ pub use {field::Field25519, scalar::Scalar25519};
 
 pub struct Curve25519;
 
+#[derive(Clone)]
+pub struct Curve25519Scalar(Secret<[u8; 32]>);
+
 impl Curve25519 {
     const BASE_POINT: Field25519 = Field25519::from_limbs([9, 0, 0, 0, 0]);
     const A24: Field25519 = Field25519::from_limbs([121665, 0, 0, 0, 0]);
@@ -20,10 +23,10 @@ impl EllipticCurve for Curve25519 {
     const BASE_POINT: Field25519 = Self::BASE_POINT;
 
     type Point = Field25519;
-    type Scalar = Secret<[u8; 32]>;
+    type Scalar = Curve25519Scalar;
     type PointBytes = [u8; 32];
-    type ScalarBytes = Secret<[u8; 32]>;
-    type SharedSecretBytes = Secret<[u8; 32]>;
+    type ScalarBytes = [u8; 32];
+    type SharedSecretBytes = [u8; 32];
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
         Some(Field25519::from(bytes))
@@ -34,21 +37,20 @@ impl EllipticCurve for Curve25519 {
     }
 
     fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
-        let bytes: [u8; 32] = point.into();
-        Secret::from(bytes)
+        point.into()
     }
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        Some(bytes.clone())
+        Some(Curve25519Scalar(Secret::from(*bytes)))
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        scalar.clone()
+        *scalar.0.get()
     }
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
-        let mut scalar = scalar.clone();
-        Scalar25519::clamp(&mut scalar);
+        let mut scalar = scalar.0.clone();
+        Scalar25519::clamp(scalar.get_mut());
         let x1 = *point;
         let mut x2 = Field25519::ONE;
         let mut z2 = Field25519::ZERO;

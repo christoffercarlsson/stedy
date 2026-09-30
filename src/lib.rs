@@ -26,4 +26,4 @@ pub mod signatures;
 pub mod traits;
 pub mod utils;
 
-pub use secret::Secret;
+pub(crate) use secret::Secret;

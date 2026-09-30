@@ -1,63 +1,69 @@
 use {
-    crate::traits::{ByteArray, SecretByteArray, Wipe},
-    core::ops::{Index, IndexMut},
+    crate::traits::ByteArray,
+    core::{
+        mem::{align_of, size_of},
+        ops::{Index, IndexMut},
+        ptr,
+        sync::atomic::{compiler_fence, Ordering},
+    },
 };
 
-pub struct Secret<T: Wipe>(pub(crate) T);
+pub(crate) struct Secret<T: Copy>(pub(crate) T);
 
-impl<T: Wipe> Secret<T> {
-    pub fn get(&self) -> &T {
+impl<T: Copy> Secret<T> {
+    pub(crate) fn get(&self) -> &T {
         &self.0
     }
 
-    pub fn get_mut(&mut self) -> &mut T {
+    pub(crate) fn get_mut(&mut self) -> &mut T {
         &mut self.0
     }
 }
 
-impl<T: Wipe + Default> Default for Secret<T> {
+impl<B: ByteArray> Secret<B> {
+    pub(crate) fn new() -> Self {
+        Self(B::new())
+    }
+}
+
+impl<T: Copy + Default> Default for Secret<T> {
     fn default() -> Self {
         Self(T::default())
     }
 }
 
-impl<T: Wipe + Clone> Clone for Secret<T> {
+impl<T: Copy> Clone for Secret<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(self.0)
     }
 }
 
-impl<T: Wipe> Wipe for Secret<T> {
-    fn wipe(&mut self) {
-        self.0.wipe();
-    }
-}
-
-impl<B: ByteArray + Wipe> SecretByteArray for Secret<B> {
-    type Inner = B;
-
-    fn new() -> Self {
-        Self(B::new())
-    }
-
-    fn get(&self) -> &B {
-        &self.0
-    }
-
-    fn get_mut(&mut self) -> &mut B {
-        &mut self.0
-    }
-}
-
-impl<T: Wipe> Drop for Secret<T> {
+impl<T: Copy> Drop for Secret<T> {
     fn drop(&mut self) {
-        self.0.wipe();
+        let bytes = ptr::from_mut(&mut self.0).cast::<u8>();
+        let size = size_of::<T>();
+        let mut offset = 0;
+        if align_of::<T>() >= align_of::<usize>() {
+            while offset + size_of::<usize>() <= size {
+                unsafe {
+                    ptr::write_volatile(bytes.add(offset).cast::<usize>(), 0);
+                }
+                offset += size_of::<usize>();
+            }
+        }
+        while offset < size {
+            unsafe {
+                ptr::write_volatile(bytes.add(offset), 0);
+            }
+            offset += 1;
+        }
+        compiler_fence(Ordering::SeqCst);
     }
 }
 
 impl<T, I> Index<I> for Secret<T>
 where
-    T: Wipe + Index<I>,
+    T: Copy + Index<I>,
 {
     type Output = T::Output;
 
@@ -68,14 +74,14 @@ where
 
 impl<T, I> IndexMut<I> for Secret<T>
 where
-    T: Wipe + IndexMut<I>,
+    T: Copy + IndexMut<I>,
 {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.0[index]
     }
 }
 
-impl<T: Wipe> From<T> for Secret<T> {
+impl<T: Copy> From<T> for Secret<T> {
     fn from(inner: T) -> Self {
         Self(inner)
     }
@@ -98,5 +104,3 @@ impl<const N: usize> AsMut<[u8]> for Secret<[u8; N]> {
         &mut self.0
     }
 }
-
-pub(crate) type SecretDigits<const N: usize> = Secret<[i8; N]>;

@@ -1,13 +1,12 @@
 #![allow(dead_code)]
 use {
-    crate::utils::{is_zero, less_than, Choice},
-    core::{
-        ops::{
-            Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
-            SubAssign,
-        },
-        ptr,
-        sync::atomic::{compiler_fence, Ordering},
+    crate::{
+        utils::{is_zero, less_than, Choice},
+        Secret,
+    },
+    core::ops::{
+        Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
+        SubAssign,
     },
 };
 
@@ -25,7 +24,7 @@ pub trait Authenticator<C: SeekableStreamCipher> {
 
 #[allow(private_bounds)]
 pub trait ByteArray:
-    Clone
+    Copy
     + Sized
     + AsRef<[u8]>
     + AsMut<[u8]>
@@ -88,9 +87,9 @@ pub trait EdwardsScalar:
     + Neg<Output = Self>
 {
     type Bytes: ByteArray;
-    type SecretBytes: SecretByteArray;
+    type SecretBytes: ByteArray;
     type WideBytes: ByteArray;
-    type Radix16: AsRef<[i8]>;
+    type Radix16: Copy + AsRef<[i8]>;
     type Naf5: AsRef<[i8]>;
 
     fn split(bytes: &Self::WideBytes) -> (Self::SecretBytes, Self::SecretBytes);
@@ -112,16 +111,14 @@ pub trait EllipticCurve {
     type Point;
     type Scalar;
     type PointBytes: ByteArray;
-    type ScalarBytes: SecretByteArray;
-    type SharedSecretBytes: SecretByteArray;
+    type ScalarBytes: ByteArray;
+    type SharedSecretBytes: ByteArray;
 
     fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {
         loop {
-            let mut bytes = Self::ScalarBytes::new();
+            let mut bytes = Secret::<Self::ScalarBytes>::new();
             rng.fill(bytes.get_mut().as_mut());
-            let result = Self::scalar_from_bytes(&bytes);
-            bytes.wipe();
-            if let Some(scalar) = result {
+            if let Some(scalar) = Self::scalar_from_bytes(bytes.get()) {
                 return scalar;
             }
         }
@@ -181,6 +178,10 @@ pub trait FieldElement:
 
     fn select(a: &Self, b: &Self, condition: Choice) -> Self;
 
+    fn assign(&mut self, other: &Self, condition: Choice) {
+        *self = Self::select(self, other, condition);
+    }
+
     fn ct_eq(&self, other: &Self) -> Choice;
 
     fn square(self) -> Self;
@@ -188,6 +189,10 @@ pub trait FieldElement:
     fn square2(self) -> Self {
         let square = self.square();
         square + square
+    }
+
+    fn double_value(self) -> Self {
+        self + self
     }
 
     fn invert(self) -> Self;
@@ -221,9 +226,9 @@ pub trait MlKemParams<const K: usize> {
     const DU: usize;
     const DV: usize;
 
-    type Seed: SecretByteArray<Inner = [u8; 64]>;
-    type SharedSecret: SecretByteArray<Inner = [u8; 32]>;
-    type PrivateKey: SecretByteArray;
+    type Seed: ByteArray;
+    type SharedSecret: ByteArray;
+    type PrivateKey: ByteArray;
     type PublicKey: ByteArray;
     type Ciphertext: ByteArray;
 }
@@ -237,17 +242,15 @@ pub trait MlDsaParams<const K: usize, const L: usize> {
     const BETA: i32;
     const OMEGA: usize;
 
-    type Seed: SecretByteArray<Inner = [u8; 32]>;
-    type PrivateKey: SecretByteArray;
+    type Seed: ByteArray;
+    type PrivateKey: ByteArray;
     type PublicKey: ByteArray;
     type Signature: ByteArray;
 }
 
 pub trait MontgomeryParams<const LIMBS: usize>: Copy + Clone {
-    const BITS: u32;
-    const TOP_BITS: u32;
     const MOD: [u64; LIMBS];
-    const R: [u64; LIMBS];
+    const ONE: [u64; LIMBS];
     const R2: [u64; LIMBS];
     const N0: u64;
 }
@@ -289,6 +292,9 @@ pub trait WeierstrassParams<F: FieldElement> {
     const B: F;
     const BASE_POINT_X: F;
     const BASE_POINT_Y: F;
+    const BASE_NAF: [[F; 2]; 8];
+    const BASE_COMB_LOW: [[F; 2]; 8];
+    const BASE_COMB_HIGH: [[F; 2]; 8];
 
     type PointBytes: ByteArray;
 }
@@ -310,7 +316,7 @@ pub trait WeierstrassScalar:
     const ORDER: Self::Bytes;
 
     type Bytes: ByteArray;
-    type Radix16: AsRef<[i8]>;
+    type Radix16: Copy + AsRef<[i8]>;
     type Naf5: AsRef<[i8]>;
 
     fn is_zero(&self) -> Choice;
@@ -322,14 +328,14 @@ pub trait WeierstrassScalar:
     fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
         let non_zero = !is_zero(bytes.as_ref());
         let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
-        (non_zero & below)
-            .to_bool()
-            .then(|| Self::from(bytes.clone()))
+        (non_zero & below).to_bool().then(|| Self::from(*bytes))
     }
 
     fn as_radix_16(&self) -> Self::Radix16;
 
     fn non_adjacent_form_5(&self) -> Self::Naf5;
+
+    fn as_signed_bits(&self) -> Self::Bytes;
 }
 
 pub trait Xof: Init {
@@ -346,52 +352,6 @@ pub trait Xof: Init {
 
 pub trait XofReader {
     fn read(&mut self, output: &mut [u8]);
-}
-
-pub trait Wipe {
-    fn wipe(&mut self);
-}
-
-macro_rules! impl_wipe {
-    ($($t:ty),* $(,)?) => {$(
-        impl Wipe for $t {
-            fn wipe(&mut self) {
-                unsafe {
-                    ptr::write_volatile(self, 0);
-                }
-            }
-        }
-    )*};
-}
-
-impl_wipe!(u8, i8, u16, i16, u32, i32, u64, i64, u128, usize);
-
-impl<T: Wipe, const N: usize> Wipe for [T; N] {
-    fn wipe(&mut self) {
-        for item in self.iter_mut() {
-            item.wipe();
-        }
-        compiler_fence(Ordering::SeqCst);
-    }
-}
-
-#[cfg(feature = "std")]
-impl<T: Wipe> Wipe for Vec<T> {
-    fn wipe(&mut self) {
-        for item in self.iter_mut() {
-            item.wipe();
-        }
-    }
-}
-
-pub trait SecretByteArray: Wipe {
-    type Inner: ByteArray;
-
-    fn new() -> Self;
-
-    fn get(&self) -> &Self::Inner;
-
-    fn get_mut(&mut self) -> &mut Self::Inner;
 }
 
 pub(crate) trait Sealed {}

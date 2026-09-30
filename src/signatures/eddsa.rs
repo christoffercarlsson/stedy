@@ -2,11 +2,7 @@
 use {
     crate::{
         elliptic_curves::Edwards,
-        traits::{
-            ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher,
-            SecretByteArray, Wipe,
-        },
-        utils::wipe,
+        traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
         Secret,
     },
     core::marker::PhantomData,
@@ -17,7 +13,7 @@ where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
-    S: ByteArray + Wipe,
+    S: ByteArray,
 {
     _marker: PhantomData<(E, F, H, S)>,
 }
@@ -27,31 +23,31 @@ where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
-    S: ByteArray + Wipe,
+    S: ByteArray,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (Secret<S>, F::Bytes) {
-        let mut seed = E::SecretBytes::new();
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S, F::Bytes) {
+        let mut seed = Secret::<E::SecretBytes>::new();
         rng.fill(seed.get_mut().as_mut());
-        Self::key_pair(&seed)
+        Self::key_pair(seed.get())
     }
 
-    pub fn key_pair(seed: &E::SecretBytes) -> (Secret<S>, F::Bytes) {
-        let (a, _) = Self::expand(seed.get().as_ref());
+    pub fn key_pair(seed: &E::SecretBytes) -> (S, F::Bytes) {
+        let (a, _) = Self::expand(seed.as_ref());
         let public_key = Edwards::<F, E>::mul_base(&a).compress();
-        let mut private_key = Secret::from(S::new());
-        let (s, A) = Self::private_key_components_mut(private_key.get_mut())
+        let mut private_key = S::new();
+        let (s, A) = Self::private_key_components_mut(&mut private_key)
             .expect("Private key size is correct");
-        s.copy_from_slice(seed.get().as_ref());
+        s.copy_from_slice(seed.as_ref());
         A.copy_from_slice(public_key.as_ref());
         (private_key, public_key)
     }
 
-    pub fn public_key(private_key: &Secret<S>) -> F::Bytes {
+    pub fn public_key(private_key: &S) -> F::Bytes {
         let (_, A) = Self::read_private_key(private_key);
         F::Bytes::from_slice(A)
     }
 
-    pub fn sign(private_key: &Secret<S>, message: &[u8]) -> S {
+    pub fn sign(private_key: &S, message: &[u8]) -> S {
         let (seed, A) = Self::read_private_key(private_key);
         let (a, prefix) = Self::expand(seed);
         let mut state = H::new();
@@ -89,16 +85,16 @@ where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
-    S: ByteArray + Wipe,
+    S: ByteArray,
 {
-    const SEED_SIZE: usize = <<E::SecretBytes as SecretByteArray>::Inner as ByteArray>::SIZE;
+    const SEED_SIZE: usize = E::SecretBytes::SIZE;
 
-    fn expand(seed: &[u8]) -> (E, E::SecretBytes) {
-        let mut digest = H::digest(seed);
-        let (mut a, prefix) = E::split(&digest);
-        wipe(digest.as_mut());
-        E::clamp(&mut a);
-        (E::from(a), prefix)
+    fn expand(seed: &[u8]) -> (E, Secret<E::SecretBytes>) {
+        let digest = Secret::from(H::digest(seed));
+        let (a, prefix) = E::split(digest.get());
+        let mut a = Secret::from(a);
+        E::clamp(a.get_mut());
+        (E::from(*a.get()), Secret::from(prefix))
     }
 
     fn private_key_components_mut(private_key: &mut S) -> Option<(&mut [u8], &mut [u8])> {
@@ -106,8 +102,8 @@ where
         (public_key.len() == F::Bytes::SIZE).then_some((seed, public_key))
     }
 
-    fn read_private_key(private_key: &Secret<S>) -> (&[u8], &[u8]) {
-        private_key.get().as_ref().split_at(Self::SEED_SIZE)
+    fn read_private_key(private_key: &S) -> (&[u8], &[u8]) {
+        private_key.as_ref().split_at(Self::SEED_SIZE)
     }
 
     fn create_signature(r_bytes: &F::Bytes, s_bytes: &E::Bytes) -> S {

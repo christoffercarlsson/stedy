@@ -3,15 +3,14 @@ use {
     stedy::{
         csprngs::Rng,
         signatures::{Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
-        Secret,
     },
 };
 
 pub fn bench(c: &mut Criterion) {
-    let seed = Secret::from([
+    let seed = [
         157, 97, 177, 157, 239, 253, 90, 96, 186, 132, 74, 244, 146, 236, 44, 196, 68, 73, 197,
         105, 123, 50, 105, 25, 112, 59, 172, 3, 28, 174, 127, 96,
-    ]);
+    ];
     let public_key = [
         215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14, 225, 114, 243,
         218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
@@ -130,7 +129,7 @@ pub fn bench(c: &mut Criterion) {
     });
 
     let mut rng = Rng::from(&[0u8; 128]);
-    let seed = Secret::<[u8; 32]>::from([90u8; 32]);
+    let seed = [90u8; 32];
 
     let (private_key, public_key) = MlDsa44::key_pair(&seed);
     let signature = MlDsa44::sign(&private_key, message, &mut rng);

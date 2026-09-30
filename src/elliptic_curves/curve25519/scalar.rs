@@ -1,7 +1,6 @@
 use {
     crate::{
-        secret::SecretDigits,
-        traits::EdwardsScalar,
+        traits::{EdwardsScalar, MontgomeryParams},
         utils::{wipe, Choice},
         Secret,
     },
@@ -12,8 +11,35 @@ use {
 #[cfg_attr(target_pointer_width = "64", path = "scalar64.rs")]
 mod scalar25519;
 
-pub use scalar25519::Scalar25519;
 use scalar25519::Scalar25519Inner;
+
+#[derive(Clone, Copy)]
+pub struct Scalar25519Params;
+
+impl MontgomeryParams<4> for Scalar25519Params {
+    const MOD: [u64; 4] = [
+        6346243789798364141,
+        1503914060200516822,
+        0,
+        1152921504606846976,
+    ];
+    const ONE: [u64; 4] = [
+        15486807595281847581,
+        14334777244411350896,
+        18446744073709551614,
+        1152921504606846975,
+    ];
+    const R2: [u64; 4] = [
+        11819153939886771969,
+        14991950615390032711,
+        14910419812499177061,
+        259310039853996605,
+    ];
+    const N0: u64 = 15183074304973897243;
+}
+
+#[derive(Clone)]
+pub struct Scalar25519(Secret<Scalar25519Inner>);
 
 const ORDER: [u8; 32] = [
     0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
@@ -34,13 +60,13 @@ impl Add for Scalar25519 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Secret::from((*self.get()).add(*rhs.get()))
+        Self(Secret::from((*self.0.get()).add(*rhs.0.get())))
     }
 }
 
 impl AddAssign for Scalar25519 {
     fn add_assign(&mut self, rhs: Self) {
-        *self = Secret::from((*self.get()).add(*rhs.get()));
+        *self = Self(Secret::from((*self.0.get()).add(*rhs.0.get())));
     }
 }
 
@@ -48,13 +74,13 @@ impl Mul for Scalar25519 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Secret::from((*self.get()).mul(*rhs.get()))
+        Self(Secret::from((*self.0.get()).mul(*rhs.0.get())))
     }
 }
 
 impl MulAssign for Scalar25519 {
     fn mul_assign(&mut self, rhs: Self) {
-        *self = Secret::from((*self.get()).mul(*rhs.get()));
+        *self = Self(Secret::from((*self.0.get()).mul(*rhs.0.get())));
     }
 }
 
@@ -62,56 +88,47 @@ impl Neg for Scalar25519 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Secret::from((*self.get()).neg())
+        Self(Secret::from((*self.0.get()).neg()))
     }
 }
 
 impl From<[u8; 32]> for Scalar25519 {
     fn from(value: [u8; 32]) -> Self {
-        Secret::from(Scalar25519Inner::from_bytes(&value))
-    }
-}
-
-impl From<Secret<[u8; 32]>> for Scalar25519 {
-    fn from(value: Secret<[u8; 32]>) -> Self {
-        Secret::from(Scalar25519Inner::from_bytes(value.get()))
+        Self(Secret::from(Scalar25519Inner::from_le_bytes(&value)))
     }
 }
 
 impl From<[u8; 64]> for Scalar25519 {
     fn from(value: [u8; 64]) -> Self {
-        Secret::from(Scalar25519Inner::from_wide_bytes(&value))
+        Self(Secret::from(Scalar25519Inner::from_wide_le_bytes(&value)))
     }
 }
 
 impl From<Scalar25519> for [u8; 32] {
     fn from(value: Scalar25519) -> Self {
-        value.get().to_bytes()
+        value.0.get().to_le_bytes()
     }
 }
 
 impl From<&Scalar25519> for [u8; 32] {
     fn from(value: &Scalar25519) -> Self {
-        value.get().to_bytes()
+        value.0.get().to_le_bytes()
     }
 }
 
 impl EdwardsScalar for Scalar25519 {
     type Bytes = [u8; 32];
-    type SecretBytes = Secret<[u8; 32]>;
+    type SecretBytes = [u8; 32];
     type WideBytes = [u8; 64];
-    type Radix16 = SecretDigits<64>;
+    type Radix16 = [i8; 64];
     type Naf5 = [i8; 256];
 
-    fn split(bytes: &[u8; 64]) -> (Secret<[u8; 32]>, Secret<[u8; 32]>) {
-        let mut a = Secret::from([0u8; 32]);
-        let mut b = Secret::from([0u8; 32]);
-        a.as_mut().copy_from_slice(&bytes[..32]);
-        b.as_mut().copy_from_slice(&bytes[32..]);
-        (a, b)
+    fn split(bytes: &[u8; 64]) -> ([u8; 32], [u8; 32]) {
+        let (halves, _) = bytes.as_chunks::<32>();
+        (halves[0], halves[1])
     }
 
-    fn clamp(bytes: &mut Secret<[u8; 32]>) {
+    fn clamp(bytes: &mut [u8; 32]) {
         bytes[0] &= 248;
         bytes[31] &= 127;
         bytes[31] |= 64;
@@ -141,7 +158,7 @@ impl EdwardsScalar for Scalar25519 {
             t[i + 1] += carry;
         }
         wipe(&mut s);
-        t
+        *t.get()
     }
 
     fn non_adjacent_form_5(&self) -> Self::Naf5 {
@@ -183,7 +200,6 @@ impl EdwardsScalar for Scalar25519 {
     }
 
     fn as_signed_bits(&self) -> Self::SecretBytes {
-        let bits: [u8; 32] = (self.clone() * Self::from(HALF_MOD_L) + Self::from(HALF_ONES)).into();
-        Secret::from(bits)
+        (self.clone() * Self::from(HALF_MOD_L) + Self::from(HALF_ONES)).into()
     }
 }

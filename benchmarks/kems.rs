@@ -3,13 +3,12 @@ use {
     stedy::{
         csprngs::Rng,
         kems::{MlKem1024, MlKem512, MlKem768},
-        Secret,
     },
 };
 
 pub fn bench(c: &mut Criterion) {
     let mut rng = Rng::from(&[0u8; 128]);
-    let seed = Secret::<[u8; 64]>::from([90u8; 64]);
+    let seed = [90u8; 64];
 
     let (private_key, public_key) = MlKem512::key_pair(&seed);
     let (_, ciphertext) = MlKem512::encapsulate(&public_key, &mut rng).expect("valid public key");

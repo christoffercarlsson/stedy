@@ -1,7 +1,6 @@
 use {
     crate::{
         hashes::{Blake2b512, Blake2bVar},
-        traits::Wipe,
         utils::wipe,
         Secret,
     },
@@ -98,10 +97,10 @@ pub fn argon2(
         return false;
     }
     let h0 = params.initial_hash(password, salt, secret, associated_data, output);
-    let mut memory = Secret::from(vec![Argon2Block::ZERO; params.blocks()]);
-    params.fill_first_blocks(memory.get_mut(), h0.get());
-    params.fill_memory(memory.get_mut());
-    params.calculate_output(memory.get(), output);
+    let mut memory = Argon2Memory(vec![Argon2Block::ZERO; params.blocks()]);
+    params.fill_first_blocks(&mut memory.0, h0.get());
+    params.fill_memory(&mut memory.0);
+    params.calculate_output(&memory.0, output);
     true
 }
 
@@ -224,7 +223,7 @@ impl Argon2Params {
             Argon2Block::compress(view.block(previous), view.block(reference), block.get_mut());
             let destination = view.block_mut(current);
             if pass == 0 {
-                *destination = block.get().clone();
+                *destination = *block.get();
             } else {
                 *destination ^= block.get();
             }
@@ -320,7 +319,7 @@ impl Argon2Params {
     fn calculate_output(&self, memory: &[Argon2Block], output: &mut [u8]) {
         let lanes = self.lanes as usize;
         let lane_length = self.lane_length();
-        let mut c = Secret::from(memory[lane_length - 1].clone());
+        let mut c = Secret::from(memory[lane_length - 1]);
         for lane in 1..lanes {
             *c.get_mut() ^= &memory[lane * lane_length + lane_length - 1];
         }
@@ -383,8 +382,18 @@ impl Argon2Segment<'_> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct Argon2Block([u64; Self::WORDS]);
+
+struct Argon2Memory(Vec<Argon2Block>);
+
+impl Drop for Argon2Memory {
+    fn drop(&mut self) {
+        for block in self.0.iter_mut() {
+            wipe(&mut block.0);
+        }
+    }
+}
 
 impl Argon2Block {
     const WORDS: usize = 128;
@@ -401,7 +410,7 @@ impl Argon2Block {
         block
     }
 
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
+    fn to_bytes(self) -> [u8; Self::SIZE] {
         let mut bytes = [0u8; Self::SIZE];
         let (chunks, _) = bytes.as_chunks_mut::<8>();
         for (i, chunk) in chunks.iter_mut().enumerate() {
@@ -482,12 +491,6 @@ impl BitXorAssign<&Argon2Block> for Argon2Block {
         for (a, b) in self.0.iter_mut().zip(&rhs.0) {
             *a ^= b;
         }
-    }
-}
-
-impl Wipe for Argon2Block {
-    fn wipe(&mut self) {
-        wipe(&mut self.0);
     }
 }
 

@@ -1,7 +1,8 @@
 use {
     crate::{
-        traits::{EdwardsParams, EdwardsScalar, FieldElement, SecretByteArray},
+        traits::{EdwardsParams, EdwardsScalar, FieldElement},
         utils::Choice,
+        Secret,
     },
     core::{
         array::from_fn,
@@ -62,7 +63,7 @@ where
         let slice = bytes.as_ref();
         let last = slice.len() - 1;
         let sign = slice[last] >> 7;
-        let mut bytes = bytes.clone();
+        let mut bytes = *bytes;
         bytes[last] &= 127;
         let y = F::from(bytes);
         let y2 = y.square();
@@ -97,7 +98,7 @@ where
     }
 
     pub(crate) fn mul_base(scalar: &S) -> Self {
-        let bits = scalar.as_signed_bits();
+        let bits = Secret::from(scalar.as_signed_bits());
         let bits = bits.get().as_ref();
         let low = &F::BASE_COMB_LOW;
         let high = &F::BASE_COMB_HIGH;
@@ -195,8 +196,8 @@ where
 
     fn mul(self, rhs: S) -> Self::Output {
         let window = Window::from(self);
-        let digits = rhs.as_radix_16();
-        let digits = digits.as_ref();
+        let digits = Secret::from(rhs.as_radix_16());
+        let digits = digits.get().as_ref();
         let size = digits.len() - 1;
         let mut t2: Projective<F, S>;
         let mut t3 = Self::IDENTITY;

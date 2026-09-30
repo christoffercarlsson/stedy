@@ -94,11 +94,11 @@ where
     }
 
     fn public_key_from_scalar(d: &S) -> F::PointBytes {
-        (Weierstrass::<F, S>::BASE_POINT * d.clone()).compress()
+        Weierstrass::<F, S>::mul_base(d).compress()
     }
 
     fn try_sign(k: &S, d: &S, e: &S) -> Option<B> {
-        let point = Weierstrass::<F, S>::BASE_POINT * k.clone();
+        let point = Weierstrass::<F, S>::mul_base(k);
         let r = Self::affine_x_mod_order(&point);
         let s = k.clone().invert() * (e.clone() + r.clone() * d.clone());
         let valid = !r.is_zero() & !s.is_zero();

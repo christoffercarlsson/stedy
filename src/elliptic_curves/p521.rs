@@ -3,8 +3,7 @@ mod scalar;
 
 use crate::{
     elliptic_curves::weierstrass::Weierstrass,
-    traits::{ByteArray, EcdsaCurve, EllipticCurve, WeierstrassScalar},
-    Secret,
+    traits::{EcdsaCurve, EllipticCurve, WeierstrassScalar},
 };
 pub use {field::*, scalar::*};
 
@@ -18,8 +17,8 @@ impl EllipticCurve for P521 {
     type Point = Point;
     type Scalar = ScalarP521;
     type PointBytes = [u8; 67];
-    type ScalarBytes = Secret<[u8; 66]>;
-    type SharedSecretBytes = Secret<[u8; 66]>;
+    type ScalarBytes = [u8; 66];
+    type SharedSecretBytes = [u8; 66];
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
         let (point, valid) = Point::decompress(bytes);
@@ -35,17 +34,19 @@ impl EllipticCurve for P521 {
     }
 
     fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
-        Secret::from(point.affine_x())
+        point.affine_x()
     }
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        let bytes = <[u8; 66]>::from_slice_checked(bytes.as_ref())?;
-        ScalarP521::from_canonical(&bytes)
+        ScalarP521::from_canonical(bytes)
+    }
+
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
+        Point::mul_base(scalar)
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        let bytes: [u8; 66] = scalar.into();
-        Secret::from(bytes)
+        scalar.into()
     }
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
