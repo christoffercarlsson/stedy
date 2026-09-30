@@ -52,7 +52,11 @@ impl<const RATE: usize> Sponge<RATE> {
             let start = position % 8;
             let take = output.len().min(8 - start);
             let (head, tail) = output.split_at_mut(take);
-            head.copy_from_slice(&lane[start..start + take]);
+            if let Ok(head) = <&mut [u8; 8]>::try_from(&mut *head) {
+                *head = lane;
+            } else {
+                head.copy_from_slice(&lane[start..start + take]);
+            }
             position += take;
             output = tail;
         }
