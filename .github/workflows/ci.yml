@@ -50,11 +50,19 @@ jobs:
           - { target: thumbv7em-none-eabihf, flags: '' }
           - { target: thumbv7em-none-eabihf, flags: --features secret_sharing }
           - { target: thumbv7em-none-eabihf, flags: --features hazmat }
+          - { target: riscv32i-unknown-none-elf, flags: '' }
+          - { target: riscv32i-unknown-none-elf, flags: --features hazmat, rustflags: -C target-feature=+zmmul,+c }
+          - { target: riscv32imc-unknown-none-elf, flags: --features secret_sharing }
+          - { target: riscv64gc-unknown-none-elf, flags: '' }
+          - { target: riscv64gc-unknown-none-elf, flags: --features hazmat,secret_sharing }
+          - { target: riscv64gc-unknown-linux-gnu, flags: --features std,getrandom,hazmat,secret_sharing }
     steps:
       - uses: actions/checkout@v4
       - run: rustup update stable --no-self-update && rustup default stable
       - run: rustup target add ${{ matrix.target }}
       - run: cargo build --target ${{ matrix.target }} ${{ matrix.flags }}
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
 
   features:
     name: features / ${{ matrix.flags }}
