@@ -2,7 +2,7 @@ use {
     criterion::Criterion,
     stedy::{
         hashes::{Sha256, Sha512},
-        macs::Hmac,
+        macs::{Hmac, SipHash24},
     },
 };
 
@@ -50,6 +50,26 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut mac = Hmac::<Sha512>::new(&key);
             mac.update(&message);
+            mac.verify(&code);
+        })
+    });
+
+    let siphash_key = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let siphash_message = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+
+    c.bench_function("siphash24", |b| {
+        b.iter(|| {
+            let mut mac = SipHash24::new(&siphash_key);
+            mac.update(&siphash_message);
+            mac.finalize()
+        })
+    });
+
+    c.bench_function("siphash24_verify", |b| {
+        let code = [229, 69, 190, 73, 97, 202, 41, 161];
+        b.iter(|| {
+            let mut mac = SipHash24::new(&siphash_key);
+            mac.update(&siphash_message);
             mac.verify(&code);
         })
     });
