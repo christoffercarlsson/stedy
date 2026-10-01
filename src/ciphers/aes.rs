@@ -3,6 +3,9 @@ use crate::{
     utils::Secret,
 };
 
+#[macro_use]
+mod aegis;
+
 #[cfg_attr(target_arch = "aarch64", path = "aes/aarch64.rs")]
 #[cfg_attr(any(target_arch = "x86", target_arch = "x86_64"), path = "aes/x86.rs")]
 mod backend;
@@ -13,6 +16,42 @@ pub(crate) fn is_supported() -> bool {
 
 pub(crate) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
     unsafe { backend::multiply::<N>(x, h) }
+}
+
+pub(crate) fn aegis128l_encrypt<const TAG_SIZE: usize>(
+    key: &[u8; 16],
+    nonce: &[u8; 16],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis128l_encrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis128l_decrypt<const TAG_SIZE: usize>(
+    key: &[u8; 16],
+    nonce: &[u8; 16],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis128l_decrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis256_encrypt<const TAG_SIZE: usize>(
+    key: &[u8; 32],
+    nonce: &[u8; 32],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis256_encrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis256_decrypt<const TAG_SIZE: usize>(
+    key: &[u8; 32],
+    nonce: &[u8; 32],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis256_decrypt::<TAG_SIZE>(key, nonce, aad, data) }
 }
 
 fn encrypt_blocks<const ROUNDS: usize, const N: usize>(

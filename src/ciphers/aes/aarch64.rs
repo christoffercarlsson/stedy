@@ -1,9 +1,10 @@
 #![forbid(unsafe_code)]
 use {
     core::arch::aarch64::{
-        uint64x2_t, uint8x16_t, vaeseq_u8, vaesmcq_u8, vdupq_n_u64, veorq_u64, veorq_u8, vextq_u64,
-        vgetq_lane_u64, vmull_high_p64, vmull_p64, vreinterpretq_p128_u64, vreinterpretq_p128_u8,
-        vreinterpretq_p64_u64, vreinterpretq_u64_p128, vreinterpretq_u8_p128,
+        uint64x2_t, uint8x16_t, vaeseq_u8, vaesmcq_u8, vandq_u8, vdupq_n_u64, vdupq_n_u8,
+        veorq_u64, veorq_u8, vextq_u64, vgetq_lane_u64, vmull_high_p64, vmull_p64,
+        vreinterpretq_p128_u64, vreinterpretq_p128_u8, vreinterpretq_p64_u64,
+        vreinterpretq_u64_p128, vreinterpretq_u8_p128,
     },
     std::arch::is_aarch64_feature_detected,
 };
@@ -85,3 +86,22 @@ fn load(block: [u8; 16]) -> uint8x16_t {
 fn store(state: uint8x16_t) -> [u8; 16] {
     vreinterpretq_p128_u8(state).to_le_bytes()
 }
+
+type Block = uint8x16_t;
+
+#[target_feature(enable = "aes")]
+fn round(a: Block, b: Block) -> Block {
+    veorq_u8(vaesmcq_u8(vaeseq_u8(a, vdupq_n_u8(0))), b)
+}
+
+#[target_feature(enable = "aes")]
+fn xor(a: Block, b: Block) -> Block {
+    veorq_u8(a, b)
+}
+
+#[target_feature(enable = "aes")]
+fn and(a: Block, b: Block) -> Block {
+    vandq_u8(a, b)
+}
+
+impl_aegis!();
