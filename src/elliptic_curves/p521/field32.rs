@@ -739,17 +739,23 @@ impl FieldP521 {
     }
 
     fn reduce(&mut self) {
-        self.carry();
-        let carry = self[17] >> 28;
-        self.mask();
-        self[0] += carry;
+        self.normalize();
         self[1] += self[0] >> 29;
         self[2] += self[1] >> 29;
         self[0] &= Self::MASK;
         self[1] &= Self::MASK;
     }
 
+    fn normalize(&mut self) {
+        self.carry();
+        let carry = self[17] >> 28;
+        self.mask();
+        self[0] += carry;
+    }
+
     fn canonical(&mut self) {
+        self.normalize();
+        self.normalize();
         let mut reduced = *self;
         reduced[0] += 1;
         reduced.carry();
