@@ -7,14 +7,14 @@ use {
     },
 };
 
-pub(crate) struct Secret<T: Copy>(pub(crate) T);
+pub struct Secret<T: Copy>(pub T);
 
 impl<T: Copy> Secret<T> {
-    pub(crate) fn get(&self) -> &T {
+    pub fn get(&self) -> &T {
         &self.0
     }
 
-    pub(crate) fn get_mut(&mut self) -> &mut T {
+    pub fn get_mut(&mut self) -> &mut T {
         &mut self.0
     }
 }

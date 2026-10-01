@@ -10,12 +10,6 @@ mod verify;
 mod wipe;
 mod xor;
 
-pub(crate) use {block::*, is_zero::*, less_than::*, mul::*, secret::*, shift_right::*};
-
-#[cfg(not(feature = "hazmat"))]
-pub(crate) use choice::*;
-
-#[cfg(feature = "hazmat")]
-pub use choice::*;
+pub(crate) use {block::*, choice::*, is_zero::*, less_than::*, mul::*, secret::*, shift_right::*};
 
 pub use {pad::*, verify::*, wipe::*, xor::*};
