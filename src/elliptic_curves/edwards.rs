@@ -65,11 +65,17 @@ where
         let mut bytes = *bytes;
         bytes[last] &= 127;
         let y = F::from(bytes);
+        let encoded: F::Bytes = y.into();
+        let canonical = Choice::eq_slice(encoded.as_ref(), bytes.as_ref());
         let y2 = y.square();
         let u = y2 - F::ONE;
-        let v = F::D * y2 + F::ONE;
+        let v = if F::A == 1 {
+            F::D * y2 - F::ONE
+        } else {
+            F::D * y2 + F::ONE
+        };
         let (mut x, mut valid) = u.sqrt(v);
-        valid &= !(x.ct_eq(&F::ZERO) & Choice::nonzero(sign));
+        valid &= canonical & !(x.ct_eq(&F::ZERO) & Choice::nonzero(sign));
         let xs: F::Bytes = x.into();
         let negate = Choice::nonzero((xs[0] & 1) ^ sign);
         x = F::select(&x, &x.neg(), negate);
@@ -99,21 +105,26 @@ where
     pub(crate) fn mul_base(scalar: &S) -> Self {
         let bits = Secret::from(scalar.as_signed_bits());
         let bits = bits.get().as_ref();
+        let spacing = bits.len();
         let low = &F::BASE_COMB_LOW;
         let high = &F::BASE_COMB_HIGH;
-        let t = Self::IDENTITY + Self::comb_select(low, bits, 31);
-        let mut t = t.to_extended() + Self::comb_select(high, bits, 159);
-        for i in (0..31).rev() {
+        let t = Self::IDENTITY + Self::comb_select(low, bits, spacing - 1);
+        let mut t = t.to_extended() + Self::comb_select(high, bits, 5 * spacing - 1);
+        for i in (0..spacing - 1).rev() {
             let p = t.to_projective().double().to_extended();
             let p = (p + Self::comb_select(low, bits, i)).to_extended();
-            t = p + Self::comb_select(high, bits, i + 128);
+            t = p + Self::comb_select(high, bits, i + 4 * spacing);
         }
         t.to_extended()
     }
 
     fn comb_select(table: &[[F; 3]; 8], bits: &[u8], i: usize) -> AffineNiels<F> {
+        let spacing = bits.len();
         let bit = |k: usize| (bits[k / 8] >> (k % 8)) & 1;
-        let teeth = bit(i) | (bit(i + 32) << 1) | (bit(i + 64) << 2) | (bit(i + 96) << 3);
+        let teeth = bit(i)
+            | (bit(i + spacing) << 1)
+            | (bit(i + 2 * spacing) << 2)
+            | (bit(i + 3 * spacing) << 3);
         let high = teeth >> 3;
         let index = (teeth ^ high.wrapping_sub(1)) & 7;
         let mut t = AffineNiels::<F>::IDENTITY;
@@ -123,6 +134,19 @@ where
         }
         let negate = !Choice::nonzero(high);
         AffineNiels::<F>::select(&t, &t.neg(), negate)
+    }
+
+    fn niels_terms(x1: F, y1: F, y_plus_x: F, y_minus_x: F) -> (F, F) {
+        if F::A == 1 {
+            let a = x1 * (y_plus_x - y_minus_x);
+            let b = y1 * (y_plus_x + y_minus_x);
+            let e = (x1 + y1) * (y_plus_x + y_plus_x) - a - b;
+            (e, b - a)
+        } else {
+            let c = (y1 + x1) * y_plus_x;
+            let d = (y1 - x1) * y_minus_x;
+            (c - d, c + d)
+        }
     }
 
     #[allow(non_snake_case)]
@@ -170,14 +194,21 @@ where
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let a = (self.y - self.x) * (rhs.y - rhs.x);
-        let b = (self.y + self.x) * (rhs.y + rhs.x);
+        let (e, h) = if F::A == 1 {
+            let a = self.x * rhs.x;
+            let b = self.y * rhs.y;
+            let e = (self.x + self.y) * (rhs.x + rhs.y) - a - b;
+            let h = b - a;
+            (e + e, h + h)
+        } else {
+            let a = (self.y - self.x) * (rhs.y - rhs.x);
+            let b = (self.y + self.x) * (rhs.y + rhs.x);
+            (b - a, b + a)
+        };
         let c = self.t * F::D2 * rhs.t;
         let d = (self.z + self.z) * rhs.z;
-        let e = b - a;
         let f = d - c;
         let g = d + c;
-        let h = b + a;
         let x = e * f;
         let y = g * h;
         let t = e * h;
@@ -225,15 +256,10 @@ where
     type Output = Completed<F, S>;
 
     fn add(self, rhs: ProjectiveNiels<F>) -> Self::Output {
-        let a = self.y + self.x;
-        let b = self.y - self.x;
-        let c = a * rhs.y_plus_x;
-        let d = b * rhs.y_minus_x;
+        let (x, y) = Self::niels_terms(self.x, self.y, rhs.y_plus_x, rhs.y_minus_x);
         let e = self.t * rhs.t2d;
         let f = self.z * rhs.z;
         let g = f + f;
-        let x = c - d;
-        let y = c + d;
         let t = g - e;
         let z = g + e;
         Completed::<F, S>::new(x, y, t, z)
@@ -273,11 +299,19 @@ where
         let c = self.z.square2();
         let d = self.x + self.y;
         let e = d.square();
-        let y = a + b;
-        let z = b - a;
-        let x = e - y;
-        let t = c - z;
-        Completed::<F, S>::new(x, y, t, z)
+        if F::A == 1 {
+            let z = a + b;
+            let y = a - b;
+            let x = e - z;
+            let t = z - c;
+            Completed::<F, S>::new(x, y, t, z)
+        } else {
+            let y = a + b;
+            let z = b - a;
+            let x = e - y;
+            let t = c - z;
+            Completed::<F, S>::new(x, y, t, z)
+        }
     }
 
     fn to_extended(&self) -> Edwards<F, S> {
@@ -450,14 +484,9 @@ where
     type Output = Completed<F, S>;
 
     fn add(self, rhs: AffineNiels<F>) -> Self::Output {
-        let a = self.y + self.x;
-        let b = self.y - self.x;
-        let c = a * rhs.y_plus_x;
-        let d = b * rhs.y_minus_x;
+        let (x, y) = Self::niels_terms(self.x, self.y, rhs.y_plus_x, rhs.y_minus_x);
         let e = self.t * rhs.t2d;
         let g = self.z + self.z;
-        let x = c - d;
-        let y = c + d;
         let t = g - e;
         let z = g + e;
         Completed::<F, S>::new(x, y, t, z)

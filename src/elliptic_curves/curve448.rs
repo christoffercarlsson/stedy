@@ -1,46 +1,51 @@
 use crate::{
-    traits::{EdwardsScalar, EllipticCurve, FieldElement},
+    traits::{EllipticCurve, FieldElement},
     utils::{Choice, Secret},
 };
 
 mod field;
 mod scalar;
 
-pub use {field::Field25519, scalar::Scalar25519};
+pub use {field::Field448, scalar::Scalar448};
 
-pub struct Curve25519;
+pub struct Curve448;
 
 #[derive(Clone)]
-pub struct Curve25519Scalar(Secret<[u8; 32]>);
+pub struct Curve448Scalar(Secret<[u8; 56]>);
 
-impl Curve25519 {
-    const BASE_POINT: Field25519 = Field25519::from_limbs([9, 0, 0, 0, 0]);
-    const A24: u32 = 121665;
+impl Curve448 {
+    const BASE_POINT: Field448 = Field448::from_limbs([5, 0, 0, 0, 0, 0, 0, 0]);
+    const A24: u32 = 39081;
+
+    fn clamp(bytes: &mut [u8; 56]) {
+        bytes[0] &= 252;
+        bytes[55] |= 128;
+    }
 }
 
-impl EllipticCurve for Curve25519 {
-    const BASE_POINT: Field25519 = Self::BASE_POINT;
+impl EllipticCurve for Curve448 {
+    const BASE_POINT: Field448 = Self::BASE_POINT;
 
-    type Point = Field25519;
-    type Scalar = Curve25519Scalar;
-    type PointBytes = [u8; 32];
-    type ScalarBytes = [u8; 32];
-    type SharedSecretBytes = [u8; 32];
+    type Point = Field448;
+    type Scalar = Curve448Scalar;
+    type PointBytes = [u8; 56];
+    type ScalarBytes = [u8; 56];
+    type SharedSecretBytes = [u8; 56];
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
-        Some(Field25519::from(bytes))
+        Some(Field448::from_le_bytes(bytes))
     }
 
     fn point_to_bytes(point: &Self::Point) -> Self::PointBytes {
-        point.into()
+        point.to_le_bytes()
     }
 
     fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
-        point.into()
+        point.to_le_bytes()
     }
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        Some(Curve25519Scalar(Secret::from(*bytes)))
+        Some(Curve448Scalar(Secret::from(*bytes)))
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
@@ -49,20 +54,20 @@ impl EllipticCurve for Curve25519 {
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
         let mut scalar = scalar.0.clone();
-        Scalar25519::clamp(scalar.get_mut());
+        Self::clamp(scalar.get_mut());
         let x1 = *point;
-        let mut x2 = Field25519::ONE;
-        let mut z2 = Field25519::ZERO;
+        let mut x2 = Field448::ONE;
+        let mut z2 = Field448::ZERO;
         let mut x3 = *point;
-        let mut z3 = Field25519::ONE;
+        let mut z3 = Field448::ONE;
         let mut swap = Choice::FALSE;
-        for i in (0..255).rev() {
+        for i in (0..448).rev() {
             let byte_index = i / 8;
             let bit_index = i % 8;
             let bit = Choice::nonzero((scalar[byte_index] >> bit_index) & 1);
             swap ^= bit;
-            Field25519::swap(&mut x2, &mut x3, swap);
-            Field25519::swap(&mut z2, &mut z3, swap);
+            Field448::swap(&mut x2, &mut x3, swap);
+            Field448::swap(&mut z2, &mut z3, swap);
             swap = bit;
             let a = x2 + z2;
             let aa = a.square();
@@ -78,9 +83,9 @@ impl EllipticCurve for Curve25519 {
             x2 = aa * bb;
             z2 = e * (aa + e.mul_small(Self::A24));
         }
-        Field25519::swap(&mut x2, &mut x3, swap);
-        Field25519::swap(&mut z2, &mut z3, swap);
+        Field448::swap(&mut x2, &mut x3, swap);
+        Field448::swap(&mut z2, &mut z3, swap);
         let u = x2 / z2;
-        (!u.ct_eq(&Field25519::ZERO)).to_bool().then_some(u)
+        (!u.ct_eq(&Field448::ZERO)).to_bool().then_some(u)
     }
 }

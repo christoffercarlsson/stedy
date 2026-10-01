@@ -1,6 +1,6 @@
 use {
     criterion::Criterion,
-    stedy::key_exchange::{P256, P384, P521, X25519},
+    stedy::key_exchange::{P256, P384, P521, X25519, X448},
 };
 
 pub fn bench(c: &mut Criterion) {
@@ -19,6 +19,25 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("x25519_key_exchange", |b| {
         b.iter(|| X25519::key_exchange(&alice_private_key, &bob_public_key))
+    });
+
+    let x448_private_key = [
+        154, 143, 73, 37, 209, 81, 159, 87, 117, 207, 70, 176, 75, 88, 0, 212, 238, 158, 232, 186,
+        232, 188, 85, 101, 212, 152, 194, 141, 217, 201, 186, 245, 116, 169, 65, 151, 68, 137, 115,
+        145, 0, 99, 130, 166, 241, 39, 171, 29, 154, 194, 216, 192, 165, 152, 114, 107,
+    ];
+    let x448_peer_public_key = [
+        62, 183, 168, 41, 176, 205, 32, 245, 188, 252, 11, 89, 155, 111, 236, 207, 109, 164, 98,
+        113, 7, 189, 176, 212, 243, 69, 180, 48, 39, 216, 185, 114, 252, 62, 52, 251, 66, 50, 161,
+        60, 167, 6, 220, 181, 122, 236, 61, 174, 7, 189, 193, 198, 123, 243, 54, 9,
+    ];
+
+    c.bench_function("x448_public_key", |b| {
+        b.iter(|| X448::public_key(&x448_private_key))
+    });
+
+    c.bench_function("x448_key_exchange", |b| {
+        b.iter(|| X448::key_exchange(&x448_private_key, &x448_peer_public_key))
     });
 
     let p256_private_key = [

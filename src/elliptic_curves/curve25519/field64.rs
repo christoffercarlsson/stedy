@@ -108,6 +108,10 @@ impl Field25519 {
         Self(from_fn(|i| self[i] + rhs[i]))
     }
 
+    pub(crate) fn mul_small(self, n: u32) -> Self {
+        Self::reduce_wide(from_fn(|i| m(self[i], n as u64)))
+    }
+
     pub(super) fn sub(self, rhs: Self) -> Self {
         let mut result = Self(from_fn(|i| Self::P16[i] + self[i] - rhs[i]));
         result.reduce();

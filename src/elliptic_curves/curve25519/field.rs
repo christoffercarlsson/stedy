@@ -217,6 +217,8 @@ impl FieldElement for Field25519 {
 }
 
 impl EdwardsParams<Field25519> for Field25519 {
+    const A: i8 = -1;
+    const DOMAIN: &'static [u8] = &[];
     const D: Self = Self::from_limbs([
         929955233495203,
         466365720129213,

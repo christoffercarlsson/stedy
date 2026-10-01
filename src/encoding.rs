@@ -40,7 +40,7 @@ pub fn decode<'a>(encoding: Encoding, encoded: &[u8], decoded: &'a mut [u8]) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, hex_literal::hex};
 
     // https://datatracker.ietf.org/doc/html/rfc4648#section-10
 
@@ -140,17 +140,9 @@ mod tests {
 
     #[test]
     fn test_encode_base64_url() {
-        let decoded = [
-            29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84,
-        ];
-        let encoded_padded = [
-            72, 86, 110, 56, 85, 67, 109, 69, 81, 54, 70, 82, 117, 53, 45, 108, 119, 112, 107, 95,
-            86, 65, 61, 61,
-        ];
-        let encoded_unpadded = [
-            72, 86, 110, 56, 85, 67, 109, 69, 81, 54, 70, 82, 117, 53, 45, 108, 119, 112, 107, 95,
-            86, 65,
-        ];
+        let decoded = hex!("1d59fc50298443a151bb9fa5c2993f54");
+        let encoded_padded = b"HVn8UCmEQ6FRu5-lwpk_VA==";
+        let encoded_unpadded = b"HVn8UCmEQ6FRu5-lwpk_VA";
         let mut buffer = [0u8; 24];
         assert_eq!(
             encode(Encoding::Base64Url, &decoded, &mut buffer).unwrap(),
@@ -164,24 +156,16 @@ mod tests {
 
     #[test]
     fn test_decode_base64_url() {
-        let encoded_padded = [
-            72, 86, 110, 56, 85, 67, 109, 69, 81, 54, 70, 82, 117, 53, 45, 108, 119, 112, 107, 95,
-            86, 65, 61, 61,
-        ];
-        let encoded_unpadded = [
-            72, 86, 110, 56, 85, 67, 109, 69, 81, 54, 70, 82, 117, 53, 45, 108, 119, 112, 107, 95,
-            86, 65,
-        ];
-        let decoded = [
-            29, 89, 252, 80, 41, 132, 67, 161, 81, 187, 159, 165, 194, 153, 63, 84,
-        ];
+        let encoded_padded = b"HVn8UCmEQ6FRu5-lwpk_VA==";
+        let encoded_unpadded = b"HVn8UCmEQ6FRu5-lwpk_VA";
+        let decoded = hex!("1d59fc50298443a151bb9fa5c2993f54");
         let mut buffer = [0u8; 16];
         assert_eq!(
-            decode(Encoding::Base64Url, &encoded_padded, &mut buffer).unwrap(),
+            decode(Encoding::Base64Url, encoded_padded, &mut buffer).unwrap(),
             decoded
         );
         assert_eq!(
-            decode(Encoding::Base64UrlUnpadded, &encoded_unpadded, &mut buffer).unwrap(),
+            decode(Encoding::Base64UrlUnpadded, encoded_unpadded, &mut buffer).unwrap(),
             decoded
         );
     }

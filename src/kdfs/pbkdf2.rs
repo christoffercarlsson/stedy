@@ -38,6 +38,7 @@ mod tests {
             hashes::{Sha256, Sha512},
             macs::Hmac,
         },
+        hex_literal::hex,
     };
 
     #[cfg(feature = "hazmat")]
@@ -53,13 +54,7 @@ mod tests {
         let iterations = 1;
         let mut output = [0u8; 20];
         pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
-        assert_eq!(
-            output,
-            [
-                12, 96, 200, 15, 150, 31, 14, 113, 243, 169, 181, 36, 175, 96, 18, 6, 47, 224, 55,
-                166
-            ]
-        );
+        assert_eq!(output, hex!("0c60c80f961f0e71f3a9b524af6012062fe037a6"));
     }
 
     #[cfg(feature = "hazmat")]
@@ -70,13 +65,7 @@ mod tests {
         let iterations = 2;
         let mut output = [0u8; 20];
         pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
-        assert_eq!(
-            output,
-            [
-                234, 108, 1, 77, 199, 45, 111, 140, 205, 30, 217, 42, 206, 29, 65, 240, 216, 222,
-                137, 87
-            ]
-        );
+        assert_eq!(output, hex!("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957"));
     }
 
     #[cfg(feature = "hazmat")]
@@ -87,13 +76,7 @@ mod tests {
         let iterations = 4096;
         let mut output = [0u8; 20];
         pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
-        assert_eq!(
-            output,
-            [
-                75, 0, 121, 1, 183, 101, 72, 154, 190, 173, 73, 217, 38, 247, 33, 208, 101, 164,
-                41, 193
-            ]
-        );
+        assert_eq!(output, hex!("4b007901b765489abead49d926f721d065a429c1"));
     }
 
     // #[cfg(feature = "hazmat")]
@@ -123,10 +106,7 @@ mod tests {
         pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
-            [
-                61, 46, 236, 79, 228, 28, 132, 155, 128, 200, 216, 54, 98, 192, 228, 74, 139, 41,
-                26, 150, 76, 242, 240, 112, 56
-            ]
+            hex!("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038")
         );
     }
 
@@ -138,10 +118,7 @@ mod tests {
         let iterations = 4096;
         let mut output = [0u8; 16];
         pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
-        assert_eq!(
-            output,
-            [86, 250, 106, 167, 85, 72, 9, 157, 204, 55, 215, 240, 52, 37, 224, 195]
-        );
+        assert_eq!(output, hex!("56fa6aa75548099dcc37d7f03425e0c3"));
     }
 
     #[test]
@@ -153,10 +130,7 @@ mod tests {
         pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
-            [
-                197, 228, 120, 213, 146, 136, 200, 65, 170, 83, 13, 182, 132, 92, 76, 141, 150, 40,
-                147, 160, 1, 206, 78, 17, 164, 150, 56, 115, 170, 152, 19, 74
-            ]
+            hex!("c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a")
         );
     }
 
@@ -169,12 +143,7 @@ mod tests {
         pbkdf2::<Hmac<Sha512>>(password, salt, iterations, &mut output);
         assert_eq!(
             output,
-            [
-                209, 151, 177, 179, 61, 176, 20, 62, 1, 139, 18, 243, 209, 209, 71, 158, 108, 222,
-                189, 204, 151, 197, 192, 248, 127, 105, 2, 224, 114, 244, 87, 181, 20, 63, 48, 96,
-                38, 65, 179, 213, 92, 211, 53, 152, 140, 179, 107, 132, 55, 96, 96, 236, 213, 50,
-                224, 57, 183, 66, 162, 57, 67, 74, 242, 213
-            ]
+            hex!("d197b1b33db0143e018b12f3d1d1479e6cdebdcc97c5c0f87f6902e072f457b5143f30602641b3d55cd335988cb36b84376060ecd532e039b742a239434af2d5")
         );
     }
 }

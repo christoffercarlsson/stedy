@@ -32,12 +32,22 @@ macro_rules! impl_montgomery {
     ($N:literal, $LIMBS:literal, $BYTES:literal, wide) => {
         impl_montgomery!(@core $N, $LIMBS, $BYTES);
 
+        #[allow(dead_code)]
         impl<P: MontgomeryParams<$LIMBS>> Montgomery<$N, P> {
             pub(crate) fn from_wide_le_bytes(bytes: &[u8; 2 * $BYTES]) -> Self {
                 let (low, high) = bytes.split_at($BYTES);
                 let low = Self(Self::words_from_le(low.iter()), PhantomData);
                 let high = Self(Self::words_from_le(high.iter()), PhantomData);
                 low.mul(Self::R2).add(high.mul(Self::R2).mul(Self::R2))
+            }
+
+            pub(crate) fn from_le_slice(bytes: &[u8]) -> Self {
+                let mut result = Self::ZERO;
+                for chunk in bytes.chunks($BYTES).rev() {
+                    let words = Self(Self::words_from_le(chunk.iter()), PhantomData);
+                    result = result.add(words).mul(Self::R2);
+                }
+                result
             }
         }
     };

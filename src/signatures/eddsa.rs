@@ -50,12 +50,12 @@ where
     pub fn sign(private_key: &S, message: &[u8]) -> S {
         let (seed, A) = Self::read_private_key(private_key);
         let (a, prefix) = Self::expand(seed);
-        let mut state = H::new();
+        let mut state = Self::hasher();
         state.update(prefix.get().as_ref());
         state.update(message);
         let r = E::from(state.finalize());
         let R = Edwards::<F, E>::mul_base(&r).compress();
-        let mut state = H::new();
+        let mut state = Self::hasher();
         state.update(R.as_ref());
         state.update(A);
         state.update(message);
@@ -69,7 +69,7 @@ where
         let valid_s = E::is_canonical(&s);
         let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
         let (R, valid_r) = Edwards::<F, E>::decompress(&r);
-        let mut state = H::new();
+        let mut state = Self::hasher();
         state.update(r.as_ref());
         state.update(public_key.as_ref());
         state.update(message);
@@ -88,6 +88,12 @@ where
     S: ByteArray,
 {
     const SEED_SIZE: usize = E::SecretBytes::SIZE;
+
+    fn hasher() -> H {
+        let mut state = H::new();
+        state.update(F::DOMAIN);
+        state
+    }
 
     fn expand(seed: &[u8]) -> (E, Secret<E::SecretBytes>) {
         let digest = Secret::from(H::digest(seed));

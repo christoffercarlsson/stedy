@@ -1,6 +1,6 @@
 use crate::{
     hashes::keccak::Sponge,
-    traits::{Init, Xof, XofReader},
+    traits::{Digest, Hasher, Init, Xof, XofReader},
 };
 
 pub type Shake128 = Shake<168>;
@@ -75,6 +75,76 @@ impl<const RATE: usize> Shake<RATE> {
 impl<const RATE: usize> Default for Shake<RATE> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(Clone)]
+pub struct ShakeDigest<const RATE: usize, const N: usize>(Shake<RATE>);
+
+impl<const RATE: usize, const N: usize> ShakeDigest<RATE, N> {
+    pub fn digest(message: &[u8]) -> [u8; N] {
+        let mut hasher = Self::new();
+        hasher.update(message);
+        hasher.finalize()
+    }
+
+    pub fn new() -> Self {
+        Self(Shake::<RATE>::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn finalize_into(self, digest: &mut [u8]) {
+        let size = digest.len().min(N);
+        self.0.finalize_into(&mut digest[..size]);
+    }
+
+    pub fn finalize(self) -> [u8; N] {
+        let mut digest = [0u8; N];
+        self.finalize_into(&mut digest);
+        digest
+    }
+}
+
+impl<const RATE: usize, const N: usize> Default for ShakeDigest<RATE, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<const RATE: usize, const N: usize> Init for ShakeDigest<RATE, N> {
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl<const RATE: usize, const N: usize> Digest for ShakeDigest<RATE, N> {
+    const OUTPUT_SIZE: usize = N;
+
+    type Output = [u8; N];
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize(self) -> Self::Output {
+        self.finalize()
+    }
+
+    fn finalize_into(self, output: &mut [u8]) {
+        self.finalize_into(output);
+    }
+}
+
+impl<const RATE: usize, const N: usize> Hasher for ShakeDigest<RATE, N> {
+    const BLOCK_SIZE: usize = RATE;
+
+    type Block = [u8; RATE];
+
+    fn digest(message: &[u8]) -> Self::Output {
+        Self::digest(message)
     }
 }
 
