@@ -1,5 +1,9 @@
 #[cfg(feature = "std")]
-use {crate::utils::wipe, std::thread};
+use {
+    crate::utils::wipe,
+    core::ops::{Deref, DerefMut},
+    std::thread,
+};
 use {
     crate::{
         encoding::{decode, encode, Encoding},
@@ -27,7 +31,7 @@ pub struct Argon2Params {
 }
 
 impl Argon2Params {
-    pub fn new(variant: Argon2Variant) -> Self {
+    pub const fn new(variant: Argon2Variant) -> Self {
         Self {
             variant,
             memory: 1 << 16,
@@ -37,32 +41,32 @@ impl Argon2Params {
         }
     }
 
-    pub fn variant(mut self, variant: Argon2Variant) -> Self {
+    pub const fn variant(mut self, variant: Argon2Variant) -> Self {
         self.variant = variant;
         self
     }
 
-    pub fn memory(mut self, memory: u32) -> Self {
+    pub const fn memory(mut self, memory: u32) -> Self {
         self.memory = memory;
         self
     }
 
-    pub fn passes(mut self, passes: u32) -> Self {
+    pub const fn passes(mut self, passes: u32) -> Self {
         self.passes = passes;
         self
     }
 
-    pub fn lanes(mut self, lanes: u32) -> Self {
+    pub const fn lanes(mut self, lanes: u32) -> Self {
         self.lanes = lanes;
         self
     }
 
-    pub fn threads(mut self, threads: u32) -> Self {
+    pub const fn threads(mut self, threads: u32) -> Self {
         self.threads = threads;
         self
     }
 
-    pub fn blocks(&self) -> usize {
+    pub const fn blocks(&self) -> usize {
         let lanes = self.lanes as usize;
         if lanes == 0 {
             return 0;
@@ -91,6 +95,41 @@ impl Default for Argon2Block {
 }
 
 #[cfg(feature = "std")]
+pub struct Argon2Memory(Vec<Argon2Block>);
+
+#[cfg(feature = "std")]
+impl From<Argon2Params> for Argon2Memory {
+    fn from(params: Argon2Params) -> Self {
+        Self(vec![Argon2Block::ZERO; params.blocks()])
+    }
+}
+
+#[cfg(feature = "std")]
+impl Deref for Argon2Memory {
+    type Target = [Argon2Block];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg(feature = "std")]
+impl DerefMut for Argon2Memory {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for Argon2Memory {
+    fn drop(&mut self) {
+        for block in self.0.iter_mut() {
+            wipe(&mut block.0);
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 pub fn argon2(
     params: Argon2Params,
     password: &[u8],
@@ -108,14 +147,14 @@ pub fn argon2(
     ) {
         return false;
     }
-    let mut memory = Argon2Memory(vec![Argon2Block::ZERO; params.blocks()]);
+    let mut memory = Argon2Memory::from(params);
     argon2_with_memory(
         params,
         password,
         salt,
         secret,
         associated_data,
-        &mut memory.0,
+        &mut memory,
         output,
     )
 }
@@ -155,8 +194,8 @@ pub fn argon2_phc<'a>(
     if !params.validate(password, salt, &[], &[], &[0; 4]) {
         return None;
     }
-    let mut memory = Argon2Memory(vec![Argon2Block::ZERO; params.blocks()]);
-    argon2_phc_with_memory(params, password, salt, hash_length, &mut memory.0, output)
+    let mut memory = Argon2Memory::from(params);
+    argon2_phc_with_memory(params, password, salt, hash_length, &mut memory, output)
 }
 
 pub fn argon2_phc_with_memory<'a>(
@@ -191,7 +230,7 @@ pub fn argon2_phc_verify(password: &[u8], phc: &[u8]) -> bool {
     }
     blocks.resize(params.blocks(), Argon2Block::ZERO);
     let mut memory = Argon2Memory(blocks);
-    argon2_phc_verify_with_memory(password, phc, &mut memory.0)
+    argon2_phc_verify_with_memory(password, phc, &mut memory)
 }
 
 pub fn argon2_phc_verify_with_memory(
@@ -495,7 +534,7 @@ impl Argon2Params {
             Self::hash_prefixed(inputs, output.len(), output);
             return;
         }
-        let mut v = Secret::<[u8; 64]>::from([0u8; 64]);
+        let mut v = Secret::from([0u8; 64]);
         Self::hash_prefixed(inputs, output.len(), v.get_mut());
         let halves = (output.len() - 33) / 32;
         let (head, tail) = output.split_at_mut(32 * halves);
@@ -679,18 +718,6 @@ impl Argon2Segment<'_> {
 
     fn block_mut(&mut self, index: usize) -> &mut Argon2Block {
         &mut self.current[index % self.segment_length]
-    }
-}
-
-#[cfg(feature = "std")]
-struct Argon2Memory(Vec<Argon2Block>);
-
-#[cfg(feature = "std")]
-impl Drop for Argon2Memory {
-    fn drop(&mut self) {
-        for block in self.0.iter_mut() {
-            wipe(&mut block.0);
-        }
     }
 }
 
@@ -892,15 +919,15 @@ mod tests {
 
     #[test]
     fn test_argon2d() {
-        let params = Argon2Params::new(Argon2Variant::Argon2d).memory(32);
+        const PARAMS: Argon2Params = Argon2Params::new(Argon2Variant::Argon2d).memory(32);
         let password = [1u8; 32];
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
-        let mut memory = [Argon2Block::ZERO; 32];
+        let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
         assert!(argon2_with_memory(
-            params.threads(1),
+            PARAMS.threads(1),
             &password,
             &salt,
             Some(&secret),
@@ -912,11 +939,22 @@ mod tests {
         {
             let mut parallel = [0u8; 32];
             assert!(argon2(
-                params,
+                PARAMS,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
+                &mut parallel,
+            ));
+            assert_eq!(parallel, output);
+            let mut memory = Argon2Memory::from(PARAMS);
+            assert!(argon2_with_memory(
+                PARAMS,
+                &password,
+                &salt,
+                Some(&secret),
+                Some(&associated_data),
+                &mut memory,
                 &mut parallel,
             ));
             assert_eq!(parallel, output);
@@ -929,15 +967,15 @@ mod tests {
 
     #[test]
     fn test_argon2i() {
-        let params = Argon2Params::new(Argon2Variant::Argon2i).memory(32);
+        const PARAMS: Argon2Params = Argon2Params::new(Argon2Variant::Argon2i).memory(32);
         let password = [1u8; 32];
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
-        let mut memory = [Argon2Block::ZERO; 32];
+        let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
         assert!(argon2_with_memory(
-            params.threads(1),
+            PARAMS.threads(1),
             &password,
             &salt,
             Some(&secret),
@@ -949,11 +987,22 @@ mod tests {
         {
             let mut parallel = [0u8; 32];
             assert!(argon2(
-                params,
+                PARAMS,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
+                &mut parallel,
+            ));
+            assert_eq!(parallel, output);
+            let mut memory = Argon2Memory::from(PARAMS);
+            assert!(argon2_with_memory(
+                PARAMS,
+                &password,
+                &salt,
+                Some(&secret),
+                Some(&associated_data),
+                &mut memory,
                 &mut parallel,
             ));
             assert_eq!(parallel, output);
@@ -966,15 +1015,15 @@ mod tests {
 
     #[test]
     fn test_argon2id() {
-        let params = Argon2Params::default().memory(32);
+        const PARAMS: Argon2Params = Argon2Params::new(Argon2Variant::Argon2id).memory(32);
         let password = [1u8; 32];
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
-        let mut memory = [Argon2Block::ZERO; 32];
+        let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
         assert!(argon2_with_memory(
-            params.threads(1),
+            PARAMS.threads(1),
             &password,
             &salt,
             Some(&secret),
@@ -986,11 +1035,22 @@ mod tests {
         {
             let mut parallel = [0u8; 32];
             assert!(argon2(
-                params,
+                PARAMS,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
+                &mut parallel,
+            ));
+            assert_eq!(parallel, output);
+            let mut memory = Argon2Memory::from(PARAMS);
+            assert!(argon2_with_memory(
+                PARAMS,
+                &password,
+                &salt,
+                Some(&secret),
+                Some(&associated_data),
+                &mut memory,
                 &mut parallel,
             ));
             assert_eq!(parallel, output);
