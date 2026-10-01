@@ -26,7 +26,7 @@ where
     S: ByteArray,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S, F::Bytes) {
-        let mut seed = Secret::<E::SecretBytes>::new();
+        let mut seed = Secret::from(E::SecretBytes::new());
         rng.fill(seed.get_mut().as_mut());
         Self::key_pair(seed.get())
     }

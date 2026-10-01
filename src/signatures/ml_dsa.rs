@@ -76,7 +76,7 @@ where
     G: Xof,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (P::PrivateKey, P::PublicKey) {
-        let mut seed = Secret::<P::Seed>::new();
+        let mut seed = Secret::from(P::Seed::new());
         rng.fill(seed.get_mut().as_mut());
         Self::key_pair(seed.get())
     }
@@ -107,7 +107,7 @@ where
         message: &[u8],
         rng: &mut impl CryptoRng,
     ) -> P::Signature {
-        let mut rnd = Secret::<[u8; 32]>::new();
+        let mut rnd = Secret::from([0u8; 32]);
         rng.fill(rnd.as_mut());
         let mut signature = P::Signature::new();
         Self::sign_internal(
@@ -135,7 +135,7 @@ where
         mu: &[u8; 64],
         rng: &mut impl CryptoRng,
     ) -> P::Signature {
-        let mut rnd = Secret::<[u8; 32]>::new();
+        let mut rnd = Secret::from([0u8; 32]);
         rng.fill(rnd.as_mut());
         let mut signature = P::Signature::new();
         Self::sign_internal_mu(private_key.as_ref(), mu, rnd.get(), signature.as_mut());
@@ -181,7 +181,7 @@ where
 
     // Algorithm 6
     fn key_gen_internal(xi: &[u8], pk: &mut [u8], sk: &mut [u8]) {
-        let mut seeds = Secret::<[u8; 128]>::new();
+        let mut seeds = Secret::from([0u8; 128]);
         let mut xof = H::new();
         xof.update(xi);
         xof.update(&[K as u8, L as u8]);
@@ -224,7 +224,7 @@ where
         let mut s2_hat = Secret::from([[0u8; 768]; K]);
         Self::unpack_s_ntt(s1_bytes, product.get_mut(), s1_hat.get_mut());
         Self::unpack_s_ntt(s2_bytes, product.get_mut(), s2_hat.get_mut());
-        let mut rho_double_prime = Secret::<[u8; 64]>::new();
+        let mut rho_double_prime = Secret::from([0u8; 64]);
         let mut xof = H::new();
         xof.update(k);
         xof.update(rnd);
@@ -641,7 +641,7 @@ where
         let mut reader = xof.finalize_xof();
         let mut j = 0;
         while j < 256 {
-            let mut block = Secret::<[u8; 136]>::new();
+            let mut block = Secret::from([0u8; 136]);
             reader.read(block.as_mut());
             let coefficients = block
                 .get()
@@ -700,7 +700,7 @@ where
     // Algorithm 34
     fn expand_mask(rho: &[u8], mu: u16, y: &mut [[i32; 256]; L]) {
         let c = 1 + Self::bitlen(P::GAMMA1 - 1);
-        let mut v = Secret::<[u8; 640]>::new();
+        let mut v = Secret::from([0u8; 640]);
         for (r, y) in y.iter_mut().enumerate() {
             let mut xof = H::new();
             xof.update(rho);
@@ -981,7 +981,7 @@ where
 mod tests {
     use {
         super::*,
-        crate::{csprngs::Rng, hashes::Sha3_256},
+        crate::{csprngs::ChaCha20Rng, hashes::Sha3_256},
         hex_literal::hex,
     };
 
@@ -989,81 +989,81 @@ mod tests {
 
     #[test]
     fn test_ml_dsa_44() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = MlDsa44::generate_key_pair(&mut rng);
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
-            hex!("57587d08af13d92b1231c55a102c967268976d438674646a9f190bc5828918c7")
+            hex!("2a53271a0792dc8527cd6a26a500e833647f57d5ce32bdc6b0465b2c911a1094")
         );
         assert_eq!(
             Sha3_256::digest(&public_key),
-            hex!("c0e23d7a0883c28e6bd1b6275d5f08c185f68d1dd6d7e2fe121c1df64b129eb4")
+            hex!("7531823c328891e2037e3fde929cef597506b3d684f18a9a4446320c5c5245c9")
         );
         assert_eq!(MlDsa44::public_key(&private_key), public_key);
         let signature = MlDsa44::sign(&private_key, MESSAGE, &mut rng);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("971579d41bc5f5b64c78e90f157f378ad7df272e057f201039e882a2d8bcfbda")
+            hex!("995e53f29740661474116d474be77d0905b3ce0754e169ea75d78d4bcfb8f293")
         );
         assert!(MlDsa44::verify(MESSAGE, &public_key, &signature));
         let signature = MlDsa44::sign_deterministic(&private_key, MESSAGE);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("981d53044f786d70725a5c60de3de3b2892b2841648427d69616095dcb2d4cf9")
+            hex!("84ac426c24b8f9ef126efd628b77c1fb02136ccf0f5ebcd29a708a6062b247e4")
         );
         assert!(MlDsa44::verify(MESSAGE, &public_key, &signature));
     }
 
     #[test]
     fn test_ml_dsa_65() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = MlDsa65::generate_key_pair(&mut rng);
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
-            hex!("c9e018a211d56f87535da4d6ea5790c49e444acf5e845fe3cb1fcccb0b8aafe8")
+            hex!("31007b09c799569f7ea3c16605104066ac33ae02ad8551ca6b595e1ead1f1ac5")
         );
         assert_eq!(
             Sha3_256::digest(&public_key),
-            hex!("a816046ec8eef97e771a95f383649c3b1ca01060724e8d235e2ba7b2c0821678")
+            hex!("55c5ce17bbbe51aa3aa81b6f60c28417068c0f73658074f28e41408138694460")
         );
         assert_eq!(MlDsa65::public_key(&private_key), public_key);
         let signature = MlDsa65::sign(&private_key, MESSAGE, &mut rng);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("40c13b3c43438c975c2a8b5ea1de90eac1a2936c1ce032ec660e9b103c7be919")
+            hex!("c8736e1a0d56dda61f01bd19f001d3bfb4f7bb75f3be8b772ae26f3c7afb4c77")
         );
         assert!(MlDsa65::verify(MESSAGE, &public_key, &signature));
         let signature = MlDsa65::sign_deterministic(&private_key, MESSAGE);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("ed7dd3c5cd4c6e15e0202c3cfa9bebd8273d2853fd6aa712de83fff668fa7de3")
+            hex!("fb3a183cba57f2938296207636635956b6032dbb39fb5d604037a6916810b982")
         );
         assert!(MlDsa65::verify(MESSAGE, &public_key, &signature));
     }
 
     #[test]
     fn test_ml_dsa_87() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = MlDsa87::generate_key_pair(&mut rng);
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
-            hex!("90969e4b5946d357743b1b0900bee5c8913bb1db71ec041b2b10c8ef5abdb982")
+            hex!("7a158d508c2e1668ac322f8b58313903a8c0f7fabcc4c07e3b0950e76c805e5c")
         );
         assert_eq!(
             Sha3_256::digest(&public_key),
-            hex!("baa977e5732d13de8f5a0e16667667465af77949dbb5faf8c242ddb4e1a29a7c")
+            hex!("e71e245b70ccccfa98ced0540566f3c574f1dc734047cb25fe5286259e1d21ea")
         );
         assert_eq!(MlDsa87::public_key(&private_key), public_key);
         let signature = MlDsa87::sign(&private_key, MESSAGE, &mut rng);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("f3198af2e7b38e3a90774f15748ca2820800f6035206074dfdc00e84bedba475")
+            hex!("9f3affeb86985691f26dfa033ea032c57d18f0a8430806bf915ce17e7d0c2ac1")
         );
         assert!(MlDsa87::verify(MESSAGE, &public_key, &signature));
         let signature = MlDsa87::sign_deterministic(&private_key, MESSAGE);
         assert_eq!(
             Sha3_256::digest(&signature),
-            hex!("5e68d93732e191d31530592bfa7ee30bff0d22c7331bf6781378ae2f72222388")
+            hex!("6ff3d4afec58ff4338f6d9255eefa299835cf27145f1cdf039dd4b649fcf2c3a")
         );
         assert!(MlDsa87::verify(MESSAGE, &public_key, &signature));
     }

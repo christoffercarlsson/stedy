@@ -1,7 +1,7 @@
 use {
     criterion::Criterion,
     stedy::{
-        csprngs::Rng,
+        csprngs::ChaCha20Rng,
         signatures::{Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
     },
 };
@@ -128,7 +128,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| P521::verify(message, &p521_public_key, &p521_signature))
     });
 
-    let mut rng = Rng::from(&[0u8; 128]);
+    let mut rng = ChaCha20Rng::from(&[0u8; 96]);
     let seed = [90u8; 32];
 
     let (private_key, public_key) = MlDsa44::key_pair(&seed);

@@ -18,7 +18,7 @@ impl XChaCha20Poly1305 {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {super::*, crate::csprngs::ChaCha20Rng};
 
     #[test]
     fn test_chacha20poly1305() {
@@ -72,13 +72,13 @@ mod tests {
 
     #[test]
     fn test_chacha20poly1305_generate_key() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let key = ChaCha20Poly1305::generate_key(&mut rng);
         assert_eq!(
             key,
             [
-                253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217, 162, 213,
-                40, 127, 15, 170, 40, 184, 218, 178, 64, 246, 99, 149, 165, 24
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
     }
@@ -140,26 +140,26 @@ mod tests {
 
     #[test]
     fn test_xchacha20poly1305_generate_key() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let key = XChaCha20Poly1305::generate_key(&mut rng);
         assert_eq!(
             key,
             [
-                253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217, 162, 213,
-                40, 127, 15, 170, 40, 184, 218, 178, 64, 246, 99, 149, 165, 24
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
     }
 
     #[test]
     fn test_xchacha20poly1305_generate_nonce() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let nonce = XChaCha20Poly1305::generate_nonce(&mut rng);
         assert_eq!(
             nonce,
             [
-                253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217, 162, 213,
-                40, 127, 15, 170, 40, 184,
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74
             ]
         );
     }

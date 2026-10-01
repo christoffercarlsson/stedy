@@ -1,13 +1,13 @@
 use {
     criterion::Criterion,
     stedy::{
-        csprngs::Rng,
+        csprngs::ChaCha20Rng,
         kems::{MlKem1024, MlKem512, MlKem768},
     },
 };
 
 pub fn bench(c: &mut Criterion) {
-    let mut rng = Rng::from(&[0u8; 128]);
+    let mut rng = ChaCha20Rng::from(&[0u8; 96]);
     let seed = [90u8; 64];
 
     let (private_key, public_key) = MlKem512::key_pair(&seed);

@@ -1,4 +1,4 @@
-use {criterion::Criterion, stedy::csprngs::Rng};
+use {criterion::Criterion, stedy::csprngs::ChaCha20Rng};
 
 pub fn bench(c: &mut Criterion) {
     c.bench_function("rng_fill", |b| {
@@ -8,10 +8,9 @@ pub fn bench(c: &mut Criterion) {
             63, 218, 245, 127, 170, 158, 94, 212, 115, 2, 22, 109, 212, 235, 42, 215, 1, 120, 200,
             5, 161, 173, 162, 48, 153, 5, 228, 51, 185, 144, 5, 108, 180, 103, 227, 33, 249, 180,
             55, 133, 138, 84, 78, 248, 192, 49, 168, 83, 96, 159, 150, 163, 210, 249, 205, 252,
-            103, 187, 90, 178, 221, 40, 105, 227, 110, 111, 5, 124, 47, 232, 3, 253, 227, 1, 20,
-            189, 47, 60, 165, 183, 221, 125, 127, 97, 76, 221, 161, 6, 145, 225, 254,
+            103, 187, 90,
         ];
-        let mut rng = Rng::from(seed);
+        let mut rng = ChaCha20Rng::from(seed);
         let mut bytes = [0u8; 96];
         b.iter(|| rng.fill(&mut bytes))
     });

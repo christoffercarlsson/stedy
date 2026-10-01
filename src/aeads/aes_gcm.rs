@@ -19,7 +19,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng, hex_literal::hex};
+    use {super::*, crate::csprngs::ChaCha20Rng, hex_literal::hex};
 
     // https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
 
@@ -133,23 +133,23 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_generate_key() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let key = Aes128Gcm::generate_key(&mut rng);
         assert_eq!(
             key,
-            [253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217]
+            [189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11]
         );
     }
 
     #[test]
     fn test_aes256gcm_generate_key() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let key = Aes256Gcm::generate_key(&mut rng);
         assert_eq!(
             key,
             [
-                253, 205, 139, 38, 230, 153, 90, 68, 159, 27, 68, 57, 5, 242, 232, 217, 162, 213,
-                40, 127, 15, 170, 40, 184, 218, 178, 64, 246, 99, 149, 165, 24
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
+                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
     }

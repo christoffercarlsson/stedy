@@ -74,7 +74,7 @@ where
     F: Xof,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (P::PrivateKey, P::PublicKey) {
-        let mut seed = Secret::<P::Seed>::new();
+        let mut seed = Secret::from(P::Seed::new());
         rng.fill(seed.get_mut().as_mut());
         Self::key_pair(seed.get())
     }
@@ -98,7 +98,7 @@ where
         rng: &mut impl CryptoRng,
     ) -> Option<(P::SharedSecret, P::Ciphertext)> {
         Self::encapsulation_key_check(public_key.as_ref()).then(|| {
-            let mut m = Secret::<[u8; 32]>::new();
+            let mut m = Secret::from([0u8; 32]);
             rng.fill(m.as_mut());
             let (k, c) = Self::encaps_internal(public_key.as_ref(), m.as_ref());
             (P::SharedSecret::from_slice(k.get()), c)
@@ -402,7 +402,7 @@ where
         for x in w.get_mut() {
             *x = Self::compress(1, *x);
         }
-        let mut m = Secret::<[u8; 32]>::new();
+        let mut m = Secret::from([0u8; 32]);
         Self::byte_encode(1, w.get(), m.as_mut());
         m
     }
@@ -422,7 +422,7 @@ where
     fn encaps_internal(ek: &[u8], m: &[u8]) -> (Secret<[u8; 32]>, P::Ciphertext) {
         let derived = Self::g(m, &H::digest(ek));
         let (k, r) = derived.get().split_at(32);
-        let mut result = (Secret::<[u8; 32]>::new(), P::Ciphertext::new());
+        let mut result = (Secret::from([0u8; 32]), P::Ciphertext::new());
         let (key, c) = &mut result;
         key.as_mut().copy_from_slice(k);
         Self::k_pke_encrypt(ek, m, r, c.as_mut());
@@ -484,7 +484,7 @@ where
         let mut xof = F::new();
         xof.update(z);
         xof.update(c);
-        let mut output = Secret::<[u8; 32]>::new();
+        let mut output = Secret::from([0u8; 32]);
         xof.finalize_into(output.as_mut());
         output
     }
@@ -493,7 +493,7 @@ where
         let mut xof = F::new();
         xof.update(s);
         xof.update(&[b]);
-        let mut output = Secret::<[u8; 192]>::new();
+        let mut output = Secret::from([0u8; 192]);
         xof.finalize_into(&mut output.as_mut()[..64 * eta]);
         output
     }
@@ -540,29 +540,29 @@ where
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng, hex_literal::hex};
+    use {super::*, crate::csprngs::ChaCha20Rng, hex_literal::hex};
 
     #[test]
     fn test_ml_kem_512() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = MlKem512::generate_key_pair(&mut rng);
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
-            hex!("36dd6f715dbbd53efe4e3796cdce17b7f1a7ef660fc5fb8ee7f95c110a66bea3")
+            hex!("2e00df480767274d608997eba92e6b4133c91f9c9de6d6aa2f38cc2946072164")
         );
         assert_eq!(
             Sha3_256::digest(&public_key),
-            hex!("d789a2b7212f9c524af245939294113cd20ad55341c2d256085983c4ef5424ed")
+            hex!("9cb1db280beef5d046de6918f079fdeddd8d8a14cd736227499443dd3383531a")
         );
         assert_eq!(MlKem512::public_key(&private_key), public_key);
         let (shared_secret, ciphertext) = MlKem512::encapsulate(&public_key, &mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(&ciphertext),
-            hex!("b106a5d2d121df2e283d411ffaa78aabbb6d358162d762542b3edc9327fa2621")
+            hex!("d4e809968ac004d569ffaefb0d209fd89c883e6febb94ede677150446302cc05")
         );
         assert_eq!(
             shared_secret.as_ref(),
-            &hex!("16abccf12614de9462b18a5b209b4d7f07dc069ecee6cf9ddcbd2d8a5e2561df")
+            &hex!("bf24081ba824336a4c6dd6f5e1678c107b137d3a141610f2873b302f24e2eeb0")
         );
         let decapsulated = MlKem512::decapsulate(&private_key, &ciphertext).unwrap();
         assert_eq!(decapsulated.as_ref(), shared_secret.as_ref());
@@ -570,25 +570,25 @@ mod tests {
 
     #[test]
     fn test_ml_kem_768() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = MlKem768::generate_key_pair(&mut rng);
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
-            hex!("1c4a75d0db0172a30d209b953700f79633138407e83f4bf77fe10ca732b73634")
+            hex!("43dd6e168692b2d7dffc7fa8da478ef1dd0513daf99773e54a688386723ae5d3")
         );
         assert_eq!(
             Sha3_256::digest(&public_key),
-            hex!("2af4d44249d9beea2e13f8c154e577d395e76ff2270581c5ad27be626c866acd")
+            hex!("24683eb57011480d8aa9b3113d4d648121886705d4fdd7f509f1284726e0d838")
         );
         assert_eq!(MlKem768::public_key(&private_key), public_key);
         let (shared_secret, ciphertext) = MlKem768::encapsulate(&public_key, &mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(&ciphertext),
-            hex!("ec55bf6c640830f3c14fc86ff229f63866aa6144fb2627464fd963a9d02949f7")
+            hex!("462995ace42b9e8ef78bf0b1cec8eaf247eb8ce2575ac6adfdb0f37fdb7af311")
         );
         assert_eq!(
             shared_secret.as_ref(),
-            &hex!("71e1fd18f92fff47bbad37088d58f3f1c8ed7ba6a0dc4daa7a9e9375e46645ee")
+            &hex!("a9bc3e359d3a3bdcbc30a9b61c35619e15bbf343d1042b7a34bc62488e97e491")
         );
         let decapsulated = MlKem768::decapsulate(&private_key, &ciphertext).unwrap();
         assert_eq!(decapsulated.as_ref(), shared_secret.as_ref());
@@ -596,25 +596,25 @@ mod tests {
 
     #[test]
     fn test_ml_kem_1024() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = MlKem1024::generate_key_pair(&mut rng);
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
-            hex!("692e8c6374bab2ec9120a3ff34cc0cf1d156a979bb5a117eb79b798f7a91d24d")
+            hex!("a0a8b06a25e3ca02e39cb1655f63ca8ab4f4f0e12e8a74db175a5f5c9601cb79")
         );
         assert_eq!(
             Sha3_256::digest(&public_key),
-            hex!("721987937ec9653c1ff3947b13541a6602a27f0d59917af08f264be48a8df198")
+            hex!("77367d9beacbd301c1cdfec9fa052a01aa021c0f94a6e5f344f538152413951e")
         );
         assert_eq!(MlKem1024::public_key(&private_key), public_key);
         let (shared_secret, ciphertext) = MlKem1024::encapsulate(&public_key, &mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(&ciphertext),
-            hex!("6e0b6cbb963c977f723ec984d41228c9a225f4d1d3d4c8cb4219f791763c33b1")
+            hex!("28a774a857949e82aa0c0b72ecb29b4a40fa1d9a49335403150521c9fe4d7297")
         );
         assert_eq!(
             shared_secret.as_ref(),
-            &hex!("b42516123e9ba187192d356ffb4c2621932c5ca52ff08a4b8c3c6a69da48b8f2")
+            &hex!("48c05576469ce86bc71e0f965b465b5a5a52f99fb32ed3411885e12b816a8144")
         );
         let decapsulated = MlKem1024::decapsulate(&private_key, &ciphertext).unwrap();
         assert_eq!(decapsulated.as_ref(), shared_secret.as_ref());

@@ -42,10 +42,6 @@ pub trait ByteArray:
 
 pub trait CryptoRng {
     fn fill(&mut self, bytes: &mut [u8]);
-
-    fn next_u32(&mut self) -> u32;
-
-    fn next_u64(&mut self) -> u64;
 }
 
 pub trait Digest {
@@ -113,7 +109,7 @@ pub trait EllipticCurve {
 
     fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {
         loop {
-            let mut bytes = Secret::<Self::ScalarBytes>::new();
+            let mut bytes = Secret::from(Self::ScalarBytes::new());
             rng.fill(bytes.get_mut().as_mut());
             if let Some(scalar) = Self::scalar_from_bytes(bytes.get()) {
                 return scalar;

@@ -186,7 +186,7 @@ impl FieldElement for Gf256 {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {super::*, crate::csprngs::ChaCha20Rng};
 
     fn mul_reference(a: u8, b: u8) -> u8 {
         let mut product = 0u16;
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn test_gf256_field_laws() {
-        let mut rng = Rng::from(&[0u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut bytes = [0u8; 3];
         for _ in 0..1000 {
             rng.fill(&mut bytes);

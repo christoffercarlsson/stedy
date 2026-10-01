@@ -8,7 +8,7 @@ pub type P256 = Ecdsa<FieldP256, Sha256, ScalarP256, [u8; 64]>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {super::*, crate::csprngs::ChaCha20Rng};
 
     const PRIVATE_KEY: [u8; 32] = [
         201, 175, 169, 216, 69, 186, 117, 22, 107, 92, 33, 87, 103, 177, 214, 147, 78, 80, 195,
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p256_round_trip() {
-        let mut rng = Rng::from(&[7u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[7u8; 96]);
         let (private_key, public_key) = P256::generate_key_pair(&mut rng);
         let signature = P256::sign(&private_key, b"round trip message").unwrap();
         assert!(P256::verify(b"round trip message", &public_key, &signature));

@@ -8,7 +8,7 @@ pub type P521 = Ecdsa<FieldP521, Sha512, ScalarP521, [u8; 132]>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {super::*, crate::csprngs::ChaCha20Rng};
 
     const PRIVATE_KEY: [u8; 66] = [
         0, 250, 208, 109, 170, 98, 186, 59, 37, 210, 251, 64, 19, 61, 167, 87, 32, 93, 230, 127,
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p521_round_trip() {
-        let mut rng = Rng::from(&[7u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[7u8; 96]);
         let (private_key, public_key) = P521::generate_key_pair(&mut rng);
         let signature = P521::sign(&private_key, b"round trip message").unwrap();
         assert!(P521::verify(b"round trip message", &public_key, &signature));

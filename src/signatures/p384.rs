@@ -8,7 +8,7 @@ pub type P384 = Ecdsa<FieldP384, Sha384, ScalarP384, [u8; 96]>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::Rng};
+    use {super::*, crate::csprngs::ChaCha20Rng};
 
     const PRIVATE_KEY: [u8; 48] = [
         107, 157, 61, 173, 46, 27, 140, 28, 5, 177, 152, 117, 182, 101, 159, 77, 226, 60, 59, 102,
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p384_round_trip() {
-        let mut rng = Rng::from(&[7u8; 128]);
+        let mut rng = ChaCha20Rng::from(&[7u8; 96]);
         let (private_key, public_key) = P384::generate_key_pair(&mut rng);
         let signature = P384::sign(&private_key, b"round trip message").unwrap();
         assert!(P384::verify(b"round trip message", &public_key, &signature));
