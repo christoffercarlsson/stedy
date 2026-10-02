@@ -419,7 +419,7 @@ where
     }
 
     // Algorithm 17
-    fn encaps_internal(ek: &[u8], m: &[u8]) -> (Secret<[u8; 32]>, P::Ciphertext) {
+    pub(crate) fn encaps_internal(ek: &[u8], m: &[u8]) -> (Secret<[u8; 32]>, P::Ciphertext) {
         let derived = Self::g(m, &H::digest(ek));
         let (k, r) = derived.get().split_at(32);
         let mut result = (Secret::from([0u8; 32]), P::Ciphertext::new());
@@ -430,7 +430,7 @@ where
     }
 
     // Algorithm 18
-    fn decaps_internal(dk: &[u8], c: &[u8]) -> Secret<[u8; 32]> {
+    pub(crate) fn decaps_internal(dk: &[u8], c: &[u8]) -> Secret<[u8; 32]> {
         let (dk_pke, rest) = dk.split_at(384 * K);
         let (ek_pke, rest) = rest.split_at(384 * K + 32);
         let (h, z) = rest.split_at(32);
@@ -447,7 +447,7 @@ where
     }
 
     // Section 7.2
-    fn encapsulation_key_check(ek: &[u8]) -> bool {
+    pub(crate) fn encapsulation_key_check(ek: &[u8]) -> bool {
         let (t_bytes, _) = ek[..384 * K].as_chunks::<384>();
         let mut f = [0i16; 256];
         let mut test = [0u8; 384];
