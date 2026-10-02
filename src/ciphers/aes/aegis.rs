@@ -24,7 +24,7 @@ macro_rules! impl_aegis {
                 aegis128l_encrypt_block(&mut state, &mut block);
                 remainder.copy_from_slice(&block[..remainder.len()]);
             }
-            aegis128l_finalize::<TAG_SIZE>(&mut state, aad.len(), data.len())
+            aegis128l_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
         #[target_feature(enable = "aes")]
@@ -43,7 +43,7 @@ macro_rules! impl_aegis {
             if !remainder.is_empty() {
                 aegis128l_decrypt_partial(&mut state, remainder);
             }
-            aegis128l_finalize::<TAG_SIZE>(&mut state, aad.len(), data.len())
+            aegis128l_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
         #[target_feature(enable = "aes")]
@@ -65,7 +65,7 @@ macro_rules! impl_aegis {
                 aegis256_encrypt_block(&mut state, &mut block);
                 remainder.copy_from_slice(&block[..remainder.len()]);
             }
-            aegis256_finalize::<TAG_SIZE>(&mut state, aad.len(), data.len())
+            aegis256_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
         #[target_feature(enable = "aes")]
@@ -84,7 +84,7 @@ macro_rules! impl_aegis {
             if !remainder.is_empty() {
                 aegis256_decrypt_partial(&mut state, remainder);
             }
-            aegis256_finalize::<TAG_SIZE>(&mut state, aad.len(), data.len())
+            aegis256_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
         #[target_feature(enable = "aes")]
@@ -174,8 +174,8 @@ macro_rules! impl_aegis {
         #[target_feature(enable = "aes")]
         fn aegis128l_finalize<const TAG_SIZE: usize>(
             state: &mut [Block; 8],
-            aad_len: usize,
-            data_len: usize,
+            aad_len_bits: u64,
+            data_len_bits: u64,
         ) -> [u8; TAG_SIZE] {
             const {
                 assert!(
@@ -183,7 +183,7 @@ macro_rules! impl_aegis {
                     "AEGIS tags are 128 or 256 bits"
                 );
             }
-            let t = xor(state[2], load(lengths(aad_len, data_len)));
+            let t = xor(state[2], load(lengths(aad_len_bits, data_len_bits)));
             for _ in 0..7 {
                 aegis128l_update(state, t, t);
             }
@@ -197,6 +197,31 @@ macro_rules! impl_aegis {
                 tag[16..].copy_from_slice(&store(xor(high, state[7])));
             }
             tag
+        }
+
+        #[target_feature(enable = "aes")]
+        pub(super) fn aegis128l_mac_init(
+            key: &[u8; 16],
+            nonce: &[u8; 16],
+            state: &mut [[u8; 16]; 8],
+        ) {
+            store_state(&aegis128l_init(key, nonce), state);
+        }
+
+        #[target_feature(enable = "aes")]
+        pub(super) fn aegis128l_mac_absorb(state: &mut [[u8; 16]; 8], blocks: &[[u8; 32]]) {
+            let mut s = load_state(state);
+            for block in blocks {
+                let (t0, t1) = load_pair(block);
+                aegis128l_update(&mut s, t0, t1);
+            }
+            store_state(&s, state);
+        }
+
+        #[target_feature(enable = "aes")]
+        pub(super) fn aegis128l_mac_finalize(state: &mut [[u8; 16]; 8], data_len: u64) -> [u8; 32] {
+            let mut s = load_state(state);
+            aegis128l_finalize::<32>(&mut s, data_len << 3, bits(32))
         }
 
         #[target_feature(enable = "aes")]
@@ -274,8 +299,8 @@ macro_rules! impl_aegis {
         #[target_feature(enable = "aes")]
         fn aegis256_finalize<const TAG_SIZE: usize>(
             state: &mut [Block; 6],
-            aad_len: usize,
-            data_len: usize,
+            aad_len_bits: u64,
+            data_len_bits: u64,
         ) -> [u8; TAG_SIZE] {
             const {
                 assert!(
@@ -283,7 +308,7 @@ macro_rules! impl_aegis {
                     "AEGIS tags are 128 or 256 bits"
                 );
             }
-            let t = xor(state[3], load(lengths(aad_len, data_len)));
+            let t = xor(state[3], load(lengths(aad_len_bits, data_len_bits)));
             for _ in 0..7 {
                 aegis256_update(state, t);
             }
@@ -297,6 +322,46 @@ macro_rules! impl_aegis {
                 tag[16..].copy_from_slice(&store(high));
             }
             tag
+        }
+
+        #[target_feature(enable = "aes")]
+        pub(super) fn aegis256_mac_init(
+            key: &[u8; 32],
+            nonce: &[u8; 32],
+            state: &mut [[u8; 16]; 6],
+        ) {
+            store_state(&aegis256_init(key, nonce), state);
+        }
+
+        #[target_feature(enable = "aes")]
+        pub(super) fn aegis256_mac_absorb(state: &mut [[u8; 16]; 6], blocks: &[[u8; 16]]) {
+            let mut s = load_state(state);
+            for block in blocks {
+                aegis256_update(&mut s, load(*block));
+            }
+            store_state(&s, state);
+        }
+
+        #[target_feature(enable = "aes")]
+        pub(super) fn aegis256_mac_finalize(state: &mut [[u8; 16]; 6], data_len: u64) -> [u8; 32] {
+            let mut s = load_state(state);
+            aegis256_finalize::<32>(&mut s, data_len << 3, bits(32))
+        }
+
+        #[target_feature(enable = "aes")]
+        fn load_state<const N: usize>(bytes: &[[u8; 16]; N]) -> [Block; N] {
+            let mut state = [load([0u8; 16]); N];
+            for (block, bytes) in state.iter_mut().zip(bytes) {
+                *block = load(*bytes);
+            }
+            state
+        }
+
+        #[target_feature(enable = "aes")]
+        fn store_state<const N: usize>(state: &[Block; N], bytes: &mut [[u8; 16]; N]) {
+            for (bytes, block) in bytes.iter_mut().zip(state) {
+                *bytes = store(*block);
+            }
         }
 
         #[target_feature(enable = "aes")]
@@ -320,10 +385,14 @@ macro_rules! impl_aegis {
             block[16..].copy_from_slice(&store(hi));
         }
 
-        fn lengths(aad_len: usize, data_len: usize) -> [u8; 16] {
+        fn bits(size: usize) -> u64 {
+            (size as u64) << 3
+        }
+
+        fn lengths(aad_len_bits: u64, data_len_bits: u64) -> [u8; 16] {
             let mut lengths = [0u8; 16];
-            lengths[..8].copy_from_slice(&((aad_len as u64) << 3).to_le_bytes());
-            lengths[8..].copy_from_slice(&((data_len as u64) << 3).to_le_bytes());
+            lengths[..8].copy_from_slice(&aad_len_bits.to_le_bytes());
+            lengths[8..].copy_from_slice(&data_len_bits.to_le_bytes());
             lengths
         }
     };

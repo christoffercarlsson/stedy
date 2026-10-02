@@ -205,10 +205,6 @@ where
             None => false,
         }
     }
-
-    fn domain(context: &[u8]) -> Option<[u8; 2]> {
-        (context.len() <= 255).then_some([0, context.len() as u8])
-    }
 }
 
 impl<const K: usize, const L: usize, P, H, G> MlDsa<K, L, P, H, G>
@@ -235,6 +231,10 @@ where
     };
 
     // Algorithm 6
+    fn domain(context: &[u8]) -> Option<[u8; 2]> {
+        (context.len() <= 255).then_some([0, context.len() as u8])
+    }
+
     fn key_gen_internal(xi: &[u8], pk: &mut [u8], sk: &mut [u8]) {
         let mut seeds = Secret::from([0u8; 128]);
         let mut xof = H::new();

@@ -6,6 +6,9 @@ use {
     },
 };
 
+#[cfg(feature = "aes")]
+use stedy::aeads::{Aegis128L, Aegis256};
+
 pub fn bench(c: &mut Criterion) {
     let key = [
         11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
@@ -73,4 +76,39 @@ pub fn bench(c: &mut Criterion) {
             mac.verify(&code);
         })
     });
+
+    #[cfg(feature = "aes")]
+    if Aegis128L::is_supported() {
+        let key = [16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let nonce = [16, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let data = [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+        ];
+
+        c.bench_function("aegis128l_mac", |b| {
+            b.iter(|| {
+                let mut mac = Aegis128L::new(&key, &nonce);
+                mac.update(&data);
+                mac.finalize()
+            })
+        });
+
+        let key = [
+            16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ];
+        let nonce = [
+            16, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ];
+
+        c.bench_function("aegis256_mac", |b| {
+            b.iter(|| {
+                let mut mac = Aegis256::new(&key, &nonce);
+                mac.update(&data);
+                mac.finalize()
+            })
+        });
+    }
 }

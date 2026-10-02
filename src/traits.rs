@@ -1,5 +1,6 @@
 mod common;
 
+#[cfg(not(feature = "hazmat"))]
 #[allow(unused_imports)]
 pub(crate) use common::*;
 

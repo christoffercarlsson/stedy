@@ -10,60 +10,6 @@ mod aegis;
 #[cfg_attr(any(target_arch = "x86", target_arch = "x86_64"), path = "aes/x86.rs")]
 mod backend;
 
-pub(crate) fn is_supported() -> bool {
-    backend::is_supported()
-}
-
-pub(crate) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
-    unsafe { backend::multiply::<N>(x, h) }
-}
-
-pub(crate) fn aegis128l_encrypt<const TAG_SIZE: usize>(
-    key: &[u8; 16],
-    nonce: &[u8; 16],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    unsafe { backend::aegis128l_encrypt::<TAG_SIZE>(key, nonce, aad, data) }
-}
-
-pub(crate) fn aegis128l_decrypt<const TAG_SIZE: usize>(
-    key: &[u8; 16],
-    nonce: &[u8; 16],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    unsafe { backend::aegis128l_decrypt::<TAG_SIZE>(key, nonce, aad, data) }
-}
-
-pub(crate) fn aegis256_encrypt<const TAG_SIZE: usize>(
-    key: &[u8; 32],
-    nonce: &[u8; 32],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    unsafe { backend::aegis256_encrypt::<TAG_SIZE>(key, nonce, aad, data) }
-}
-
-pub(crate) fn aegis256_decrypt<const TAG_SIZE: usize>(
-    key: &[u8; 32],
-    nonce: &[u8; 32],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    unsafe { backend::aegis256_decrypt::<TAG_SIZE>(key, nonce, aad, data) }
-}
-
-fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
-    round_keys: &[[u8; 16]; 15],
-    blocks: &[[u8; 16]; N],
-    data: &mut [[u8; 16]; N],
-) {
-    unsafe {
-        backend::encrypt_blocks::<ROUNDS, N>(round_keys, blocks, data);
-    }
-}
-
 pub type Aes128Ctr = AesCtr<16>;
 pub type Aes256Ctr = AesCtr<32>;
 
@@ -268,5 +214,83 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         let mut data = [[0u8; 16]];
         encrypt_blocks::<1, 1>(&[[0u8; 16]; 15], &[block], &mut data);
         u32::from_le_bytes([data[0][0], data[0][1], data[0][2], data[0][3]])
+    }
+}
+
+pub(crate) fn is_supported() -> bool {
+    backend::is_supported()
+}
+
+pub(crate) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
+    unsafe { backend::multiply::<N>(x, h) }
+}
+
+pub(crate) fn aegis128l_encrypt<const TAG_SIZE: usize>(
+    key: &[u8; 16],
+    nonce: &[u8; 16],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis128l_encrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis128l_decrypt<const TAG_SIZE: usize>(
+    key: &[u8; 16],
+    nonce: &[u8; 16],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis128l_decrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis128l_mac_init(key: &[u8; 16], nonce: &[u8; 16], state: &mut [[u8; 16]; 8]) {
+    unsafe { backend::aegis128l_mac_init(key, nonce, state) }
+}
+
+pub(crate) fn aegis128l_mac_absorb(state: &mut [[u8; 16]; 8], blocks: &[[u8; 32]]) {
+    unsafe { backend::aegis128l_mac_absorb(state, blocks) }
+}
+
+pub(crate) fn aegis128l_mac_finalize(state: &mut [[u8; 16]; 8], data_len: u64) -> [u8; 32] {
+    unsafe { backend::aegis128l_mac_finalize(state, data_len) }
+}
+
+pub(crate) fn aegis256_encrypt<const TAG_SIZE: usize>(
+    key: &[u8; 32],
+    nonce: &[u8; 32],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis256_encrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis256_decrypt<const TAG_SIZE: usize>(
+    key: &[u8; 32],
+    nonce: &[u8; 32],
+    aad: &[u8],
+    data: &mut [u8],
+) -> [u8; TAG_SIZE] {
+    unsafe { backend::aegis256_decrypt::<TAG_SIZE>(key, nonce, aad, data) }
+}
+
+pub(crate) fn aegis256_mac_init(key: &[u8; 32], nonce: &[u8; 32], state: &mut [[u8; 16]; 6]) {
+    unsafe { backend::aegis256_mac_init(key, nonce, state) }
+}
+
+pub(crate) fn aegis256_mac_absorb(state: &mut [[u8; 16]; 6], blocks: &[[u8; 16]]) {
+    unsafe { backend::aegis256_mac_absorb(state, blocks) }
+}
+
+pub(crate) fn aegis256_mac_finalize(state: &mut [[u8; 16]; 6], data_len: u64) -> [u8; 32] {
+    unsafe { backend::aegis256_mac_finalize(state, data_len) }
+}
+
+fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
+    round_keys: &[[u8; 16]; 15],
+    blocks: &[[u8; 16]; N],
+    data: &mut [[u8; 16]; N],
+) {
+    unsafe {
+        backend::encrypt_blocks::<ROUNDS, N>(round_keys, blocks, data);
     }
 }
