@@ -81,6 +81,20 @@ jobs:
       - run: rustup update stable --no-self-update && rustup default stable
       - run: cargo test ${{ matrix.flags }}
 
+  wycheproof:
+    name: wycheproof / ${{ matrix.flags }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flags:
+          - --no-default-features
+          - --all-features
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update && rustup default stable
+      - run: cargo test --test wycheproof --release ${{ matrix.flags }} -- --nocapture
+
   msrv:
     name: msrv
     runs-on: ubuntu-latest
