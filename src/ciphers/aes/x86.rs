@@ -9,10 +9,15 @@ use core::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_and_si128, _mm_clmulepi64_si128,
     _mm_cvtsi128_si32, _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
 };
-use std::arch::is_x86_feature_detected;
 
+#[cfg(feature = "std")]
 pub(super) fn is_supported() -> bool {
-    is_x86_feature_detected!("aes") && is_x86_feature_detected!("pclmulqdq")
+    std::arch::is_x86_feature_detected!("aes") && std::arch::is_x86_feature_detected!("pclmulqdq")
+}
+
+#[cfg(not(feature = "std"))]
+pub(super) fn is_supported() -> bool {
+    cfg!(all(target_feature = "aes", target_feature = "pclmulqdq"))
 }
 
 #[target_feature(enable = "aes")]

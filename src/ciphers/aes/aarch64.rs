@@ -1,16 +1,19 @@
 #![forbid(unsafe_code)]
-use {
-    core::arch::aarch64::{
-        uint64x2_t, uint8x16_t, vaeseq_u8, vaesmcq_u8, vandq_u8, vdupq_n_u64, vdupq_n_u8,
-        veorq_u64, veorq_u8, vextq_u64, vgetq_lane_u64, vmull_high_p64, vmull_p64,
-        vreinterpretq_p128_u64, vreinterpretq_p128_u8, vreinterpretq_p64_u64,
-        vreinterpretq_u64_p128, vreinterpretq_u8_p128,
-    },
-    std::arch::is_aarch64_feature_detected,
+use core::arch::aarch64::{
+    uint64x2_t, uint8x16_t, vaeseq_u8, vaesmcq_u8, vandq_u8, vdupq_n_u64, vdupq_n_u8, veorq_u64,
+    veorq_u8, vextq_u64, vgetq_lane_u64, vmull_high_p64, vmull_p64, vreinterpretq_p128_u64,
+    vreinterpretq_p128_u8, vreinterpretq_p64_u64, vreinterpretq_u64_p128, vreinterpretq_u8_p128,
 };
 
+#[cfg(feature = "std")]
 pub(super) fn is_supported() -> bool {
-    is_aarch64_feature_detected!("aes") && is_aarch64_feature_detected!("pmull")
+    std::arch::is_aarch64_feature_detected!("aes")
+        && std::arch::is_aarch64_feature_detected!("pmull")
+}
+
+#[cfg(not(feature = "std"))]
+pub(super) fn is_supported() -> bool {
+    cfg!(target_feature = "aes")
 }
 
 #[target_feature(enable = "aes")]

@@ -35,8 +35,8 @@ serde_json = "1.0.151"
 
 [features]
 default = []
-aes = ["std"]
-docs = ["aes", "getrandom", "hazmat", "secret_sharing"]
+aes = []
+docs = ["aes", "getrandom", "hazmat", "secret_sharing", "std"]
 getrandom = ["dep:getrandom"]
 hazmat = []
 secret_sharing = []

@@ -8,6 +8,10 @@ mod aegis;
 
 #[cfg_attr(target_arch = "aarch64", path = "aes/aarch64.rs")]
 #[cfg_attr(any(target_arch = "x86", target_arch = "x86_64"), path = "aes/x86.rs")]
+#[cfg_attr(
+    not(any(target_arch = "aarch64", target_arch = "x86", target_arch = "x86_64")),
+    path = "aes/unsupported.rs"
+)]
 mod backend;
 
 pub type Aes128Ctr = AesCtr<16>;

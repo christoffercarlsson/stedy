@@ -22,11 +22,14 @@ jobs:
         include:
           - runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            aes: +aes,+pclmulqdq
           - runner: ubuntu-latest
             target: i686-unknown-linux-gnu
             apt: gcc-multilib
+            aes: +aes,+pclmulqdq
           - runner: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
+            aes: +aes
     steps:
       - uses: actions/checkout@v4
       - run: rustup update stable --no-self-update && rustup default stable
@@ -36,6 +39,9 @@ jobs:
       - run: cargo test --target ${{ matrix.target }}
       - run: cargo test --target ${{ matrix.target }} --all-features
       - run: cargo test --target ${{ matrix.target }} --all-features --release
+      - run: cargo test --target ${{ matrix.target }} --features aes,hazmat
+        env:
+          RUSTFLAGS: -C target-feature=${{ matrix.aes }}
 
   build:
     name: build / ${{ matrix.target }} ${{ matrix.flags }}
@@ -56,6 +62,8 @@ jobs:
           - { target: riscv64gc-unknown-none-elf, flags: '' }
           - { target: riscv64gc-unknown-none-elf, flags: --features hazmat,secret_sharing }
           - { target: riscv64gc-unknown-linux-gnu, flags: --features std,getrandom,hazmat,secret_sharing }
+          - { target: aarch64-unknown-none, flags: --features aes }
+          - { target: aarch64-unknown-none, flags: --features aes,hazmat, rustflags: -C target-feature=+aes }
     steps:
       - uses: actions/checkout@v4
       - run: rustup update stable --no-self-update && rustup default stable
@@ -72,7 +80,7 @@ jobs:
       matrix:
         flags:
           - --no-default-features
-          - --features aes
+          - --features aes,std
           - --features secret_sharing
           - --features hazmat
           - --all-features

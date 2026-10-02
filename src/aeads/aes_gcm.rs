@@ -25,6 +25,9 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_case1() {
+        if !Aes128Gcm::is_supported() {
+            return;
+        }
         let key = [0u8; 16];
         let nonce = [0u8; 12];
         let message: &mut [u8] = &mut [];
@@ -36,6 +39,9 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_case2() {
+        if !Aes128Gcm::is_supported() {
+            return;
+        }
         let plaintext = [0u8; 16];
         let key = [0u8; 16];
         let nonce = [0u8; 12];
@@ -50,6 +56,9 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_case3() {
+        if !Aes128Gcm::is_supported() {
+            return;
+        }
         let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
         let key = hex!("feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
@@ -64,6 +73,9 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_case4() {
+        if !Aes128Gcm::is_supported() {
+            return;
+        }
         let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
         let key = hex!("feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
@@ -79,6 +91,9 @@ mod tests {
 
     #[test]
     fn test_aes256gcm_case13() {
+        if !Aes256Gcm::is_supported() {
+            return;
+        }
         let key = [0u8; 32];
         let nonce = [0u8; 12];
         let message: &mut [u8] = &mut [];
@@ -90,6 +105,9 @@ mod tests {
 
     #[test]
     fn test_aes256gcm_case14() {
+        if !Aes256Gcm::is_supported() {
+            return;
+        }
         let plaintext = [0u8; 16];
         let key = [0u8; 32];
         let nonce = [0u8; 12];
@@ -104,6 +122,9 @@ mod tests {
 
     #[test]
     fn test_aes256gcm_case15() {
+        if !Aes256Gcm::is_supported() {
+            return;
+        }
         let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
         let key = hex!("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
@@ -118,6 +139,9 @@ mod tests {
 
     #[test]
     fn test_aes256gcm_case16() {
+        if !Aes256Gcm::is_supported() {
+            return;
+        }
         let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
         let key = hex!("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
