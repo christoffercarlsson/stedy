@@ -2,7 +2,9 @@ use {
     criterion::Criterion,
     stedy::{
         csprngs::ChaCha20Rng,
-        signatures::{Ed25519, Ed448, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
+        signatures::{
+            Ed25519, Ed25519ph, Ed448, Ed448ph, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521,
+        },
     },
 };
 
@@ -33,6 +35,25 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ed25519_verify", |b| {
         b.iter(|| Ed25519::verify(&message, &public_key, &signature))
+    });
+
+    c.bench_function("ed25519ph_sign", |b| {
+        b.iter(|| {
+            let mut signer = Ed25519ph::new();
+            signer.update(&message);
+            signer.sign(&private_key, &[])
+        })
+    });
+
+    c.bench_function("ed25519ph_verify", |b| {
+        let mut signer = Ed25519ph::new();
+        signer.update(&message);
+        let signature = signer.sign(&private_key, &[]).expect("empty context");
+        b.iter(|| {
+            let mut verifier = Ed25519ph::new();
+            verifier.update(&message);
+            verifier.verify(&[], &public_key, &signature)
+        })
     });
 
     let ed448_seed = [
@@ -66,6 +87,25 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ed448_verify", |b| {
         b.iter(|| Ed448::verify(&message, &ed448_public_key, &ed448_signature))
+    });
+
+    c.bench_function("ed448ph_sign", |b| {
+        b.iter(|| {
+            let mut signer = Ed448ph::new();
+            signer.update(&message);
+            signer.sign(&ed448_private_key, &[])
+        })
+    });
+
+    c.bench_function("ed448ph_verify", |b| {
+        let mut signer = Ed448ph::new();
+        signer.update(&message);
+        let signature = signer.sign(&ed448_private_key, &[]).expect("empty context");
+        b.iter(|| {
+            let mut verifier = Ed448ph::new();
+            verifier.update(&message);
+            verifier.verify(&[], &ed448_public_key, &signature)
+        })
     });
 
     let message = b"sample";

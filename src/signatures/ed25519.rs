@@ -1,10 +1,11 @@
 use crate::{
     elliptic_curves::{Field25519, Scalar25519},
     hashes::Sha512,
-    signatures::Eddsa,
+    signatures::{Eddsa, HashEddsa},
 };
 
 pub type Ed25519 = Eddsa<Scalar25519, Field25519, Sha512, [u8; 64]>;
+pub type Ed25519ph = HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512>;
 
 #[cfg(test)]
 mod tests {
@@ -120,5 +121,45 @@ mod tests {
         let signature = hex!("dc2a4459e7369633a52b1bf277839a00201009a3efbf3ecb69bea2186c26b58909351fc9ac90b3ecfdfbc7c66431e0303dca179c138ac17ad9bef1177331a704");
         let verified = Ed25519::verify(&message, &public_key, &signature);
         assert!(!verified);
+    }
+
+    // https://datatracker.ietf.org/doc/html/rfc8032#section-7.3
+
+    #[test]
+    fn test_ed25519ph() {
+        let seed = hex!("833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42");
+        let (private_key, public_key) = Ed25519::key_pair(&seed);
+        assert_eq!(
+            public_key,
+            hex!("ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf")
+        );
+        let expected = hex!("98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406");
+        let mut signer = Ed25519ph::new();
+        signer.update(b"abc");
+        let signature = signer.sign(&private_key, &[]).unwrap();
+        assert_eq!(signature, expected);
+        let mut signer = Ed25519ph::new();
+        signer.update(b"a");
+        signer.update(b"bc");
+        assert_eq!(signer.sign(&private_key, &[]).unwrap(), expected);
+        let mut verifier = Ed25519ph::new();
+        verifier.update(b"ab");
+        verifier.update(b"c");
+        assert!(verifier.verify(&[], &public_key, &signature));
+        let mut verifier = Ed25519ph::new();
+        verifier.update(b"abc");
+        assert!(!verifier.verify(b"foo", &public_key, &signature));
+        let mut verifier = Ed25519ph::new();
+        verifier.update(b"abd");
+        assert!(!verifier.verify(&[], &public_key, &signature));
+        assert!(!Ed25519::verify(b"abc", &public_key, &signature));
+        let mut signer = Ed25519ph::new();
+        signer.update(b"abc");
+        let signature = signer.sign(&private_key, b"foo").unwrap();
+        let mut verifier = Ed25519ph::new();
+        verifier.update(b"abc");
+        assert!(verifier.verify(b"foo", &public_key, &signature));
+        assert!(Ed25519ph::new().sign(&private_key, &[0u8; 256]).is_none());
+        assert!(!Ed25519ph::new().verify(&[0u8; 256], &public_key, &signature));
     }
 }

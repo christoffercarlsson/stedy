@@ -191,7 +191,8 @@ impl FieldElement for Field448 {
 
 impl EdwardsParams<Field448> for Field448 {
     const A: i8 = 1;
-    const DOMAIN: &'static [u8] = b"SigEd448\x00\x00";
+    const DOMAIN: &'static [u8] = b"SigEd448";
+    const DOMAIN_PURE: bool = true;
     const D: Self = Self::from_limbs([
         72057594037888854,
         72057594037927935,

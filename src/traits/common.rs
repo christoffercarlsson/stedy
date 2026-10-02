@@ -61,6 +61,7 @@ pub trait EdwardsParams<F: FieldElement> {
     const D: F;
     const D2: F;
     const DOMAIN: &'static [u8];
+    const DOMAIN_PURE: bool;
     const BASE_POINT_X: F;
     const BASE_POINT_Y: F;
     const BASE_POINT_T: F;

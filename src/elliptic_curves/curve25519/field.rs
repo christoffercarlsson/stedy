@@ -218,7 +218,8 @@ impl FieldElement for Field25519 {
 
 impl EdwardsParams<Field25519> for Field25519 {
     const A: i8 = -1;
-    const DOMAIN: &'static [u8] = &[];
+    const DOMAIN: &'static [u8] = b"SigEd25519 no Ed25519 collisions";
+    const DOMAIN_PURE: bool = false;
     const D: Self = Self::from_limbs([
         929955233495203,
         466365720129213,

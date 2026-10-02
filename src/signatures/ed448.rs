@@ -1,10 +1,12 @@
 use crate::{
     elliptic_curves::{Field448, Scalar448},
     hashes::ShakeDigest,
-    signatures::Eddsa,
+    signatures::{Eddsa, HashEddsa},
 };
 
 pub type Ed448 = Eddsa<Scalar448, Field448, ShakeDigest<136, 114>, [u8; 114]>;
+pub type Ed448ph =
+    HashEddsa<Scalar448, Field448, ShakeDigest<136, 114>, [u8; 114], ShakeDigest<136, 64>>;
 
 #[cfg(test)]
 mod tests {
@@ -110,5 +112,50 @@ mod tests {
         assert_eq!(signature, signature_ref);
         let verified = Ed448::verify(&message, &public_key, &signature);
         assert!(verified);
+    }
+
+    // https://datatracker.ietf.org/doc/html/rfc8032#section-7.5
+
+    #[test]
+    fn test_ed448ph_tc1() {
+        let seed = hex!("833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42ef7822e0d5104127dc05d6dbefde69e3ab2cec7c867c6e2c49");
+        let (private_key, public_key) = Ed448::key_pair(&seed);
+        assert_eq!(
+            public_key,
+            hex!("259b71c19f83ef77a7abd26524cbdb3161b590a48f7d17de3ee0ba9c52beb743c09428a131d6b1b57303d90d8132c276d5ed3d5d01c0f53880")
+        );
+        let expected = hex!("822f6901f7480f3d5f562c592994d9693602875614483256505600bbc281ae381f54d6bce2ea911574932f52a4e6cadd78769375ec3ffd1b801a0d9b3f4030cd433964b6457ea39476511214f97469b57dd32dbc560a9a94d00bff07620464a3ad203df7dc7ce360c3cd3696d9d9fab90f00");
+        let mut signer = Ed448ph::new();
+        signer.update(b"abc");
+        let signature = signer.sign(&private_key, &[]).unwrap();
+        assert_eq!(signature, expected);
+        let mut verifier = Ed448ph::new();
+        verifier.update(b"a");
+        verifier.update(b"bc");
+        assert!(verifier.verify(&[], &public_key, &signature));
+        let mut verifier = Ed448ph::new();
+        verifier.update(b"abc");
+        assert!(!verifier.verify(b"foo", &public_key, &signature));
+        assert!(!Ed448::verify(b"abc", &public_key, &signature));
+    }
+
+    #[test]
+    fn test_ed448ph_tc2() {
+        let seed = hex!("833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42ef7822e0d5104127dc05d6dbefde69e3ab2cec7c867c6e2c49");
+        let (private_key, public_key) = Ed448::key_pair(&seed);
+        let context = hex!("666f6f");
+        let expected = hex!("c32299d46ec8ff02b54540982814dce9a05812f81962b649d528095916a2aa481065b1580423ef927ecf0af5888f90da0f6a9a85ad5dc3f280d91224ba9911a3653d00e484e2ce232521481c8658df304bb7745a73514cdb9bf3e15784ab71284f8d0704a608c54a6b62d97beb511d132100");
+        let mut signer = Ed448ph::new();
+        signer.update(b"ab");
+        signer.update(b"c");
+        let signature = signer.sign(&private_key, &context).unwrap();
+        assert_eq!(signature, expected);
+        let mut verifier = Ed448ph::new();
+        verifier.update(b"abc");
+        assert!(verifier.verify(&context, &public_key, &signature));
+        let mut verifier = Ed448ph::new();
+        verifier.update(b"abc");
+        assert!(!verifier.verify(&[], &public_key, &signature));
+        assert!(Ed448ph::new().sign(&private_key, &[0u8; 256]).is_none());
     }
 }

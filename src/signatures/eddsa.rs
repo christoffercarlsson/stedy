@@ -48,35 +48,75 @@ where
     }
 
     pub fn sign(private_key: &S, message: &[u8]) -> S {
-        let (seed, A) = Self::read_private_key(private_key);
-        let (a, prefix) = Self::expand(seed);
-        let mut state = Self::hasher();
-        state.update(prefix.get().as_ref());
-        state.update(message);
-        let r = E::from(state.finalize());
-        let R = Edwards::<F, E>::mul_base(&r).compress();
-        let mut state = Self::hasher();
-        state.update(R.as_ref());
-        state.update(A);
-        state.update(message);
-        let k = E::from(state.finalize());
-        let s: E::Bytes = (r + k * a).into();
-        Self::create_signature(&R, &s)
+        Self::sign_message(private_key, 0, &[], message)
     }
 
     pub fn verify(message: &[u8], public_key: &F::Bytes, signature: &S) -> bool {
-        let (r, s) = Self::read_signature(signature);
-        let valid_s = E::is_canonical(&s);
-        let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
-        let (R, valid_r) = Edwards::<F, E>::decompress(&r);
-        let mut state = Self::hasher();
-        state.update(r.as_ref());
-        state.update(public_key.as_ref());
-        state.update(message);
-        let k = E::from(state.finalize());
-        let s = E::from(s);
-        let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
-        (r2.ct_eq(&R) & valid_a & valid_r & valid_s).to_bool()
+        Self::verify_message(0, &[], message, public_key, signature)
+    }
+}
+
+pub struct HashEddsa<E, F, H, S, P>
+where
+    E: EdwardsScalar,
+    F: FieldElement + EdwardsParams<F>,
+    H: Hasher<Output = E::WideBytes>,
+    S: ByteArray,
+    P: Hasher,
+{
+    prehash: P,
+    _marker: PhantomData<(E, F, H, S)>,
+}
+
+impl<E, F, H, S, P> HashEddsa<E, F, H, S, P>
+where
+    E: EdwardsScalar,
+    F: FieldElement + EdwardsParams<F>,
+    H: Hasher<Output = E::WideBytes>,
+    S: ByteArray,
+    P: Hasher,
+{
+    pub fn new() -> Self {
+        Self {
+            prehash: P::new(),
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.prehash.update(message);
+    }
+
+    pub fn sign(self, private_key: &S, context: &[u8]) -> Option<S> {
+        u8::try_from(context.len()).ok()?;
+        let digest = self.prehash.finalize();
+        Some(Eddsa::<E, F, H, S>::sign_message(
+            private_key,
+            1,
+            context,
+            digest.as_ref(),
+        ))
+    }
+
+    pub fn verify(self, context: &[u8], public_key: &F::Bytes, signature: &S) -> bool {
+        if u8::try_from(context.len()).is_err() {
+            return false;
+        }
+        let digest = self.prehash.finalize();
+        Eddsa::<E, F, H, S>::verify_message(1, context, digest.as_ref(), public_key, signature)
+    }
+}
+
+impl<E, F, H, S, P> Default for HashEddsa<E, F, H, S, P>
+where
+    E: EdwardsScalar,
+    F: FieldElement + EdwardsParams<F>,
+    H: Hasher<Output = E::WideBytes>,
+    S: ByteArray,
+    P: Hasher,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -89,9 +129,51 @@ where
 {
     const SEED_SIZE: usize = E::SecretBytes::SIZE;
 
-    fn hasher() -> H {
+    fn sign_message(private_key: &S, phflag: u8, context: &[u8], message: &[u8]) -> S {
+        let (seed, A) = Self::read_private_key(private_key);
+        let (a, prefix) = Self::expand(seed);
+        let mut state = Self::hasher(phflag, context);
+        state.update(prefix.get().as_ref());
+        state.update(message);
+        let r = E::from(state.finalize());
+        let R = Edwards::<F, E>::mul_base(&r).compress();
+        let mut state = Self::hasher(phflag, context);
+        state.update(R.as_ref());
+        state.update(A);
+        state.update(message);
+        let k = E::from(state.finalize());
+        let s: E::Bytes = (r + k * a).into();
+        Self::create_signature(&R, &s)
+    }
+
+    fn verify_message(
+        phflag: u8,
+        context: &[u8],
+        message: &[u8],
+        public_key: &F::Bytes,
+        signature: &S,
+    ) -> bool {
+        let (r, s) = Self::read_signature(signature);
+        let valid_s = E::is_canonical(&s);
+        let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
+        let (R, valid_r) = Edwards::<F, E>::decompress(&r);
+        let mut state = Self::hasher(phflag, context);
+        state.update(r.as_ref());
+        state.update(public_key.as_ref());
+        state.update(message);
+        let k = E::from(state.finalize());
+        let s = E::from(s);
+        let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
+        (r2.ct_eq(&R) & valid_a & valid_r & valid_s).to_bool()
+    }
+
+    fn hasher(phflag: u8, context: &[u8]) -> H {
         let mut state = H::new();
-        state.update(F::DOMAIN);
+        if F::DOMAIN_PURE || phflag != 0 || !context.is_empty() {
+            state.update(F::DOMAIN);
+            state.update(&[phflag, context.len() as u8]);
+            state.update(context);
+        }
         state
     }
 
