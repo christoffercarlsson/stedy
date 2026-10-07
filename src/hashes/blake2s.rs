@@ -14,6 +14,16 @@ impl<const N: usize> Blake2s<N> {
     }
 
     pub fn new(key: Option<&[u8]>) -> Self {
+        const {
+            assert!(
+                N >= 1 && N <= Blake2sCore::MAX_OUTPUT_SIZE,
+                "BLAKE2s digests are 1 to 32 bytes"
+            )
+        }
+        assert!(
+            key.is_none_or(|key| key.len() <= Blake2sCore::MAX_KEY_SIZE),
+            "BLAKE2s keys are at most 32 bytes"
+        );
         Self(Blake2sCore::new(key, N))
     }
 
@@ -174,17 +184,15 @@ impl Blake2sCore {
 
     fn new(key: Option<&[u8]>, output_size: usize) -> Self {
         let key = key.unwrap_or_default();
-        let kk = key.len().min(Self::MAX_KEY_SIZE);
-        let nn = output_size.min(Self::MAX_OUTPUT_SIZE);
         let mut state = Self {
             h: Secret::from(Self::IV),
             t: 0,
             block: Block::<64>::new(),
         };
-        state.h[0] ^= 0x01010000 ^ ((kk as u32) << 8) ^ (nn as u32);
-        if kk > 0 {
+        state.h[0] ^= 0x01010000 ^ ((key.len() as u32) << 8) ^ (output_size as u32);
+        if !key.is_empty() {
             let mut block = [0u8; 64];
-            block[..kk].copy_from_slice(&key[..kk]);
+            block[..key.len()].copy_from_slice(key);
             state.update(&block);
         }
         state
