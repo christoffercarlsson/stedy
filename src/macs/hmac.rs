@@ -1,6 +1,6 @@
 use crate::{
     traits::{ByteArray, Digest, Hasher, KeyInit, Mac, Prf},
-    utils::{verify, xor},
+    utils::{verify, xor, Secret},
 };
 
 #[derive(Clone)]
@@ -11,31 +11,33 @@ pub struct Hmac<H: Hasher> {
 
 impl<H: Hasher> Hmac<H> {
     pub fn new(key: &[u8]) -> Self {
-        let mut k = H::Block::new();
+        let mut k = Secret::from(H::Block::new());
         if key.len() > H::BLOCK_SIZE {
             let mut hasher = H::new();
             hasher.update(key);
-            let key_digest = hasher.finalize();
-            k.as_mut()
-                .get_mut(..key_digest.as_ref().len())
+            let key_digest = Secret::from(hasher.finalize());
+            k.get_mut()
+                .as_mut()
+                .get_mut(..key_digest.get().as_ref().len())
                 .expect("HMAC key digest fits within a block")
-                .copy_from_slice(key_digest.as_ref());
+                .copy_from_slice(key_digest.get().as_ref());
         } else {
-            k.as_mut()
+            k.get_mut()
+                .as_mut()
                 .get_mut(..key.len())
                 .expect("HMAC key fits within a block")
                 .copy_from_slice(key);
         }
-        let mut inner_key = H::Block::new();
-        let mut outer_key = H::Block::new();
-        inner_key.as_mut().fill(54);
-        outer_key.as_mut().fill(92);
-        xor(inner_key.as_mut(), k.as_ref());
-        xor(outer_key.as_mut(), k.as_ref());
+        let mut inner_key = Secret::from(H::Block::new());
+        let mut outer_key = Secret::from(H::Block::new());
+        inner_key.get_mut().as_mut().fill(54);
+        outer_key.get_mut().as_mut().fill(92);
+        xor(inner_key.get_mut().as_mut(), k.get().as_ref());
+        xor(outer_key.get_mut().as_mut(), k.get().as_ref());
         let mut inner = H::new();
         let mut outer = H::new();
-        inner.update(inner_key.as_ref());
-        outer.update(outer_key.as_ref());
+        inner.update(inner_key.get().as_ref());
+        outer.update(outer_key.get().as_ref());
         Self { inner, outer }
     }
 
@@ -44,8 +46,8 @@ impl<H: Hasher> Hmac<H> {
     }
 
     pub fn finalize_into(mut self, code: &mut [u8]) {
-        let digest = self.inner.finalize();
-        self.outer.update(digest.as_ref());
+        let digest = Secret::from(self.inner.finalize());
+        self.outer.update(digest.get().as_ref());
         self.outer.finalize_into(code);
     }
 

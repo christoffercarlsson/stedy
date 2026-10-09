@@ -4,6 +4,7 @@ use {
     stedy::{
         hashes::{Sha256, Sha384, Sha3_224, Sha3_256, Sha3_384, Sha3_512, Sha512},
         macs::{Hmac, SipHash13, SipHash24, SipHash48, SipHashX24, SipHashX48},
+        utils::verify,
     },
 };
 
@@ -59,7 +60,7 @@ macro_rules! siphash {
                 let key = key.try_into().expect("SipHash keys are 16 bytes");
                 let mut mac = <$siphash>::new(key);
                 mac.update(message);
-                Some(mac.verify(&tag.try_into().ok()?))
+                Some(verify(&mac.finalize(), tag))
             },
         )
     };

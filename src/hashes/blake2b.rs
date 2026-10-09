@@ -1,5 +1,5 @@
 use crate::{
-    traits::{Digest, Hasher, Init, KeyInit, Mac, Prf},
+    traits::{Digest, Hasher, Init, KeyInit, Mac},
     utils::{verify, Block, Secret},
 };
 
@@ -88,7 +88,7 @@ pub type Blake2b384 = Blake2b<48>;
 pub type Blake2b256 = Blake2b<32>;
 pub type Blake2b160 = Blake2b<20>;
 
-macro_rules! impl_hasher_prf {
+macro_rules! impl_hasher {
     ($($t:ty),*) => {
         $(
             impl Hasher for $t {
@@ -100,13 +100,11 @@ macro_rules! impl_hasher_prf {
                     Self::digest(message)
                 }
             }
-
-            impl Prf for $t {}
         )*
     };
 }
 
-impl_hasher_prf!(Blake2b512, Blake2b384, Blake2b256, Blake2b160);
+impl_hasher!(Blake2b512, Blake2b384, Blake2b256, Blake2b160);
 
 #[derive(Clone)]
 pub struct Blake2bVar {

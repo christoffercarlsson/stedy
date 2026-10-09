@@ -51,6 +51,12 @@ impl<const RATE: usize> Shake<RATE> {
     }
 
     pub fn new() -> Self {
+        const {
+            assert!(
+                RATE == 168 || RATE == 136,
+                "SHAKE rates are 168 or 136 bytes"
+            )
+        }
         Self(Sponge::<RATE>::new())
     }
 

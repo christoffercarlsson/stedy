@@ -77,11 +77,29 @@ impl<const C: usize, const D: usize, const N: usize> SipHash<C, D, N> {
         self.finalize_into(&mut code);
         code
     }
+}
 
-    pub fn verify(self, code: &[u8; N]) -> bool {
-        verify(&self.finalize(), code)
-    }
+macro_rules! impl_siphash_mac {
+    ($($c:literal, $d:literal);*) => {
+        $(
+            impl<const N: usize> SipHash<$c, $d, N> {
+                pub fn verify(self, code: &[u8; N]) -> bool {
+                    verify(&self.finalize(), code)
+                }
+            }
 
+            impl<const N: usize> Mac for SipHash<$c, $d, N> {
+                fn verify(self, code: &Self::Output) -> bool {
+                    self.verify(code)
+                }
+            }
+        )*
+    };
+}
+
+impl_siphash_mac!(2, 4; 4, 8);
+
+impl<const C: usize, const D: usize, const N: usize> SipHash<C, D, N> {
     fn compress(&mut self, m: u64) {
         let v = self.v.get_mut();
         v[3] ^= m;
@@ -131,12 +149,6 @@ impl<const C: usize, const D: usize, const N: usize> Digest for SipHash<C, D, N>
 
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
-    }
-}
-
-impl<const C: usize, const D: usize, const N: usize> Mac for SipHash<C, D, N> {
-    fn verify(self, code: &Self::Output) -> bool {
-        self.verify(code)
     }
 }
 
