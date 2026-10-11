@@ -1,6 +1,13 @@
-.PHONY: clean docs wycheproof
+.PHONY: bench clean docs wycheproof
 
 CRATE := $(shell awk -F'"' '/^\[package\]/ { p = 1 } p && /^name = / { print $$2; exit }' Cargo.toml | tr - _)
+
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+AES_FEATURES := +aes,+pclmulqdq
+else ifneq ($(filter aarch64 arm64,$(ARCH)),)
+AES_FEATURES := +aes
+endif
 
 WYCHEPROOF_REF := main
 WYCHEPROOF_URL := https://raw.githubusercontent.com/C2SP/wycheproof/$(WYCHEPROOF_REF)
@@ -63,6 +70,9 @@ WYCHEPROOF_FILES := \
 	x25519 \
 	x448 \
 	xchacha20_poly1305
+
+bench:
+	@RUSTFLAGS="-C target-feature=$(AES_FEATURES)" cargo bench --quiet --all-features
 
 clean:
 	@cargo clean --quiet

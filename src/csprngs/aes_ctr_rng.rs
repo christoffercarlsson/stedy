@@ -14,9 +14,6 @@ mod tests {
 
     #[test]
     fn test_aes128ctr_rng() {
-        if !Aes128Ctr::is_supported() {
-            return;
-        }
         let seed = [7u8; 64];
         let mut rng = Aes128CtrRng::from(&seed);
         let mut output = [0u8; 48];
@@ -28,9 +25,6 @@ mod tests {
 
     #[test]
     fn test_aes256ctr_rng() {
-        if !Aes256Ctr::is_supported() {
-            return;
-        }
         let seed = [7u8; 96];
         let mut rng = Aes256CtrRng::from(&seed);
         let mut output = [0u8; 48];

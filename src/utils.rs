@@ -1,5 +1,6 @@
 mod block;
 mod choice;
+mod increment;
 mod is_zero;
 mod less_than;
 mod mul;
@@ -10,6 +11,8 @@ mod verify;
 mod wipe;
 mod xor;
 
-pub(crate) use {block::*, choice::*, is_zero::*, less_than::*, mul::*, secret::*, shift_right::*};
+pub(crate) use {
+    block::*, choice::*, increment::*, is_zero::*, less_than::*, mul::*, secret::*, shift_right::*,
+};
 
 pub use {pad::*, verify::*, wipe::*, xor::*};

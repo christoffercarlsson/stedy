@@ -1,4 +1,8 @@
-use crate::traits::{Authenticator, ByteArray, CryptoRng, SeekableStreamCipher};
+use crate::{
+    traits::{Authenticator, ByteArray, CryptoRng, SeekableStreamCipher},
+    utils::increment,
+    Error,
+};
 
 pub struct Aead<C, M>
 where
@@ -19,14 +23,13 @@ where
         nonce: &C::Nonce,
         aad: Option<&[u8]>,
         message: &mut [u8],
-    ) -> M::Output {
-        assert!(
-            M::ACCEPTS_AAD || aad.is_none(),
-            "this AEAD takes no associated data"
-        );
+    ) -> Result<M::Output, Error> {
+        if !M::ACCEPTS_AAD && aad.is_some() {
+            return Err(Error::Misuse);
+        }
         let mut aead = Self::new(key, nonce);
         aead.cipher.apply_keystream(message);
-        aead.mac.tag(message, aad)
+        Ok(aead.mac.tag(message, aad))
     }
 
     pub fn decrypt(
@@ -35,18 +38,16 @@ where
         aad: Option<&[u8]>,
         message: &mut [u8],
         tag: &M::Output,
-    ) -> bool {
-        assert!(
-            M::ACCEPTS_AAD || aad.is_none(),
-            "this AEAD takes no associated data"
-        );
-        let mut aead = Self::new(key, nonce);
-        if aead.mac.verify(message, aad, tag) {
-            aead.cipher.apply_keystream(message);
-            true
-        } else {
-            false
+    ) -> Result<(), Error> {
+        if !M::ACCEPTS_AAD && aad.is_some() {
+            return Err(Error::Misuse);
         }
+        let mut aead = Self::new(key, nonce);
+        if !aead.mac.verify(message, aad, tag) {
+            return Err(Error::Decryption);
+        }
+        aead.cipher.apply_keystream(message);
+        Ok(())
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> C::Key {
@@ -55,14 +56,8 @@ where
         key
     }
 
-    pub fn increment_nonce(nonce: &mut C::Nonce) -> bool {
-        let mut carry: u16 = 1;
-        for b in nonce.as_mut().iter_mut().rev() {
-            let sum = (*b as u16) + carry;
-            *b = sum as u8;
-            carry = sum >> 8;
-        }
-        carry == 0
+    pub fn increment_nonce(nonce: &mut C::Nonce) -> Result<(), Error> {
+        increment(nonce.as_mut())
     }
 }
 

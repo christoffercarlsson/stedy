@@ -39,7 +39,7 @@ jobs:
       - run: cargo test --target ${{ matrix.target }}
       - run: cargo test --target ${{ matrix.target }} --all-features
       - run: cargo test --target ${{ matrix.target }} --all-features --release
-      - run: cargo test --target ${{ matrix.target }} --features aes,hazmat
+      - run: cargo test --target ${{ matrix.target }} --all-features --release
         env:
           RUSTFLAGS: -C target-feature=${{ matrix.aes }}
 
@@ -53,14 +53,18 @@ jobs:
           - { target: wasm32-unknown-unknown, flags: '' }
           - { target: wasm32-unknown-unknown, flags: --features secret_sharing }
           - { target: wasm32-unknown-unknown, flags: --features hazmat }
+          - { target: wasm32-unknown-unknown, flags: --features aes,hazmat }
           - { target: thumbv7em-none-eabihf, flags: '' }
           - { target: thumbv7em-none-eabihf, flags: --features secret_sharing }
           - { target: thumbv7em-none-eabihf, flags: --features hazmat }
+          - { target: thumbv7em-none-eabihf, flags: --features aes }
           - { target: riscv32i-unknown-none-elf, flags: '' }
           - { target: riscv32i-unknown-none-elf, flags: --features hazmat, rustflags: -C target-feature=+zmmul,+c }
+          - { target: riscv32i-unknown-none-elf, flags: --features aes,hazmat, rustflags: -C target-feature=+zmmul,+c }
           - { target: riscv32imc-unknown-none-elf, flags: --features secret_sharing }
           - { target: riscv64gc-unknown-none-elf, flags: '' }
           - { target: riscv64gc-unknown-none-elf, flags: --features hazmat,secret_sharing }
+          - { target: riscv64gc-unknown-none-elf, flags: --features aes,hazmat }
           - { target: riscv64gc-unknown-linux-gnu, flags: --features std,getrandom,hazmat,secret_sharing }
           - { target: aarch64-unknown-none, flags: --features aes }
           - { target: aarch64-unknown-none, flags: --features aes,hazmat, rustflags: -C target-feature=+aes }
@@ -80,6 +84,7 @@ jobs:
       matrix:
         flags:
           - --no-default-features
+          - --no-default-features --features aes,hazmat
           - --features aes,std
           - --features secret_sharing
           - --features hazmat
@@ -95,13 +100,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flags:
-          - --no-default-features
-          - --all-features
+        include:
+          - { flags: --no-default-features }
+          - { flags: --all-features }
+          - { flags: --all-features, rustflags: -C target-feature=+aes,+pclmulqdq }
     steps:
       - uses: actions/checkout@v4
       - run: rustup update stable --no-self-update && rustup default stable
       - run: cargo test --test wycheproof --release ${{ matrix.flags }} -- --nocapture
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
 
   msrv:
     name: msrv

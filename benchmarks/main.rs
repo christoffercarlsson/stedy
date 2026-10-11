@@ -10,6 +10,16 @@ mod key_exchange;
 mod macs;
 mod signatures;
 
+#[cfg(feature = "aes")]
+fn aes_id(name: &str) -> String {
+    let backend = if stedy::aeads::Aes128Gcm::is_accelerated() {
+        "hardware"
+    } else {
+        "software"
+    };
+    format!("{name}/{backend}")
+}
+
 criterion_group!(
     bench,
     aeads::bench,

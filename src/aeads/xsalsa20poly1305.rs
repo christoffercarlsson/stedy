@@ -37,11 +37,11 @@ mod tests {
     #[test]
     fn test_xsalsa20poly1305() {
         let mut message = PLAINTEXT;
-        let tag = XSalsa20Poly1305::encrypt(&KEY, &NONCE, None, &mut message);
+        let tag = XSalsa20Poly1305::encrypt(&KEY, &NONCE, None, &mut message).unwrap();
         assert_eq!(message, CIPHERTEXT);
         assert_eq!(tag, TAG);
         let verified = XSalsa20Poly1305::decrypt(&KEY, &NONCE, None, &mut message, &tag);
-        assert!(verified);
+        assert_eq!(verified, Ok(()));
         assert_eq!(message, PLAINTEXT);
     }
 }

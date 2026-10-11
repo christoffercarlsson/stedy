@@ -41,21 +41,25 @@ macro_rules! aead {
     ($aead:ty) => {
         (
             |key: &[u8], nonce: &[u8], aad: &[u8], message: &mut [u8]| {
-                Some(<$aead>::encrypt(
+                <$aead>::encrypt(
                     &key.try_into().ok()?,
                     &nonce.try_into().ok()?,
                     Some(aad),
                     message,
-                ))
+                )
+                .ok()
             },
             |key: &[u8], nonce: &[u8], aad: &[u8], message: &mut [u8], tag: &[u8]| {
-                Some(<$aead>::decrypt(
-                    &key.try_into().ok()?,
-                    &nonce.try_into().ok()?,
-                    Some(aad),
-                    message,
-                    &tag.try_into().ok()?,
-                ))
+                Some(
+                    <$aead>::decrypt(
+                        &key.try_into().ok()?,
+                        &nonce.try_into().ok()?,
+                        Some(aad),
+                        message,
+                        &tag.try_into().ok()?,
+                    )
+                    .is_ok(),
+                )
             },
         )
     };
@@ -122,10 +126,6 @@ fn xchacha20poly1305() {
 #[cfg(feature = "aes")]
 #[test]
 fn aes_gcm() {
-    if !Aes128Gcm::is_supported() {
-        println!("aes_gcm: skipped, AES is not supported on this CPU");
-        return;
-    }
     let json = include_str!("vectors/aes_gcm_test.json");
     run("aes_gcm (AES-128)", json, 96, 128, aead!(Aes128Gcm));
     run("aes_gcm (AES-256)", json, 96, 256, aead!(Aes256Gcm));
@@ -134,10 +134,6 @@ fn aes_gcm() {
 #[cfg(all(feature = "aes", feature = "hazmat"))]
 #[test]
 fn aegis() {
-    if !Aegis128LTag128::is_supported() {
-        println!("aegis: skipped, AES is not supported on this CPU");
-        return;
-    }
     run(
         "aegis128L",
         include_str!("vectors/aegis128L_test.json"),

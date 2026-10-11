@@ -14,6 +14,7 @@ mod elliptic_curves;
 #[cfg(feature = "hazmat")]
 pub mod elliptic_curves;
 pub mod encoding;
+mod error;
 pub mod hashes;
 pub mod kdfs;
 pub mod kems;
@@ -24,3 +25,5 @@ pub mod secret_sharing;
 pub mod signatures;
 pub mod traits;
 pub mod utils;
+
+pub use error::Error;

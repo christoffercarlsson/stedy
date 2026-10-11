@@ -1,11 +1,17 @@
 macro_rules! impl_aegis {
-    () => {
+    (
+        $block:ty,
+        $load:path,
+        $store:path,
+        $xor:path,
+        $and:path,
+        $rounds:path
+    ) => {
         const C0: [u8; 16] = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 121, 98];
         const C1: [u8; 16] = [
             219, 61, 24, 85, 109, 194, 47, 241, 32, 17, 49, 66, 115, 181, 40, 221,
         ];
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis128l_encrypt<const TAG_SIZE: usize>(
             key: &[u8; 16],
             nonce: &[u8; 16],
@@ -27,7 +33,6 @@ macro_rules! impl_aegis {
             aegis128l_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis128l_decrypt<const TAG_SIZE: usize>(
             key: &[u8; 16],
             nonce: &[u8; 16],
@@ -46,7 +51,6 @@ macro_rules! impl_aegis {
             aegis128l_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis256_encrypt<const TAG_SIZE: usize>(
             key: &[u8; 32],
             nonce: &[u8; 32],
@@ -68,7 +72,6 @@ macro_rules! impl_aegis {
             aegis256_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis256_decrypt<const TAG_SIZE: usize>(
             key: &[u8; 32],
             nonce: &[u8; 32],
@@ -87,21 +90,20 @@ macro_rules! impl_aegis {
             aegis256_finalize::<TAG_SIZE>(&mut state, bits(aad.len()), bits(data.len()))
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_init(key: &[u8; 16], nonce: &[u8; 16]) -> [Block; 8] {
-            let key = load(*key);
-            let nonce = load(*nonce);
-            let c0 = load(C0);
-            let c1 = load(C1);
+        fn aegis128l_init(key: &[u8; 16], nonce: &[u8; 16]) -> [$block; 8] {
+            let key = $load(*key);
+            let nonce = $load(*nonce);
+            let c0 = $load(C0);
+            let c1 = $load(C1);
             let mut state = [
-                xor(key, nonce),
+                $xor(key, nonce),
                 c1,
                 c0,
                 c1,
-                xor(key, nonce),
-                xor(key, c0),
-                xor(key, c1),
-                xor(key, c0),
+                $xor(key, nonce),
+                $xor(key, c0),
+                $xor(key, c1),
+                $xor(key, c0),
             ];
             for _ in 0..10 {
                 aegis128l_update(&mut state, nonce, key);
@@ -109,22 +111,25 @@ macro_rules! impl_aegis {
             state
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_update(state: &mut [Block; 8], m0: Block, m1: Block) {
-            *state = [
-                round(state[7], xor(state[0], m0)),
-                round(state[0], state[1]),
-                round(state[1], state[2]),
-                round(state[2], state[3]),
-                round(state[3], xor(state[4], m1)),
-                round(state[4], state[5]),
-                round(state[5], state[6]),
-                round(state[6], state[7]),
-            ];
+        fn aegis128l_update(state: &mut [$block; 8], m0: $block, m1: $block) {
+            *state = $rounds(
+                [
+                    state[7], state[0], state[1], state[2], state[3], state[4], state[5], state[6],
+                ],
+                [
+                    $xor(state[0], m0),
+                    state[1],
+                    state[2],
+                    state[3],
+                    $xor(state[4], m1),
+                    state[5],
+                    state[6],
+                    state[7],
+                ],
+            );
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_absorb(state: &mut [Block; 8], aad: &[u8]) {
+        fn aegis128l_absorb(state: &mut [$block; 8], aad: &[u8]) {
             for chunk in aad.chunks(32) {
                 let mut block = [0u8; 32];
                 block[..chunk.len()].copy_from_slice(chunk);
@@ -133,47 +138,42 @@ macro_rules! impl_aegis {
             }
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_keystream(state: &[Block; 8]) -> (Block, Block) {
-            let z0 = xor(xor(state[1], state[6]), and(state[2], state[3]));
-            let z1 = xor(xor(state[2], state[5]), and(state[6], state[7]));
+        fn aegis128l_keystream(state: &[$block; 8]) -> ($block, $block) {
+            let z0 = $xor($xor(state[1], state[6]), $and(state[2], state[3]));
+            let z1 = $xor($xor(state[2], state[5]), $and(state[6], state[7]));
             (z0, z1)
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_encrypt_block(state: &mut [Block; 8], block: &mut [u8; 32]) {
+        fn aegis128l_encrypt_block(state: &mut [$block; 8], block: &mut [u8; 32]) {
             let (z0, z1) = aegis128l_keystream(state);
             let (t0, t1) = load_pair(block);
             aegis128l_update(state, t0, t1);
-            store_pair(block, xor(t0, z0), xor(t1, z1));
+            store_pair(block, $xor(t0, z0), $xor(t1, z1));
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_decrypt_block(state: &mut [Block; 8], block: &mut [u8; 32]) {
+        fn aegis128l_decrypt_block(state: &mut [$block; 8], block: &mut [u8; 32]) {
             let (z0, z1) = aegis128l_keystream(state);
             let (t0, t1) = load_pair(block);
-            let out0 = xor(t0, z0);
-            let out1 = xor(t1, z1);
+            let out0 = $xor(t0, z0);
+            let out1 = $xor(t1, z1);
             aegis128l_update(state, out0, out1);
             store_pair(block, out0, out1);
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis128l_decrypt_partial(state: &mut [Block; 8], tail: &mut [u8]) {
+        fn aegis128l_decrypt_partial(state: &mut [$block; 8], tail: &mut [u8]) {
             let (z0, z1) = aegis128l_keystream(state);
             let mut block = [0u8; 32];
             block[..tail.len()].copy_from_slice(tail);
             let (t0, t1) = load_pair(&block);
-            store_pair(&mut block, xor(t0, z0), xor(t1, z1));
+            store_pair(&mut block, $xor(t0, z0), $xor(t1, z1));
             tail.copy_from_slice(&block[..tail.len()]);
             block[tail.len()..].fill(0);
             let (v0, v1) = load_pair(&block);
             aegis128l_update(state, v0, v1);
         }
 
-        #[target_feature(enable = "aes")]
         fn aegis128l_finalize<const TAG_SIZE: usize>(
-            state: &mut [Block; 8],
+            state: &mut [$block; 8],
             aad_len_bits: u64,
             data_len_bits: u64,
         ) -> [u8; TAG_SIZE] {
@@ -183,23 +183,22 @@ macro_rules! impl_aegis {
                     "AEGIS tags are 128 or 256 bits"
                 );
             }
-            let t = xor(state[2], load(lengths(aad_len_bits, data_len_bits)));
+            let t = $xor(state[2], $load(lengths(aad_len_bits, data_len_bits)));
             for _ in 0..7 {
                 aegis128l_update(state, t, t);
             }
-            let low = xor(xor(state[0], state[1]), xor(state[2], state[3]));
-            let high = xor(xor(state[4], state[5]), state[6]);
+            let low = $xor($xor(state[0], state[1]), $xor(state[2], state[3]));
+            let high = $xor($xor(state[4], state[5]), state[6]);
             let mut tag = [0u8; TAG_SIZE];
             if TAG_SIZE == 16 {
-                tag.copy_from_slice(&store(xor(low, high)));
+                tag.copy_from_slice(&$store($xor(low, high)));
             } else {
-                tag[..16].copy_from_slice(&store(low));
-                tag[16..].copy_from_slice(&store(xor(high, state[7])));
+                tag[..16].copy_from_slice(&$store(low));
+                tag[16..].copy_from_slice(&$store($xor(high, state[7])));
             }
             tag
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis128l_mac_init(
             key: &[u8; 16],
             nonce: &[u8; 16],
@@ -208,7 +207,6 @@ macro_rules! impl_aegis {
             store_state(&aegis128l_init(key, nonce), state);
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis128l_mac_absorb(state: &mut [[u8; 16]; 8], blocks: &[[u8; 32]]) {
             let mut s = load_state(state);
             for block in blocks {
@@ -218,87 +216,88 @@ macro_rules! impl_aegis {
             store_state(&s, state);
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis128l_mac_finalize(state: &mut [[u8; 16]; 8], data_len: u64) -> [u8; 32] {
             let mut s = load_state(state);
             aegis128l_finalize::<32>(&mut s, data_len << 3, bits(32))
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_init(key: &[u8; 32], nonce: &[u8; 32]) -> [Block; 6] {
+        fn aegis256_init(key: &[u8; 32], nonce: &[u8; 32]) -> [$block; 6] {
             let (k0, k1) = load_pair(key);
             let (n0, n1) = load_pair(nonce);
-            let c0 = load(C0);
-            let c1 = load(C1);
-            let mut state = [xor(k0, n0), xor(k1, n1), c1, c0, xor(k0, c0), xor(k1, c1)];
+            let c0 = $load(C0);
+            let c1 = $load(C1);
+            let mut state = [
+                $xor(k0, n0),
+                $xor(k1, n1),
+                c1,
+                c0,
+                $xor(k0, c0),
+                $xor(k1, c1),
+            ];
             for _ in 0..4 {
                 aegis256_update(&mut state, k0);
                 aegis256_update(&mut state, k1);
-                aegis256_update(&mut state, xor(k0, n0));
-                aegis256_update(&mut state, xor(k1, n1));
+                aegis256_update(&mut state, $xor(k0, n0));
+                aegis256_update(&mut state, $xor(k1, n1));
             }
             state
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_update(state: &mut [Block; 6], m: Block) {
-            *state = [
-                round(state[5], xor(state[0], m)),
-                round(state[0], state[1]),
-                round(state[1], state[2]),
-                round(state[2], state[3]),
-                round(state[3], state[4]),
-                round(state[4], state[5]),
-            ];
+        fn aegis256_update(state: &mut [$block; 6], m: $block) {
+            *state = $rounds(
+                [state[5], state[0], state[1], state[2], state[3], state[4]],
+                [
+                    $xor(state[0], m),
+                    state[1],
+                    state[2],
+                    state[3],
+                    state[4],
+                    state[5],
+                ],
+            );
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_absorb(state: &mut [Block; 6], aad: &[u8]) {
+        fn aegis256_absorb(state: &mut [$block; 6], aad: &[u8]) {
             for chunk in aad.chunks(16) {
                 let mut block = [0u8; 16];
                 block[..chunk.len()].copy_from_slice(chunk);
-                aegis256_update(state, load(block));
+                aegis256_update(state, $load(block));
             }
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_keystream(state: &[Block; 6]) -> Block {
-            xor(
-                xor(xor(state[1], state[4]), state[5]),
-                and(state[2], state[3]),
+        fn aegis256_keystream(state: &[$block; 6]) -> $block {
+            $xor(
+                $xor($xor(state[1], state[4]), state[5]),
+                $and(state[2], state[3]),
             )
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_encrypt_block(state: &mut [Block; 6], block: &mut [u8; 16]) {
+        fn aegis256_encrypt_block(state: &mut [$block; 6], block: &mut [u8; 16]) {
             let z = aegis256_keystream(state);
-            let t = load(*block);
+            let t = $load(*block);
             aegis256_update(state, t);
-            *block = store(xor(t, z));
+            *block = $store($xor(t, z));
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_decrypt_block(state: &mut [Block; 6], block: &mut [u8; 16]) {
+        fn aegis256_decrypt_block(state: &mut [$block; 6], block: &mut [u8; 16]) {
             let z = aegis256_keystream(state);
-            let out = xor(load(*block), z);
+            let out = $xor($load(*block), z);
             aegis256_update(state, out);
-            *block = store(out);
+            *block = $store(out);
         }
 
-        #[target_feature(enable = "aes")]
-        fn aegis256_decrypt_partial(state: &mut [Block; 6], tail: &mut [u8]) {
+        fn aegis256_decrypt_partial(state: &mut [$block; 6], tail: &mut [u8]) {
             let z = aegis256_keystream(state);
             let mut block = [0u8; 16];
             block[..tail.len()].copy_from_slice(tail);
-            block = store(xor(load(block), z));
+            block = $store($xor($load(block), z));
             tail.copy_from_slice(&block[..tail.len()]);
             block[tail.len()..].fill(0);
-            aegis256_update(state, load(block));
+            aegis256_update(state, $load(block));
         }
 
-        #[target_feature(enable = "aes")]
         fn aegis256_finalize<const TAG_SIZE: usize>(
-            state: &mut [Block; 6],
+            state: &mut [$block; 6],
             aad_len_bits: u64,
             data_len_bits: u64,
         ) -> [u8; TAG_SIZE] {
@@ -308,23 +307,22 @@ macro_rules! impl_aegis {
                     "AEGIS tags are 128 or 256 bits"
                 );
             }
-            let t = xor(state[3], load(lengths(aad_len_bits, data_len_bits)));
+            let t = $xor(state[3], $load(lengths(aad_len_bits, data_len_bits)));
             for _ in 0..7 {
                 aegis256_update(state, t);
             }
-            let low = xor(xor(state[0], state[1]), state[2]);
-            let high = xor(xor(state[3], state[4]), state[5]);
+            let low = $xor($xor(state[0], state[1]), state[2]);
+            let high = $xor($xor(state[3], state[4]), state[5]);
             let mut tag = [0u8; TAG_SIZE];
             if TAG_SIZE == 16 {
-                tag.copy_from_slice(&store(xor(low, high)));
+                tag.copy_from_slice(&$store($xor(low, high)));
             } else {
-                tag[..16].copy_from_slice(&store(low));
-                tag[16..].copy_from_slice(&store(high));
+                tag[..16].copy_from_slice(&$store(low));
+                tag[16..].copy_from_slice(&$store(high));
             }
             tag
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis256_mac_init(
             key: &[u8; 32],
             nonce: &[u8; 32],
@@ -333,56 +331,50 @@ macro_rules! impl_aegis {
             store_state(&aegis256_init(key, nonce), state);
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis256_mac_absorb(state: &mut [[u8; 16]; 6], blocks: &[[u8; 16]]) {
             let mut s = load_state(state);
             for block in blocks {
-                aegis256_update(&mut s, load(*block));
+                aegis256_update(&mut s, $load(*block));
             }
             store_state(&s, state);
         }
 
-        #[target_feature(enable = "aes")]
         pub(super) fn aegis256_mac_finalize(state: &mut [[u8; 16]; 6], data_len: u64) -> [u8; 32] {
             let mut s = load_state(state);
             aegis256_finalize::<32>(&mut s, data_len << 3, bits(32))
         }
 
-        #[target_feature(enable = "aes")]
-        fn load_state<const N: usize>(bytes: &[[u8; 16]; N]) -> [Block; N] {
-            let mut state = [load([0u8; 16]); N];
+        fn load_state<const N: usize>(bytes: &[[u8; 16]; N]) -> [$block; N] {
+            let mut state = [$load([0u8; 16]); N];
             for (block, bytes) in state.iter_mut().zip(bytes) {
-                *block = load(*bytes);
+                *block = $load(*bytes);
             }
             state
         }
 
-        #[target_feature(enable = "aes")]
-        fn store_state<const N: usize>(state: &[Block; N], bytes: &mut [[u8; 16]; N]) {
+        fn store_state<const N: usize>(state: &[$block; N], bytes: &mut [[u8; 16]; N]) {
             for (bytes, block) in bytes.iter_mut().zip(state) {
-                *bytes = store(*block);
+                *bytes = $store(*block);
             }
         }
 
-        #[target_feature(enable = "aes")]
-        fn load_pair(block: &[u8; 32]) -> (Block, Block) {
+        fn load_pair(block: &[u8; 32]) -> ($block, $block) {
             let (lo, hi) = block.split_at(16);
             (
-                load(
+                $load(
                     lo.try_into()
                         .expect("Half block size matches AES block size"),
                 ),
-                load(
+                $load(
                     hi.try_into()
                         .expect("Half block size matches AES block size"),
                 ),
             )
         }
 
-        #[target_feature(enable = "aes")]
-        fn store_pair(block: &mut [u8; 32], lo: Block, hi: Block) {
-            block[..16].copy_from_slice(&store(lo));
-            block[16..].copy_from_slice(&store(hi));
+        fn store_pair(block: &mut [u8; 32], lo: $block, hi: $block) {
+            block[..16].copy_from_slice(&$store(lo));
+            block[16..].copy_from_slice(&$store(hi));
         }
 
         fn bits(size: usize) -> u64 {

@@ -1,8 +1,5 @@
 use crate::{
-    ciphers::{
-        aes::{is_supported, multiply},
-        AesCtr,
-    },
+    ciphers::{aes::multiply, AesCtr},
     traits::{Authenticator, SeekableStreamCipher},
     utils::verify,
 };
@@ -20,10 +17,6 @@ where
     type Output = [u8; 16];
 
     fn new(cipher: &mut AesCtr<KEY_SIZE>) -> Self {
-        assert!(
-            is_supported(),
-            "CPU supports AES and carry-less multiply instructions"
-        );
         let mut mac = Self {
             h: Self::element(&cipher.hash_subkey()),
             y: 0,

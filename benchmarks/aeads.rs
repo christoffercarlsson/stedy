@@ -76,7 +76,7 @@ pub fn bench(c: &mut Criterion) {
     });
 
     #[cfg(feature = "aes")]
-    if Aes128Gcm::is_supported() {
+    {
         let key = [
             254, 255, 233, 146, 134, 101, 115, 28, 109, 106, 143, 148, 103, 48, 131, 8,
         ];
@@ -86,7 +86,7 @@ pub fn bench(c: &mut Criterion) {
             173, 218, 210,
         ];
 
-        c.bench_function("aes128gcm_encrypt", |b| {
+        c.bench_function(&crate::aes_id("aes128gcm_encrypt"), |b| {
             let mut message = [
                 217, 49, 50, 37, 248, 132, 6, 229, 165, 89, 9, 197, 175, 245, 38, 154, 134, 167,
                 169, 83, 21, 52, 247, 218, 46, 76, 48, 61, 138, 49, 138, 114, 28, 60, 12, 149, 149,
@@ -96,7 +96,7 @@ pub fn bench(c: &mut Criterion) {
             b.iter(|| Aes128Gcm::encrypt(&key, &nonce, Some(&aad), &mut message))
         });
 
-        c.bench_function("aes128gcm_decrypt", |b| {
+        c.bench_function(&crate::aes_id("aes128gcm_decrypt"), |b| {
             let mut ciphertext = [
                 66, 131, 30, 194, 33, 119, 116, 36, 75, 114, 33, 183, 132, 208, 212, 156, 227, 170,
                 33, 47, 44, 2, 164, 224, 53, 193, 126, 35, 41, 172, 161, 46, 33, 213, 20, 178, 84,
@@ -111,7 +111,7 @@ pub fn bench(c: &mut Criterion) {
     }
 
     #[cfg(feature = "aes")]
-    if Aes256Gcm::is_supported() {
+    {
         let key = [
             254, 255, 233, 146, 134, 101, 115, 28, 109, 106, 143, 148, 103, 48, 131, 8, 254, 255,
             233, 146, 134, 101, 115, 28, 109, 106, 143, 148, 103, 48, 131, 8,
@@ -122,7 +122,7 @@ pub fn bench(c: &mut Criterion) {
             173, 218, 210,
         ];
 
-        c.bench_function("aes256gcm_encrypt", |b| {
+        c.bench_function(&crate::aes_id("aes256gcm_encrypt"), |b| {
             let mut message = [
                 217, 49, 50, 37, 248, 132, 6, 229, 165, 89, 9, 197, 175, 245, 38, 154, 134, 167,
                 169, 83, 21, 52, 247, 218, 46, 76, 48, 61, 138, 49, 138, 114, 28, 60, 12, 149, 149,
@@ -132,7 +132,7 @@ pub fn bench(c: &mut Criterion) {
             b.iter(|| Aes256Gcm::encrypt(&key, &nonce, Some(&aad), &mut message))
         });
 
-        c.bench_function("aes256gcm_decrypt", |b| {
+        c.bench_function(&crate::aes_id("aes256gcm_decrypt"), |b| {
             let mut ciphertext = [
                 82, 45, 193, 240, 153, 86, 125, 7, 244, 127, 55, 163, 42, 132, 66, 125, 100, 58,
                 140, 220, 191, 229, 192, 201, 117, 152, 162, 189, 37, 85, 209, 170, 140, 176, 142,
@@ -147,7 +147,7 @@ pub fn bench(c: &mut Criterion) {
     }
 
     #[cfg(feature = "aes")]
-    if Aegis128L::is_supported() {
+    {
         let key = [16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let nonce = [16, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let aad = [
@@ -159,20 +159,20 @@ pub fn bench(c: &mut Criterion) {
             38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         ];
 
-        c.bench_function("aegis128l_encrypt", |b| {
+        c.bench_function(&crate::aes_id("aegis128l_encrypt"), |b| {
             let mut message = message;
             b.iter(|| Aegis128L::encrypt(&key, &nonce, Some(&aad), &mut message))
         });
 
-        c.bench_function("aegis128l_decrypt", |b| {
+        c.bench_function(&crate::aes_id("aegis128l_decrypt"), |b| {
             let mut ciphertext = message;
-            let tag = Aegis128L::encrypt(&key, &nonce, Some(&aad), &mut ciphertext);
+            let tag = Aegis128L::encrypt(&key, &nonce, Some(&aad), &mut ciphertext).unwrap();
             b.iter(|| Aegis128L::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
         });
     }
 
     #[cfg(feature = "aes")]
-    if Aegis256::is_supported() {
+    {
         let key = [
             16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0,
@@ -190,14 +190,14 @@ pub fn bench(c: &mut Criterion) {
             38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         ];
 
-        c.bench_function("aegis256_encrypt", |b| {
+        c.bench_function(&crate::aes_id("aegis256_encrypt"), |b| {
             let mut message = message;
             b.iter(|| Aegis256::encrypt(&key, &nonce, Some(&aad), &mut message))
         });
 
-        c.bench_function("aegis256_decrypt", |b| {
+        c.bench_function(&crate::aes_id("aegis256_decrypt"), |b| {
             let mut ciphertext = message;
-            let tag = Aegis256::encrypt(&key, &nonce, Some(&aad), &mut ciphertext);
+            let tag = Aegis256::encrypt(&key, &nonce, Some(&aad), &mut ciphertext).unwrap();
             b.iter(|| Aegis256::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
         });
     }
