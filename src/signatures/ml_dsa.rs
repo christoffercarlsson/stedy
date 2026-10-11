@@ -133,6 +133,7 @@ where
         signature
     }
 
+    #[cfg(feature = "hazmat")]
     pub fn sign_external_mu(
         private_key: &P::PrivateKey,
         mu: &[u8; 64],
@@ -145,6 +146,7 @@ where
         Ok(signature)
     }
 
+    #[cfg(feature = "hazmat")]
     pub fn sign_external_mu_deterministic(
         private_key: &P::PrivateKey,
         mu: &[u8; 64],

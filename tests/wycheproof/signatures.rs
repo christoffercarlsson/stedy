@@ -71,6 +71,7 @@ struct MlDsaSignGroup {
 struct MlDsaSignCase {
     #[serde(default, deserialize_with = "crate::hex_opt")]
     msg: Option<Vec<u8>>,
+    #[cfg(feature = "hazmat")]
     #[serde(default, deserialize_with = "crate::hex_opt")]
     mu: Option<Vec<u8>>,
     #[serde(default, deserialize_with = "crate::hex_opt")]
@@ -84,6 +85,7 @@ struct MlDsaSignCase {
 type Verify = fn(&[u8], &[u8], &[u8]) -> bool;
 type VerifyWithContext = fn(&[u8], &[u8], &[u8], &[u8]) -> bool;
 type KeyPair = fn(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
+#[cfg(feature = "hazmat")]
 type Sign = fn(&[u8], &[u8]) -> Option<Vec<u8>>;
 type SignWithContext = fn(&[u8], &[u8], &[u8]) -> Option<Vec<u8>>;
 #[cfg(feature = "hazmat")]
@@ -98,6 +100,7 @@ struct MlDsa {
     sign_noseed_json: &'static str,
     key_pair: KeyPair,
     sign: SignWithContext,
+    #[cfg(feature = "hazmat")]
     sign_mu: Sign,
     #[cfg(feature = "hazmat")]
     sign_hedged: SignHedgedWithContext,
@@ -136,6 +139,7 @@ macro_rules! ml_dsa {
                         .ok()?;
                 Some(signature.to_vec())
             },
+            #[cfg(feature = "hazmat")]
             sign_mu: |private_key: &[u8], mu: &[u8]| {
                 let private_key = private_key.try_into().ok()?;
                 let mu = mu.try_into().ok()?;
@@ -250,13 +254,11 @@ fn run_ml_dsa_sign(ml_dsa: &MlDsa, name: &str, json: &str) {
                     Some(_) => {}
                 }
             }
+            #[cfg(feature = "hazmat")]
             if let Some(mu) = &c.mu {
                 match &c.rnd {
                     None => signatures.push((ml_dsa.sign_mu)(private_key, mu)),
-                    #[cfg(feature = "hazmat")]
                     Some(rnd) => signatures.push((ml_dsa.sign_mu_hedged)(private_key, mu, rnd)),
-                    #[cfg(not(feature = "hazmat"))]
-                    Some(_) => {}
                 }
             }
             if signatures.is_empty() {
