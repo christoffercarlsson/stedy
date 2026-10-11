@@ -21,7 +21,11 @@ macro_rules! ecdh {
         |private_key: &[u8], public_key: &[u8]| {
             let private_key = pad_scalar::<$scalar>(private_key)?;
             let public_key = compress_point::<$point>(public_key)?;
-            Some(<$ecdh>::key_exchange(&private_key, &public_key)?.to_vec())
+            Some(
+                <$ecdh>::key_exchange(&private_key, &public_key)
+                    .ok()?
+                    .to_vec(),
+            )
         }
     };
 }
@@ -31,7 +35,11 @@ macro_rules! xdh {
         |private_key: &[u8], public_key: &[u8]| {
             let private_key = private_key.try_into().ok()?;
             let public_key = public_key.try_into().ok()?;
-            Some(<$xdh>::key_exchange(&private_key, &public_key)?.to_vec())
+            Some(
+                <$xdh>::key_exchange(&private_key, &public_key)
+                    .ok()?
+                    .to_vec(),
+            )
         }
     };
 }

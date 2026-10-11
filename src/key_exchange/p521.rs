@@ -4,7 +4,10 @@ pub type P521 = Ecdh<P521Curve>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng};
+    use {
+        super::*,
+        crate::{csprngs::ChaCha20Rng, Error},
+    };
 
     const ALICE_PRIVATE_KEY: [u8; 66] = [
         1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
@@ -57,12 +60,12 @@ mod tests {
     #[test]
     fn test_ecdh_p521_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = P521::generate_key_pair(&mut rng);
+        let (private_key, public_key) = P521::generate_key_pair(&mut rng).unwrap();
         assert_eq!(P521::public_key(&private_key).unwrap(), public_key);
     }
 
     #[test]
     fn test_ecdh_p521_rejects_zero_private_key() {
-        assert!(P521::public_key(&[0u8; 66]).is_none());
+        assert_eq!(P521::public_key(&[0u8; 66]), Err(Error::InvalidKey));
     }
 }

@@ -1,6 +1,7 @@
 use crate::{
     traits::{Digest, Hasher, Init, KeyInit, Mac},
     utils::{verify, Block, Secret},
+    Error,
 };
 
 #[derive(Clone)]
@@ -8,23 +9,16 @@ pub struct Blake2b<const N: usize>(Blake2bCore);
 
 impl<const N: usize> Blake2b<N> {
     pub fn digest(message: &[u8]) -> [u8; N] {
-        let mut hasher = Self::new(None);
+        let mut hasher = Self::with_key(None);
         hasher.update(message);
         hasher.finalize()
     }
 
-    pub fn new(key: Option<&[u8]>) -> Self {
-        const {
-            assert!(
-                N >= 1 && N <= Blake2bCore::MAX_OUTPUT_SIZE,
-                "BLAKE2b digests are 1 to 64 bytes"
-            )
+    pub fn new(key: Option<&[u8]>) -> Result<Self, Error> {
+        if key.is_some_and(|key| key.len() > Blake2bCore::MAX_KEY_SIZE) {
+            return Err(Error::InvalidKey);
         }
-        assert!(
-            key.is_none_or(|key| key.len() <= Blake2bCore::MAX_KEY_SIZE),
-            "BLAKE2b keys are at most 64 bytes"
-        );
-        Self(Blake2bCore::new(key, N))
+        Ok(Self::with_key(key))
     }
 
     pub fn update(&mut self, message: &[u8]) {
@@ -42,19 +36,35 @@ impl<const N: usize> Blake2b<N> {
         digest
     }
 
-    pub fn verify(self, code: &[u8; N]) -> bool {
-        verify(code, &self.finalize())
+    pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
+        if verify(code, &self.finalize()) {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
+    }
+}
+
+impl<const N: usize> Blake2b<N> {
+    fn with_key(key: Option<&[u8]>) -> Self {
+        const {
+            assert!(
+                N >= 1 && N <= Blake2bCore::MAX_OUTPUT_SIZE,
+                "BLAKE2b digests are 1 to 64 bytes"
+            )
+        }
+        Self(Blake2bCore::new(key, N))
     }
 }
 
 impl<const N: usize> Init for Blake2b<N> {
     fn new() -> Self {
-        Self::new(None)
+        Self::with_key(None)
     }
 }
 
 impl<const N: usize> KeyInit for Blake2b<N> {
-    fn new(key: &[u8]) -> Self {
+    fn new(key: &[u8]) -> Result<Self, Error> {
         Self::new(Some(key))
     }
 }
@@ -78,7 +88,7 @@ impl<const N: usize> Digest for Blake2b<N> {
 }
 
 impl<const N: usize> Mac for Blake2b<N> {
-    fn verify(self, code: &[u8; N]) -> bool {
+    fn verify(self, code: &[u8; N]) -> Result<(), Error> {
         self.verify(code)
     }
 }
@@ -113,30 +123,24 @@ pub struct Blake2bVar {
 }
 
 impl Blake2bVar {
-    pub fn new(key: Option<&[u8]>, output_size: usize) -> Option<Self> {
-        let key_size = match key {
-            Some(key) => key.len(),
-            None => 0,
-        };
-        if output_size == 0
-            || output_size > Blake2bCore::MAX_OUTPUT_SIZE
-            || key_size > Blake2bCore::MAX_KEY_SIZE
-        {
-            return None;
+    pub fn new(key: Option<&[u8]>, output_size: usize) -> Result<Self, Error> {
+        if output_size == 0 || output_size > Blake2bCore::MAX_OUTPUT_SIZE {
+            return Err(Error::Misuse);
         }
-        Some(Self {
+        if key.is_some_and(|key| key.len() > Blake2bCore::MAX_KEY_SIZE) {
+            return Err(Error::InvalidKey);
+        }
+        Ok(Self {
             core: Blake2bCore::new(key, output_size),
             output_size,
         })
     }
 
-    pub fn digest(message: &[u8], digest: &mut [u8]) -> bool {
-        let Some(mut hasher) = Self::new(None, digest.len()) else {
-            return false;
-        };
+    pub fn digest(message: &[u8], digest: &mut [u8]) -> Result<(), Error> {
+        let mut hasher = Self::new(None, digest.len())?;
         hasher.update(message);
         hasher.finalize_into(digest);
-        true
+        Ok(())
     }
 
     pub fn output_size(&self) -> usize {

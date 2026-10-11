@@ -63,13 +63,17 @@ macro_rules! ml_kem {
             encapsulate: |public_key: &[u8], m: &[u8]| {
                 let public_key = public_key.try_into().ok()?;
                 let (shared_secret, ciphertext) =
-                    <$ml_kem>::encapsulate(&public_key, &mut FixedRng(m))?;
+                    <$ml_kem>::encapsulate(&public_key, &mut FixedRng(m)).ok()?;
                 Some((shared_secret.to_vec(), ciphertext.to_vec()))
             },
             decapsulate: |private_key: &[u8], ciphertext: &[u8]| {
                 let private_key = private_key.try_into().ok()?;
                 let ciphertext = ciphertext.try_into().ok()?;
-                Some(<$ml_kem>::decapsulate(&private_key, &ciphertext)?.to_vec())
+                Some(
+                    <$ml_kem>::decapsulate(&private_key, &ciphertext)
+                        .ok()?
+                        .to_vec(),
+                )
             },
         }
     };

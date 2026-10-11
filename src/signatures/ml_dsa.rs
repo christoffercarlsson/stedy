@@ -3,6 +3,7 @@ use {
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaParams, Xof, XofReader},
         utils::{verify, Choice, Secret},
+        Error,
     },
     core::{array::from_fn, marker::PhantomData},
 };
@@ -75,10 +76,12 @@ where
     H: Xof,
     G: Xof,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (P::PrivateKey, P::PublicKey) {
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(P::PrivateKey, P::PublicKey), Error> {
         let mut seed = Secret::from(P::Seed::new());
-        rng.fill(seed.get_mut().as_mut());
-        Self::key_pair(seed.get())
+        rng.fill(seed.get_mut().as_mut())?;
+        Ok(Self::key_pair(seed.get()))
     }
 
     pub fn key_pair(seed: &P::Seed) -> (P::PrivateKey, P::PublicKey) {
@@ -106,9 +109,9 @@ where
         private_key: &P::PrivateKey,
         message: &[u8],
         rng: &mut impl CryptoRng,
-    ) -> P::Signature {
+    ) -> Result<P::Signature, Error> {
         let mut rnd = Secret::from([0u8; 32]);
-        rng.fill(rnd.as_mut());
+        rng.fill(rnd.as_mut())?;
         let mut signature = P::Signature::new();
         Self::sign_internal(
             private_key.as_ref(),
@@ -116,7 +119,7 @@ where
             rnd.get(),
             signature.as_mut(),
         );
-        signature
+        Ok(signature)
     }
 
     pub fn sign_deterministic(private_key: &P::PrivateKey, message: &[u8]) -> P::Signature {
@@ -134,12 +137,12 @@ where
         private_key: &P::PrivateKey,
         mu: &[u8; 64],
         rng: &mut impl CryptoRng,
-    ) -> P::Signature {
+    ) -> Result<P::Signature, Error> {
         let mut rnd = Secret::from([0u8; 32]);
-        rng.fill(rnd.as_mut());
+        rng.fill(rnd.as_mut())?;
         let mut signature = P::Signature::new();
         Self::sign_internal_mu(private_key.as_ref(), mu, rnd.get(), signature.as_mut());
-        signature
+        Ok(signature)
     }
 
     pub fn sign_external_mu_deterministic(
@@ -151,7 +154,11 @@ where
         signature
     }
 
-    pub fn verify(message: &[u8], public_key: &P::PublicKey, signature: &P::Signature) -> bool {
+    pub fn verify(
+        message: &[u8],
+        public_key: &P::PublicKey,
+        signature: &P::Signature,
+    ) -> Result<(), Error> {
         Self::verify_internal(public_key.as_ref(), &[&[0, 0], message], signature.as_ref())
     }
 
@@ -160,10 +167,10 @@ where
         message: &[u8],
         context: &[u8],
         rng: &mut impl CryptoRng,
-    ) -> Option<P::Signature> {
-        let domain = Self::domain(context)?;
+    ) -> Result<P::Signature, Error> {
+        let domain = Self::domain(context).ok_or(Error::Misuse)?;
         let mut rnd = Secret::from([0u8; 32]);
-        rng.fill(rnd.as_mut());
+        rng.fill(rnd.as_mut())?;
         let mut signature = P::Signature::new();
         Self::sign_internal(
             private_key.as_ref(),
@@ -171,15 +178,15 @@ where
             rnd.get(),
             signature.as_mut(),
         );
-        Some(signature)
+        Ok(signature)
     }
 
     pub fn sign_deterministic_with_context(
         private_key: &P::PrivateKey,
         message: &[u8],
         context: &[u8],
-    ) -> Option<P::Signature> {
-        let domain = Self::domain(context)?;
+    ) -> Result<P::Signature, Error> {
+        let domain = Self::domain(context).ok_or(Error::Misuse)?;
         let mut signature = P::Signature::new();
         Self::sign_internal(
             private_key.as_ref(),
@@ -187,7 +194,7 @@ where
             &[0; 32],
             signature.as_mut(),
         );
-        Some(signature)
+        Ok(signature)
     }
 
     pub fn verify_with_context(
@@ -195,15 +202,13 @@ where
         context: &[u8],
         public_key: &P::PublicKey,
         signature: &P::Signature,
-    ) -> bool {
-        match Self::domain(context) {
-            Some(domain) => Self::verify_internal(
-                public_key.as_ref(),
-                &[&domain, context, message],
-                signature.as_ref(),
-            ),
-            None => false,
-        }
+    ) -> Result<(), Error> {
+        let domain = Self::domain(context).ok_or(Error::Misuse)?;
+        Self::verify_internal(
+            public_key.as_ref(),
+            &[&domain, context, message],
+            signature.as_ref(),
+        )
     }
 }
 
@@ -369,14 +374,12 @@ where
     }
 
     // Algorithm 8
-    fn verify_internal(pk: &[u8], m_prime: &[&[u8]], signature: &[u8]) -> bool {
+    fn verify_internal(pk: &[u8], m_prime: &[&[u8]], signature: &[u8]) -> Result<(), Error> {
         let mut t1 = [[0i32; 256]; K];
         let rho = Self::pk_decode(pk, &mut t1);
         let mut z = [[0i32; 256]; L];
         let mut h = [[0u8; 32]; K];
-        let Some(c_tilde) = Self::sig_decode(signature, &mut z, &mut h) else {
-            return false;
-        };
+        let c_tilde = Self::sig_decode(signature, &mut z, &mut h).ok_or(Error::Verification)?;
         let mut tr = [0u8; 64];
         H::digest(pk, &mut tr);
         let mut mu = [0u8; 64];
@@ -422,7 +425,11 @@ where
         xof.update(&mu);
         xof.update(&w1_bytes[..w1_size]);
         xof.finalize_into(&mut c_tilde_prime[..P::LAMBDA / 4]);
-        !z_bound & verify(c_tilde, &c_tilde_prime[..P::LAMBDA / 4])
+        if !z_bound & verify(c_tilde, &c_tilde_prime[..P::LAMBDA / 4]) {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
     }
 
     // Algorithm 14
@@ -1045,7 +1052,7 @@ mod tests {
     #[test]
     fn test_ml_dsa_44() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlDsa44::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlDsa44::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
             hex!("2a53271a0792dc8527cd6a26a500e833647f57d5ce32bdc6b0465b2c911a1094")
@@ -1055,74 +1062,72 @@ mod tests {
             hex!("7531823c328891e2037e3fde929cef597506b3d684f18a9a4446320c5c5245c9")
         );
         assert_eq!(MlDsa44::public_key(&private_key), public_key);
-        let signature = MlDsa44::sign(&private_key, MESSAGE, &mut rng);
+        let signature = MlDsa44::sign(&private_key, MESSAGE, &mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("995e53f29740661474116d474be77d0905b3ce0754e169ea75d78d4bcfb8f293")
         );
-        assert!(MlDsa44::verify(MESSAGE, &public_key, &signature));
+        MlDsa44::verify(MESSAGE, &public_key, &signature).unwrap();
         let signature = MlDsa44::sign_deterministic(&private_key, MESSAGE);
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("84ac426c24b8f9ef126efd628b77c1fb02136ccf0f5ebcd29a708a6062b247e4")
         );
-        assert!(MlDsa44::verify(MESSAGE, &public_key, &signature));
+        MlDsa44::verify(MESSAGE, &public_key, &signature).unwrap();
     }
 
     #[test]
     fn test_ml_dsa_44_context() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlDsa44::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlDsa44::generate_key_pair(&mut rng).unwrap();
         let context = b"context";
         let signature = MlDsa44::sign_with_context(&private_key, MESSAGE, context, &mut rng)
             .expect("Context fits");
-        assert!(MlDsa44::verify_with_context(
-            MESSAGE,
-            context,
-            &public_key,
-            &signature
-        ));
-        assert!(!MlDsa44::verify_with_context(
-            MESSAGE,
-            b"",
-            &public_key,
-            &signature
-        ));
-        assert!(!MlDsa44::verify(MESSAGE, &public_key, &signature));
+        MlDsa44::verify_with_context(MESSAGE, context, &public_key, &signature).unwrap();
+        assert_eq!(
+            MlDsa44::verify_with_context(MESSAGE, b"", &public_key, &signature),
+            Err(Error::Verification)
+        );
+        assert_eq!(
+            MlDsa44::verify(MESSAGE, &public_key, &signature),
+            Err(Error::Verification)
+        );
         let signature = MlDsa44::sign_deterministic_with_context(&private_key, MESSAGE, context)
             .expect("Context fits");
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("814e5a2a005de3e4a3598148a2545c2f804452f5e67b67ede27e6ec67304f6a8")
         );
-        assert!(MlDsa44::verify_with_context(
-            MESSAGE,
-            context,
-            &public_key,
-            &signature
-        ));
+        MlDsa44::verify_with_context(MESSAGE, context, &public_key, &signature).unwrap();
         let signature = MlDsa44::sign_deterministic_with_context(&private_key, MESSAGE, b"");
         assert_eq!(
             signature,
-            Some(MlDsa44::sign_deterministic(&private_key, MESSAGE))
+            Ok(MlDsa44::sign_deterministic(&private_key, MESSAGE))
         );
         let context = [0u8; 256];
-        assert!(
-            MlDsa44::sign_deterministic_with_context(&private_key, MESSAGE, &context).is_none()
+        assert_eq!(
+            MlDsa44::sign_deterministic_with_context(&private_key, MESSAGE, &context).unwrap_err(),
+            Error::Misuse
         );
-        assert!(MlDsa44::sign_with_context(&private_key, MESSAGE, &context, &mut rng).is_none());
-        assert!(!MlDsa44::verify_with_context(
-            MESSAGE,
-            &context,
-            &public_key,
-            &MlDsa44::sign_deterministic(&private_key, MESSAGE)
-        ));
+        assert_eq!(
+            MlDsa44::sign_with_context(&private_key, MESSAGE, &context, &mut rng).unwrap_err(),
+            Error::Misuse
+        );
+        assert_eq!(
+            MlDsa44::verify_with_context(
+                MESSAGE,
+                &context,
+                &public_key,
+                &MlDsa44::sign_deterministic(&private_key, MESSAGE)
+            ),
+            Err(Error::Misuse)
+        );
     }
 
     #[test]
     fn test_ml_dsa_65() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlDsa65::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlDsa65::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
             hex!("31007b09c799569f7ea3c16605104066ac33ae02ad8551ca6b595e1ead1f1ac5")
@@ -1132,24 +1137,24 @@ mod tests {
             hex!("55c5ce17bbbe51aa3aa81b6f60c28417068c0f73658074f28e41408138694460")
         );
         assert_eq!(MlDsa65::public_key(&private_key), public_key);
-        let signature = MlDsa65::sign(&private_key, MESSAGE, &mut rng);
+        let signature = MlDsa65::sign(&private_key, MESSAGE, &mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("c8736e1a0d56dda61f01bd19f001d3bfb4f7bb75f3be8b772ae26f3c7afb4c77")
         );
-        assert!(MlDsa65::verify(MESSAGE, &public_key, &signature));
+        MlDsa65::verify(MESSAGE, &public_key, &signature).unwrap();
         let signature = MlDsa65::sign_deterministic(&private_key, MESSAGE);
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("fb3a183cba57f2938296207636635956b6032dbb39fb5d604037a6916810b982")
         );
-        assert!(MlDsa65::verify(MESSAGE, &public_key, &signature));
+        MlDsa65::verify(MESSAGE, &public_key, &signature).unwrap();
     }
 
     #[test]
     fn test_ml_dsa_87() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlDsa87::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlDsa87::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
             hex!("7a158d508c2e1668ac322f8b58313903a8c0f7fabcc4c07e3b0950e76c805e5c")
@@ -1159,17 +1164,17 @@ mod tests {
             hex!("e71e245b70ccccfa98ced0540566f3c574f1dc734047cb25fe5286259e1d21ea")
         );
         assert_eq!(MlDsa87::public_key(&private_key), public_key);
-        let signature = MlDsa87::sign(&private_key, MESSAGE, &mut rng);
+        let signature = MlDsa87::sign(&private_key, MESSAGE, &mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("9f3affeb86985691f26dfa033ea032c57d18f0a8430806bf915ce17e7d0c2ac1")
         );
-        assert!(MlDsa87::verify(MESSAGE, &public_key, &signature));
+        MlDsa87::verify(MESSAGE, &public_key, &signature).unwrap();
         let signature = MlDsa87::sign_deterministic(&private_key, MESSAGE);
         assert_eq!(
             Sha3_256::digest(&signature),
             hex!("6ff3d4afec58ff4338f6d9255eefa299835cf27145f1cdf039dd4b649fcf2c3a")
         );
-        assert!(MlDsa87::verify(MESSAGE, &public_key, &signature));
+        MlDsa87::verify(MESSAGE, &public_key, &signature).unwrap();
     }
 }

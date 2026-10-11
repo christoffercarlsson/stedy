@@ -4,6 +4,7 @@ mod scalar;
 use crate::{
     elliptic_curves::weierstrass::Weierstrass,
     traits::{EcdsaCurve, EllipticCurve, WeierstrassScalar},
+    Error,
 };
 pub use {field::*, scalar::*};
 
@@ -20,12 +21,12 @@ impl EllipticCurve for P521 {
     type ScalarBytes = [u8; 66];
     type SharedSecretBytes = [u8; 66];
 
-    fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error> {
         let (point, valid) = Point::decompress(bytes);
         if valid.to_bool() {
-            Some(point)
+            Ok(point)
         } else {
-            None
+            Err(Error::InvalidKey)
         }
     }
 
@@ -37,8 +38,8 @@ impl EllipticCurve for P521 {
         point.affine_x()
     }
 
-    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        ScalarP521::from_canonical(bytes)
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error> {
+        ScalarP521::from_canonical(bytes).ok_or(Error::InvalidKey)
     }
 
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
@@ -49,12 +50,12 @@ impl EllipticCurve for P521 {
         scalar.into()
     }
 
-    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
         let result = point * scalar;
         if result.is_identity().to_bool() {
-            None
+            Err(Error::InvalidKey)
         } else {
-            Some(result)
+            Ok(result)
         }
     }
 }

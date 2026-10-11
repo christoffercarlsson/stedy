@@ -1,32 +1,46 @@
-use crate::{traits::Prf, utils::xor};
+use {
+    crate::{traits::Prf, utils::xor, Error},
+    core::marker::PhantomData,
+};
 
-pub fn pbkdf2<P>(password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8])
-where
-    P: Prf + Clone,
-{
-    let prf = P::new(password);
-    for (i, chunk) in output.chunks_mut(P::OUTPUT_SIZE).enumerate() {
-        f(&prf, salt, iterations, i as u32, chunk);
+pub struct Pbkdf2<P: Prf + Clone> {
+    _marker: PhantomData<P>,
+}
+
+impl<P: Prf + Clone> Pbkdf2<P> {
+    pub fn derive(
+        password: &[u8],
+        salt: &[u8],
+        iterations: usize,
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        if iterations == 0 || u32::try_from(output.len().div_ceil(P::OUTPUT_SIZE)).is_err() {
+            return Err(Error::Misuse);
+        }
+        let prf = P::new(password)?;
+        for (i, chunk) in output.chunks_mut(P::OUTPUT_SIZE).enumerate() {
+            Self::f(&prf, salt, iterations, i as u32, chunk);
+        }
+        Ok(())
     }
 }
 
-fn f<P>(prf: &P, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8])
-where
-    P: Prf + Clone,
-{
-    let mut u = {
-        let mut p = prf.clone();
-        p.update(salt);
-        p.update(&(i + 1).to_be_bytes());
-        let u = p.finalize();
-        xor(chunk, u.as_ref());
-        u
-    };
-    for _ in 1..iterations {
-        let mut p = prf.clone();
-        p.update(u.as_ref());
-        u = p.finalize();
-        xor(chunk, u.as_ref());
+impl<P: Prf + Clone> Pbkdf2<P> {
+    fn f(prf: &P, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8]) {
+        let mut u = {
+            let mut p = prf.clone();
+            p.update(salt);
+            p.update(&(i + 1).to_be_bytes());
+            let u = p.finalize();
+            xor(chunk, u.as_ref());
+            u
+        };
+        for _ in 1..iterations {
+            let mut p = prf.clone();
+            p.update(u.as_ref());
+            u = p.finalize();
+            xor(chunk, u.as_ref());
+        }
     }
 }
 
@@ -53,7 +67,7 @@ mod tests {
         let salt = b"salt";
         let iterations = 1;
         let mut output = [0u8; 20];
-        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha1>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(output, hex!("0c60c80f961f0e71f3a9b524af6012062fe037a6"));
     }
 
@@ -64,7 +78,7 @@ mod tests {
         let salt = b"salt";
         let iterations = 2;
         let mut output = [0u8; 20];
-        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha1>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(output, hex!("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957"));
     }
 
@@ -75,7 +89,7 @@ mod tests {
         let salt = b"salt";
         let iterations = 4096;
         let mut output = [0u8; 20];
-        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha1>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(output, hex!("4b007901b765489abead49d926f721d065a429c1"));
     }
 
@@ -103,7 +117,7 @@ mod tests {
         let salt = b"saltSALTsaltSALTsaltSALTsaltSALTsalt";
         let iterations = 4096;
         let mut output = [0u8; 25];
-        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha1>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(
             output,
             hex!("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038")
@@ -117,7 +131,7 @@ mod tests {
         let salt = b"sa\0lt";
         let iterations = 4096;
         let mut output = [0u8; 16];
-        pbkdf2::<Hmac<Sha1>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha1>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(output, hex!("56fa6aa75548099dcc37d7f03425e0c3"));
     }
 
@@ -127,7 +141,7 @@ mod tests {
         let salt = b"salt";
         let iterations = 4096;
         let mut output = [0u8; 32];
-        pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha256>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(
             output,
             hex!("c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a")
@@ -140,10 +154,20 @@ mod tests {
         let salt = b"salt";
         let iterations = 4096;
         let mut output = [0u8; 64];
-        pbkdf2::<Hmac<Sha512>>(password, salt, iterations, &mut output);
+        Pbkdf2::<Hmac<Sha512>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(
             output,
             hex!("d197b1b33db0143e018b12f3d1d1479e6cdebdcc97c5c0f87f6902e072f457b5143f30602641b3d55cd335988cb36b84376060ecd532e039b742a239434af2d5")
         );
+    }
+
+    #[test]
+    fn test_pbkdf2_zero_iterations() {
+        let mut output = [0u8; 32];
+        assert_eq!(
+            Pbkdf2::<Hmac<Sha256>>::derive(b"password", b"salt", 0, &mut output),
+            Err(Error::Misuse)
+        );
+        assert_eq!(output, [0u8; 32]);
     }
 }

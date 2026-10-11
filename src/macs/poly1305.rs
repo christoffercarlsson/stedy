@@ -1,8 +1,9 @@
 use {
     crate::{
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
-        traits::{Authenticator, ByteArray, Digest, KeyInit, Mac, SeekableStreamCipher},
+        traits::{Authenticator, Digest, KeyInit, Mac, SeekableStreamCipher},
         utils::{verify, wipe, Block, Choice},
+        Error,
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
@@ -16,12 +17,13 @@ pub struct Poly1305 {
 
 impl Poly1305 {
     pub fn new(key: &[u8; 32]) -> Self {
-        let mut r = Poly1305FieldElement::from(&key[0..16]);
+        let (halves, _) = key.as_chunks::<16>();
+        let mut r = Poly1305FieldElement::from(&halves[0]);
         r &= Poly1305FieldElement::R;
         Self {
             a: Poly1305FieldElement::ZERO,
             r,
-            s: Poly1305FieldElement::from(&key[16..32]),
+            s: Poly1305FieldElement::from(&halves[1]),
             block: Block::<{ Self::BLOCK_SIZE }>::new(),
         }
     }
@@ -52,15 +54,19 @@ impl Poly1305 {
         self.a.into()
     }
 
-    pub fn verify(self, code: &[u8; 16]) -> bool {
-        verify(&self.finalize(), code)
+    pub fn verify(self, code: &[u8; 16]) -> Result<(), Error> {
+        if verify(&self.finalize(), code) {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
     }
 }
 
 impl KeyInit for Poly1305 {
-    fn new(key: &[u8]) -> Self {
-        let key = <&[u8; 32]>::try_from(key).expect("Poly1305 keys are always 32 bytes");
-        Self::new(key)
+    fn new(key: &[u8]) -> Result<Self, Error> {
+        let key = <&[u8; 32]>::try_from(key).map_err(|_| Error::InvalidKey)?;
+        Ok(Self::new(key))
     }
 }
 
@@ -83,7 +89,7 @@ impl Digest for Poly1305 {
 }
 
 impl Mac for Poly1305 {
-    fn verify(self, code: &Self::Output) -> bool {
+    fn verify(self, code: &Self::Output) -> Result<(), Error> {
         self.verify(code)
     }
 }
@@ -102,7 +108,7 @@ impl Authenticator<ChaCha20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
-        Mac::verify(self, tag)
+        Mac::verify(self, tag).is_ok()
     }
 }
 
@@ -120,7 +126,7 @@ impl Authenticator<XChaCha20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
-        Mac::verify(self, tag)
+        Mac::verify(self, tag).is_ok()
     }
 }
 
@@ -131,7 +137,9 @@ impl Authenticator<XSalsa20> for Poly1305 {
 
     fn new(cipher: &mut XSalsa20) -> Self {
         let mut key = [0u8; 32];
-        cipher.apply_keystream(&mut key);
+        cipher
+            .apply_keystream(&mut key)
+            .expect("the first keystream block is always available");
         Self::new(&key)
     }
 
@@ -142,7 +150,7 @@ impl Authenticator<XSalsa20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], _aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.update(ciphertext);
-        Mac::verify(self, tag)
+        Mac::verify(self, tag).is_ok()
     }
 }
 
@@ -174,11 +182,13 @@ impl Poly1305 {
         self.a *= self.r;
     }
 
-    fn create_mac<C: SeekableStreamCipher>(cipher: &mut C) -> Self {
-        let mut key = C::Key::new();
-        cipher.apply_keystream(key.as_mut());
+    fn create_mac<C: SeekableStreamCipher<Key = [u8; 32]>>(cipher: &mut C) -> Self {
+        let mut key = [0u8; 32];
+        cipher
+            .apply_keystream(&mut key)
+            .expect("the first keystream block is always available");
         cipher.seek(1);
-        <Self as KeyInit>::new(key.as_ref())
+        Self::new(&key)
     }
 
     fn calculate_tag(&mut self, ciphertext: &[u8], aad: Option<&[u8]>) {
@@ -342,10 +352,10 @@ impl From<[u8; 17]> for Poly1305FieldElement {
     }
 }
 
-impl From<&[u8]> for Poly1305FieldElement {
-    fn from(value: &[u8]) -> Self {
+impl From<&[u8; 16]> for Poly1305FieldElement {
+    fn from(value: &[u8; 16]) -> Self {
         let mut bytes = [0u8; 17];
-        bytes[0..16].copy_from_slice(&value[0..16]);
+        bytes[..16].copy_from_slice(value);
         Self::from(bytes)
     }
 }

@@ -1,11 +1,15 @@
 mod base;
 
-use crate::encoding::base::{
-    base16_decode, base16_encode, base32_decode, base32_encode, base64_decode, base64_encode,
+use crate::{
+    encoding::base::{
+        base16_decode, base16_encode, base32_decode, base32_encode, base64_decode, base64_encode,
+    },
+    Error,
 };
 
 #[repr(u8)]
-#[derive(Debug)]
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Encoding {
     Hex = 0,
     Base16 = 1,
@@ -17,7 +21,11 @@ pub enum Encoding {
     Base64UrlUnpadded = 7,
 }
 
-pub fn encode<'a>(encoding: Encoding, decoded: &[u8], encoded: &'a mut [u8]) -> Option<&'a [u8]> {
+pub fn encode<'a>(
+    encoding: Encoding,
+    decoded: &[u8],
+    encoded: &'a mut [u8],
+) -> Result<&'a [u8], Error> {
     match encoding {
         Encoding::Hex | Encoding::Base16 => base16_encode(decoded, encoded),
         Encoding::Base32 => base32_encode(true, decoded, encoded),
@@ -29,12 +37,19 @@ pub fn encode<'a>(encoding: Encoding, decoded: &[u8], encoded: &'a mut [u8]) -> 
     }
 }
 
-pub fn decode<'a>(encoding: Encoding, encoded: &[u8], decoded: &'a mut [u8]) -> Option<&'a [u8]> {
+pub fn decode<'a>(
+    encoding: Encoding,
+    encoded: &[u8],
+    decoded: &'a mut [u8],
+) -> Result<&'a [u8], Error> {
     match encoding {
         Encoding::Hex | Encoding::Base16 => base16_decode(encoded, decoded),
-        Encoding::Base32 | Encoding::Base32Unpadded => base32_decode(encoded, decoded),
-        Encoding::Base64 | Encoding::Base64Unpadded => base64_decode(false, encoded, decoded),
-        Encoding::Base64Url | Encoding::Base64UrlUnpadded => base64_decode(true, encoded, decoded),
+        Encoding::Base32 => base32_decode(true, encoded, decoded),
+        Encoding::Base32Unpadded => base32_decode(false, encoded, decoded),
+        Encoding::Base64 => base64_decode(false, true, encoded, decoded),
+        Encoding::Base64Unpadded => base64_decode(false, false, encoded, decoded),
+        Encoding::Base64Url => base64_decode(true, true, encoded, decoded),
+        Encoding::Base64UrlUnpadded => base64_decode(true, false, encoded, decoded),
     }
 }
 
@@ -172,15 +187,43 @@ mod tests {
 
     #[test]
     fn test_rejects_invalid() {
-        let mut buffer = [0u8; 4];
-        let encoded = b"Zm9???vYg==   ";
-        let result = decode(Encoding::Base64, encoded, &mut buffer);
-        assert!(result.is_none());
-        let encoded = b"Zm9    vYg==";
-        let result = decode(Encoding::Base64, encoded, &mut buffer);
-        assert!(result.is_none());
-        let encoded = b"   Zm9vYg==";
-        let result = decode(Encoding::Base64, encoded, &mut buffer);
-        assert!(result.is_none());
+        let mut buffer = [0u8; 8];
+        let invalid: [(Encoding, &[u8]); 10] = [
+            (Encoding::Base64, b"Zm9???vYg==   "),
+            (Encoding::Base64, b"Zm9    vYg=="),
+            (Encoding::Base64, b"   Zm9vYg=="),
+            (Encoding::Base64, b"AC"),
+            (Encoding::Base64, b"AAA"),
+            (Encoding::Base64, b"A==="),
+            (Encoding::Base64, b"=="),
+            (Encoding::Base64Unpadded, b"AA=="),
+            (Encoding::Base32, b"74====="),
+            (Encoding::Hex, b"abc"),
+        ];
+        for (encoding, encoded) in invalid {
+            let result = decode(encoding, encoded, &mut buffer);
+            assert_eq!(result, Err(Error::Encoding));
+        }
+    }
+
+    #[test]
+    fn test_rejects_small_buffers() {
+        let mut buffer = [0u8; 3];
+        assert_eq!(
+            encode(Encoding::Base64, &[255], &mut buffer),
+            Err(Error::Misuse)
+        );
+        assert_eq!(
+            encode(Encoding::Base64Unpadded, &[255], &mut buffer[..1]),
+            Err(Error::Misuse)
+        );
+        assert_eq!(
+            encode(Encoding::Base32, &[255], &mut [0u8; 7]),
+            Err(Error::Misuse)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"AAAA", &mut buffer[..2]),
+            Err(Error::Misuse)
+        );
     }
 }

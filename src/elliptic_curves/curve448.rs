@@ -1,6 +1,7 @@
 use crate::{
     traits::{EllipticCurve, FieldElement},
     utils::{Choice, Secret},
+    Error,
 };
 
 mod field;
@@ -32,8 +33,8 @@ impl EllipticCurve for Curve448 {
     type ScalarBytes = [u8; 56];
     type SharedSecretBytes = [u8; 56];
 
-    fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
-        Some(Field448::from_le_bytes(bytes))
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error> {
+        Ok(Field448::from_le_bytes(bytes))
     }
 
     fn point_to_bytes(point: &Self::Point) -> Self::PointBytes {
@@ -44,15 +45,30 @@ impl EllipticCurve for Curve448 {
         point.to_le_bytes()
     }
 
-    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        Some(Curve448Scalar(Secret::from(*bytes)))
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error> {
+        Ok(Curve448Scalar(Secret::from(*bytes)))
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
         *scalar.0.get()
     }
 
-    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
+        Self::ladder(scalar, &Self::BASE_POINT)
+    }
+
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
+        let u = Self::ladder(scalar, point);
+        if u.ct_eq(&Field448::ZERO).to_bool() {
+            Err(Error::InvalidKey)
+        } else {
+            Ok(u)
+        }
+    }
+}
+
+impl Curve448 {
+    fn ladder(scalar: &Curve448Scalar, point: &Field448) -> Field448 {
         let mut scalar = scalar.0.clone();
         Self::clamp(scalar.get_mut());
         let x1 = *point;
@@ -85,7 +101,6 @@ impl EllipticCurve for Curve448 {
         }
         Field448::swap(&mut x2, &mut x3, swap);
         Field448::swap(&mut z2, &mut z3, swap);
-        let u = x2 / z2;
-        (!u.ct_eq(&Field448::ZERO)).to_bool().then_some(u)
+        x2 / z2
     }
 }

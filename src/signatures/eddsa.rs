@@ -4,6 +4,7 @@ use {
         elliptic_curves::Edwards,
         traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
         utils::Secret,
+        Error,
     },
     core::marker::PhantomData,
 };
@@ -25,10 +26,10 @@ where
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S, F::Bytes) {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<(S, F::Bytes), Error> {
         let mut seed = Secret::from(E::SecretBytes::new());
-        rng.fill(seed.get_mut().as_mut());
-        Self::key_pair(seed.get())
+        rng.fill(seed.get_mut().as_mut())?;
+        Ok(Self::key_pair(seed.get()))
     }
 
     pub fn key_pair(seed: &E::SecretBytes) -> (S, F::Bytes) {
@@ -51,7 +52,7 @@ where
         Self::sign_message(private_key, 0, &[], message)
     }
 
-    pub fn verify(message: &[u8], public_key: &F::Bytes, signature: &S) -> bool {
+    pub fn verify(message: &[u8], public_key: &F::Bytes, signature: &S) -> Result<(), Error> {
         Self::verify_message(0, &[], message, public_key, signature)
     }
 }
@@ -87,10 +88,10 @@ where
         self.prehash.update(message);
     }
 
-    pub fn sign(self, private_key: &S, context: &[u8]) -> Option<S> {
-        u8::try_from(context.len()).ok()?;
+    pub fn sign(self, private_key: &S, context: &[u8]) -> Result<S, Error> {
+        u8::try_from(context.len()).map_err(|_| Error::Misuse)?;
         let digest = self.prehash.finalize();
-        Some(Eddsa::<E, F, H, S>::sign_message(
+        Ok(Eddsa::<E, F, H, S>::sign_message(
             private_key,
             1,
             context,
@@ -98,10 +99,8 @@ where
         ))
     }
 
-    pub fn verify(self, context: &[u8], public_key: &F::Bytes, signature: &S) -> bool {
-        if u8::try_from(context.len()).is_err() {
-            return false;
-        }
+    pub fn verify(self, context: &[u8], public_key: &F::Bytes, signature: &S) -> Result<(), Error> {
+        u8::try_from(context.len()).map_err(|_| Error::Misuse)?;
         let digest = self.prehash.finalize();
         Eddsa::<E, F, H, S>::verify_message(1, context, digest.as_ref(), public_key, signature)
     }
@@ -152,7 +151,7 @@ where
         message: &[u8],
         public_key: &F::Bytes,
         signature: &S,
-    ) -> bool {
+    ) -> Result<(), Error> {
         let (r, s) = Self::read_signature(signature);
         let valid_s = E::is_canonical(&s);
         let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
@@ -164,7 +163,11 @@ where
         let k = E::from(state.finalize());
         let s = E::from(s);
         let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
-        (r2.ct_eq(&R) & valid_a & valid_r & valid_s).to_bool()
+        if (r2.ct_eq(&R) & valid_a & valid_r & valid_s).to_bool() {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
     }
 
     fn hasher(phflag: u8, context: &[u8]) -> H {

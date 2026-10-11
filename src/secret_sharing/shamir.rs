@@ -1,8 +1,8 @@
 use {
     crate::{
-        secret_sharing::gf256::Gf256,
         traits::{ByteArray, ByteOrder, CryptoRng, FieldElement},
         utils::wipe,
+        Error,
     },
     core::{array::from_fn, marker::PhantomData},
 };
@@ -23,20 +23,25 @@ impl<F: FieldElement> Shamir<F> {
         rng: &mut impl CryptoRng,
         secret: &[u8],
         output: &'a mut [u8],
-    ) -> Option<[&'a [u8]; N]> {
-        const { assert!(N <= Self::MAX_SHARES, "Too many shares for the field") }
-        const { assert!(K <= N, "Threshold exceeds the number of shares") }
+    ) -> Result<[&'a [u8]; N], Error> {
+        const {
+            assert!(
+                N <= Self::MAX_SHARES,
+                "the field has an index for every share"
+            )
+        }
+        const { assert!(K <= N, "the threshold is at most the number of shares") }
         let columns = secret.len().div_ceil(Self::CHUNK_SIZE);
         let share_size = 4 + columns * Self::ELEMENT_SIZE;
         if N * share_size > output.len() {
-            return None;
+            return Err(Error::Misuse);
         }
         for (i, share) in output.chunks_mut(share_size).take(N).enumerate() {
             let x = (i + 1) as u32;
             share[..4].copy_from_slice(&x.to_be_bytes());
         }
         for share in output.chunks_mut(share_size).take(K).skip(1) {
-            rng.fill(&mut share[4..]);
+            rng.fill(&mut share[4..])?;
         }
         for i in 0..columns {
             let chunk = Self::encode_chunk(secret, i);
@@ -47,36 +52,21 @@ impl<F: FieldElement> Shamir<F> {
             let end = begin + share_size;
             &output[begin..end]
         });
-        Some(shares)
+        Ok(shares)
     }
 
     pub fn combine<'a, const K: usize>(
         shares: [&[u8]; K],
         secret: &'a mut [u8],
-    ) -> Option<&'a [u8]> {
+    ) -> Result<&'a [u8], Error> {
         match Self::combine_secret(shares, secret) {
-            Some(size) => Some(&secret[..size]),
-            None => {
+            Ok(size) => Ok(&secret[..size]),
+            Err(error) => {
                 wipe(secret);
-                None
+                Err(error)
             }
         }
     }
-}
-
-pub fn shamir_split<'a, const K: usize, const N: usize>(
-    rng: &mut impl CryptoRng,
-    secret: &[u8],
-    output: &'a mut [u8],
-) -> Option<[&'a [u8]; N]> {
-    Shamir::<Gf256>::split::<K, N>(rng, secret, output)
-}
-
-pub fn shamir_combine<'a, const K: usize>(
-    shares: [&[u8]; K],
-    secret: &'a mut [u8],
-) -> Option<&'a [u8]> {
-    Shamir::<Gf256>::combine::<K>(shares, secret)
 }
 
 impl<F: FieldElement> Shamir<F> {
@@ -135,27 +125,30 @@ impl<F: FieldElement> Shamir<F> {
         t.into()
     }
 
-    fn calculate_columns<const K: usize>(shares: [&[u8]; K], secret: &[u8]) -> Option<usize> {
+    fn calculate_columns<const K: usize>(
+        shares: [&[u8]; K],
+        secret: &[u8],
+    ) -> Result<usize, Error> {
         let share_size = shares[0].len();
         if share_size < 4 {
-            return None;
+            return Err(Error::Encoding);
         }
         let payload_size = share_size - 4;
         if !payload_size.is_multiple_of(Self::ELEMENT_SIZE) {
-            return None;
+            return Err(Error::Encoding);
         }
         let valid = |share: &&[u8]| {
             share.len() == share_size
                 && (1..=Self::MAX_SHARES).contains(&(Self::index(share) as usize))
         };
         if !shares.iter().all(valid) {
-            return None;
+            return Err(Error::Encoding);
         }
         let columns = payload_size / Self::ELEMENT_SIZE;
         if secret.len() >= columns * Self::CHUNK_SIZE {
-            Some(columns)
+            Ok(columns)
         } else {
-            None
+            Err(Error::Misuse)
         }
     }
 
@@ -176,14 +169,17 @@ impl<F: FieldElement> Shamir<F> {
         Self::reverse_if_big_endian(secret.into())
     }
 
-    fn combine_secret<const K: usize>(shares: [&[u8]; K], secret: &mut [u8]) -> Option<usize> {
+    fn combine_secret<const K: usize>(
+        shares: [&[u8]; K],
+        secret: &mut [u8],
+    ) -> Result<usize, Error> {
         let columns = Self::calculate_columns(shares, secret)?;
         for i in 0..columns {
             let begin = 4 + i * Self::ELEMENT_SIZE;
             let end = begin + Self::ELEMENT_SIZE;
             let pairs: [(F, F); K] = from_fn(|j| {
                 let share = shares[j];
-                let bytes = F::Bytes::from_slice_checked(&share[begin..end])
+                let bytes = F::Bytes::try_from_slice(&share[begin..end])
                     .expect("Each secret column is one field element");
                 let x = F::from(Self::index(share));
                 let y = F::from(bytes);
@@ -194,7 +190,7 @@ impl<F: FieldElement> Shamir<F> {
             secret[offset..offset + Self::CHUNK_SIZE]
                 .copy_from_slice(&src.as_ref()[..Self::CHUNK_SIZE]);
         }
-        Some(columns * Self::CHUNK_SIZE)
+        Ok(columns * Self::CHUNK_SIZE)
     }
 
     fn index(share: &[u8]) -> u32 {
@@ -213,7 +209,7 @@ impl<F: FieldElement> Shamir<F> {
 mod tests {
     use {
         super::*,
-        crate::{csprngs::ChaCha20Rng, elliptic_curves::Field25519},
+        crate::{csprngs::ChaCha20Rng, elliptic_curves::Field25519, secret_sharing::Gf256},
     };
 
     #[test]
@@ -232,7 +228,7 @@ mod tests {
     fn test_shamir_secret_sharing() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut secret = [0u8; 32];
-        rng.fill(&mut secret);
+        rng.fill(&mut secret).unwrap();
         assert_eq!(
             secret,
             [
@@ -241,7 +237,7 @@ mod tests {
             ]
         );
         let mut output = [0u8; 108];
-        let shares = shamir_split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(shares.len(), 3);
         assert_eq!(
             shares[0],
@@ -265,7 +261,7 @@ mod tests {
             ]
         );
         let mut buffer = [0u8; 32];
-        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
+        let result = Shamir::<Gf256>::combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
@@ -273,15 +269,15 @@ mod tests {
     fn test_shamir_secret_sharing_high_threshold() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut secret = [0u8; 32];
-        rng.fill(&mut secret);
+        rng.fill(&mut secret).unwrap();
         let mut output = [0u8; 540];
-        let shares = shamir_split::<12, 15>(&mut rng, &secret, &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<12, 15>(&mut rng, &secret, &mut output).unwrap();
         let mut buffer = [0u8; 32];
         let picked = [
             shares[14], shares[13], shares[12], shares[11], shares[10], shares[9], shares[8],
             shares[7], shares[6], shares[5], shares[4], shares[3],
         ];
-        let result = shamir_combine(picked, &mut buffer).unwrap();
+        let result = Shamir::<Gf256>::combine(picked, &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
@@ -289,11 +285,11 @@ mod tests {
     fn test_shamir_secret_sharing_long_arrays() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut secret = [0u8; 32];
-        rng.fill(&mut secret);
+        rng.fill(&mut secret).unwrap();
         let mut output = [0u8; 1024];
-        let shares = shamir_split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
         let mut buffer = [0u8; 1024];
-        let result = shamir_combine([shares[2], shares[1]], &mut buffer).unwrap();
+        let result = Shamir::<Gf256>::combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
@@ -301,12 +297,12 @@ mod tests {
     fn test_shamir_secret_sharing_max_shares() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut secret = [0u8; 32];
-        rng.fill(&mut secret);
+        rng.fill(&mut secret).unwrap();
         let mut output = [0u8; 9180];
-        let shares = shamir_split::<2, 255>(&mut rng, &secret, &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<2, 255>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(shares[254][..4], [0, 0, 0, 255]);
         let mut buffer = [0u8; 32];
-        let result = shamir_combine([shares[254], shares[0]], &mut buffer).unwrap();
+        let result = Shamir::<Gf256>::combine([shares[254], shares[0]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
@@ -314,10 +310,10 @@ mod tests {
     fn test_shamir_secret_sharing_empty_secret() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut output = [0u8; 12];
-        let shares = shamir_split::<2, 3>(&mut rng, &[], &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &[], &mut output).unwrap();
         assert_eq!(shares[0], [0, 0, 0, 1]);
         let mut buffer = [0u8; 1];
-        let result = shamir_combine([shares[0], shares[2]], &mut buffer).unwrap();
+        let result = Shamir::<Gf256>::combine([shares[0], shares[2]], &mut buffer).unwrap();
         assert!(result.is_empty());
     }
 
@@ -325,41 +321,51 @@ mod tests {
     fn test_shamir_secret_sharing_output_too_small() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut output = [0u8; 107];
-        let result = shamir_split::<2, 3>(&mut rng, &[0u8; 32], &mut output);
-        assert!(result.is_none());
+        let result = Shamir::<Gf256>::split::<2, 3>(&mut rng, &[0u8; 32], &mut output);
+        assert_eq!(result.unwrap_err(), Error::Misuse);
     }
 
     #[test]
     fn test_shamir_secret_sharing_combine_zero_index() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut output = [0u8; 21];
-        let shares = shamir_split::<2, 3>(&mut rng, &[1, 2, 3], &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &[1, 2, 3], &mut output).unwrap();
         let mut share = [0u8; 7];
         share.copy_from_slice(shares[0]);
         share[3] = 0;
         let mut buffer = [0u8; 3];
-        let result = shamir_combine([&share, shares[1]], &mut buffer);
-        assert!(result.is_none());
+        let result = Shamir::<Gf256>::combine([&share, shares[1]], &mut buffer);
+        assert_eq!(result, Err(Error::Encoding));
     }
 
     #[test]
     fn test_shamir_secret_sharing_combine_index_above_maximum() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut output = [0u8; 21];
-        let shares = shamir_split::<2, 3>(&mut rng, &[1, 2, 3], &mut output).unwrap();
+        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &[1, 2, 3], &mut output).unwrap();
         let mut share = [0u8; 7];
         share.copy_from_slice(shares[0]);
         share[2] = 1;
         let mut buffer = [0u8; 3];
-        let result = shamir_combine([&share, shares[1]], &mut buffer);
-        assert!(result.is_none());
+        let result = Shamir::<Gf256>::combine([&share, shares[1]], &mut buffer);
+        assert_eq!(result, Err(Error::Encoding));
+    }
+
+    #[test]
+    fn test_shamir_secret_sharing_combine_output_too_small() {
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
+        let mut output = [0u8; 21];
+        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &[1, 2, 3], &mut output).unwrap();
+        let mut buffer = [0u8; 2];
+        let result = Shamir::<Gf256>::combine([shares[0], shares[1]], &mut buffer);
+        assert_eq!(result, Err(Error::Misuse));
     }
 
     #[test]
     fn test_shamir_field25519() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut secret = [0u8; 32];
-        rng.fill(&mut secret);
+        rng.fill(&mut secret).unwrap();
         let mut output = [0u8; 204];
         let shares = Shamir::<Field25519>::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(

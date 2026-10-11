@@ -8,7 +8,9 @@ use {
     crate::{
         encoding::{decode, encode, Encoding},
         hashes::{Blake2b512, Blake2bVar},
+        traits::Init,
         utils::{verify, Secret},
+        Error,
     },
     core::ops::{BitXorAssign, Index, IndexMut},
 };
@@ -129,130 +131,119 @@ impl Drop for Argon2Memory {
     }
 }
 
-#[cfg(feature = "std")]
-pub fn argon2(
-    params: Argon2Params,
-    password: &[u8],
-    salt: &[u8],
-    secret: Option<&[u8]>,
-    associated_data: Option<&[u8]>,
-    output: &mut [u8],
-) -> bool {
-    if !params.validate(
-        password,
-        salt,
-        secret.unwrap_or_default(),
-        associated_data.unwrap_or_default(),
-        output,
-    ) {
-        return false;
-    }
-    let mut memory = Argon2Memory::from(params);
-    argon2_with_memory(
-        params,
-        password,
-        salt,
-        secret,
-        associated_data,
-        &mut memory,
-        output,
-    )
-}
+pub struct Argon2;
 
-pub fn argon2_with_memory(
-    params: Argon2Params,
-    password: &[u8],
-    salt: &[u8],
-    secret: Option<&[u8]>,
-    associated_data: Option<&[u8]>,
-    memory: &mut [Argon2Block],
-    output: &mut [u8],
-) -> bool {
-    let secret = secret.unwrap_or_default();
-    let associated_data = associated_data.unwrap_or_default();
-    if !params.validate(password, salt, secret, associated_data, output)
-        || memory.len() < params.blocks()
-    {
-        return false;
+impl Argon2 {
+    #[cfg(feature = "std")]
+    pub fn derive(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        secret: Option<&[u8]>,
+        associated_data: Option<&[u8]>,
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        params.validate(
+            password,
+            salt,
+            secret.unwrap_or_default(),
+            associated_data.unwrap_or_default(),
+            output.len(),
+        )?;
+        let mut memory = Argon2Memory::from(params);
+        Self::derive_with_memory(
+            params,
+            password,
+            salt,
+            secret,
+            associated_data,
+            &mut memory,
+            output,
+        )
     }
-    let memory = &mut memory[..params.blocks()];
-    let h0 = params.initial_hash(password, salt, secret, associated_data, output);
-    params.fill_first_blocks(memory, h0.get());
-    params.fill_memory(memory);
-    params.calculate_output(memory, output);
-    true
-}
 
-#[cfg(feature = "std")]
-pub fn argon2_phc<'a>(
-    params: Argon2Params,
-    password: &[u8],
-    salt: &[u8],
-    hash_length: usize,
-    output: &'a mut [u8],
-) -> Option<&'a [u8]> {
-    if !params.validate(password, salt, &[], &[], &[0; 4]) {
-        return None;
+    pub fn derive_with_memory(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        secret: Option<&[u8]>,
+        associated_data: Option<&[u8]>,
+        memory: &mut [Argon2Block],
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        let secret = secret.unwrap_or_default();
+        let associated_data = associated_data.unwrap_or_default();
+        params.validate(password, salt, secret, associated_data, output.len())?;
+        if memory.len() < params.blocks() {
+            return Err(Error::Misuse);
+        }
+        let memory = &mut memory[..params.blocks()];
+        let h0 = params.initial_hash(password, salt, secret, associated_data, output);
+        params.fill_first_blocks(memory, h0.get());
+        params.fill_memory(memory);
+        params.calculate_output(memory, output);
+        Ok(())
     }
-    let mut memory = Argon2Memory::from(params);
-    argon2_phc_with_memory(params, password, salt, hash_length, &mut memory, output)
-}
 
-pub fn argon2_phc_with_memory<'a>(
-    params: Argon2Params,
-    password: &[u8],
-    salt: &[u8],
-    hash_length: usize,
-    memory: &mut [Argon2Block],
-    output: &'a mut [u8],
-) -> Option<&'a [u8]> {
-    if !(4..=Argon2Params::PHC_HASH_SIZE).contains(&hash_length)
-        || salt.len() > Argon2Params::PHC_SALT_SIZE
-    {
-        return None;
+    #[cfg(feature = "std")]
+    pub fn phc<'a>(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        hash_length: usize,
+        output: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
+        params.validate_phc(password, salt, hash_length)?;
+        let mut memory = Argon2Memory::from(params);
+        Self::phc_with_memory(params, password, salt, hash_length, &mut memory, output)
     }
-    let mut hash = [0u8; Argon2Params::PHC_HASH_SIZE];
-    let hash = &mut hash[..hash_length];
-    if !argon2_with_memory(params, password, salt, None, None, memory, hash) {
-        return None;
-    }
-    params.encode_phc(salt, hash, output)
-}
 
-#[cfg(feature = "std")]
-pub fn argon2_phc_verify(password: &[u8], phc: &[u8]) -> bool {
-    let Some((params, _, _)) = Argon2Params::parse_phc(phc) else {
-        return false;
-    };
-    let mut blocks = Vec::new();
-    if blocks.try_reserve_exact(params.blocks()).is_err() {
-        return false;
+    pub fn phc_with_memory<'a>(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        hash_length: usize,
+        memory: &mut [Argon2Block],
+        output: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
+        params.validate_phc(password, salt, hash_length)?;
+        let mut hash = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let hash = &mut hash[..hash_length];
+        Self::derive_with_memory(params, password, salt, None, None, memory, hash)?;
+        params.encode_phc(salt, hash, output)
     }
-    blocks.resize(params.blocks(), Argon2Block::ZERO);
-    let mut memory = Argon2Memory(blocks);
-    argon2_phc_verify_with_memory(password, phc, &mut memory)
-}
 
-pub fn argon2_phc_verify_with_memory(
-    password: &[u8],
-    phc: &[u8],
-    memory: &mut [Argon2Block],
-) -> bool {
-    let Some((params, salt, hash)) = Argon2Params::parse_phc(phc) else {
-        return false;
-    };
-    let mut salt_bytes = [0u8; Argon2Params::PHC_SALT_SIZE];
-    let Some(salt) = decode(Encoding::Base64Unpadded, salt, &mut salt_bytes) else {
-        return false;
-    };
-    let mut hash_bytes = [0u8; Argon2Params::PHC_HASH_SIZE];
-    let Some(expected) = decode(Encoding::Base64Unpadded, hash, &mut hash_bytes) else {
-        return false;
-    };
-    let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
-    let computed = &mut computed[..expected.len()];
-    argon2_with_memory(params, password, salt, None, None, memory, computed)
-        && verify(computed, expected)
+    #[cfg(feature = "std")]
+    pub fn verify_phc(password: &[u8], phc: &[u8]) -> Result<(), Error> {
+        let (params, _, _) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
+        let mut blocks = Vec::new();
+        blocks
+            .try_reserve_exact(params.blocks())
+            .map_err(|_| Error::LimitExceeded)?;
+        blocks.resize(params.blocks(), Argon2Block::ZERO);
+        let mut memory = Argon2Memory(blocks);
+        Self::verify_phc_with_memory(password, phc, &mut memory)
+    }
+
+    pub fn verify_phc_with_memory(
+        password: &[u8],
+        phc: &[u8],
+        memory: &mut [Argon2Block],
+    ) -> Result<(), Error> {
+        let (params, salt, hash) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
+        let mut salt_bytes = [0u8; Argon2Params::PHC_SALT_SIZE];
+        let salt = decode(Encoding::Base64Unpadded, salt, &mut salt_bytes)?;
+        let mut hash_bytes = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let expected = decode(Encoding::Base64Unpadded, hash, &mut hash_bytes)?;
+        let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let computed = &mut computed[..expected.len()];
+        Self::derive_with_memory(params, password, salt, None, None, memory, computed)?;
+        if verify(computed, expected) {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
+    }
 }
 
 impl Argon2Params {
@@ -266,27 +257,31 @@ impl Argon2Params {
         salt: &[u8],
         secret: &[u8],
         associated_data: &[u8],
-        output: &[u8],
-    ) -> bool {
+        output_length: usize,
+    ) -> Result<(), Error> {
         if self.lanes == 0
             || self.lanes >= 1 << 24
             || self.memory / 8 < self.lanes
             || self.passes == 0
             || self.threads == 0
             || salt.len() < 8
-            || output.len() < 4
-        {
-            return false;
-        }
-        if password.len() as u64 > Self::MAX_INPUT_SIZE
+            || output_length < 4
+            || password.len() as u64 > Self::MAX_INPUT_SIZE
             || salt.len() as u64 > Self::MAX_INPUT_SIZE
             || secret.len() as u64 > Self::MAX_INPUT_SIZE
             || associated_data.len() as u64 > Self::MAX_INPUT_SIZE
-            || output.len() as u64 > Self::MAX_INPUT_SIZE
+            || output_length as u64 > Self::MAX_INPUT_SIZE
         {
-            return false;
+            return Err(Error::Misuse);
         }
-        true
+        Ok(())
+    }
+
+    fn validate_phc(&self, password: &[u8], salt: &[u8], hash_length: usize) -> Result<(), Error> {
+        if hash_length > Self::PHC_HASH_SIZE || salt.len() > Self::PHC_SALT_SIZE {
+            return Err(Error::Misuse);
+        }
+        self.validate(password, salt, &[], &[], hash_length)
     }
 
     fn lane_length(&self) -> usize {
@@ -305,7 +300,7 @@ impl Argon2Params {
         associated_data: &[u8],
         output: &[u8],
     ) -> Secret<[u8; 64]> {
-        let mut hasher = Blake2b512::new(None);
+        let mut hasher = <Blake2b512 as Init>::new();
         hasher.update(&self.lanes.to_le_bytes());
         hasher.update(&(output.len() as u32).to_le_bytes());
         hasher.update(&self.memory.to_le_bytes());
@@ -581,7 +576,12 @@ impl Argon2Params {
         }
         let salt = fields.next()?;
         let hash = fields.next()?;
-        if fields.next().is_some() || salt.contains(&b'=') || hash.contains(&b'=') {
+        if fields.next().is_some()
+            || salt.contains(&b'=')
+            || hash.contains(&b'=')
+            || salt.len() > (Self::PHC_SALT_SIZE * 4).div_ceil(3)
+            || hash.len() > (Self::PHC_HASH_SIZE * 4).div_ceil(3)
+        {
             return None;
         }
         let params = Self::new(variant)
@@ -591,7 +591,12 @@ impl Argon2Params {
         Some((params, salt, hash))
     }
 
-    fn encode_phc<'a>(&self, salt: &[u8], hash: &[u8], output: &'a mut [u8]) -> Option<&'a [u8]> {
+    fn encode_phc<'a>(
+        &self,
+        salt: &[u8],
+        hash: &[u8],
+        output: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
         let variant: &[u8] = match self.variant {
             Argon2Variant::Argon2d => b"argon2d",
             Argon2Variant::Argon2i => b"argon2i",
@@ -612,7 +617,7 @@ impl Argon2Params {
         writer.base64(salt)?;
         writer.bytes(b"$")?;
         writer.base64(hash)?;
-        Some(writer.finish())
+        Ok(writer.finish())
     }
 
     fn decimal(digits: &[u8]) -> Option<u32> {
@@ -638,16 +643,15 @@ struct PhcWriter<'a> {
 }
 
 impl<'a> PhcWriter<'a> {
-    fn bytes(&mut self, bytes: &[u8]) -> Option<()> {
-        let end = self.length.checked_add(bytes.len())?;
-        self.output
-            .get_mut(self.length..end)?
-            .copy_from_slice(bytes);
+    fn bytes(&mut self, bytes: &[u8]) -> Result<(), Error> {
+        let end = self.length + bytes.len();
+        let slot = self.output.get_mut(self.length..end).ok_or(Error::Misuse)?;
+        slot.copy_from_slice(bytes);
         self.length = end;
-        Some(())
+        Ok(())
     }
 
-    fn decimal(&mut self, mut value: u32) -> Option<()> {
+    fn decimal(&mut self, mut value: u32) -> Result<(), Error> {
         let mut digits = [0u8; 10];
         let mut start = digits.len();
         loop {
@@ -661,7 +665,7 @@ impl<'a> PhcWriter<'a> {
         self.bytes(&digits[start..])
     }
 
-    fn base64(&mut self, bytes: &[u8]) -> Option<()> {
+    fn base64(&mut self, bytes: &[u8]) -> Result<(), Error> {
         let written = encode(
             Encoding::Base64Unpadded,
             bytes,
@@ -669,7 +673,7 @@ impl<'a> PhcWriter<'a> {
         )?
         .len();
         self.length += written;
-        Some(())
+        Ok(())
     }
 
     fn finish(self) -> &'a [u8] {
@@ -860,7 +864,7 @@ mod tests {
                 Some(params)
             );
             let mut output = [0u8; 128];
-            let encoded = argon2_phc_with_memory(
+            let encoded = Argon2::phc_with_memory(
                 params.threads(1),
                 b"password",
                 b"somesalt",
@@ -870,32 +874,33 @@ mod tests {
             )
             .unwrap();
             assert_eq!(encoded, expected);
-            assert!(argon2_phc_verify_with_memory(
-                b"password",
-                expected,
-                &mut memory
-            ));
-            assert!(!argon2_phc_verify_with_memory(
-                b"Password",
-                expected,
-                &mut memory
-            ));
-            assert!(!argon2_phc_verify_with_memory(
-                b"password",
-                &expected[..expected.len() - 1],
-                &mut memory
-            ));
+            Argon2::verify_phc_with_memory(b"password", expected, &mut memory).unwrap();
+            assert_eq!(
+                Argon2::verify_phc_with_memory(b"Password", expected, &mut memory),
+                Err(Error::Verification)
+            );
+            assert_eq!(
+                Argon2::verify_phc_with_memory(
+                    b"password",
+                    &expected[..expected.len() - 1],
+                    &mut memory
+                ),
+                Err(Error::Encoding)
+            );
             #[cfg(feature = "std")]
             {
                 let mut output = [0u8; 128];
                 let encoded =
-                    argon2_phc(params, b"password", b"somesalt", 32, &mut output).unwrap();
+                    Argon2::phc(params, b"password", b"somesalt", 32, &mut output).unwrap();
                 assert_eq!(encoded, expected);
-                assert!(argon2_phc_verify(b"password", expected));
-                assert!(!argon2_phc_verify(b"Password", expected));
+                Argon2::verify_phc(b"password", expected).unwrap();
+                assert_eq!(
+                    Argon2::verify_phc(b"Password", expected),
+                    Err(Error::Verification)
+                );
             }
         }
-        let rejected: [&[u8]; 8] = [
+        let rejected: [&[u8]; 9] = [
             b"",
             b"$argon2x$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
             b"$argon2id$v=16$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
@@ -904,14 +909,14 @@ mod tests {
             b"$argon2id$v=19$m=256,t=2,p=1,keyid=AAAA$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
             b"$argon2id$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4$",
             b"$argon2id$v=19$m=256,t=2,p=1$c29tZXNhbHQ$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4=",
+            b"$argon2id$v=19$m=256,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA$nf65EOgLrQMR/uIPnA4rEsF5h7TKyQwu9U1bMCHGi/4",
         ];
         for phc in rejected {
             assert!(Argon2Params::parse_phc(phc).is_none());
-            assert!(!argon2_phc_verify_with_memory(
-                b"password",
-                phc,
-                &mut memory
-            ));
+            assert_eq!(
+                Argon2::verify_phc_with_memory(b"password", phc, &mut memory),
+                Err(Error::Encoding)
+            );
         }
     }
 
@@ -926,7 +931,7 @@ mod tests {
         let associated_data = [4u8; 12];
         let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
-        assert!(argon2_with_memory(
+        Argon2::derive_with_memory(
             PARAMS.threads(1),
             &password,
             &salt,
@@ -934,21 +939,23 @@ mod tests {
             Some(&associated_data),
             &mut memory,
             &mut output,
-        ));
+        )
+        .unwrap();
         #[cfg(feature = "std")]
         {
             let mut parallel = [0u8; 32];
-            assert!(argon2(
+            Argon2::derive(
                 PARAMS,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
                 &mut parallel,
-            ));
+            )
+            .unwrap();
             assert_eq!(parallel, output);
             let mut memory = Argon2Memory::from(PARAMS);
-            assert!(argon2_with_memory(
+            Argon2::derive_with_memory(
                 PARAMS,
                 &password,
                 &salt,
@@ -956,7 +963,8 @@ mod tests {
                 Some(&associated_data),
                 &mut memory,
                 &mut parallel,
-            ));
+            )
+            .unwrap();
             assert_eq!(parallel, output);
         }
         assert_eq!(
@@ -974,7 +982,7 @@ mod tests {
         let associated_data = [4u8; 12];
         let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
-        assert!(argon2_with_memory(
+        Argon2::derive_with_memory(
             PARAMS.threads(1),
             &password,
             &salt,
@@ -982,21 +990,23 @@ mod tests {
             Some(&associated_data),
             &mut memory,
             &mut output,
-        ));
+        )
+        .unwrap();
         #[cfg(feature = "std")]
         {
             let mut parallel = [0u8; 32];
-            assert!(argon2(
+            Argon2::derive(
                 PARAMS,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
                 &mut parallel,
-            ));
+            )
+            .unwrap();
             assert_eq!(parallel, output);
             let mut memory = Argon2Memory::from(PARAMS);
-            assert!(argon2_with_memory(
+            Argon2::derive_with_memory(
                 PARAMS,
                 &password,
                 &salt,
@@ -1004,7 +1014,8 @@ mod tests {
                 Some(&associated_data),
                 &mut memory,
                 &mut parallel,
-            ));
+            )
+            .unwrap();
             assert_eq!(parallel, output);
         }
         assert_eq!(
@@ -1022,7 +1033,7 @@ mod tests {
         let associated_data = [4u8; 12];
         let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
-        assert!(argon2_with_memory(
+        Argon2::derive_with_memory(
             PARAMS.threads(1),
             &password,
             &salt,
@@ -1030,21 +1041,23 @@ mod tests {
             Some(&associated_data),
             &mut memory,
             &mut output,
-        ));
+        )
+        .unwrap();
         #[cfg(feature = "std")]
         {
             let mut parallel = [0u8; 32];
-            assert!(argon2(
+            Argon2::derive(
                 PARAMS,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
                 &mut parallel,
-            ));
+            )
+            .unwrap();
             assert_eq!(parallel, output);
             let mut memory = Argon2Memory::from(PARAMS);
-            assert!(argon2_with_memory(
+            Argon2::derive_with_memory(
                 PARAMS,
                 &password,
                 &salt,
@@ -1052,7 +1065,8 @@ mod tests {
                 Some(&associated_data),
                 &mut memory,
                 &mut parallel,
-            ));
+            )
+            .unwrap();
             assert_eq!(parallel, output);
         }
         assert_eq!(

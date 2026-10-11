@@ -1,12 +1,12 @@
-use crate::{aeads::Aead, ciphers::XSalsa20, macs::Poly1305, traits::CryptoRng};
+use crate::{aeads::Aead, ciphers::XSalsa20, macs::Poly1305, traits::CryptoRng, Error};
 
 pub type XSalsa20Poly1305 = Aead<XSalsa20, Poly1305>;
 
 impl XSalsa20Poly1305 {
-    pub fn generate_nonce(rng: &mut impl CryptoRng) -> [u8; 24] {
+    pub fn generate_nonce(rng: &mut impl CryptoRng) -> Result<[u8; 24], Error> {
         let mut nonce = [0u8; 24];
-        rng.fill(&mut nonce);
-        nonce
+        rng.fill(&mut nonce)?;
+        Ok(nonce)
     }
 }
 

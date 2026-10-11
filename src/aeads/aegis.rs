@@ -71,10 +71,10 @@ macro_rules! impl_aegis {
                 Ok(())
             }
 
-            pub fn generate_key(rng: &mut impl CryptoRng) -> [u8; $key_size] {
+            pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; $key_size], Error> {
                 let mut key = [0u8; $key_size];
-                rng.fill(&mut key);
-                key
+                rng.fill(&mut key)?;
+                Ok(key)
             }
 
             pub fn increment_nonce(nonce: &mut [u8; $key_size]) -> Result<(), Error> {
@@ -120,23 +120,21 @@ macro_rules! impl_aegis_mac {
                 tag
             }
 
-            pub fn verify(self, tag: &[u8; 32]) -> bool {
-                verify(&self.finalize(), tag)
+            pub fn verify(self, tag: &[u8; 32]) -> Result<(), Error> {
+                if verify(&self.finalize(), tag) {
+                    Ok(())
+                } else {
+                    Err(Error::Verification)
+                }
             }
         }
 
         impl KeyInit for Aegis<$key_size, $state_size, $rate, 32> {
-            fn new(key: &[u8]) -> Self {
-                let (key, nonce) = key
-                    .split_at_checked($key_size)
-                    .expect("AEGIS MAC keys are the key followed by the nonce");
-                let key = key
-                    .try_into()
-                    .expect("AEGIS MAC keys are the key followed by the nonce");
-                let nonce = nonce
-                    .try_into()
-                    .expect("AEGIS MAC keys are the key followed by the nonce");
-                Self::new(key, nonce)
+            fn new(key: &[u8]) -> Result<Self, Error> {
+                let (key, nonce) = key.split_at_checked($key_size).ok_or(Error::InvalidKey)?;
+                let key = key.try_into().map_err(|_| Error::InvalidKey)?;
+                let nonce = nonce.try_into().map_err(|_| Error::InvalidKey)?;
+                Ok(Self::new(key, nonce))
             }
         }
 
@@ -159,7 +157,7 @@ macro_rules! impl_aegis_mac {
         }
 
         impl Mac for Aegis<$key_size, $state_size, $rate, 32> {
-            fn verify(self, code: &Self::Output) -> bool {
+            fn verify(self, code: &Self::Output) -> Result<(), Error> {
                 self.verify(code)
             }
         }
@@ -524,12 +522,12 @@ mod tests {
         assert_eq!(mac.finalize(), tag);
         let mut mac = Aegis128L::new(&key, &nonce);
         mac.update(&data);
-        assert!(mac.verify(&tag));
+        mac.verify(&tag).unwrap();
         let mut mac = Aegis128L::new(&key, &nonce);
         mac.update(&data[..1]);
         mac.update(&data[1..30]);
         mac.update(&data[30..]);
-        assert!(mac.verify(&tag));
+        mac.verify(&tag).unwrap();
         let mut mac = Aegis128L::new(&key, &nonce);
         mac.update(&data[..32]);
         mac.update(&data[32..]);
@@ -538,13 +536,13 @@ mod tests {
         assert_eq!(truncated, tag[..16]);
         let mut mac = Aegis128L::new(&key, &nonce);
         mac.update(&data[..34]);
-        assert!(!mac.verify(&tag));
+        assert_eq!(mac.verify(&tag), Err(Error::Verification));
         let mut material = [0u8; 32];
         material[..16].copy_from_slice(&key);
         material[16..].copy_from_slice(&nonce);
-        let mut mac = <Aegis128L as KeyInit>::new(&material);
+        let mut mac = <Aegis128L as KeyInit>::new(&material).unwrap();
         Digest::update(&mut mac, &data);
-        assert!(Mac::verify(mac, &tag));
+        Mac::verify(mac, &tag).unwrap();
     }
 
     // https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-aegis-aead-18#appendix-A.8.4
@@ -562,19 +560,19 @@ mod tests {
         for byte in data {
             mac.update(&[byte]);
         }
-        assert!(mac.verify(&tag));
+        mac.verify(&tag).unwrap();
         let mut mac = Aegis256::new(&key, &nonce);
         mac.update(&data[..16]);
         mac.update(&data[16..]);
-        assert!(mac.verify(&tag));
+        mac.verify(&tag).unwrap();
         let mut mac = Aegis256::new(&key, &nonce);
         mac.update(&data);
         mac.update(&[0]);
-        assert!(!mac.verify(&tag));
+        assert_eq!(mac.verify(&tag), Err(Error::Verification));
         let mut material = [0u8; 64];
         material[..32].copy_from_slice(&key);
         material[32..].copy_from_slice(&nonce);
-        let mut mac = <Aegis256 as KeyInit>::new(&material);
+        let mut mac = <Aegis256 as KeyInit>::new(&material).unwrap();
         Digest::update(&mut mac, &data);
         assert_eq!(Digest::finalize(mac), tag);
     }

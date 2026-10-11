@@ -2,13 +2,13 @@ use {
     criterion::Criterion,
     stedy::{
         hashes::{Sha256, Sha512},
-        kdfs::{pbkdf2, Hkdf},
+        kdfs::{Hkdf, Pbkdf2},
         macs::Hmac,
     },
 };
 
 #[cfg(feature = "std")]
-use stedy::kdfs::{argon2, Argon2Params, Argon2Variant};
+use stedy::kdfs::{Argon2, Argon2Params, Argon2Variant};
 
 pub fn bench(c: &mut Criterion) {
     let ikm = [
@@ -20,14 +20,14 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("hkdf_sha256", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
-            Hkdf::<Sha256>::hkdf(&ikm, Some(&salt), Some(&info), &mut okm)
+            Hkdf::<Sha256>::derive(&ikm, Some(&salt), Some(&info), &mut okm)
         })
     });
 
     c.bench_function("hkdf_sha512", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
-            Hkdf::<Sha512>::hkdf(&ikm, Some(&salt), Some(&info), &mut okm)
+            Hkdf::<Sha512>::derive(&ikm, Some(&salt), Some(&info), &mut okm)
         })
     });
 
@@ -38,14 +38,14 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("pbkdf2_hmac_sha256", |b| {
         b.iter(|| {
             let mut output = [0u8; 32];
-            pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut output);
+            Pbkdf2::<Hmac<Sha256>>::derive(password, salt, iterations, &mut output)
         })
     });
 
     c.bench_function("pbkdf2_hmac_sha512", |b| {
         b.iter(|| {
             let mut output = [0u8; 64];
-            pbkdf2::<Hmac<Sha512>>(password, salt, iterations, &mut output);
+            Pbkdf2::<Hmac<Sha512>>::derive(password, salt, iterations, &mut output)
         })
     });
 
@@ -59,7 +59,7 @@ pub fn bench(c: &mut Criterion) {
         c.bench_function("argon2d", |b| {
             b.iter(|| {
                 let mut output = [0u8; 32];
-                argon2(
+                Argon2::derive(
                     Argon2Params::new(Argon2Variant::Argon2d),
                     &password,
                     &salt,
@@ -73,7 +73,7 @@ pub fn bench(c: &mut Criterion) {
         c.bench_function("argon2i", |b| {
             b.iter(|| {
                 let mut output = [0u8; 32];
-                argon2(
+                Argon2::derive(
                     Argon2Params::new(Argon2Variant::Argon2i),
                     &password,
                     &salt,
@@ -87,7 +87,7 @@ pub fn bench(c: &mut Criterion) {
         c.bench_function("argon2id", |b| {
             b.iter(|| {
                 let mut output = [0u8; 32];
-                argon2(
+                Argon2::derive(
                     Argon2Params::new(Argon2Variant::Argon2id),
                     &password,
                     &salt,

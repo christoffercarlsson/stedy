@@ -1,12 +1,14 @@
 use crate::{
     traits::{SeekableStreamCipher, StreamCipher},
     utils::Secret,
+    Error,
 };
 
 pub struct ChaCha20 {
     state: Secret<[u32; 16]>,
     keystream: Secret<[u8; 64]>,
     offset: u8,
+    blocks: u64,
 }
 
 impl ChaCha20 {
@@ -14,7 +16,10 @@ impl ChaCha20 {
         Self::init(&Self::read_key(key), &Self::read_nonce(nonce))
     }
 
-    pub fn apply_keystream(&mut self, mut data: &mut [u8]) {
+    pub fn apply_keystream(&mut self, mut data: &mut [u8]) -> Result<(), Error> {
+        if data.len() as u64 > self.available() {
+            return Err(Error::LimitExceeded);
+        }
         while !data.is_empty() {
             if self.offset == 64 {
                 self.next();
@@ -29,11 +34,13 @@ impl ChaCha20 {
             self.offset += take as u8;
             data = tail;
         }
+        Ok(())
     }
 
     pub fn seek(&mut self, counter: u32) {
         self.state[12] = counter;
         self.offset = 64;
+        self.blocks = u64::from(u32::MAX - counter) + 1;
     }
 }
 
@@ -53,6 +60,7 @@ impl From<&[u8; 48]> for ChaCha20 {
         let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
+        cipher.blocks = u64::MAX;
         cipher
     }
 }
@@ -68,8 +76,8 @@ impl StreamCipher for ChaCha20 {
         Self::new(key, nonce)
     }
 
-    fn apply_keystream(&mut self, message: &mut [u8]) {
-        self.apply_keystream(message);
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error> {
+        self.apply_keystream(message)
     }
 }
 
@@ -99,7 +107,14 @@ impl ChaCha20 {
             state: Secret::from(state),
             keystream: Secret::from([0u8; 64]),
             offset: 64,
+            blocks: 1 << 32,
         }
+    }
+
+    fn available(&self) -> u64 {
+        self.blocks
+            .saturating_mul(64)
+            .saturating_add(64 - u64::from(self.offset))
     }
 
     fn read_key(key: &[u8; 32]) -> [u32; 8] {
@@ -126,6 +141,7 @@ impl ChaCha20 {
             *b = b.wrapping_add(self.state[i]);
         }
         self.state[12] = self.state[12].wrapping_add(1);
+        self.blocks = self.blocks.saturating_sub(1);
         let (chunks, _) = self.keystream.as_mut().as_chunks_mut::<4>();
         for (i, chunk) in chunks.iter_mut().enumerate() {
             chunk.copy_from_slice(&block[i].to_le_bytes());
@@ -172,8 +188,8 @@ impl XChaCha20 {
         }
     }
 
-    pub fn apply_keystream(&mut self, data: &mut [u8]) {
-        self.inner.apply_keystream(data);
+    pub fn apply_keystream(&mut self, data: &mut [u8]) -> Result<(), Error> {
+        self.inner.apply_keystream(data)
     }
 
     pub fn seek(&mut self, counter: u32) {
@@ -198,6 +214,7 @@ impl From<&[u8; 60]> for XChaCha20 {
         let counter = u32::from_le_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
+        cipher.inner.blocks = u64::MAX;
         cipher
     }
 }
@@ -213,8 +230,8 @@ impl StreamCipher for XChaCha20 {
         Self::new(key, nonce)
     }
 
-    fn apply_keystream(&mut self, message: &mut [u8]) {
-        self.apply_keystream(message);
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error> {
+        self.apply_keystream(message)
     }
 }
 

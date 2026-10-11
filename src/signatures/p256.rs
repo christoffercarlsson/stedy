@@ -8,7 +8,10 @@ pub type P256 = Ecdsa<FieldP256, Sha256, ScalarP256, [u8; 64]>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng};
+    use {
+        super::*,
+        crate::{csprngs::ChaCha20Rng, Error},
+    };
 
     const PRIVATE_KEY: [u8; 32] = [
         201, 175, 169, 216, 69, 186, 117, 22, 107, 92, 33, 87, 103, 177, 214, 147, 78, 80, 195,
@@ -33,40 +36,53 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p256_public_key() {
-        assert_eq!(P256::public_key(&PRIVATE_KEY), Some(PUBLIC_KEY));
+        assert_eq!(P256::public_key(&PRIVATE_KEY), Ok(PUBLIC_KEY));
+        assert_eq!(P256::public_key(&[0u8; 32]), Err(Error::InvalidKey));
     }
 
     #[test]
     fn test_ecdsa_p256_sign() {
-        assert_eq!(P256::sign(&PRIVATE_KEY, b"sample"), Some(SIGNATURE_SAMPLE));
-        assert_eq!(P256::sign(&PRIVATE_KEY, b"test"), Some(SIGNATURE_TEST));
+        assert_eq!(P256::sign(&PRIVATE_KEY, b"sample"), Ok(SIGNATURE_SAMPLE));
+        assert_eq!(P256::sign(&PRIVATE_KEY, b"test"), Ok(SIGNATURE_TEST));
     }
 
     #[test]
     fn test_ecdsa_p256_verify() {
-        assert!(P256::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE));
-        assert!(P256::verify(b"test", &PUBLIC_KEY, &SIGNATURE_TEST));
+        P256::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE).unwrap();
+        P256::verify(b"test", &PUBLIC_KEY, &SIGNATURE_TEST).unwrap();
     }
 
     #[test]
     fn test_ecdsa_p256_verify_rejects_wrong_message() {
-        assert!(!P256::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_TEST));
-        assert!(!P256::verify(b"Sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE));
+        assert_eq!(
+            P256::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_TEST),
+            Err(Error::Verification)
+        );
+        assert_eq!(
+            P256::verify(b"Sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE),
+            Err(Error::Verification)
+        );
     }
 
     #[test]
     fn test_ecdsa_p256_verify_rejects_tampered_signature() {
         let mut tampered = SIGNATURE_SAMPLE;
         tampered[63] ^= 1;
-        assert!(!P256::verify(b"sample", &PUBLIC_KEY, &tampered));
+        assert_eq!(
+            P256::verify(b"sample", &PUBLIC_KEY, &tampered),
+            Err(Error::Verification)
+        );
     }
 
     #[test]
     fn test_ecdsa_p256_round_trip() {
         let mut rng = ChaCha20Rng::from(&[7u8; 96]);
-        let (private_key, public_key) = P256::generate_key_pair(&mut rng);
+        let (private_key, public_key) = P256::generate_key_pair(&mut rng).unwrap();
         let signature = P256::sign(&private_key, b"round trip message").unwrap();
-        assert!(P256::verify(b"round trip message", &public_key, &signature));
-        assert!(!P256::verify(b"another message", &public_key, &signature));
+        P256::verify(b"round trip message", &public_key, &signature).unwrap();
+        assert_eq!(
+            P256::verify(b"another message", &public_key, &signature),
+            Err(Error::Verification)
+        );
     }
 }

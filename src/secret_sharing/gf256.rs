@@ -256,7 +256,7 @@ mod tests {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut bytes = [0u8; 3];
         for _ in 0..1000 {
-            rng.fill(&mut bytes);
+            rng.fill(&mut bytes).unwrap();
             let (a, b, c) = (Gf256(bytes[0]), Gf256(bytes[1]), Gf256(bytes[2]));
             assert!((a + b).ct_eq(&(b + a)).to_bool());
             assert!((a * b).ct_eq(&(b * a)).to_bool());

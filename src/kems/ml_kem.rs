@@ -3,6 +3,7 @@ use {
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
         traits::{ByteArray, CryptoRng, Hasher, MlKemParams, Xof, XofReader},
         utils::{verify, Choice, Secret},
+        Error,
     },
     core::marker::PhantomData,
 };
@@ -73,10 +74,12 @@ where
     X: Xof,
     F: Xof,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (P::PrivateKey, P::PublicKey) {
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(P::PrivateKey, P::PublicKey), Error> {
         let mut seed = Secret::from(P::Seed::new());
-        rng.fill(seed.get_mut().as_mut());
-        Self::key_pair(seed.get())
+        rng.fill(seed.get_mut().as_mut())?;
+        Ok(Self::key_pair(seed.get()))
     }
 
     pub fn key_pair(seed: &P::Seed) -> (P::PrivateKey, P::PublicKey) {
@@ -96,23 +99,25 @@ where
     pub fn encapsulate(
         public_key: &P::PublicKey,
         rng: &mut impl CryptoRng,
-    ) -> Option<(P::SharedSecret, P::Ciphertext)> {
-        Self::encapsulation_key_check(public_key.as_ref()).then(|| {
-            let mut m = Secret::from([0u8; 32]);
-            rng.fill(m.as_mut());
-            let (k, c) = Self::encaps_internal(public_key.as_ref(), m.as_ref());
-            (P::SharedSecret::from_slice(k.get()), c)
-        })
+    ) -> Result<(P::SharedSecret, P::Ciphertext), Error> {
+        if !Self::encapsulation_key_check(public_key.as_ref()) {
+            return Err(Error::InvalidKey);
+        }
+        let mut m = Secret::from([0u8; 32]);
+        rng.fill(m.as_mut())?;
+        let (k, c) = Self::encaps_internal(public_key.as_ref(), m.as_ref());
+        Ok((P::SharedSecret::from_slice(k.get()), c))
     }
 
     pub fn decapsulate(
         private_key: &P::PrivateKey,
         ciphertext: &P::Ciphertext,
-    ) -> Option<P::SharedSecret> {
-        Self::decapsulation_key_check(private_key.as_ref()).then(|| {
-            let k = Self::decaps_internal(private_key.as_ref(), ciphertext.as_ref());
-            P::SharedSecret::from_slice(k.get())
-        })
+    ) -> Result<P::SharedSecret, Error> {
+        if !Self::decapsulation_key_check(private_key.as_ref()) {
+            return Err(Error::InvalidKey);
+        }
+        let k = Self::decaps_internal(private_key.as_ref(), ciphertext.as_ref());
+        Ok(P::SharedSecret::from_slice(k.get()))
     }
 }
 
@@ -545,7 +550,7 @@ mod tests {
     #[test]
     fn test_ml_kem_512() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlKem512::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlKem512::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
             hex!("2e00df480767274d608997eba92e6b4133c91f9c9de6d6aa2f38cc2946072164")
@@ -571,7 +576,7 @@ mod tests {
     #[test]
     fn test_ml_kem_768() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlKem768::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlKem768::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
             hex!("43dd6e168692b2d7dffc7fa8da478ef1dd0513daf99773e54a688386723ae5d3")
@@ -597,7 +602,7 @@ mod tests {
     #[test]
     fn test_ml_kem_1024() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = MlKem1024::generate_key_pair(&mut rng);
+        let (private_key, public_key) = MlKem1024::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             Sha3_256::digest(private_key.as_ref()),
             hex!("a0a8b06a25e3ca02e39cb1655f63ca8ab4f4f0e12e8a74db175a5f5c9601cb79")

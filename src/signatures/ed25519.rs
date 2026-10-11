@@ -9,12 +9,16 @@ pub type Ed25519ph = HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng, hex_literal::hex};
+    use {
+        super::*,
+        crate::{csprngs::ChaCha20Rng, Error},
+        hex_literal::hex,
+    };
 
     #[test]
     fn test_ed25519_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = Ed25519::generate_key_pair(&mut rng);
+        let (private_key, public_key) = Ed25519::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             &private_key.as_ref()[..32],
             &[
@@ -46,8 +50,7 @@ mod tests {
         assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed25519::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -62,8 +65,7 @@ mod tests {
         assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed25519::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -78,8 +80,7 @@ mod tests {
         assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed25519::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -94,8 +95,7 @@ mod tests {
         assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed25519::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -110,8 +110,7 @@ mod tests {
         assert_eq!(Ed25519::public_key(&private_key), public_key_ref);
         let signature = Ed25519::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed25519::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -119,8 +118,10 @@ mod tests {
         let public_key = hex!("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a");
         let message = [];
         let signature = hex!("dc2a4459e7369633a52b1bf277839a00201009a3efbf3ecb69bea2186c26b58909351fc9ac90b3ecfdfbc7c66431e0303dca179c138ac17ad9bef1177331a704");
-        let verified = Ed25519::verify(&message, &public_key, &signature);
-        assert!(!verified);
+        assert_eq!(
+            Ed25519::verify(&message, &public_key, &signature),
+            Err(Error::Verification)
+        );
     }
 
     // https://datatracker.ietf.org/doc/html/rfc8032#section-7.3
@@ -145,21 +146,36 @@ mod tests {
         let mut verifier = Ed25519ph::new();
         verifier.update(b"ab");
         verifier.update(b"c");
-        assert!(verifier.verify(&[], &public_key, &signature));
+        verifier.verify(&[], &public_key, &signature).unwrap();
         let mut verifier = Ed25519ph::new();
         verifier.update(b"abc");
-        assert!(!verifier.verify(b"foo", &public_key, &signature));
+        assert_eq!(
+            verifier.verify(b"foo", &public_key, &signature),
+            Err(Error::Verification)
+        );
         let mut verifier = Ed25519ph::new();
         verifier.update(b"abd");
-        assert!(!verifier.verify(&[], &public_key, &signature));
-        assert!(!Ed25519::verify(b"abc", &public_key, &signature));
+        assert_eq!(
+            verifier.verify(&[], &public_key, &signature),
+            Err(Error::Verification)
+        );
+        assert_eq!(
+            Ed25519::verify(b"abc", &public_key, &signature),
+            Err(Error::Verification)
+        );
         let mut signer = Ed25519ph::new();
         signer.update(b"abc");
         let signature = signer.sign(&private_key, b"foo").unwrap();
         let mut verifier = Ed25519ph::new();
         verifier.update(b"abc");
-        assert!(verifier.verify(b"foo", &public_key, &signature));
-        assert!(Ed25519ph::new().sign(&private_key, &[0u8; 256]).is_none());
-        assert!(!Ed25519ph::new().verify(&[0u8; 256], &public_key, &signature));
+        verifier.verify(b"foo", &public_key, &signature).unwrap();
+        assert_eq!(
+            Ed25519ph::new().sign(&private_key, &[0u8; 256]),
+            Err(Error::Misuse)
+        );
+        assert_eq!(
+            Ed25519ph::new().verify(&[0u8; 256], &public_key, &signature),
+            Err(Error::Misuse)
+        );
     }
 }

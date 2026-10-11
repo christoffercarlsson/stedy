@@ -177,26 +177,13 @@ macro_rules! impl_aegis {
             aad_len_bits: u64,
             data_len_bits: u64,
         ) -> [u8; TAG_SIZE] {
-            const {
-                assert!(
-                    TAG_SIZE == 16 || TAG_SIZE == 32,
-                    "AEGIS tags are 128 or 256 bits"
-                );
-            }
             let t = $xor(state[2], $load(lengths(aad_len_bits, data_len_bits)));
             for _ in 0..7 {
                 aegis128l_update(state, t, t);
             }
             let low = $xor($xor(state[0], state[1]), $xor(state[2], state[3]));
             let high = $xor($xor(state[4], state[5]), state[6]);
-            let mut tag = [0u8; TAG_SIZE];
-            if TAG_SIZE == 16 {
-                tag.copy_from_slice(&$store($xor(low, high)));
-            } else {
-                tag[..16].copy_from_slice(&$store(low));
-                tag[16..].copy_from_slice(&$store($xor(high, state[7])));
-            }
-            tag
+            finalize_tag::<TAG_SIZE>($xor(low, high), low, $xor(high, state[7]))
         }
 
         pub(super) fn aegis128l_mac_init(
@@ -301,26 +288,13 @@ macro_rules! impl_aegis {
             aad_len_bits: u64,
             data_len_bits: u64,
         ) -> [u8; TAG_SIZE] {
-            const {
-                assert!(
-                    TAG_SIZE == 16 || TAG_SIZE == 32,
-                    "AEGIS tags are 128 or 256 bits"
-                );
-            }
             let t = $xor(state[3], $load(lengths(aad_len_bits, data_len_bits)));
             for _ in 0..7 {
                 aegis256_update(state, t);
             }
             let low = $xor($xor(state[0], state[1]), state[2]);
             let high = $xor($xor(state[3], state[4]), state[5]);
-            let mut tag = [0u8; TAG_SIZE];
-            if TAG_SIZE == 16 {
-                tag.copy_from_slice(&$store($xor(low, high)));
-            } else {
-                tag[..16].copy_from_slice(&$store(low));
-                tag[16..].copy_from_slice(&$store(high));
-            }
-            tag
+            finalize_tag::<TAG_SIZE>($xor(low, high), low, high)
         }
 
         pub(super) fn aegis256_mac_init(
@@ -375,6 +349,27 @@ macro_rules! impl_aegis {
         fn store_pair(block: &mut [u8; 32], lo: $block, hi: $block) {
             block[..16].copy_from_slice(&$store(lo));
             block[16..].copy_from_slice(&$store(hi));
+        }
+
+        fn finalize_tag<const TAG_SIZE: usize>(
+            tag128: $block,
+            low: $block,
+            high: $block,
+        ) -> [u8; TAG_SIZE] {
+            const {
+                assert!(
+                    TAG_SIZE == 16 || TAG_SIZE == 32,
+                    "AEGIS tags are 128 or 256 bits"
+                );
+            }
+            let mut tag = [0u8; TAG_SIZE];
+            if TAG_SIZE == 16 {
+                tag.copy_from_slice(&$store(tag128));
+            } else {
+                tag[..16].copy_from_slice(&$store(low));
+                tag[16..].copy_from_slice(&$store(high));
+            }
+            tag
         }
 
         fn bits(size: usize) -> u64 {

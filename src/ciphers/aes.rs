@@ -1,6 +1,7 @@
 use crate::{
     traits::{SeekableStreamCipher, StreamCipher},
     utils::Secret,
+    Error,
 };
 
 #[macro_use]
@@ -40,7 +41,7 @@ pub struct AesCtr<const KEY_SIZE: usize> {
     counter: u32,
     keystream: Secret<[u8; 16]>,
     offset: u8,
-    wrap: bool,
+    blocks: u64,
 }
 
 impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
@@ -55,13 +56,16 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
             counter: 1,
             keystream: Secret::from([0u8; 16]),
             offset: 16,
-            wrap: false,
+            blocks: u64::from(u32::MAX),
         }
     }
 
-    pub fn apply_keystream(&mut self, mut data: &mut [u8]) {
+    pub fn apply_keystream(&mut self, mut data: &mut [u8]) -> Result<(), Error> {
+        if data.len() as u64 > self.available() {
+            return Err(Error::LimitExceeded);
+        }
         while !data.is_empty() {
-            if self.offset == 16 && data.len() >= 128 && self.is_batchable() {
+            if self.offset == 16 && data.len() >= 128 {
                 let (head, tail) = data.split_at_mut(128);
                 self.next_blocks(head);
                 data = tail;
@@ -80,11 +84,13 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
             self.offset += take as u8;
             data = tail;
         }
+        Ok(())
     }
 
     pub fn seek(&mut self, counter: u32) {
         self.counter = counter;
         self.offset = 16;
+        self.blocks = u64::from(u32::MAX - counter) + 1;
     }
 }
 
@@ -99,8 +105,8 @@ impl<const KEY_SIZE: usize> StreamCipher for AesCtr<KEY_SIZE> {
         Self::new(key, nonce)
     }
 
-    fn apply_keystream(&mut self, message: &mut [u8]) {
-        self.apply_keystream(message);
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error> {
+        self.apply_keystream(message)
     }
 }
 
@@ -142,7 +148,7 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         let counter = u32::from_be_bytes(*counter);
         let mut cipher = Self::new(key, nonce);
         cipher.seek(counter);
-        cipher.wrap = true;
+        cipher.blocks = u64::MAX;
         cipher
     }
 
@@ -168,17 +174,16 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     }
 
     fn next(&mut self) {
-        assert!(
-            self.wrap || self.counter != 0,
-            "AES-GCM message limit not exceeded"
-        );
         self.keystream = Secret::from(self.encrypt_block(self.counter_block(self.counter)));
         self.counter = self.counter.wrapping_add(1);
+        self.blocks = self.blocks.saturating_sub(1);
         self.offset = 0;
     }
 
-    fn is_batchable(&self) -> bool {
-        self.wrap || (self.counter != 0 && self.counter.checked_add(7).is_some())
+    fn available(&self) -> u64 {
+        self.blocks
+            .saturating_mul(16)
+            .saturating_add(16 - u64::from(self.offset))
     }
 
     fn next_blocks(&mut self, data: &mut [u8]) {
@@ -190,6 +195,7 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         let chunks = chunks.try_into().expect("a batch holds 8 blocks");
         self.encrypt_blocks(&blocks, chunks);
         self.counter = self.counter.wrapping_add(8);
+        self.blocks = self.blocks.saturating_sub(8);
     }
 
     fn expand_key(key: &[u8; KEY_SIZE]) -> [[u8; 16]; 15] {

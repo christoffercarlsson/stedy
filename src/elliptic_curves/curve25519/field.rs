@@ -21,13 +21,6 @@ impl Field25519 {
         765476049583133,
     ]);
 
-    fn from_slice(slice: &[u8]) -> Self {
-        let mut bytes = [0u8; 32];
-        let size = slice.len().min(32);
-        bytes[..size].copy_from_slice(&slice[..size]);
-        Self::from(&bytes)
-    }
-
     fn invert(self) -> Self {
         let x = self;
         let x3 = x * x.square();
@@ -151,12 +144,6 @@ impl From<&[u8; 32]> for Field25519 {
 impl From<[u8; 32]> for Field25519 {
     fn from(value: [u8; 32]) -> Self {
         Self::from(&value)
-    }
-}
-
-impl From<&[u8]> for Field25519 {
-    fn from(value: &[u8]) -> Self {
-        Self::from_slice(value)
     }
 }
 

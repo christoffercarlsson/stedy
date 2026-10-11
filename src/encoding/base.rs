@@ -1,4 +1,7 @@
-use crate::utils::{wipe, Block, Choice};
+use crate::{
+    utils::{wipe, Block, Choice},
+    Error,
+};
 
 const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";
 const BASE32_ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -26,9 +29,9 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         padded: bool,
         decoded: &[u8],
         encoded: &'a mut [u8],
-    ) -> Option<&'a [u8]> {
+    ) -> Result<&'a [u8], Error> {
         if Self::encoded_size(padded, decoded.len()) > encoded.len() {
-            return None;
+            return Err(Error::Misuse);
         }
         let mut block = Block::<BITS>::new();
         for byte in decoded {
@@ -46,15 +49,15 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         if padded {
             self.add_padding(encoded);
         }
-        Some(&encoded[..self.offset])
+        Ok(&encoded[..self.offset])
     }
 
     fn encoded_size(padded: bool, decoded_size: usize) -> usize {
         let bits = decoded_size * 8;
         if padded {
-            GROUPS * (bits / (BITS * GROUPS))
+            GROUPS * bits.div_ceil(BITS * GROUPS)
         } else {
-            bits / BITS
+            bits.div_ceil(BITS)
         }
     }
 
@@ -79,11 +82,16 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         self.offset += 1;
     }
 
-    fn decode<'a>(mut self, encoded: &[u8], decoded: &'a mut [u8]) -> Option<&'a [u8]> {
-        let unpadded_size = Self::unpadded_size(encoded)?;
+    fn decode<'a>(
+        mut self,
+        padded: bool,
+        encoded: &[u8],
+        decoded: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
+        let unpadded_size = Self::unpadded_size(padded, encoded)?;
         let decoded_size = Self::decoded_size(unpadded_size);
         if decoded_size > decoded.len() {
-            return None;
+            return Err(Error::Misuse);
         }
         let mut block = Block::<8>::new();
         let mut error = Choice::FALSE;
@@ -95,19 +103,22 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
                 self.push(decoded_byte, decoded);
             }
         }
+        if let Some((digits, size)) = block.remaining_block() {
+            let leftover = digits[..size].iter().fold(0, |acc, digit| acc | digit);
+            error |= Choice::nonzero(leftover);
+        }
         if error.to_bool() {
             wipe(decoded);
-            None
-        } else {
-            Some(&decoded[..self.offset])
+            return Err(Error::Encoding);
         }
+        Ok(&decoded[..self.offset])
     }
 
     fn decoded_size(unpadded_size: usize) -> usize {
         (unpadded_size * BITS) / 8
     }
 
-    fn unpadded_size(encoded: &[u8]) -> Option<usize> {
+    fn unpadded_size(padded: bool, encoded: &[u8]) -> Result<usize, Error> {
         let mut reached_padding = Choice::FALSE;
         let mut padding_size = 0;
         let mut error = Choice::FALSE;
@@ -118,7 +129,17 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             padding_size += is_padding.select(0, 1);
         }
         let unpadded_size = encoded.len() - padding_size;
-        (!error.to_bool()).then_some(unpadded_size)
+        let remainder = unpadded_size % GROUPS;
+        let expected_padding = if padded {
+            (GROUPS - remainder) % GROUPS
+        } else {
+            0
+        };
+        let complete = (remainder * BITS) % 8 < BITS;
+        if error.to_bool() || !complete || padding_size != expected_padding {
+            return Err(Error::Encoding);
+        }
+        Ok(unpadded_size)
     }
 
     fn find_index(&self, error: &mut Choice, byte: u8) -> u8 {
@@ -188,40 +209,45 @@ pub(crate) fn base64_encode<'a>(
     padded: bool,
     bytes: &[u8],
     encoded: &'a mut [u8],
-) -> Option<&'a [u8]> {
+) -> Result<&'a [u8], Error> {
     let base = base64(url_safe);
     base.encode(padded, bytes, encoded)
 }
 
 pub(crate) fn base64_decode<'a>(
     url_safe: bool,
+    padded: bool,
     encoded: &[u8],
     decoded: &'a mut [u8],
-) -> Option<&'a [u8]> {
+) -> Result<&'a [u8], Error> {
     let base = base64(url_safe);
-    base.decode(encoded, decoded)
+    base.decode(padded, encoded, decoded)
 }
 
 pub(crate) fn base32_encode<'a>(
     padded: bool,
     decoded: &[u8],
     encoded: &'a mut [u8],
-) -> Option<&'a [u8]> {
+) -> Result<&'a [u8], Error> {
     let base = base32();
     base.encode(padded, decoded, encoded)
 }
 
-pub(crate) fn base32_decode<'a>(encoded: &[u8], decoded: &'a mut [u8]) -> Option<&'a [u8]> {
+pub(crate) fn base32_decode<'a>(
+    padded: bool,
+    encoded: &[u8],
+    decoded: &'a mut [u8],
+) -> Result<&'a [u8], Error> {
     let base = base32();
-    base.decode(encoded, decoded)
+    base.decode(padded, encoded, decoded)
 }
 
-pub(crate) fn base16_encode<'a>(decoded: &[u8], encoded: &'a mut [u8]) -> Option<&'a [u8]> {
+pub(crate) fn base16_encode<'a>(decoded: &[u8], encoded: &'a mut [u8]) -> Result<&'a [u8], Error> {
     let base = base16();
     base.encode(false, decoded, encoded)
 }
 
-pub(crate) fn base16_decode<'a>(encoded: &[u8], decoded: &'a mut [u8]) -> Option<&'a [u8]> {
+pub(crate) fn base16_decode<'a>(encoded: &[u8], decoded: &'a mut [u8]) -> Result<&'a [u8], Error> {
     let base = base16();
-    base.decode(encoded, decoded)
+    base.decode(false, encoded, decoded)
 }

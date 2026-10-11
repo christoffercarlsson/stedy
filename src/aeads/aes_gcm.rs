@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn test_aes128gcm_generate_key() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let key = Aes128Gcm::generate_key(&mut rng);
+        let key = Aes128Gcm::generate_key(&mut rng).unwrap();
         assert_eq!(
             key,
             [189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11]
@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn test_aes256gcm_generate_key() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let key = Aes256Gcm::generate_key(&mut rng);
+        let key = Aes256Gcm::generate_key(&mut rng).unwrap();
         assert_eq!(
             key,
             [

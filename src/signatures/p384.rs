@@ -8,7 +8,10 @@ pub type P384 = Ecdsa<FieldP384, Sha384, ScalarP384, [u8; 96]>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng};
+    use {
+        super::*,
+        crate::{csprngs::ChaCha20Rng, Error},
+    };
 
     const PRIVATE_KEY: [u8; 48] = [
         107, 157, 61, 173, 46, 27, 140, 28, 5, 177, 152, 117, 182, 101, 159, 77, 226, 60, 59, 102,
@@ -37,40 +40,53 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p384_public_key() {
-        assert_eq!(P384::public_key(&PRIVATE_KEY), Some(PUBLIC_KEY));
+        assert_eq!(P384::public_key(&PRIVATE_KEY), Ok(PUBLIC_KEY));
+        assert_eq!(P384::public_key(&[0u8; 48]), Err(Error::InvalidKey));
     }
 
     #[test]
     fn test_ecdsa_p384_sign() {
-        assert_eq!(P384::sign(&PRIVATE_KEY, b"sample"), Some(SIGNATURE_SAMPLE));
-        assert_eq!(P384::sign(&PRIVATE_KEY, b"test"), Some(SIGNATURE_TEST));
+        assert_eq!(P384::sign(&PRIVATE_KEY, b"sample"), Ok(SIGNATURE_SAMPLE));
+        assert_eq!(P384::sign(&PRIVATE_KEY, b"test"), Ok(SIGNATURE_TEST));
     }
 
     #[test]
     fn test_ecdsa_p384_verify() {
-        assert!(P384::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE));
-        assert!(P384::verify(b"test", &PUBLIC_KEY, &SIGNATURE_TEST));
+        P384::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE).unwrap();
+        P384::verify(b"test", &PUBLIC_KEY, &SIGNATURE_TEST).unwrap();
     }
 
     #[test]
     fn test_ecdsa_p384_verify_rejects_wrong_message() {
-        assert!(!P384::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_TEST));
-        assert!(!P384::verify(b"Sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE));
+        assert_eq!(
+            P384::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_TEST),
+            Err(Error::Verification)
+        );
+        assert_eq!(
+            P384::verify(b"Sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE),
+            Err(Error::Verification)
+        );
     }
 
     #[test]
     fn test_ecdsa_p384_verify_rejects_tampered_signature() {
         let mut tampered = SIGNATURE_SAMPLE;
         tampered[95] ^= 1;
-        assert!(!P384::verify(b"sample", &PUBLIC_KEY, &tampered));
+        assert_eq!(
+            P384::verify(b"sample", &PUBLIC_KEY, &tampered),
+            Err(Error::Verification)
+        );
     }
 
     #[test]
     fn test_ecdsa_p384_round_trip() {
         let mut rng = ChaCha20Rng::from(&[7u8; 96]);
-        let (private_key, public_key) = P384::generate_key_pair(&mut rng);
+        let (private_key, public_key) = P384::generate_key_pair(&mut rng).unwrap();
         let signature = P384::sign(&private_key, b"round trip message").unwrap();
-        assert!(P384::verify(b"round trip message", &public_key, &signature));
-        assert!(!P384::verify(b"another message", &public_key, &signature));
+        P384::verify(b"round trip message", &public_key, &signature).unwrap();
+        assert_eq!(
+            P384::verify(b"another message", &public_key, &signature),
+            Err(Error::Verification)
+        );
     }
 }

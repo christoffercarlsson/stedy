@@ -41,7 +41,7 @@ macro_rules! hmac {
             |key: &[u8], message: &[u8], tag: &[u8]| {
                 let mut mac = Hmac::<$hash>::new(key);
                 mac.update(message);
-                Some(mac.verify(&tag.try_into().ok()?))
+                Some(mac.verify(&tag.try_into().ok()?).is_ok())
             },
         )
     };

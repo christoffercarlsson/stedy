@@ -31,7 +31,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut mac = Hmac::<Sha256>::new(&key);
             mac.update(&message);
-            mac.verify(&code);
+            mac.verify(&code)
         })
     });
 
@@ -53,7 +53,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut mac = Hmac::<Sha512>::new(&key);
             mac.update(&message);
-            mac.verify(&code);
+            mac.verify(&code)
         })
     });
 
@@ -73,7 +73,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut mac = SipHash24::new(&siphash_key);
             mac.update(&siphash_message);
-            mac.verify(&code);
+            mac.verify(&code)
         })
     });
 

@@ -25,7 +25,7 @@ impl<const RATE: usize, const N: usize> Sha3<RATE, N> {
         const {
             assert!(
                 RATE + 2 * N == Self::WIDTH,
-                "Rate and digest size are compatible"
+                "the SHA-3 rate and capacity fill the 200-byte state"
             );
         }
         Self(Sponge::<RATE>::new())

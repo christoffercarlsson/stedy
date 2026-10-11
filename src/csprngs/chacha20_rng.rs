@@ -4,14 +4,14 @@ pub type ChaCha20Rng = StreamCipherRng<ChaCha20, Blake2b384>;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, crate::traits::SeekableStreamCipher};
 
     #[cfg(feature = "getrandom")]
     #[test]
     fn test_seed() {
-        let mut rng = ChaCha20Rng::seed();
+        let mut rng = ChaCha20Rng::seed().unwrap();
         let mut a = [0u8; 32];
-        rng.fill(&mut a);
+        rng.fill(&mut a).unwrap();
         assert_ne!(
             a,
             [
@@ -19,9 +19,9 @@ mod tests {
                 238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
         );
-        rng.reseed();
+        rng.reseed().unwrap();
         let mut b = [0u8; 32];
-        rng.fill(&mut b);
+        rng.fill(&mut b).unwrap();
         assert_ne!(a, b);
     }
 
@@ -29,7 +29,7 @@ mod tests {
     fn test_fill() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut bytes = [0u8; 32];
-        rng.fill(&mut bytes);
+        rng.fill(&mut bytes).unwrap();
         assert_eq!(
             bytes,
             [
@@ -43,7 +43,7 @@ mod tests {
     fn test_fill_multiple_blocks() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let mut bytes = [0u8; 32];
-        rng.fill(&mut bytes);
+        rng.fill(&mut bytes).unwrap();
         assert_eq!(
             bytes,
             [
@@ -52,7 +52,7 @@ mod tests {
             ]
         );
         let mut bytes = [0u8; 48];
-        rng.fill(&mut bytes);
+        rng.fill(&mut bytes).unwrap();
         assert_eq!(
             bytes,
             [
@@ -62,10 +62,41 @@ mod tests {
             ]
         );
         let mut bytes = [0u8; 16];
-        rng.fill(&mut bytes);
+        rng.fill(&mut bytes).unwrap();
         assert_eq!(
             bytes,
             [248, 192, 49, 168, 83, 96, 159, 150, 163, 210, 249, 205, 252, 103, 187, 90]
         );
+    }
+
+    #[test]
+    fn test_try_from() {
+        let seed = [0u8; 96];
+        let mut rng = ChaCha20Rng::try_from(&seed[..]).unwrap();
+        let mut expected = ChaCha20Rng::from(&seed);
+        let mut output = [0u8; 32];
+        let mut bytes = [0u8; 32];
+        rng.fill(&mut output).unwrap();
+        expected.fill(&mut bytes).unwrap();
+        assert_eq!(output, bytes);
+        assert!(ChaCha20Rng::try_from(&seed[..95]).is_err());
+        assert!(ChaCha20Rng::try_from(&[0u8; 97][..]).is_err());
+    }
+
+    #[test]
+    fn test_fill_across_rekey() {
+        let seed = [0u8; 96];
+        let mut rng = ChaCha20Rng::from(&seed);
+        let mut output = [0u8; 65536 + 32];
+        rng.fill(&mut output).unwrap();
+        let mut expected = [0u8; 65536 + 32];
+        let mut cipher = ChaCha20::seed(&Blake2b384::digest(&seed));
+        cipher.apply_keystream(&mut expected[..65536]).unwrap();
+        let mut next = [0u8; 48];
+        cipher.apply_keystream(&mut next).unwrap();
+        ChaCha20::seed(&next)
+            .apply_keystream(&mut expected[65536..])
+            .unwrap();
+        assert_eq!(output, expected);
     }
 }

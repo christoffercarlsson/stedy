@@ -7,6 +7,7 @@ use {
             ByteArray, CryptoRng, FieldElement, Hasher, WeierstrassParams, WeierstrassScalar,
         },
         utils::shift_right,
+        Error,
     },
     core::{cmp::Ordering, marker::PhantomData},
 };
@@ -28,38 +29,36 @@ where
     S: WeierstrassScalar,
     B: ByteArray,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> (S::Bytes, F::PointBytes) {
-        let d = Self::next_scalar(rng);
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<(S::Bytes, F::PointBytes), Error> {
+        let d = Self::next_scalar(rng)?;
         let private_key: S::Bytes = d.clone().into();
         let public_key = Self::public_key_from_scalar(&d);
-        (private_key, public_key)
+        Ok((private_key, public_key))
     }
 
-    pub fn public_key(private_key: &S::Bytes) -> Option<F::PointBytes> {
-        let d = S::from_canonical(private_key)?;
-        Some(Self::public_key_from_scalar(&d))
+    pub fn public_key(private_key: &S::Bytes) -> Result<F::PointBytes, Error> {
+        let d = S::from_canonical(private_key).ok_or(Error::InvalidKey)?;
+        Ok(Self::public_key_from_scalar(&d))
     }
 
-    pub fn sign(private_key: &S::Bytes, message: &[u8]) -> Option<B> {
-        let d = S::from_canonical(private_key)?;
+    pub fn sign(private_key: &S::Bytes, message: &[u8]) -> Result<B, Error> {
+        let d = S::from_canonical(private_key).ok_or(Error::InvalidKey)?;
         let e = Self::message_representative(message);
         let mut drbg =
             HmacDrbg::<H>::instantiate(d.clone().into().as_ref(), e.clone().into().as_ref());
         loop {
-            let k = Self::next_scalar(&mut drbg);
+            let k = Self::next_scalar(&mut drbg).expect("a fresh DRBG never reaches its limit");
             if let Some(signature) = Self::try_sign(&k, &d, &e) {
-                return Some(signature);
+                return Ok(signature);
             }
         }
     }
 
-    pub fn verify(message: &[u8], public_key: &F::PointBytes, signature: &B) -> bool {
-        let Some((r, s)) = Self::read_signature(signature) else {
-            return false;
-        };
+    pub fn verify(message: &[u8], public_key: &F::PointBytes, signature: &B) -> Result<(), Error> {
+        let (r, s) = Self::read_signature(signature).ok_or(Error::Verification)?;
         let (q, valid_q) = Weierstrass::<F, S>::decompress(public_key);
         if !valid_q.to_bool() {
-            return false;
+            return Err(Error::Verification);
         }
         let e = Self::message_representative(message);
         let w = s.invert();
@@ -67,9 +66,13 @@ where
         let u2 = r.clone() * w;
         let R = Weierstrass::<F, S>::vartime_double_base(&u2, q, &u1);
         if R.is_identity().to_bool() {
-            return false;
+            return Err(Error::Verification);
         }
-        Self::affine_x_mod_order(&R).ct_eq(&r).to_bool()
+        if Self::affine_x_mod_order(&R).ct_eq(&r).to_bool() {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
     }
 }
 
@@ -82,13 +85,13 @@ where
 {
     const DISCARD_BITS: usize = S::Bytes::SIZE * 8 - S::ORDER_BITS;
 
-    fn next_scalar(rng: &mut impl CryptoRng) -> S {
+    fn next_scalar(rng: &mut impl CryptoRng) -> Result<S, Error> {
         loop {
             let mut bytes = S::Bytes::new();
-            rng.fill(bytes.as_mut());
+            rng.fill(bytes.as_mut())?;
             let candidate = Self::bits2octets(bytes.as_ref());
             if let Some(scalar) = S::from_canonical(&candidate) {
-                return scalar;
+                return Ok(scalar);
             }
         }
     }

@@ -17,9 +17,11 @@ mod tests {
         let seed = [7u8; 64];
         let mut rng = Aes128CtrRng::from(&seed);
         let mut output = [0u8; 48];
-        rng.fill(&mut output);
+        rng.fill(&mut output).unwrap();
         let mut expected = [0u8; 48];
-        Aes128Ctr::seed(&Sha256::digest(&seed)).apply_keystream(&mut expected);
+        Aes128Ctr::seed(&Sha256::digest(&seed))
+            .apply_keystream(&mut expected)
+            .unwrap();
         assert_eq!(output, expected);
     }
 
@@ -28,9 +30,11 @@ mod tests {
         let seed = [7u8; 96];
         let mut rng = Aes256CtrRng::from(&seed);
         let mut output = [0u8; 48];
-        rng.fill(&mut output);
+        rng.fill(&mut output).unwrap();
         let mut expected = [0u8; 48];
-        Aes256Ctr::seed(&Sha384::digest(&seed)).apply_keystream(&mut expected);
+        Aes256Ctr::seed(&Sha384::digest(&seed))
+            .apply_keystream(&mut expected)
+            .unwrap();
         assert_eq!(output, expected);
     }
 }

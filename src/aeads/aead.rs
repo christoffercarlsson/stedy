@@ -28,7 +28,7 @@ where
             return Err(Error::Misuse);
         }
         let mut aead = Self::new(key, nonce);
-        aead.cipher.apply_keystream(message);
+        aead.cipher.apply_keystream(message)?;
         Ok(aead.mac.tag(message, aad))
     }
 
@@ -46,14 +46,13 @@ where
         if !aead.mac.verify(message, aad, tag) {
             return Err(Error::Decryption);
         }
-        aead.cipher.apply_keystream(message);
-        Ok(())
+        aead.cipher.apply_keystream(message)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> C::Key {
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<C::Key, Error> {
         let mut key = C::Key::new();
-        rng.fill(key.as_mut());
-        key
+        rng.fill(key.as_mut())?;
+        Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut C::Nonce) -> Result<(), Error> {

@@ -1,9 +1,11 @@
 use crate::{
+    elliptic_curves::Curve25519,
     hashes::{Sha3_256, Shake256},
     kems::MlKem768,
     key_exchange::X25519,
     traits::CryptoRng,
     utils::Secret,
+    Error,
 };
 
 pub struct XWing;
@@ -11,10 +13,10 @@ pub struct XWing;
 impl XWing {
     const LABEL: [u8; 6] = [92, 46, 47, 47, 94, 92];
 
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> ([u8; 32], [u8; 1216]) {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
         let mut seed = Secret::from([0u8; 32]);
-        rng.fill(seed.get_mut());
-        Self::key_pair(seed.get())
+        rng.fill(seed.get_mut())?;
+        Ok(Self::key_pair(seed.get()))
     }
 
     pub fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
@@ -29,9 +31,9 @@ impl XWing {
     pub fn encapsulate(
         public_key: &[u8; 1216],
         rng: &mut impl CryptoRng,
-    ) -> Option<([u8; 32], [u8; 1120])> {
+    ) -> Result<([u8; 32], [u8; 1120]), Error> {
         let mut eseed = Secret::from([0u8; 64]);
-        rng.fill(eseed.get_mut());
+        rng.fill(eseed.get_mut())?;
         Self::encapsulate_derand(public_key, eseed.get())
     }
 
@@ -55,20 +57,19 @@ impl XWing {
     fn encapsulate_derand(
         public_key: &[u8; 1216],
         eseed: &[u8; 64],
-    ) -> Option<([u8; 32], [u8; 1120])> {
+    ) -> Result<([u8; 32], [u8; 1120]), Error> {
         let (ml_kem_public_key, x25519_public_key) = public_key.split_at(1184);
         let x25519_public_key = x25519_public_key
             .try_into()
             .expect("X25519 public key is 32 bytes");
         if !MlKem768::encapsulation_key_check(ml_kem_public_key) {
-            return None;
+            return Err(Error::InvalidKey);
         }
         let (m, x25519_ephemeral_key) = eseed.split_at(32);
         let x25519_ephemeral_key = Secret::from(
             <[u8; 32]>::try_from(x25519_ephemeral_key).expect("X25519 ephemeral key is 32 bytes"),
         );
-        let x25519_ciphertext = X25519::public_key(x25519_ephemeral_key.get())
-            .expect("X25519 base point multiplication never yields zero");
+        let x25519_ciphertext = Curve25519::mul_base(x25519_ephemeral_key.get());
         let x25519_shared_secret = Self::x25519(x25519_ephemeral_key.get(), &x25519_public_key);
         let (ml_kem_shared_secret, ml_kem_ciphertext) =
             MlKem768::encaps_internal(ml_kem_public_key, m);
@@ -81,7 +82,7 @@ impl XWing {
         let mut ciphertext = [0u8; 1120];
         ciphertext[..1088].copy_from_slice(&ml_kem_ciphertext);
         ciphertext[1088..].copy_from_slice(&x25519_ciphertext);
-        Some((shared_secret, ciphertext))
+        Ok((shared_secret, ciphertext))
     }
 
     fn expand(seed: &[u8; 32]) -> (Secret<[u8; 2400]>, Secret<[u8; 32]>, [u8; 1216]) {
@@ -93,8 +94,7 @@ impl XWing {
             <[u8; 32]>::try_from(x25519_private_key).expect("X25519 private key is 32 bytes"),
         );
         let (ml_kem_private_key, ml_kem_public_key) = MlKem768::key_pair(ml_kem_seed);
-        let x25519_public_key = X25519::public_key(x25519_private_key.get())
-            .expect("X25519 base point multiplication never yields zero");
+        let x25519_public_key = Curve25519::mul_base(x25519_private_key.get());
         let mut public_key = [0u8; 1216];
         public_key[..1184].copy_from_slice(&ml_kem_public_key);
         public_key[1184..].copy_from_slice(&x25519_public_key);
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn test_x_wing_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = XWing::generate_key_pair(&mut rng);
+        let (private_key, public_key) = XWing::generate_key_pair(&mut rng).unwrap();
         assert_eq!(XWing::public_key(&private_key), public_key);
         let (shared_secret, ciphertext) =
             XWing::encapsulate(&public_key, &mut rng).expect("Encapsulation key is valid");

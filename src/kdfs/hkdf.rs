@@ -2,6 +2,7 @@ use crate::{
     macs::Hmac,
     traits::{ByteArray, Hasher},
     utils::wipe,
+    Error,
 };
 
 pub struct Hkdf<H: Hasher> {
@@ -9,13 +10,18 @@ pub struct Hkdf<H: Hasher> {
 }
 
 impl<H: Hasher> Hkdf<H> {
-    pub fn hkdf(ikm: &[u8], salt: Option<&[u8]>, info: Option<&[u8]>, okm: &mut [u8]) -> bool {
+    pub fn derive(
+        ikm: &[u8],
+        salt: Option<&[u8]>,
+        info: Option<&[u8]>,
+        okm: &mut [u8],
+    ) -> Result<(), Error> {
         if okm.len() > 255 * H::OUTPUT_SIZE {
-            return false;
+            return Err(Error::Misuse);
         }
         let hkdf = Self::extract(salt, ikm);
         hkdf.expand(info, okm);
-        true
+        Ok(())
     }
 }
 
@@ -65,12 +71,7 @@ mod tests {
         let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let info = [240, 241, 242, 243, 244, 245, 246, 247, 248, 249];
         let mut okm = [0; 42];
-        assert!(Hkdf::<Sha256>::hkdf(
-            &ikm,
-            Some(&salt),
-            Some(&info),
-            &mut okm
-        ));
+        Hkdf::<Sha256>::derive(&ikm, Some(&salt), Some(&info), &mut okm).unwrap();
         assert_eq!(
             okm,
             [
@@ -87,7 +88,7 @@ mod tests {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
         ];
         let mut okm = [0; 42];
-        assert!(Hkdf::<Sha256>::hkdf(&ikm, None, None, &mut okm));
+        Hkdf::<Sha256>::derive(&ikm, None, None, &mut okm).unwrap();
         assert_eq!(
             okm,
             [
@@ -106,12 +107,7 @@ mod tests {
         let salt = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let info = [240, 241, 242, 243, 244, 245, 246, 247, 248, 249];
         let mut okm = [0; 42];
-        assert!(Hkdf::<Sha512>::hkdf(
-            &ikm,
-            Some(&salt),
-            Some(&info),
-            &mut okm
-        ));
+        Hkdf::<Sha512>::derive(&ikm, Some(&salt), Some(&info), &mut okm).unwrap();
         assert_eq!(
             okm,
             [
@@ -128,7 +124,7 @@ mod tests {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
         ];
         let mut okm = [0; 42];
-        assert!(Hkdf::<Sha512>::hkdf(&ikm, None, None, &mut okm));
+        Hkdf::<Sha512>::derive(&ikm, None, None, &mut okm).unwrap();
         assert_eq!(
             okm,
             [
@@ -143,9 +139,12 @@ mod tests {
     fn test_hkdf_size_too_large() {
         let ikm = [11u8; 22];
         let mut okm = [0u8; 255 * 32];
-        assert!(Hkdf::<Sha256>::hkdf(&ikm, None, None, &mut okm));
+        Hkdf::<Sha256>::derive(&ikm, None, None, &mut okm).unwrap();
         let mut okm = [0u8; 255 * 32 + 1];
-        assert!(!Hkdf::<Sha256>::hkdf(&ikm, None, None, &mut okm));
+        assert_eq!(
+            Hkdf::<Sha256>::derive(&ikm, None, None, &mut okm),
+            Err(Error::Misuse)
+        );
         assert_eq!(okm, [0u8; 255 * 32 + 1]);
     }
 }

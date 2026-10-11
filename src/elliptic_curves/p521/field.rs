@@ -13,13 +13,6 @@ mod field_p521;
 pub use field_p521::FieldP521;
 
 impl FieldP521 {
-    fn from_slice(slice: &[u8]) -> Self {
-        let mut bytes = [0u8; 66];
-        let size = slice.len().min(66);
-        bytes[..size].copy_from_slice(&slice[..size]);
-        Self::from(&bytes)
-    }
-
     fn invert(self) -> Self {
         let x = self;
         x * x.pow25191().pow2n(2)
@@ -137,12 +130,6 @@ impl From<&[u8; 66]> for FieldP521 {
 impl From<[u8; 66]> for FieldP521 {
     fn from(value: [u8; 66]) -> Self {
         Self::from(&value)
-    }
-}
-
-impl From<&[u8]> for FieldP521 {
-    fn from(value: &[u8]) -> Self {
-        Self::from_slice(value)
     }
 }
 

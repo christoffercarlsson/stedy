@@ -1,6 +1,7 @@
 use crate::{
     traits::{EdwardsScalar, EllipticCurve, FieldElement},
     utils::{Choice, Secret},
+    Error,
 };
 
 mod field;
@@ -27,8 +28,8 @@ impl EllipticCurve for Curve25519 {
     type ScalarBytes = [u8; 32];
     type SharedSecretBytes = [u8; 32];
 
-    fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point> {
-        Some(Field25519::from(bytes))
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error> {
+        Ok(Field25519::from(bytes))
     }
 
     fn point_to_bytes(point: &Self::Point) -> Self::PointBytes {
@@ -39,15 +40,35 @@ impl EllipticCurve for Curve25519 {
         point.into()
     }
 
-    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar> {
-        Some(Curve25519Scalar(Secret::from(*bytes)))
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error> {
+        Ok(Curve25519Scalar(Secret::from(*bytes)))
     }
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
         *scalar.0.get()
     }
 
-    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point> {
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
+        Self::ladder(scalar, &Self::BASE_POINT)
+    }
+
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
+        let u = Self::ladder(scalar, point);
+        if u.ct_eq(&Field25519::ZERO).to_bool() {
+            Err(Error::InvalidKey)
+        } else {
+            Ok(u)
+        }
+    }
+}
+
+impl Curve25519 {
+    pub(crate) fn mul_base(scalar: &[u8; 32]) -> [u8; 32] {
+        let scalar = Curve25519Scalar(Secret::from(*scalar));
+        Self::point_to_bytes(&Self::scalar_mult_base(&scalar))
+    }
+
+    fn ladder(scalar: &Curve25519Scalar, point: &Field25519) -> Field25519 {
         let mut scalar = scalar.0.clone();
         Scalar25519::clamp(scalar.get_mut());
         let x1 = *point;
@@ -80,7 +101,6 @@ impl EllipticCurve for Curve25519 {
         }
         Field25519::swap(&mut x2, &mut x3, swap);
         Field25519::swap(&mut z2, &mut z3, swap);
-        let u = x2 / z2;
-        (!u.ct_eq(&Field25519::ZERO)).to_bool().then_some(u)
+        x2 / z2
     }
 }

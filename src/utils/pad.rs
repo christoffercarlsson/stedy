@@ -1,6 +1,6 @@
-use crate::utils::wipe;
+use crate::{utils::wipe, Error};
 
-pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Option<&'a [u8]> {
+pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Result<&'a [u8], Error> {
     pad(unpadded, buffer, buffer.len())
 }
 
@@ -8,13 +8,16 @@ pub fn pad_to_block<'a>(
     unpadded: &[u8],
     buffer: &'a mut [u8],
     block_size: usize,
-) -> Option<&'a [u8]> {
+) -> Result<&'a [u8], Error> {
+    if block_size == 0 {
+        return Err(Error::Misuse);
+    }
     let unpadded_size = unpadded.len();
     let padded_size = unpadded_size + block_size - (unpadded_size % block_size);
     pad(unpadded, buffer, padded_size)
 }
 
-pub fn unpad(padded: &[u8]) -> Option<&[u8]> {
+pub fn unpad(padded: &[u8]) -> Result<&[u8], Error> {
     let mut found_marker = 0usize;
     let mut position = 0usize;
     let mut error = 0usize;
@@ -29,22 +32,22 @@ pub fn unpad(padded: &[u8]) -> Option<&[u8]> {
     }
     error |= found_marker ^ 1;
     if error == 0 {
-        Some(&padded[..position])
+        Ok(&padded[..position])
     } else {
-        None
+        Err(Error::Encoding)
     }
 }
 
-fn pad<'a>(unpadded: &[u8], buffer: &'a mut [u8], padded_size: usize) -> Option<&'a [u8]> {
+fn pad<'a>(unpadded: &[u8], buffer: &'a mut [u8], padded_size: usize) -> Result<&'a [u8], Error> {
     let unpadded_size = unpadded.len();
     let buffer_size = buffer.len();
     if unpadded_size >= buffer_size || padded_size > buffer_size {
-        return None;
+        return Err(Error::Misuse);
     }
     buffer[..unpadded_size].copy_from_slice(unpadded);
     buffer[unpadded_size] = 128;
     wipe(&mut buffer[unpadded_size + 1..padded_size]);
-    Some(&buffer[..padded_size])
+    Ok(&buffer[..padded_size])
 }
 
 fn is_byte(a: u8, b: u8) -> usize {
@@ -77,7 +80,7 @@ mod tests {
         let unpadded = [1, 2, 3, 4];
         let mut buffer = [0u8; 4];
         let result = pad_to_capacity(&unpadded, &mut buffer);
-        assert!(result.is_none());
+        assert_eq!(result, Err(Error::Misuse));
     }
 
     #[test]
@@ -86,6 +89,7 @@ mod tests {
         let mut buffer = [0u8; 16];
         let padded = pad_to_block(&unpadded, &mut buffer, 8).unwrap();
         assert_eq!(padded, [1, 2, 3, 4, 128, 0, 0, 0]);
+        assert_eq!(pad_to_block(&unpadded, &mut buffer, 0), Err(Error::Misuse));
     }
 
     #[test]
@@ -109,7 +113,7 @@ mod tests {
         let unpadded = [1, 2, 3, 4, 5, 6, 7, 8];
         let mut buffer = [0u8; 8];
         let result = pad_to_block(&unpadded, &mut buffer, 8);
-        assert!(result.is_none());
+        assert_eq!(result, Err(Error::Misuse));
     }
 
     #[test]
@@ -148,10 +152,10 @@ mod tests {
 
     #[test]
     fn test_unpad_invalid() {
-        assert!(unpad(&[]).is_none());
-        assert!(unpad(&[1, 2, 3, 4]).is_none());
-        assert!(unpad(&[0, 0, 0, 0]).is_none());
-        assert!(unpad(&[1, 2, 128, 5, 0, 0]).is_none());
-        assert!(unpad(&[1, 2, 128, 0, 5, 0]).is_none());
+        assert_eq!(unpad(&[]), Err(Error::Encoding));
+        assert_eq!(unpad(&[1, 2, 3, 4]), Err(Error::Encoding));
+        assert_eq!(unpad(&[0, 0, 0, 0]), Err(Error::Encoding));
+        assert_eq!(unpad(&[1, 2, 128, 5, 0, 0]), Err(Error::Encoding));
+        assert_eq!(unpad(&[1, 2, 128, 0, 5, 0]), Err(Error::Encoding));
     }
 }

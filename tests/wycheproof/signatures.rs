@@ -111,11 +111,7 @@ macro_rules! ecdsa {
         |message: &[u8], public_key: &[u8], signature: &[u8]| {
             let verify = || {
                 let public_key = compress_point::<$point>(public_key)?;
-                Some(<$ecdsa>::verify(
-                    message,
-                    &public_key,
-                    &signature.try_into().ok()?,
-                ))
+                Some(<$ecdsa>::verify(message, &public_key, &signature.try_into().ok()?).is_ok())
             };
             verify().unwrap_or(false)
         }
@@ -136,7 +132,8 @@ macro_rules! ml_dsa {
             sign: |private_key: &[u8], message: &[u8], context: &[u8]| {
                 let private_key = private_key.try_into().ok()?;
                 let signature =
-                    <$ml_dsa>::sign_deterministic_with_context(&private_key, message, context)?;
+                    <$ml_dsa>::sign_deterministic_with_context(&private_key, message, context)
+                        .ok()?;
                 Some(signature.to_vec())
             },
             sign_mu: |private_key: &[u8], mu: &[u8]| {
@@ -152,25 +149,28 @@ macro_rules! ml_dsa {
                     message,
                     context,
                     &mut FixedRng(rnd),
-                )?;
+                )
+                .ok()?;
                 Some(signature.to_vec())
             },
             #[cfg(feature = "hazmat")]
             sign_mu_hedged: |private_key: &[u8], mu: &[u8], rnd: &[u8]| {
                 let private_key = private_key.try_into().ok()?;
                 let mu = mu.try_into().ok()?;
-                Some(<$ml_dsa>::sign_external_mu(&private_key, &mu, &mut FixedRng(rnd)).to_vec())
+                Some(
+                    <$ml_dsa>::sign_external_mu(&private_key, &mu, &mut FixedRng(rnd))
+                        .ok()?
+                        .to_vec(),
+                )
             },
             verify: |message: &[u8], context: &[u8], public_key: &[u8], signature: &[u8]| {
                 let verify = || {
                     let public_key = public_key.try_into().ok()?;
                     let signature = signature.try_into().ok()?;
-                    Some(<$ml_dsa>::verify_with_context(
-                        message,
-                        context,
-                        &public_key,
-                        &signature,
-                    ))
+                    Some(
+                        <$ml_dsa>::verify_with_context(message, context, &public_key, &signature)
+                            .is_ok(),
+                    )
                 };
                 verify().unwrap_or(false)
             },
@@ -293,7 +293,7 @@ macro_rules! eddsa {
             let verify = || {
                 let public_key = public_key.try_into().ok()?;
                 let signature = signature.try_into().ok()?;
-                Some(<$eddsa>::verify(message, &public_key, &signature))
+                Some(<$eddsa>::verify(message, &public_key, &signature).is_ok())
             };
             verify().unwrap_or(false)
         }

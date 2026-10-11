@@ -7,16 +7,4 @@ mod p256;
 mod p384;
 mod p521;
 
-pub use {
-    ecdsa::*,
-    ed25519::*,
-    ed448::*,
-    eddsa::*,
-    ml_dsa::{MlDsa44, MlDsa65, MlDsa87},
-    p256::*,
-    p384::*,
-    p521::*,
-};
-
-#[cfg(feature = "hazmat")]
-pub use ml_dsa::*;
+pub use {ecdsa::*, ed25519::*, ed448::*, eddsa::*, ml_dsa::*, p256::*, p384::*, p521::*};

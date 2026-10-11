@@ -10,12 +10,16 @@ pub type Ed448ph =
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng, hex_literal::hex};
+    use {
+        super::*,
+        crate::{csprngs::ChaCha20Rng, Error},
+        hex_literal::hex,
+    };
 
     #[test]
     fn test_ed448_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = Ed448::generate_key_pair(&mut rng);
+        let (private_key, public_key) = Ed448::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             &private_key.as_ref()[..57],
             &[
@@ -50,8 +54,7 @@ mod tests {
         assert_eq!(Ed448::public_key(&private_key), public_key_ref);
         let signature = Ed448::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed448::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed448::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -65,8 +68,7 @@ mod tests {
         assert_eq!(Ed448::public_key(&private_key), public_key_ref);
         let signature = Ed448::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed448::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed448::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -80,8 +82,7 @@ mod tests {
         assert_eq!(Ed448::public_key(&private_key), public_key_ref);
         let signature = Ed448::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed448::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed448::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -95,8 +96,7 @@ mod tests {
         assert_eq!(Ed448::public_key(&private_key), public_key_ref);
         let signature = Ed448::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed448::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed448::verify(&message, &public_key, &signature).unwrap();
     }
 
     #[test]
@@ -110,8 +110,7 @@ mod tests {
         assert_eq!(Ed448::public_key(&private_key), public_key_ref);
         let signature = Ed448::sign(&private_key, &message);
         assert_eq!(signature, signature_ref);
-        let verified = Ed448::verify(&message, &public_key, &signature);
-        assert!(verified);
+        Ed448::verify(&message, &public_key, &signature).unwrap();
     }
 
     // https://datatracker.ietf.org/doc/html/rfc8032#section-7.5
@@ -132,11 +131,17 @@ mod tests {
         let mut verifier = Ed448ph::new();
         verifier.update(b"a");
         verifier.update(b"bc");
-        assert!(verifier.verify(&[], &public_key, &signature));
+        verifier.verify(&[], &public_key, &signature).unwrap();
         let mut verifier = Ed448ph::new();
         verifier.update(b"abc");
-        assert!(!verifier.verify(b"foo", &public_key, &signature));
-        assert!(!Ed448::verify(b"abc", &public_key, &signature));
+        assert_eq!(
+            verifier.verify(b"foo", &public_key, &signature),
+            Err(Error::Verification)
+        );
+        assert_eq!(
+            Ed448::verify(b"abc", &public_key, &signature),
+            Err(Error::Verification)
+        );
     }
 
     #[test]
@@ -152,10 +157,16 @@ mod tests {
         assert_eq!(signature, expected);
         let mut verifier = Ed448ph::new();
         verifier.update(b"abc");
-        assert!(verifier.verify(&context, &public_key, &signature));
+        verifier.verify(&context, &public_key, &signature).unwrap();
         let mut verifier = Ed448ph::new();
         verifier.update(b"abc");
-        assert!(!verifier.verify(&[], &public_key, &signature));
-        assert!(Ed448ph::new().sign(&private_key, &[0u8; 256]).is_none());
+        assert_eq!(
+            verifier.verify(&[], &public_key, &signature),
+            Err(Error::Verification)
+        );
+        assert_eq!(
+            Ed448ph::new().sign(&private_key, &[0u8; 256]),
+            Err(Error::Misuse)
+        );
     }
 }

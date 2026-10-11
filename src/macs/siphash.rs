@@ -2,6 +2,7 @@ use {
     crate::{
         traits::{Digest, KeyInit, Mac},
         utils::{verify, Block, Secret},
+        Error,
     },
     core::hash::Hasher,
 };
@@ -25,9 +26,9 @@ impl<const C: usize, const D: usize, const N: usize> SipHash<C, D, N> {
         const {
             assert!(N == 8 || N == 16, "SipHash outputs are 64 or 128 bits");
         }
-        let (k0, k1) = key.split_at(8);
-        let k0 = u64::from_le_bytes(k0.try_into().expect("Key half is 8 bytes"));
-        let k1 = u64::from_le_bytes(k1.try_into().expect("Key half is 8 bytes"));
+        let key = u128::from_le_bytes(*key);
+        let k0 = key as u64;
+        let k1 = (key >> 64) as u64;
         let mut v = [
             k0 ^ 0x736f6d6570736575,
             k1 ^ 0x646f72616e646f6d,
@@ -83,13 +84,17 @@ macro_rules! impl_siphash_mac {
     ($($c:literal, $d:literal);*) => {
         $(
             impl<const N: usize> SipHash<$c, $d, N> {
-                pub fn verify(self, code: &[u8; N]) -> bool {
-                    verify(&self.finalize(), code)
+                pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
+                    if verify(&self.finalize(), code) {
+                        Ok(())
+                    } else {
+                        Err(Error::Verification)
+                    }
                 }
             }
 
             impl<const N: usize> Mac for SipHash<$c, $d, N> {
-                fn verify(self, code: &Self::Output) -> bool {
+                fn verify(self, code: &Self::Output) -> Result<(), Error> {
                     self.verify(code)
                 }
             }
@@ -128,9 +133,9 @@ impl<const C: usize, const D: usize, const N: usize> SipHash<C, D, N> {
 }
 
 impl<const C: usize, const D: usize, const N: usize> KeyInit for SipHash<C, D, N> {
-    fn new(key: &[u8]) -> Self {
-        let key = <&[u8; 16]>::try_from(key).expect("SipHash keys are always 16 bytes");
-        Self::new(key)
+    fn new(key: &[u8]) -> Result<Self, Error> {
+        let key = <&[u8; 16]>::try_from(key).map_err(|_| Error::InvalidKey)?;
+        Ok(Self::new(key))
     }
 }
 
@@ -221,10 +226,13 @@ mod tests {
         assert_eq!(mac.finalize(), code);
         let mut mac = SipHash24::new(&key);
         mac.update(&message);
-        assert!(mac.verify(&code));
+        mac.verify(&code).unwrap();
         let mut mac = SipHash24::new(&key);
         mac.update(&message);
-        assert!(!mac.verify(&hex!("e545be4961ca29a0")));
+        assert_eq!(
+            mac.verify(&hex!("e545be4961ca29a0")),
+            Err(Error::Verification)
+        );
     }
 
     #[test]

@@ -1,6 +1,7 @@
 use crate::{
     traits::{SeekableStreamCipher, StreamCipher},
     utils::Secret,
+    Error,
 };
 
 pub struct Salsa20 {
@@ -14,7 +15,7 @@ impl Salsa20 {
         Self::init(&Self::read_key(key), &Self::read_nonce(nonce))
     }
 
-    pub fn apply_keystream(&mut self, mut data: &mut [u8]) {
+    pub fn apply_keystream(&mut self, mut data: &mut [u8]) -> Result<(), Error> {
         while !data.is_empty() {
             if self.offset == 64 {
                 self.next();
@@ -29,6 +30,7 @@ impl Salsa20 {
             self.offset += take as u8;
             data = tail;
         }
+        Ok(())
     }
 
     pub fn seek(&mut self, counter: u32) {
@@ -69,8 +71,8 @@ impl StreamCipher for Salsa20 {
         Self::new(key, nonce)
     }
 
-    fn apply_keystream(&mut self, message: &mut [u8]) {
-        self.apply_keystream(message);
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error> {
+        self.apply_keystream(message)
     }
 }
 
@@ -179,8 +181,8 @@ impl XSalsa20 {
         }
     }
 
-    pub fn apply_keystream(&mut self, data: &mut [u8]) {
-        self.inner.apply_keystream(data);
+    pub fn apply_keystream(&mut self, data: &mut [u8]) -> Result<(), Error> {
+        self.inner.apply_keystream(data)
     }
 
     pub fn seek(&mut self, counter: u32) {
@@ -219,8 +221,8 @@ impl StreamCipher for XSalsa20 {
         Self::new(key, nonce)
     }
 
-    fn apply_keystream(&mut self, message: &mut [u8]) {
-        self.apply_keystream(message);
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error> {
+        self.apply_keystream(message)
     }
 }
 

@@ -3,8 +3,9 @@ use {
     serde::Deserialize,
     stedy::{
         hashes::{Sha256, Sha384, Sha512},
-        kdfs::{pbkdf2, Hkdf},
+        kdfs::{Hkdf, Pbkdf2},
         macs::Hmac,
+        Error,
     },
 };
 
@@ -37,13 +38,13 @@ struct Pbkdf2Case {
     dk: Vec<u8>,
 }
 
-type Expand = fn(&[u8], &[u8], &[u8], &mut [u8]) -> bool;
-type Derive = fn(&[u8], &[u8], usize, &mut [u8]);
+type Expand = fn(&[u8], &[u8], &[u8], &mut [u8]) -> Result<(), Error>;
+type Derive = fn(&[u8], &[u8], usize, &mut [u8]) -> Result<(), Error>;
 
 macro_rules! hkdf {
     ($hash:ty) => {
         |ikm: &[u8], salt: &[u8], info: &[u8], okm: &mut [u8]| {
-            Hkdf::<$hash>::hkdf(ikm, Some(salt), Some(info), okm)
+            Hkdf::<$hash>::derive(ikm, Some(salt), Some(info), okm)
         }
     };
 }
@@ -51,7 +52,7 @@ macro_rules! hkdf {
 macro_rules! pbkdf2_hmac {
     ($hash:ty) => {
         |password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]| {
-            pbkdf2::<Hmac<$hash>>(password, salt, iterations, output)
+            Pbkdf2::<Hmac<$hash>>::derive(password, salt, iterations, output)
         }
     };
 }
@@ -63,7 +64,7 @@ fn run_hkdf(name: &str, json: &str, expand: Expand) {
         for case in &group.tests {
             let c = &case.case;
             let mut okm = vec![0u8; c.size];
-            let derived = expand(&c.ikm, &c.salt, &c.info, &mut okm);
+            let derived = expand(&c.ikm, &c.salt, &c.info, &mut okm).is_ok();
             let output = derived.then_some(okm.as_slice());
             summary.check(case, case.result.matches(output, &c.okm));
         }
@@ -82,8 +83,9 @@ fn run_pbkdf2(name: &str, json: &str, derive: Derive) {
             }
             let c = &case.case;
             let mut dk = vec![0u8; c.dk_len];
-            derive(&c.password, &c.salt, c.iteration_count, &mut dk);
-            summary.check(case, case.result.matches(Some(&dk), &c.dk));
+            let derived = derive(&c.password, &c.salt, c.iteration_count, &mut dk).is_ok();
+            let output = derived.then_some(dk.as_slice());
+            summary.check(case, case.result.matches(output, &c.dk));
         }
     }
     summary.finish();

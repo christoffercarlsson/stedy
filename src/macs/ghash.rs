@@ -22,7 +22,9 @@ where
             y: 0,
             mask: [0u8; 16],
         };
-        cipher.apply_keystream(&mut mac.mask);
+        cipher
+            .apply_keystream(&mut mac.mask)
+            .expect("the first keystream block is always available");
         cipher.seek(2);
         mac
     }

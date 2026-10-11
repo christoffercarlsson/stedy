@@ -1,9 +1,15 @@
 #![allow(dead_code)]
 use {
-    crate::utils::{is_zero, less_than, Choice, Secret},
-    core::ops::{
-        Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
-        SubAssign,
+    crate::{
+        utils::{is_zero, less_than, Choice, Secret},
+        Error,
+    },
+    core::{
+        array::TryFromSliceError,
+        ops::{
+            Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
+            SubAssign,
+        },
     },
 };
 
@@ -35,13 +41,15 @@ pub trait ByteArray:
 
     fn new() -> Self;
 
-    fn from_slice(slice: &[u8]) -> Self;
+    fn from_slice(slice: &[u8]) -> Self {
+        Self::try_from_slice(slice).expect("the given slice is exactly ByteArray::SIZE bytes")
+    }
 
-    fn from_slice_checked(slice: &[u8]) -> Option<Self>;
+    fn try_from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError>;
 }
 
 pub trait CryptoRng {
-    fn fill(&mut self, bytes: &mut [u8]);
+    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error>;
 }
 
 pub trait Digest {
@@ -110,32 +118,29 @@ pub trait EllipticCurve {
     type ScalarBytes: ByteArray;
     type SharedSecretBytes: ByteArray;
 
-    fn generate_scalar(rng: &mut impl CryptoRng) -> Self::Scalar {
+    fn generate_scalar(rng: &mut impl CryptoRng) -> Result<Self::Scalar, Error> {
         loop {
             let mut bytes = Secret::from(Self::ScalarBytes::new());
-            rng.fill(bytes.get_mut().as_mut());
-            if let Some(scalar) = Self::scalar_from_bytes(bytes.get()) {
-                return scalar;
+            rng.fill(bytes.get_mut().as_mut())?;
+            if let Ok(scalar) = Self::scalar_from_bytes(bytes.get()) {
+                return Ok(scalar);
             }
         }
     }
 
-    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
-        Self::scalar_mult(scalar, &Self::BASE_POINT)
-            .expect("scalar_mult_base always produce valid points")
-    }
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point;
 
-    fn point_from_bytes(bytes: &Self::PointBytes) -> Option<Self::Point>;
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error>;
 
     fn point_to_bytes(point: &Self::Point) -> Self::PointBytes;
 
     fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes;
 
-    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Option<Self::Scalar>;
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error>;
 
     fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes;
 
-    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Option<Self::Point>;
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error>;
 }
 
 pub trait EcdsaCurve: EllipticCurve {}
@@ -209,11 +214,13 @@ pub trait Init {
 }
 
 pub trait KeyInit {
-    fn new(key: &[u8]) -> Self;
+    fn new(key: &[u8]) -> Result<Self, Error>
+    where
+        Self: Sized;
 }
 
 pub trait Mac: KeyInit + Digest {
-    fn verify(self, code: &Self::Output) -> bool;
+    fn verify(self, code: &Self::Output) -> Result<(), Error>;
 }
 
 pub trait MlKemParams<const K: usize> {
@@ -262,14 +269,15 @@ pub trait StreamCipher {
 
     fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self;
 
-    fn apply_keystream(&mut self, message: &mut [u8]);
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error>;
 }
 
-pub trait SeedableCryptoRng: CryptoRng + Sized {
-    fn new(seed: &[u8]) -> Self;
-
-    fn reseed(&mut self, seed: &[u8]) {
-        *self = Self::new(seed);
+pub trait SeedableCryptoRng:
+    CryptoRng + Sized + for<'a> TryFrom<&'a [u8], Error = TryFromSliceError>
+{
+    fn reseed(&mut self, seed: &[u8]) -> Result<(), TryFromSliceError> {
+        *self = Self::try_from(seed)?;
+        Ok(())
     }
 }
 
@@ -361,11 +369,7 @@ impl<const N: usize> ByteArray for [u8; N] {
         [0u8; N]
     }
 
-    fn from_slice(slice: &[u8]) -> Self {
-        Self::from_slice_checked(slice).expect("Slice size matches array size")
-    }
-
-    fn from_slice_checked(slice: &[u8]) -> Option<Self> {
-        Self::try_from(slice).ok()
+    fn try_from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError> {
+        Self::try_from(slice)
     }
 }

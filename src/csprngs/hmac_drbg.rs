@@ -1,7 +1,11 @@
-use crate::{
-    macs::Hmac,
-    traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng},
-    utils::wipe,
+use {
+    crate::{
+        macs::Hmac,
+        traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng},
+        utils::wipe,
+        Error,
+    },
+    core::array::TryFromSliceError,
 };
 
 pub struct HmacDrbg<H: Hasher> {
@@ -11,8 +15,8 @@ pub struct HmacDrbg<H: Hasher> {
 }
 
 impl<H: Hasher> HmacDrbg<H> {
-    pub fn new(seed: &[u8]) -> Self {
-        Self::instantiate(seed, &[])
+    pub fn new(seed: &H::Output) -> Self {
+        Self::instantiate(seed.as_ref(), &[])
     }
 
     pub fn instantiate(entropy: &[u8], nonce: &[u8]) -> Self {
@@ -29,9 +33,9 @@ impl<H: Hasher> HmacDrbg<H> {
         instance
     }
 
-    pub fn generate(&mut self, bytes: &mut [u8]) -> bool {
+    pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         if self.reseed_counter > Self::RESEED_INTERVAL {
-            return false;
+            return Err(Error::LimitExceeded);
         }
         for chunk in bytes.chunks_mut(H::OUTPUT_SIZE) {
             let mut mac = Hmac::<H>::new(self.k.as_ref());
@@ -41,33 +45,23 @@ impl<H: Hasher> HmacDrbg<H> {
         }
         self.update(&[], &[]);
         self.reseed_counter += 1;
-        true
-    }
-
-    pub fn reseed(&mut self, seed: &[u8]) {
-        *self = Self::new(seed);
-    }
-
-    pub fn fill(&mut self, bytes: &mut [u8]) {
-        self.generate(bytes);
+        Ok(())
     }
 }
 
 impl<H: Hasher> CryptoRng for HmacDrbg<H> {
-    fn fill(&mut self, bytes: &mut [u8]) {
-        self.fill(bytes);
+    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.fill(bytes)
     }
 }
 
-impl<H: Hasher> SeedableCryptoRng for HmacDrbg<H> {
-    fn new(seed: &[u8]) -> Self {
-        Self::new(seed)
-    }
-}
+impl<H: Hasher> SeedableCryptoRng for HmacDrbg<H> {}
 
-impl<H: Hasher> From<&[u8]> for HmacDrbg<H> {
-    fn from(seed: &[u8]) -> Self {
-        Self::new(seed)
+impl<H: Hasher> TryFrom<&[u8]> for HmacDrbg<H> {
+    type Error = TryFromSliceError;
+
+    fn try_from(seed: &[u8]) -> Result<Self, Self::Error> {
+        Ok(Self::new(&H::Output::try_from_slice(seed)?))
     }
 }
 

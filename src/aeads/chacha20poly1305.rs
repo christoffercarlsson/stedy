@@ -3,16 +3,17 @@ use crate::{
     ciphers::{ChaCha20, XChaCha20},
     macs::Poly1305,
     traits::CryptoRng,
+    Error,
 };
 
 pub type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
 pub type XChaCha20Poly1305 = Aead<XChaCha20, Poly1305>;
 
 impl XChaCha20Poly1305 {
-    pub fn generate_nonce(rng: &mut impl CryptoRng) -> [u8; 24] {
+    pub fn generate_nonce(rng: &mut impl CryptoRng) -> Result<[u8; 24], Error> {
         let mut nonce = [0u8; 24];
-        rng.fill(&mut nonce);
-        nonce
+        rng.fill(&mut nonce)?;
+        Ok(nonce)
     }
 }
 
@@ -45,7 +46,7 @@ mod tests {
     #[test]
     fn test_chacha20poly1305_generate_key() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let key = ChaCha20Poly1305::generate_key(&mut rng);
+        let key = ChaCha20Poly1305::generate_key(&mut rng).unwrap();
         assert_eq!(
             key,
             [
@@ -80,7 +81,7 @@ mod tests {
     #[test]
     fn test_xchacha20poly1305_generate_key() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let key = XChaCha20Poly1305::generate_key(&mut rng);
+        let key = XChaCha20Poly1305::generate_key(&mut rng).unwrap();
         assert_eq!(
             key,
             [
@@ -93,7 +94,7 @@ mod tests {
     #[test]
     fn test_xchacha20poly1305_generate_nonce() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let nonce = XChaCha20Poly1305::generate_nonce(&mut rng);
+        let nonce = XChaCha20Poly1305::generate_nonce(&mut rng).unwrap();
         assert_eq!(
             nonce,
             [

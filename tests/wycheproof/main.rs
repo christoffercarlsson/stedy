@@ -132,7 +132,7 @@ pub fn hex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Err
     let encoded = String::deserialize(deserializer)?;
     let mut decoded = vec![0u8; encoded.len() / 2];
     let size = decode(Encoding::Base16, encoded.as_bytes(), &mut decoded)
-        .ok_or_else(|| serde::de::Error::custom("invalid hex"))?
+        .map_err(|_| serde::de::Error::custom("invalid hex"))?
         .len();
     decoded.truncate(size);
     Ok(decoded)
@@ -178,9 +178,10 @@ pub struct FixedRng<'a>(pub &'a [u8]);
 
 #[cfg(feature = "hazmat")]
 impl stedy::traits::CryptoRng for FixedRng<'_> {
-    fn fill(&mut self, bytes: &mut [u8]) {
+    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), stedy::Error> {
         let (head, tail) = self.0.split_at(bytes.len());
         bytes.copy_from_slice(head);
         self.0 = tail;
+        Ok(())
     }
 }

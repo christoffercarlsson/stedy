@@ -4,7 +4,10 @@ pub type P256 = Ecdh<P256Curve>;
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng};
+    use {
+        super::*,
+        crate::{csprngs::ChaCha20Rng, Error},
+    };
 
     const ALICE_PRIVATE_KEY: [u8; 32] = [
         1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141,
@@ -47,12 +50,12 @@ mod tests {
     #[test]
     fn test_ecdh_p256_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = P256::generate_key_pair(&mut rng);
+        let (private_key, public_key) = P256::generate_key_pair(&mut rng).unwrap();
         assert_eq!(P256::public_key(&private_key).unwrap(), public_key);
     }
 
     #[test]
     fn test_ecdh_p256_rejects_zero_private_key() {
-        assert!(P256::public_key(&[0u8; 32]).is_none());
+        assert_eq!(P256::public_key(&[0u8; 32]), Err(Error::InvalidKey));
     }
 }

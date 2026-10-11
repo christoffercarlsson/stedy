@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_x448_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let (private_key, public_key) = X448::generate_key_pair(&mut rng);
+        let (private_key, public_key) = X448::generate_key_pair(&mut rng).unwrap();
         assert_eq!(
             private_key.as_ref(),
             &[

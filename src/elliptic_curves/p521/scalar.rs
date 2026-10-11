@@ -82,13 +82,6 @@ impl ScalarP521Inner {
         156, 71, 174, 187, 111, 183, 30, 145, 56, 100, 7,
     ];
 
-    fn from_slice(slice: &[u8]) -> Self {
-        let mut bytes = [0u8; 66];
-        let size = slice.len().min(66);
-        bytes[..size].copy_from_slice(&slice[..size]);
-        Self::from_be_bytes(&bytes)
-    }
-
     #[cfg(target_pointer_width = "64")]
     fn invert(self) -> Self {
         let mut table = [Self::ONE; 16];
@@ -177,12 +170,6 @@ impl From<&[u8; 66]> for ScalarP521 {
 impl From<[u8; 66]> for ScalarP521 {
     fn from(value: [u8; 66]) -> Self {
         Self::from(&value)
-    }
-}
-
-impl From<&[u8]> for ScalarP521 {
-    fn from(value: &[u8]) -> Self {
-        Self(Secret::from(ScalarP521Inner::from_slice(value)))
     }
 }
 
