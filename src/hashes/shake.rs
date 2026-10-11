@@ -95,6 +95,7 @@ impl<const RATE: usize, const N: usize> ShakeDigest<RATE, N> {
     }
 
     pub fn new() -> Self {
+        const { assert!(N >= 1, "SHAKE digests are at least 1 byte") }
         Self(Shake::<RATE>::new())
     }
 

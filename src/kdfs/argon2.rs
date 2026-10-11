@@ -100,9 +100,16 @@ impl Default for Argon2Block {
 pub struct Argon2Memory(Vec<Argon2Block>);
 
 #[cfg(feature = "std")]
-impl From<Argon2Params> for Argon2Memory {
-    fn from(params: Argon2Params) -> Self {
-        Self(vec![Argon2Block::ZERO; params.blocks()])
+impl TryFrom<Argon2Params> for Argon2Memory {
+    type Error = Error;
+
+    fn try_from(params: Argon2Params) -> Result<Self, Error> {
+        let mut blocks = Vec::new();
+        blocks
+            .try_reserve_exact(params.blocks())
+            .map_err(|_| Error::LimitExceeded)?;
+        blocks.resize(params.blocks(), Argon2Block::ZERO);
+        Ok(Self(blocks))
     }
 }
 
@@ -150,7 +157,7 @@ impl Argon2 {
             associated_data.unwrap_or_default(),
             output.len(),
         )?;
-        let mut memory = Argon2Memory::from(params);
+        let mut memory = Argon2Memory::try_from(params)?;
         Self::derive_with_memory(
             params,
             password,
@@ -194,7 +201,7 @@ impl Argon2 {
         output: &'a mut [u8],
     ) -> Result<&'a [u8], Error> {
         params.validate_phc(password, salt, hash_length)?;
-        let mut memory = Argon2Memory::from(params);
+        let mut memory = Argon2Memory::try_from(params)?;
         Self::phc_with_memory(params, password, salt, hash_length, &mut memory, output)
     }
 
@@ -216,12 +223,7 @@ impl Argon2 {
     #[cfg(feature = "std")]
     pub fn verify_phc(password: &[u8], phc: &[u8]) -> Result<(), Error> {
         let (params, _, _) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
-        let mut blocks = Vec::new();
-        blocks
-            .try_reserve_exact(params.blocks())
-            .map_err(|_| Error::LimitExceeded)?;
-        blocks.resize(params.blocks(), Argon2Block::ZERO);
-        let mut memory = Argon2Memory(blocks);
+        let mut memory = Argon2Memory::try_from(params)?;
         Self::verify_phc_with_memory(password, phc, &mut memory)
     }
 
@@ -954,7 +956,7 @@ mod tests {
             )
             .unwrap();
             assert_eq!(parallel, output);
-            let mut memory = Argon2Memory::from(PARAMS);
+            let mut memory = Argon2Memory::try_from(PARAMS).unwrap();
             Argon2::derive_with_memory(
                 PARAMS,
                 &password,
@@ -1005,7 +1007,7 @@ mod tests {
             )
             .unwrap();
             assert_eq!(parallel, output);
-            let mut memory = Argon2Memory::from(PARAMS);
+            let mut memory = Argon2Memory::try_from(PARAMS).unwrap();
             Argon2::derive_with_memory(
                 PARAMS,
                 &password,
@@ -1056,7 +1058,7 @@ mod tests {
             )
             .unwrap();
             assert_eq!(parallel, output);
-            let mut memory = Argon2Memory::from(PARAMS);
+            let mut memory = Argon2Memory::try_from(PARAMS).unwrap();
             Argon2::derive_with_memory(
                 PARAMS,
                 &password,

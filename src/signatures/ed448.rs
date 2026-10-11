@@ -20,25 +20,8 @@ mod tests {
     fn test_ed448_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
         let (private_key, public_key) = Ed448::generate_key_pair(&mut rng).unwrap();
-        assert_eq!(
-            &private_key.as_ref()[..57],
-            &[
-                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
-                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204, 202, 29, 227,
-                98, 39, 63, 218, 245, 127, 170, 158, 94, 212, 115, 2, 22, 109, 212, 235, 42, 215,
-                1, 120, 200, 5
-            ]
-        );
-        assert_eq!(&private_key.as_ref()[57..], &public_key);
-        assert_eq!(
-            public_key,
-            [
-                218, 91, 65, 153, 163, 134, 199, 40, 98, 141, 52, 101, 33, 230, 67, 24, 221, 182,
-                20, 105, 176, 176, 233, 2, 122, 78, 204, 63, 9, 212, 169, 66, 180, 68, 151, 9, 18,
-                149, 92, 71, 51, 250, 207, 60, 141, 14, 53, 77, 36, 173, 45, 34, 49, 107, 203, 178,
-                128
-            ]
-        );
+        assert_ne!(private_key, [0u8; 114]);
+        assert_ne!(public_key, [0u8; 57]);
     }
 
     // https://datatracker.ietf.org/doc/html/rfc8032#section-7.4

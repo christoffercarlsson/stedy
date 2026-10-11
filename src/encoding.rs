@@ -186,31 +186,55 @@ mod tests {
     }
 
     #[test]
-    fn test_rejects_invalid() {
+    fn test_decode_rejects_invalid() {
         let mut buffer = [0u8; 8];
-        let invalid: [(Encoding, &[u8]); 10] = [
-            (Encoding::Base64, b"Zm9???vYg==   "),
-            (Encoding::Base64, b"Zm9    vYg=="),
-            (Encoding::Base64, b"   Zm9vYg=="),
-            (Encoding::Base64, b"AC"),
-            (Encoding::Base64, b"AAA"),
-            (Encoding::Base64, b"A==="),
-            (Encoding::Base64, b"=="),
-            (Encoding::Base64Unpadded, b"AA=="),
-            (Encoding::Base32, b"74====="),
-            (Encoding::Hex, b"abc"),
-        ];
-        for (encoding, encoded) in invalid {
-            let result = decode(encoding, encoded, &mut buffer);
-            assert_eq!(result, Err(Error::Encoding));
-        }
+        assert_eq!(
+            decode(Encoding::Base64, b"Zm9???vYg==   ", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"Zm9    vYg==", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"   Zm9vYg==", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"AC", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"AAA", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"A===", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64, b"==", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base64Unpadded, b"AA==", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Base32, b"74=====", &mut buffer),
+            Err(Error::Encoding)
+        );
+        assert_eq!(
+            decode(Encoding::Hex, b"abc", &mut buffer),
+            Err(Error::Encoding)
+        );
     }
 
     #[test]
     fn test_rejects_small_buffers() {
-        let mut buffer = [0u8; 3];
+        let mut buffer = [0u8; 7];
         assert_eq!(
-            encode(Encoding::Base64, &[255], &mut buffer),
+            encode(Encoding::Base64, &[255], &mut buffer[..3]),
             Err(Error::Misuse)
         );
         assert_eq!(
@@ -218,7 +242,7 @@ mod tests {
             Err(Error::Misuse)
         );
         assert_eq!(
-            encode(Encoding::Base32, &[255], &mut [0u8; 7]),
+            encode(Encoding::Base32, &[255], &mut buffer),
             Err(Error::Misuse)
         );
         assert_eq!(

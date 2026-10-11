@@ -24,8 +24,8 @@ impl<const RATE: usize, const N: usize> Sha3<RATE, N> {
     pub fn new() -> Self {
         const {
             assert!(
-                RATE + 2 * N == Self::WIDTH,
-                "the SHA-3 rate and capacity fill the 200-byte state"
+                (N == 28 || N == 32 || N == 48 || N == 64) && RATE == Self::WIDTH - 2 * N,
+                "SHA-3 digests are 28, 32, 48 or 64 bytes with the matching rate"
             );
         }
         Self(Sponge::<RATE>::new())

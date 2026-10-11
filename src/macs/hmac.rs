@@ -12,22 +12,20 @@ pub struct Hmac<H: Hasher> {
 
 impl<H: Hasher> Hmac<H> {
     pub fn new(key: &[u8]) -> Self {
+        const {
+            assert!(
+                H::OUTPUT_SIZE <= H::BLOCK_SIZE,
+                "the digest fits within a block"
+            )
+        }
         let mut k = Secret::from(H::Block::new());
         if key.len() > H::BLOCK_SIZE {
             let mut hasher = H::new();
             hasher.update(key);
             let key_digest = Secret::from(hasher.finalize());
-            k.get_mut()
-                .as_mut()
-                .get_mut(..key_digest.get().as_ref().len())
-                .expect("HMAC key digest fits within a block")
-                .copy_from_slice(key_digest.get().as_ref());
+            k.get_mut().as_mut()[..H::OUTPUT_SIZE].copy_from_slice(key_digest.get().as_ref());
         } else {
-            k.get_mut()
-                .as_mut()
-                .get_mut(..key.len())
-                .expect("HMAC key fits within a block")
-                .copy_from_slice(key);
+            k.get_mut().as_mut()[..key.len()].copy_from_slice(key);
         }
         let mut inner_key = Secret::from(H::Block::new());
         let mut outer_key = Secret::from(H::Block::new());
