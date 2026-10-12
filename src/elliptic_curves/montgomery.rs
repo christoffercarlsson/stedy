@@ -26,56 +26,31 @@ const WORD_BYTES: usize = Word::BITS as usize / 8;
 pub struct Montgomery<const N: usize, P>([Word; N], PhantomData<P>);
 
 macro_rules! impl_montgomery {
-    ($N:literal, $LIMBS:literal, $BYTES:literal) => {
-        impl_montgomery!(@core $N, $LIMBS, $BYTES);
-    };
-    ($N:literal, $LIMBS:literal, $BYTES:literal, wide) => {
-        impl_montgomery!(@core $N, $LIMBS, $BYTES);
-
+    ($words:literal, $limbs:literal, $bytes:literal) => {
         #[allow(dead_code)]
-        impl<P: MontgomeryParams<$LIMBS>> Montgomery<$N, P> {
-            pub(crate) fn from_wide_le_bytes(bytes: &[u8; 2 * $BYTES]) -> Self {
-                let (low, high) = bytes.split_at($BYTES);
-                let low = Self(Self::words_from_le(low.iter()), PhantomData);
-                let high = Self(Self::words_from_le(high.iter()), PhantomData);
-                low.mul(Self::R2).add(high.mul(Self::R2).mul(Self::R2))
-            }
-
-            pub(crate) fn from_le_slice(bytes: &[u8]) -> Self {
-                let mut result = Self::ZERO;
-                for chunk in bytes.chunks($BYTES).rev() {
-                    let words = Self(Self::words_from_le(chunk.iter()), PhantomData);
-                    result = result.add(words).mul(Self::R2);
-                }
-                result
-            }
-        }
-    };
-    (@core $N:literal, $LIMBS:literal, $BYTES:literal) => {
-        #[allow(dead_code)]
-        impl<P: MontgomeryParams<$LIMBS>> Montgomery<$N, P> {
-            pub(crate) const ZERO: Self = Self([0; $N], PhantomData);
+        impl<P: MontgomeryParams<$limbs>> Montgomery<$words, P> {
+            pub(crate) const ZERO: Self = Self([0; $words], PhantomData);
             pub(crate) const ONE: Self = Self::from_limbs(P::ONE);
             const PLAIN_ONE: Self = {
-                let mut words = [0 as Word; $N];
+                let mut words = [0 as Word; $words];
                 words[0] = 1;
                 Self(words, PhantomData)
             };
-            const MOD: [Word; $N] = Self::from_limbs(P::MOD).0;
+            const MOD: [Word; $words] = Self::from_limbs(P::MOD).0;
             const R2: Self = Self::from_limbs(P::R2);
             const N0: Word = P::N0 as Word;
             const BITS: usize = {
-                let mut i = $LIMBS - 1;
+                let mut i = $limbs - 1;
                 while i > 0 && P::MOD[i] == 0 {
                     i -= 1;
                 }
                 64 * i + 64 - P::MOD[i].leading_zeros() as usize
             };
 
-            pub(crate) const fn from_limbs(value: [u64; $LIMBS]) -> Self {
-                let mut words = [0 as Word; $N];
+            pub(crate) const fn from_limbs(value: [u64; $limbs]) -> Self {
+                let mut words = [0 as Word; $words];
                 let mut i = 0;
-                while i < $N {
+                while i < $words {
                     let bit = i * Word::BITS as usize;
                     words[i] = (value[bit / 64] >> (bit % 64)) as Word;
                     i += 1;
@@ -102,27 +77,27 @@ macro_rules! impl_montgomery {
             }
 
             pub(crate) fn is_zero(&self) -> Choice {
-                Choice::eq_slice(&self.0, &[0; $N])
+                Choice::eq_slice(&self.0, &[0; $words])
             }
 
             pub(crate) fn add(self, rhs: Self) -> Self {
-                let mut sum = [0 as Word; $N];
+                let mut sum = [0 as Word; $words];
                 let mut carry = 0;
-                for i in 0..$N {
+                for i in 0..$words {
                     (sum[i], carry) = Self::adc(self.0[i], rhs.0[i], carry);
                 }
                 Self::reduce(sum, carry)
             }
 
             pub(crate) fn sub(self, rhs: Self) -> Self {
-                let mut diff = [0 as Word; $N];
+                let mut diff = [0 as Word; $words];
                 let mut borrow = 0;
-                for i in 0..$N {
+                for i in 0..$words {
                     (diff[i], borrow) = Self::sbb(self.0[i], rhs.0[i], borrow);
                 }
                 let mask = Choice::nonzero(borrow).mask::<Word>();
                 let mut carry = 0;
-                for i in 0..$N {
+                for i in 0..$words {
                     (diff[i], carry) = Self::adc(diff[i], Self::MOD[i] & mask, carry);
                 }
                 Self(diff, PhantomData)
@@ -133,24 +108,24 @@ macro_rules! impl_montgomery {
             }
 
             pub(crate) fn mul(self, rhs: Self) -> Self {
-                let mut t = [0 as Word; $N + 2];
-                for i in 0..$N {
+                let mut t = [0 as Word; $words + 2];
+                for i in 0..$words {
                     let mut carry = 0;
-                    for j in 0..$N {
+                    for j in 0..$words {
                         (t[j], carry) = Self::mac(t[j], self.0[j], rhs.0[i], carry);
                     }
-                    (t[$N], t[$N + 1]) = Self::adc(t[$N], carry, 0);
+                    (t[$words], t[$words + 1]) = Self::adc(t[$words], carry, 0);
                     let m = t[0].wrapping_mul(Self::N0);
                     let (_, mut carry) = Self::mac(t[0], m, Self::MOD[0], 0);
-                    for j in 1..$N {
+                    for j in 1..$words {
                         (t[j - 1], carry) = Self::mac(t[j], m, Self::MOD[j], carry);
                     }
-                    (t[$N - 1], carry) = Self::adc(t[$N], carry, 0);
-                    t[$N] = t[$N + 1] + carry;
+                    (t[$words - 1], carry) = Self::adc(t[$words], carry, 0);
+                    t[$words] = t[$words + 1] + carry;
                 }
-                let mut words = [0 as Word; $N];
-                words.copy_from_slice(&t[..$N]);
-                Self::reduce(words, t[$N])
+                let mut words = [0 as Word; $words];
+                words.copy_from_slice(&t[..$words]);
+                Self::reduce(words, t[$words])
             }
 
             pub(crate) fn square(self) -> Self {
@@ -166,57 +141,57 @@ macro_rules! impl_montgomery {
             }
 
             pub(crate) fn invert_binary(self) -> Self {
-                let mut value = [0 as Word; $N + 1];
-                value[..$N].copy_from_slice(&self.mul(Self::PLAIN_ONE).0);
-                let mut modulus = [0 as Word; $N + 1];
-                modulus[..$N].copy_from_slice(&Self::MOD);
+                let mut value = [0 as Word; $words + 1];
+                value[..$words].copy_from_slice(&self.mul(Self::PLAIN_ONE).0);
+                let mut modulus = [0 as Word; $words + 1];
+                modulus[..$words].copy_from_slice(&Self::MOD);
                 let inverse = Self::invert_words(&value, &modulus);
-                let mut words = [0 as Word; $N];
-                words.copy_from_slice(&inverse[..$N]);
+                let mut words = [0 as Word; $words];
+                words.copy_from_slice(&inverse[..$words]);
                 Self(words, PhantomData).mul(Self::R2)
             }
 
             pub(crate) fn from_u32(value: u32) -> Self {
-                let mut words = [0 as Word; $N];
+                let mut words = [0 as Word; $words];
                 words[0] = value as Word;
                 Self(words, PhantomData).mul(Self::R2)
             }
 
-            pub(crate) fn from_be_bytes(bytes: &[u8; $BYTES]) -> Self {
+            pub(crate) fn from_be_bytes(bytes: &[u8; $bytes]) -> Self {
                 Self(Self::words_from_le(bytes.iter().rev()), PhantomData).mul(Self::R2)
             }
 
-            pub(crate) fn from_le_bytes(bytes: &[u8; $BYTES]) -> Self {
+            pub(crate) fn from_le_bytes(bytes: &[u8; $bytes]) -> Self {
                 Self(Self::words_from_le(bytes.iter()), PhantomData).mul(Self::R2)
             }
 
-            pub(crate) fn to_be_bytes(self) -> [u8; $BYTES] {
+            pub(crate) fn to_be_bytes(self) -> [u8; $bytes] {
                 let mut bytes = self.to_le_bytes();
                 bytes.reverse();
                 bytes
             }
 
-            pub(crate) fn to_le_bytes(self) -> [u8; $BYTES] {
+            pub(crate) fn to_le_bytes(self) -> [u8; $bytes] {
                 let words = self.mul(Self::PLAIN_ONE).0;
-                let mut bytes = [0u8; $BYTES];
+                let mut bytes = [0u8; $bytes];
                 for (i, byte) in bytes.iter_mut().enumerate() {
                     *byte = (words[i / WORD_BYTES] >> (8 * (i % WORD_BYTES))) as u8;
                 }
                 bytes
             }
 
-            fn words_from_le<'a>(bytes: impl Iterator<Item = &'a u8>) -> [Word; $N] {
-                let mut words = [0 as Word; $N];
+            fn words_from_le<'a>(bytes: impl Iterator<Item = &'a u8>) -> [Word; $words] {
+                let mut words = [0 as Word; $words];
                 for (i, &byte) in bytes.enumerate() {
                     words[i / WORD_BYTES] |= (byte as Word) << (8 * (i % WORD_BYTES));
                 }
                 words
             }
 
-            fn reduce(words: [Word; $N], top: Word) -> Self {
-                let mut diff = [0 as Word; $N];
+            fn reduce(words: [Word; $words], top: Word) -> Self {
+                let mut diff = [0 as Word; $words];
                 let mut borrow = 0;
-                for i in 0..$N {
+                for i in 0..$words {
                     (diff[i], borrow) = Self::sbb(words[i], Self::MOD[i], borrow);
                 }
                 let subtract = Choice::nonzero(top) | !Choice::nonzero(borrow);
@@ -246,13 +221,13 @@ macro_rules! impl_montgomery {
             }
 
             fn invert_words(
-                value: &[Word; $N + 1],
-                modulus: &[Word; $N + 1],
-            ) -> [Word; $N + 1] {
+                value: &[Word; $words + 1],
+                modulus: &[Word; $words + 1],
+            ) -> [Word; $words + 1] {
                 let mut u = *modulus;
                 let mut v = *value;
-                let mut r = [0 as Word; $N + 1];
-                let mut s = [0 as Word; $N + 1];
+                let mut r = [0 as Word; $words + 1];
+                let mut s = [0 as Word; $words + 1];
                 s[0] = 1;
                 let mut k = 0 as Word;
                 for _ in 0..2 * Self::BITS {
@@ -304,31 +279,37 @@ macro_rules! impl_montgomery {
                 r
             }
 
-            fn words_zero(a: &[Word; $N + 1]) -> Choice {
-                Choice::eq_slice(a, &[0 as Word; $N + 1])
+            fn words_zero(a: &[Word; $words + 1]) -> Choice {
+                Choice::eq_slice(a, &[0 as Word; $words + 1])
             }
 
-            fn words_add(a: &[Word; $N + 1], b: &[Word; $N + 1]) -> ([Word; $N + 1], Word) {
-                let mut sum = [0 as Word; $N + 1];
+            fn words_add(
+                a: &[Word; $words + 1],
+                b: &[Word; $words + 1],
+            ) -> ([Word; $words + 1], Word) {
+                let mut sum = [0 as Word; $words + 1];
                 let mut carry = 0;
-                for i in 0..$N + 1 {
+                for i in 0..$words + 1 {
                     (sum[i], carry) = Self::adc(a[i], b[i], carry);
                 }
                 (sum, carry)
             }
 
-            fn words_sub(a: &[Word; $N + 1], b: &[Word; $N + 1]) -> ([Word; $N + 1], Word) {
-                let mut diff = [0 as Word; $N + 1];
+            fn words_sub(
+                a: &[Word; $words + 1],
+                b: &[Word; $words + 1],
+            ) -> ([Word; $words + 1], Word) {
+                let mut diff = [0 as Word; $words + 1];
                 let mut borrow = 0;
-                for i in 0..$N + 1 {
+                for i in 0..$words + 1 {
                     (diff[i], borrow) = Self::sbb(a[i], b[i], borrow);
                 }
                 (diff, borrow)
             }
 
-            fn words_shr1(a: &mut [Word; $N + 1]) {
-                for i in 0..$N + 1 {
-                    let next = if i + 1 < $N + 1 {
+            fn words_shr1(a: &mut [Word; $words + 1]) {
+                for i in 0..$words + 1 {
+                    let next = if i + 1 < $words + 1 {
                         a[i + 1] << (Word::BITS - 1)
                     } else {
                         0
@@ -337,11 +318,38 @@ macro_rules! impl_montgomery {
                 }
             }
 
-            fn words_shl1(a: &mut [Word; $N + 1]) {
-                for i in (0..$N + 1).rev() {
-                    let previous = if i > 0 { a[i - 1] >> (Word::BITS - 1) } else { 0 };
+            fn words_shl1(a: &mut [Word; $words + 1]) {
+                for i in (0..$words + 1).rev() {
+                    let previous = if i > 0 {
+                        a[i - 1] >> (Word::BITS - 1)
+                    } else {
+                        0
+                    };
                     a[i] = (a[i] << 1) | previous;
                 }
+            }
+        }
+    };
+}
+
+macro_rules! impl_montgomery_wide {
+    ($words:literal, $limbs:literal, $bytes:literal) => {
+        #[allow(dead_code)]
+        impl<P: MontgomeryParams<$limbs>> Montgomery<$words, P> {
+            pub(crate) fn from_wide_le_bytes(bytes: &[u8; 2 * $bytes]) -> Self {
+                let (low, high) = bytes.split_at($bytes);
+                let low = Self(Self::words_from_le(low.iter()), PhantomData);
+                let high = Self(Self::words_from_le(high.iter()), PhantomData);
+                low.mul(Self::R2).add(high.mul(Self::R2).mul(Self::R2))
+            }
+
+            pub(crate) fn from_le_slice(bytes: &[u8]) -> Self {
+                let mut result = Self::ZERO;
+                for chunk in bytes.chunks($bytes).rev() {
+                    let words = Self(Self::words_from_le(chunk.iter()), PhantomData);
+                    result = result.add(words).mul(Self::R2);
+                }
+                result
             }
         }
     };

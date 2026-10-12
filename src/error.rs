@@ -4,26 +4,26 @@ use core::fmt::{self, Display, Formatter};
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
-    Misuse = 1,
-    Decryption = 2,
-    LimitExceeded = 3,
+    Decryption = 1,
+    Encoding = 2,
+    Entropy = 3,
     InvalidKey = 4,
-    Encoding = 5,
-    Verification = 6,
-    Entropy = 7,
+    LimitExceeded = 5,
+    Misuse = 6,
+    Verification = 7,
     Unknown = 255,
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::Misuse => "misuse",
             Self::Decryption => "decryption failed",
-            Self::LimitExceeded => "limit exceeded",
-            Self::InvalidKey => "invalid key",
             Self::Encoding => "invalid encoding",
-            Self::Verification => "verification failed",
             Self::Entropy => "entropy source failed",
+            Self::InvalidKey => "invalid key",
+            Self::LimitExceeded => "limit exceeded",
+            Self::Misuse => "misuse",
+            Self::Verification => "verification failed",
             Self::Unknown => "unknown error",
         })
     }
@@ -35,13 +35,13 @@ impl TryFrom<u8> for Error {
     fn try_from(code: u8) -> Result<Self, Self> {
         match code {
             0 => Err(Self::Misuse),
-            1 => Ok(Self::Misuse),
-            2 => Ok(Self::Decryption),
-            3 => Ok(Self::LimitExceeded),
+            1 => Ok(Self::Decryption),
+            2 => Ok(Self::Encoding),
+            3 => Ok(Self::Entropy),
             4 => Ok(Self::InvalidKey),
-            5 => Ok(Self::Encoding),
-            6 => Ok(Self::Verification),
-            7 => Ok(Self::Entropy),
+            5 => Ok(Self::LimitExceeded),
+            6 => Ok(Self::Misuse),
+            7 => Ok(Self::Verification),
             _ => Ok(Self::Unknown),
         }
     }
@@ -56,13 +56,13 @@ mod tests {
     #[test]
     fn test_try_from_u8() {
         let errors = [
-            Error::Misuse,
             Error::Decryption,
-            Error::LimitExceeded,
-            Error::InvalidKey,
             Error::Encoding,
-            Error::Verification,
             Error::Entropy,
+            Error::InvalidKey,
+            Error::LimitExceeded,
+            Error::Misuse,
+            Error::Verification,
         ];
         for error in errors {
             assert_eq!(Error::try_from(error as u8), Ok(error));

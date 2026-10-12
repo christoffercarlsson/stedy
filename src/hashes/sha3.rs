@@ -79,22 +79,23 @@ impl<const RATE: usize, const N: usize> Digest for Sha3<RATE, N> {
 }
 
 macro_rules! impl_hasher {
-    ($($t:ty => $rate:literal),*) => {
-        $(
-            impl Hasher for $t {
-                const BLOCK_SIZE: usize = $rate;
+    ($hasher:ty, $rate:literal) => {
+        impl Hasher for $hasher {
+            const BLOCK_SIZE: usize = $rate;
 
-                type Block = [u8; $rate];
+            type Block = [u8; $rate];
 
-                fn digest(message: &[u8]) -> Self::Output {
-                    Self::digest(message)
-                }
+            fn digest(message: &[u8]) -> Self::Output {
+                Self::digest(message)
             }
-        )*
+        }
     };
 }
 
-impl_hasher!(Sha3_224 => 144, Sha3_256 => 136, Sha3_384 => 104, Sha3_512 => 72);
+impl_hasher!(Sha3_224, 144);
+impl_hasher!(Sha3_256, 136);
+impl_hasher!(Sha3_384, 104);
+impl_hasher!(Sha3_512, 72);
 
 #[cfg(test)]
 mod tests {

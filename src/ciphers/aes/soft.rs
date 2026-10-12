@@ -303,7 +303,7 @@ fn rounds<const N: usize>(a: [u128; N], b: [u128; N]) -> [u128; N] {
     out
 }
 
-impl_aegis!(
+impl_aegis_backend!(
     u128,
     u128::from_le_bytes,
     u128::to_le_bytes,

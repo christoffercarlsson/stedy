@@ -1,4 +1,4 @@
-macro_rules! impl_aegis {
+macro_rules! impl_aegis_backend {
     (
         $block:ty,
         $load:path,

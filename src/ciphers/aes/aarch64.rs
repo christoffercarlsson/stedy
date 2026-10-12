@@ -96,4 +96,4 @@ fn and(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
     unsafe { vandq_u8(a, b) }
 }
 
-impl_aegis!(uint8x16_t, load, store, xor, and, rounds);
+impl_aegis_backend!(uint8x16_t, load, store, xor, and, rounds);

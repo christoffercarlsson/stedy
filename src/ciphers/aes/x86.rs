@@ -93,4 +93,4 @@ fn and(a: __m128i, b: __m128i) -> __m128i {
     unsafe { _mm_and_si128(a, b) }
 }
 
-impl_aegis!(__m128i, load, store, xor, and, rounds);
+impl_aegis_backend!(__m128i, load, store, xor, and, rounds);

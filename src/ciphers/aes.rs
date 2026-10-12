@@ -111,26 +111,25 @@ impl<const KEY_SIZE: usize> StreamCipher for AesCtr<KEY_SIZE> {
 }
 
 macro_rules! impl_seekable_stream_cipher {
-    ($($key_size:literal),*) => {
-        $(
-            impl SeekableStreamCipher for AesCtr<$key_size> {
-                const SEED_SIZE: usize = $key_size + 16;
+    ($key_size:literal) => {
+        impl SeekableStreamCipher for AesCtr<$key_size> {
+            const SEED_SIZE: usize = $key_size + 16;
 
-                type Seed = [u8; Self::SEED_SIZE];
+            type Seed = [u8; Self::SEED_SIZE];
 
-                fn seed(seed: &Self::Seed) -> Self {
-                    Self::from_seed(seed)
-                }
-
-                fn seek(&mut self, counter: u32) {
-                    self.seek(counter);
-                }
+            fn seed(seed: &Self::Seed) -> Self {
+                Self::from_seed(seed)
             }
-        )*
+
+            fn seek(&mut self, counter: u32) {
+                self.seek(counter);
+            }
+        }
     };
 }
 
-impl_seekable_stream_cipher!(16, 32);
+impl_seekable_stream_cipher!(16);
+impl_seekable_stream_cipher!(32);
 
 impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     const ROUNDS: usize = KEY_SIZE / 4 + 6;

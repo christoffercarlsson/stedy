@@ -81,28 +81,27 @@ impl<const C: usize, const D: usize, const N: usize> SipHash<C, D, N> {
 }
 
 macro_rules! impl_siphash_mac {
-    ($($c:literal, $d:literal);*) => {
-        $(
-            impl<const N: usize> SipHash<$c, $d, N> {
-                pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
-                    if verify(&self.finalize(), code) {
-                        Ok(())
-                    } else {
-                        Err(Error::Verification)
-                    }
+    ($compression:literal, $finalization:literal) => {
+        impl<const N: usize> SipHash<$compression, $finalization, N> {
+            pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
+                if verify(&self.finalize(), code) {
+                    Ok(())
+                } else {
+                    Err(Error::Verification)
                 }
             }
+        }
 
-            impl<const N: usize> Mac for SipHash<$c, $d, N> {
-                fn verify(self, code: &Self::Output) -> Result<(), Error> {
-                    self.verify(code)
-                }
+        impl<const N: usize> Mac for SipHash<$compression, $finalization, N> {
+            fn verify(self, code: &Self::Output) -> Result<(), Error> {
+                self.verify(code)
             }
-        )*
+        }
     };
 }
 
-impl_siphash_mac!(2, 4; 4, 8);
+impl_siphash_mac!(2, 4);
+impl_siphash_mac!(4, 8);
 
 impl<const C: usize, const D: usize, const N: usize> SipHash<C, D, N> {
     fn compress(&mut self, m: u64) {

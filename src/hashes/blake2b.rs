@@ -99,22 +99,23 @@ pub type Blake2b256 = Blake2b<32>;
 pub type Blake2b160 = Blake2b<20>;
 
 macro_rules! impl_hasher {
-    ($($t:ty),*) => {
-        $(
-            impl Hasher for $t {
-                const BLOCK_SIZE: usize = 128;
+    ($hasher:ty) => {
+        impl Hasher for $hasher {
+            const BLOCK_SIZE: usize = 128;
 
-                type Block = [u8; 128];
+            type Block = [u8; 128];
 
-                fn digest(message: &[u8]) -> Self::Output {
-                    Self::digest(message)
-                }
+            fn digest(message: &[u8]) -> Self::Output {
+                Self::digest(message)
             }
-        )*
+        }
     };
 }
 
-impl_hasher!(Blake2b512, Blake2b384, Blake2b256, Blake2b160);
+impl_hasher!(Blake2b512);
+impl_hasher!(Blake2b384);
+impl_hasher!(Blake2b256);
+impl_hasher!(Blake2b160);
 
 #[derive(Clone)]
 pub struct Blake2bVar {

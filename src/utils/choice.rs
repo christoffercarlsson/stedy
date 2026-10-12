@@ -150,70 +150,83 @@ trait Backend: Copy {
 }
 
 macro_rules! impl_backend {
-    ($($t:ty),* $(,)?) => {$(
-        impl Sealed for $t {}
+    ($word:ty) => {
+        impl Sealed for $word {}
 
-        impl Cmov for $t {
+        impl Cmov for $word {
             fn is_nonzero(self) -> Choice {
-                let nonzero = (self | self.wrapping_neg()) >> (<$t>::BITS - 1);
+                let nonzero = (self | self.wrapping_neg()) >> (<$word>::BITS - 1);
                 Choice(backend::opaque(nonzero as u32) as u8)
             }
 
             fn mask(choice: Choice) -> Self {
-                (choice.0 as $t).wrapping_neg()
+                (choice.0 as $word).wrapping_neg()
             }
 
             fn assign(&mut self, src: Self, choice: Choice) {
                 Backend::assign(self, src, choice.0);
             }
         }
-    )*};
+    };
 }
 
 macro_rules! impl_via {
-    ($($t:ty => $u:ty),* $(,)?) => {$(
-        impl Sealed for $t {}
+    ($int:ty, $via:ty) => {
+        impl Sealed for $int {}
 
-        impl Cmov for $t {
+        impl Cmov for $int {
             fn is_nonzero(self) -> Choice {
-                (self as $u).is_nonzero()
+                (self as $via).is_nonzero()
             }
 
             fn mask(choice: Choice) -> Self {
-                <$u>::mask(choice) as $t
+                <$via>::mask(choice) as $int
             }
 
             fn assign(&mut self, src: Self, choice: Choice) {
-                let mut wide = *self as $u;
-                wide.assign(src as $u, choice);
-                *self = wide as $t;
+                let mut wide = *self as $via;
+                wide.assign(src as $via, choice);
+                *self = wide as $int;
             }
         }
-    )*};
+    };
 }
 
 macro_rules! impl_unsigned {
-    ($($t:ty),* $(,)?) => {$(
-        impl Unsigned for $t {
+    ($unsigned:ty) => {
+        impl Unsigned for $unsigned {
             fn is_less_than(self, other: Self) -> Choice {
                 let (_, borrow) = self.overflowing_sub(other);
                 Choice(u8::from(borrow))
             }
         }
-    )*};
+    };
 }
 
-impl_backend!(u32, u64);
+impl_backend!(u32);
+impl_backend!(u64);
 
-impl_via!(u8 => u16, u16 => u32, i8 => u8, i16 => u16, i32 => u32, i64 => u64, i128 => u128, isize => usize);
+impl_via!(u8, u16);
+impl_via!(u16, u32);
+impl_via!(i8, u8);
+impl_via!(i16, u16);
+impl_via!(i32, u32);
+impl_via!(i64, u64);
+impl_via!(i128, u128);
+impl_via!(isize, usize);
 
 #[cfg(target_pointer_width = "32")]
-impl_via!(usize => u32);
+impl_via!(usize, u32);
 
 #[cfg(target_pointer_width = "64")]
-impl_via!(usize => u64);
+impl_via!(usize, u64);
 
-impl_unsigned!(u8, u16, u32, u64, u128, usize);
+impl_unsigned!(u8);
+impl_unsigned!(u16);
+impl_unsigned!(u32);
+impl_unsigned!(u64);
+impl_unsigned!(u128);
+impl_unsigned!(usize);
 
 impl Sealed for u128 {}
 
