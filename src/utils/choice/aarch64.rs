@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use {super::Backend, core::arch::asm};
 
 pub(super) fn opaque(mut value: u32) -> u32 {

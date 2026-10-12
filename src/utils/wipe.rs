@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use core::{
     ptr,
     sync::atomic::{compiler_fence, Ordering},

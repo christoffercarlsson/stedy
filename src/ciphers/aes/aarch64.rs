@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use core::arch::aarch64::{
     uint64x2_t, uint8x16_t, vaeseq_u8, vaesmcq_u8, vandq_u8, vdupq_n_u64, vdupq_n_u8, veorq_u64,
     veorq_u8, vextq_u64, vgetq_lane_u64, vmull_high_p64, vmull_p64, vreinterpretq_p128_u64,

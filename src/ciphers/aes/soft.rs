@@ -1,4 +1,3 @@
-#![forbid(unsafe_code)]
 use {
     crate::utils::Secret,
     core::ops::{BitAnd, BitXor},

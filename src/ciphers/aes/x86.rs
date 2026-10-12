@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_and_si128, _mm_clmulepi64_si128,
