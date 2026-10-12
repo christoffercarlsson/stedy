@@ -6,7 +6,7 @@ pub type P256 = Ecdh<P256Curve>;
 mod tests {
     use {
         super::*,
-        crate::{csprngs::ChaCha20Rng, Error},
+        crate::{Error, csprngs::ChaCha20Rng},
     };
 
     const ALICE_PRIVATE_KEY: [u8; 32] = [

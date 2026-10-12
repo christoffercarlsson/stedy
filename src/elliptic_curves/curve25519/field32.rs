@@ -1,5 +1,5 @@
 use {
-    crate::utils::{signed_mul as m, Choice},
+    crate::utils::{Choice, signed_mul as m},
     core::{
         array::from_fn,
         ops::{Index, IndexMut},

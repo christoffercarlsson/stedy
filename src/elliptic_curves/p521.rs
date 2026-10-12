@@ -2,9 +2,9 @@ mod field;
 mod scalar;
 
 use crate::{
+    Error,
     elliptic_curves::weierstrass::Weierstrass,
     traits::{EcdsaCurve, EllipticCurve, WeierstrassScalar},
-    Error,
 };
 pub use {field::*, scalar::*};
 

@@ -1,4 +1,4 @@
-use crate::{aeads::Aead, ciphers::XSalsa20, macs::Poly1305, traits::CryptoRng, Error};
+use crate::{Error, aeads::Aead, ciphers::XSalsa20, macs::Poly1305, traits::CryptoRng};
 
 pub type XSalsa20Poly1305 = Aead<XSalsa20, Poly1305>;
 

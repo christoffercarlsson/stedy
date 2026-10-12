@@ -1,8 +1,8 @@
 use crate::{
+    Error,
     macs::Hmac,
     traits::{ByteArray, Hasher},
     utils::wipe,
-    Error,
 };
 
 pub struct Hkdf<H: Hasher> {

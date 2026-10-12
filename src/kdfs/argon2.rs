@@ -6,11 +6,11 @@ use {
 };
 use {
     crate::{
-        encoding::{decode, encode, Encoding},
+        Error,
+        encoding::{Encoding, decode, encode},
         hashes::{Blake2b512, Blake2bVar},
         traits::Init,
-        utils::{verify, Secret},
-        Error,
+        utils::{Secret, verify},
     },
     core::ops::{BitXorAssign, Index, IndexMut},
 };

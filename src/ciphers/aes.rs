@@ -1,7 +1,7 @@
 use crate::{
+    Error,
     traits::{SeekableStreamCipher, StreamCipher},
     utils::Secret,
-    Error,
 };
 
 #[macro_use]

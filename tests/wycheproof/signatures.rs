@@ -1,7 +1,7 @@
 use {
-    crate::{compress_point, load, Summary, TestFile, TestResult},
-    serde::{de::DeserializeOwned, Deserialize},
-    stedy::signatures::{Ed25519, Ed448, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
+    crate::{Summary, TestFile, TestResult, compress_point, load},
+    serde::{Deserialize, de::DeserializeOwned},
+    stedy::signatures::{Ed448, Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
 };
 
 #[cfg(feature = "hazmat")]

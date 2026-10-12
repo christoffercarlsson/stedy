@@ -1,8 +1,8 @@
 use {
     crate::{
+        Error,
         traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng, SeekableStreamCipher},
         utils::Secret,
-        Error,
     },
     core::{array::TryFromSliceError, marker::PhantomData},
 };

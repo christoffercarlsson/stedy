@@ -1,7 +1,7 @@
 use crate::{
+    Error,
     traits::{EdwardsScalar, EllipticCurve, FieldElement},
     utils::{Choice, Secret},
-    Error,
 };
 
 mod field;

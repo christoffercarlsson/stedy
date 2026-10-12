@@ -1,6 +1,6 @@
 use {
     criterion::Criterion,
-    stedy::key_exchange::{P256, P384, P521, X25519, X448},
+    stedy::key_exchange::{P256, P384, P521, X448, X25519},
 };
 
 pub fn bench(c: &mut Criterion) {

@@ -3,7 +3,7 @@ use {
     stedy::{
         csprngs::ChaCha20Rng,
         signatures::{
-            Ed25519, Ed25519ph, Ed448, Ed448ph, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521,
+            Ed448, Ed448ph, Ed25519, Ed25519ph, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521,
         },
     },
 };

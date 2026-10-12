@@ -19,7 +19,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::csprngs::ChaCha20Rng, crate::Error, hex_literal::hex};
+    use {super::*, crate::Error, crate::csprngs::ChaCha20Rng, hex_literal::hex};
 
     // https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
 
@@ -50,12 +50,19 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_case3() {
-        let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
+        let plaintext = hex!(
+            "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255"
+        );
         let key = hex!("feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
         let mut message = plaintext;
         let tag = Aes128Gcm::encrypt(&key, &nonce, None, &mut message).unwrap();
-        assert_eq!(message, hex!("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985"));
+        assert_eq!(
+            message,
+            hex!(
+                "42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985"
+            )
+        );
         let decrypted = Aes128Gcm::decrypt(&key, &nonce, None, &mut message, &tag);
         assert_eq!(decrypted, Ok(()));
         assert_eq!(message, plaintext);
@@ -64,13 +71,20 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_case4() {
-        let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+        let plaintext = hex!(
+            "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39"
+        );
         let key = hex!("feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
         let aad = hex!("feedfacedeadbeeffeedfacedeadbeefabaddad2");
         let mut message = plaintext;
         let tag = Aes128Gcm::encrypt(&key, &nonce, Some(&aad), &mut message).unwrap();
-        assert_eq!(message, hex!("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091"));
+        assert_eq!(
+            message,
+            hex!(
+                "42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091"
+            )
+        );
         let decrypted = Aes128Gcm::decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
         assert_eq!(decrypted, Ok(()));
         assert_eq!(message, plaintext);
@@ -104,12 +118,19 @@ mod tests {
 
     #[test]
     fn test_aes256gcm_case15() {
-        let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255");
+        let plaintext = hex!(
+            "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255"
+        );
         let key = hex!("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
         let mut message = plaintext;
         let tag = Aes256Gcm::encrypt(&key, &nonce, None, &mut message).unwrap();
-        assert_eq!(message, hex!("522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662898015ad"));
+        assert_eq!(
+            message,
+            hex!(
+                "522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662898015ad"
+            )
+        );
         let decrypted = Aes256Gcm::decrypt(&key, &nonce, None, &mut message, &tag);
         assert_eq!(decrypted, Ok(()));
         assert_eq!(message, plaintext);
@@ -118,13 +139,20 @@ mod tests {
 
     #[test]
     fn test_aes256gcm_case16() {
-        let plaintext = hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39");
+        let plaintext = hex!(
+            "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39"
+        );
         let key = hex!("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308");
         let nonce = hex!("cafebabefacedbaddecaf888");
         let aad = hex!("feedfacedeadbeeffeedfacedeadbeefabaddad2");
         let mut message = plaintext;
         let tag = Aes256Gcm::encrypt(&key, &nonce, Some(&aad), &mut message).unwrap();
-        assert_eq!(message, hex!("522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662"));
+        assert_eq!(
+            message,
+            hex!(
+                "522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662"
+            )
+        );
         let decrypted = Aes256Gcm::decrypt(&key, &nonce, Some(&aad), &mut message, &tag);
         assert_eq!(decrypted, Ok(()));
         assert_eq!(message, plaintext);
@@ -137,7 +165,9 @@ mod tests {
         let key = Aes128Gcm::generate_key(&mut rng).unwrap();
         assert_eq!(
             key,
-            [189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11]
+            [
+                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11
+            ]
         );
     }
 

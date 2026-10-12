@@ -1,9 +1,9 @@
 use {
     crate::{
+        Error,
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaParams, Xof, XofReader},
-        utils::{verify, Choice, Secret},
-        Error,
+        utils::{Choice, Secret, verify},
     },
     core::{array::from_fn, marker::PhantomData},
 };

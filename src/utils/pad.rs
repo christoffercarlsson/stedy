@@ -1,4 +1,4 @@
-use crate::{utils::wipe, Error};
+use crate::{Error, utils::wipe};
 
 pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Result<&'a [u8], Error> {
     pad(unpadded, buffer, buffer.len())

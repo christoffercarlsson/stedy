@@ -1,7 +1,7 @@
 use {
     crate::{
         traits::MontgomeryParams,
-        utils::{unsigned_mul, Choice},
+        utils::{Choice, unsigned_mul},
     },
     core::marker::PhantomData,
 };

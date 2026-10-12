@@ -1,11 +1,11 @@
 use {
-    crate::{load, NoGroup, Summary, TestFile},
+    crate::{NoGroup, Summary, TestFile, load},
     serde::Deserialize,
     stedy::{
+        Error,
         hashes::{Sha256, Sha384, Sha512},
         kdfs::{Hkdf, Pbkdf2},
         macs::Hmac,
-        Error,
     },
 };
 

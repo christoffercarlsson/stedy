@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 use {
     crate::{
+        Error,
         elliptic_curves::Edwards,
         traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
         utils::Secret,
-        Error,
     },
     core::marker::PhantomData,
 };

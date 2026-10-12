@@ -1,7 +1,7 @@
 use {
     crate::{
-        traits::{CryptoRng, EllipticCurve},
         Error,
+        traits::{CryptoRng, EllipticCurve},
     },
     core::marker::PhantomData,
 };

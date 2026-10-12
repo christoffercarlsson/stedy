@@ -6,8 +6,8 @@ mod macs;
 mod signatures;
 
 use {
-    serde::{de::DeserializeOwned, Deserialize, Deserializer},
-    stedy::encoding::{decode, Encoding},
+    serde::{Deserialize, Deserializer, de::DeserializeOwned},
+    stedy::encoding::{Encoding, decode},
 };
 
 #[derive(Deserialize)]

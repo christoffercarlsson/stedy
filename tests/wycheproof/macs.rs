@@ -1,8 +1,8 @@
 use {
-    crate::{load, Summary, TestFile},
+    crate::{Summary, TestFile, load},
     serde::Deserialize,
     stedy::{
-        hashes::{Sha256, Sha384, Sha3_224, Sha3_256, Sha3_384, Sha3_512, Sha512},
+        hashes::{Sha3_224, Sha3_256, Sha3_384, Sha3_512, Sha256, Sha384, Sha512},
         macs::{Hmac, SipHash13, SipHash24, SipHash48, SipHashX24, SipHashX48},
         utils::verify,
     },

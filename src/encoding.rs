@@ -1,10 +1,10 @@
 mod base;
 
 use crate::{
+    Error,
     encoding::base::{
         base16_decode, base16_encode, base32_decode, base32_encode, base64_decode, base64_encode,
     },
-    Error,
 };
 
 #[repr(u8)]

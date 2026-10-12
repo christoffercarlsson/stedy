@@ -1,5 +1,5 @@
 use crate::{
-    ciphers::{aes::multiply, AesCtr},
+    ciphers::{AesCtr, aes::multiply},
     traits::{Authenticator, SeekableStreamCipher},
     utils::verify,
 };

@@ -1,7 +1,7 @@
 [package]
 name = "stedy"
 version = "1.0.0-beta.5"
-edition = "2021"
+edition = "2024"
 rust-version = "1.88"
 include = ["/LICENSE", "/README.md", "/src"]
 
@@ -43,10 +43,5 @@ hazmat = []
 secret_sharing = []
 std = []
 
-[profile.release]
-opt-level = 3
-debug = false
-strip = true
-debug-assertions = false
-overflow-checks = false
+[profile.bench]
 lto = true

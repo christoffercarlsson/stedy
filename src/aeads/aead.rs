@@ -1,7 +1,7 @@
 use crate::{
+    Error,
     traits::{Authenticator, ByteArray, CryptoRng, SeekableStreamCipher},
     utils::increment,
-    Error,
 };
 
 pub struct Aead<C, M>

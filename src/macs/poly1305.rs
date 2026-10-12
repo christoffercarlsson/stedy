@@ -1,9 +1,9 @@
 use {
     crate::{
+        Error,
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
         traits::{Authenticator, Digest, KeyInit, Mac, SeekableStreamCipher},
-        utils::{verify, wipe, Block, Choice},
-        Error,
+        utils::{Block, Choice, verify, wipe},
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };

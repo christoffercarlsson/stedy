@@ -10,7 +10,7 @@ pub type P256 = Ecdsa<FieldP256, Sha256, ScalarP256, [u8; 64]>;
 mod tests {
     use {
         super::*,
-        crate::{csprngs::ChaCha20Rng, Error},
+        crate::{Error, csprngs::ChaCha20Rng},
     };
 
     const PRIVATE_KEY: [u8; 32] = [

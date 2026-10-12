@@ -1,9 +1,9 @@
 use {
     crate::{
+        Error,
         macs::Hmac,
         traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng},
         utils::wipe,
-        Error,
     },
     core::array::TryFromSliceError,
 };

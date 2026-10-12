@@ -1,6 +1,6 @@
 use {
     criterion::Criterion,
-    stedy::encoding::{decode, encode, Encoding},
+    stedy::encoding::{Encoding, decode, encode},
 };
 
 pub fn bench(c: &mut Criterion) {

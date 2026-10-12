@@ -1,7 +1,7 @@
 use {
-    crate::{load, NoGroup, Summary, TestFile, TestResult},
+    crate::{NoGroup, Summary, TestFile, TestResult, load},
     serde::Deserialize,
-    stedy::kems::{MlKem1024, MlKem512, MlKem768},
+    stedy::kems::{MlKem512, MlKem768, MlKem1024},
 };
 
 #[cfg(feature = "hazmat")]

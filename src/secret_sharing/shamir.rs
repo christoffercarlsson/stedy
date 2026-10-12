@@ -1,8 +1,8 @@
 use {
     crate::{
+        Error,
         traits::{ByteArray, ByteOrder, CryptoRng, FieldElement},
         utils::wipe,
-        Error,
     },
     core::{array::from_fn, marker::PhantomData},
 };

@@ -2,7 +2,7 @@ use {
     criterion::Criterion,
     stedy::{
         csprngs::ChaCha20Rng,
-        kems::{MlKem1024, MlKem512, MlKem768, XWing},
+        kems::{MlKem512, MlKem768, MlKem1024, XWing},
     },
 };
 

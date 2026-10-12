@@ -10,7 +10,7 @@ pub type P384 = Ecdsa<FieldP384, Sha384, ScalarP384, [u8; 96]>;
 mod tests {
     use {
         super::*,
-        crate::{csprngs::ChaCha20Rng, Error},
+        crate::{Error, csprngs::ChaCha20Rng},
     };
 
     const PRIVATE_KEY: [u8; 48] = [

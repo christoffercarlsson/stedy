@@ -1,5 +1,5 @@
 use {
-    crate::{traits::Prf, utils::xor, Error},
+    crate::{Error, traits::Prf, utils::xor},
     core::marker::PhantomData,
 };
 
@@ -157,7 +157,9 @@ mod tests {
         Pbkdf2::<Hmac<Sha512>>::derive(password, salt, iterations, &mut output).unwrap();
         assert_eq!(
             output,
-            hex!("d197b1b33db0143e018b12f3d1d1479e6cdebdcc97c5c0f87f6902e072f457b5143f30602641b3d55cd335988cb36b84376060ecd532e039b742a239434af2d5")
+            hex!(
+                "d197b1b33db0143e018b12f3d1d1479e6cdebdcc97c5c0f87f6902e072f457b5143f30602641b3d55cd335988cb36b84376060ecd532e039b742a239434af2d5"
+            )
         );
     }
 

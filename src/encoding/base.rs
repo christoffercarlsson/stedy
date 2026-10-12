@@ -1,6 +1,6 @@
 use crate::{
-    utils::{wipe, Block, Choice},
     Error,
+    utils::{Block, Choice, wipe},
 };
 
 const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";

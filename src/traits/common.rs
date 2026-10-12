@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use {
     crate::{
-        utils::{is_zero, less_than, Choice, Secret},
         Error,
+        utils::{Choice, Secret, is_zero, less_than},
     },
     core::{
         array::TryFromSliceError,

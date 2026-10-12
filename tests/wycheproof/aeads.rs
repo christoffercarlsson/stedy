@@ -1,5 +1,5 @@
 use {
-    crate::{load, Summary, TestFile, TestResult},
+    crate::{Summary, TestFile, TestResult, load},
     serde::Deserialize,
     stedy::aeads::{ChaCha20Poly1305, XChaCha20Poly1305},
 };

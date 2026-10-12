@@ -1,8 +1,8 @@
 use {
     crate::{
-        traits::{Digest, KeyInit, Mac},
-        utils::{verify, Block, Secret},
         Error,
+        traits::{Digest, KeyInit, Mac},
+        utils::{Block, Secret, verify},
     },
     core::hash::Hasher,
 };
@@ -237,7 +237,9 @@ mod tests {
     #[test]
     fn test_siphash24_63_bytes() {
         let key = hex!("000102030405060708090a0b0c0d0e0f");
-        let message = hex!("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e");
+        let message = hex!(
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e"
+        );
         let mut mac = SipHash24::new(&key);
         mac.update(&message[..5]);
         mac.update(&message[5..20]);
@@ -275,7 +277,9 @@ mod tests {
     #[test]
     fn test_siphashx24_63_bytes() {
         let key = hex!("000102030405060708090a0b0c0d0e0f");
-        let message = hex!("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e");
+        let message = hex!(
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e"
+        );
         let mut mac = SipHashX24::new(&key);
         mac.update(&message);
         assert_eq!(mac.finalize(), hex!("5150d1772f50834a503e069a973fbd7c"));

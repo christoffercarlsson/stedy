@@ -1,7 +1,7 @@
 use {
-    crate::{compress_point, load, pad_scalar, NoGroup, Summary, TestFile, TestResult},
+    crate::{NoGroup, Summary, TestFile, TestResult, compress_point, load, pad_scalar},
     serde::Deserialize,
-    stedy::key_exchange::{P256, P384, P521, X25519, X448},
+    stedy::key_exchange::{P256, P384, P521, X448, X25519},
 };
 
 #[derive(Deserialize)]

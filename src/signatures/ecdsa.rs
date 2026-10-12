@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 use {
     crate::{
+        Error,
         csprngs::HmacDrbg,
         elliptic_curves::Weierstrass,
         traits::{
             ByteArray, CryptoRng, FieldElement, Hasher, WeierstrassParams, WeierstrassScalar,
         },
         utils::shift_right,
-        Error,
     },
     core::{cmp::Ordering, marker::PhantomData},
 };

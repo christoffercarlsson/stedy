@@ -9,7 +9,7 @@ mod sha384;
 mod sha512;
 mod shake;
 
-pub use {blake2b::*, blake2s::*, sha256::*, sha3::*, sha384::*, sha512::*, shake::*};
+pub use {blake2b::*, blake2s::*, sha3::*, sha256::*, sha384::*, sha512::*, shake::*};
 
 #[cfg(feature = "hazmat")]
 pub use sha1::*;

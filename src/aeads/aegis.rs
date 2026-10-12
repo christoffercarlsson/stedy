@@ -1,8 +1,8 @@
 use crate::{
+    Error,
     ciphers::aes,
     traits::{CryptoRng, Digest, KeyInit, Mac},
-    utils::{increment, verify, wipe, Block, Secret},
-    Error,
+    utils::{Block, Secret, increment, verify, wipe},
 };
 
 pub type Aegis128L = Aegis<16, 8, 32, 32>;

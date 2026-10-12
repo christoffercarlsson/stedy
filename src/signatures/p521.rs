@@ -10,7 +10,7 @@ pub type P521 = Ecdsa<FieldP521, Sha512, ScalarP521, [u8; 132]>;
 mod tests {
     use {
         super::*,
-        crate::{csprngs::ChaCha20Rng, Error},
+        crate::{Error, csprngs::ChaCha20Rng},
     };
 
     const PRIVATE_KEY: [u8; 66] = [
