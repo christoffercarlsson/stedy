@@ -154,3 +154,11 @@ jobs:
       - run: cargo clippy --all-targets ${{ matrix.flags }} -- -D warnings
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update && rustup default stable
+      - run: cargo publish --dry-run
