@@ -8,6 +8,7 @@ include = ["/LICENSE", "/README.md", "/src"]
 description = "A solid foundation for modern cryptographic tools and protocols"
 repository = "https://github.com/christoffercarlsson/stedy"
 keywords = ["cryptography", "encryption", "hashing", "primitives", "signatures"]
+categories = ["cryptography", "no-std", "no-std::no-alloc"]
 
 authors = ["Christoffer Carlsson <cc@christoffercarlsson.com>"]
 license = "MIT"
