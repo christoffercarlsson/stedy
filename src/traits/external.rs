@@ -3,14 +3,11 @@ use {
     super::Sealed,
     crate::{
         Error,
-        utils::{Choice, Secret},
+        utils::{Choice, Secret, is_zero},
     },
     core::{
         array::TryFromSliceError,
-        ops::{
-            Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub,
-            SubAssign,
-        },
+        ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub, SubAssign},
     },
 };
 
@@ -127,12 +124,9 @@ pub trait FieldElement:
     + SubAssign
     + Mul<Output = Self>
     + MulAssign
-    + Div<Output = Self>
-    + DivAssign
     + Neg<Output = Self>
     + From<Self::Bytes>
     + Into<Self::Bytes>
-    + From<u32>
 {
     const CAPACITY: usize;
     const BYTE_ORDER: ByteOrder;
@@ -142,7 +136,11 @@ pub trait FieldElement:
 
     type Bytes: ByteArray;
 
-    fn swap(a: &mut Self, b: &mut Self, condition: Choice);
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
+        let swapped = Self::select(a, b, condition);
+        *b = Self::select(b, a, condition);
+        *a = swapped;
+    }
 
     fn select(a: &Self, b: &Self, condition: Choice) -> Self;
 
@@ -150,9 +148,14 @@ pub trait FieldElement:
         *self = Self::select(self, other, condition);
     }
 
-    fn ct_eq(&self, other: &Self) -> Choice;
+    fn ct_eq(&self, other: &Self) -> Choice {
+        let difference: Self::Bytes = (*self - *other).into();
+        is_zero(difference.as_ref())
+    }
 
-    fn square(self) -> Self;
+    fn square(self) -> Self {
+        self * self
+    }
 
     fn square2(self) -> Self {
         let square = self.square();
@@ -166,6 +169,19 @@ pub trait FieldElement:
     fn invert(self) -> Self;
 
     fn sqrt(self, b: Self) -> (Self, Choice);
+
+    fn from_u32(value: u32) -> Self {
+        let mut bytes = Self::Bytes::new();
+        let size = Self::Bytes::SIZE.min(4);
+        match Self::BYTE_ORDER {
+            ByteOrder::BigEndian => bytes.as_mut()[Self::Bytes::SIZE - size..]
+                .copy_from_slice(&value.to_be_bytes()[4 - size..]),
+            ByteOrder::LittleEndian => {
+                bytes.as_mut()[..size].copy_from_slice(&value.to_le_bytes()[..size])
+            }
+        }
+        Self::from(bytes)
+    }
 }
 
 pub trait Hasher: Init + Digest {

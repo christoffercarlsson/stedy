@@ -4,7 +4,7 @@ use {
         traits::{ByteOrder, FieldElement, MontgomeryParams, WeierstrassParams},
         utils::Choice,
     },
-    core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 #[cfg_attr(target_pointer_width = "32", path = "field32.rs")]
@@ -128,20 +128,6 @@ impl MulAssign for FieldP256 {
     }
 }
 
-impl Div for FieldP256 {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        self.mul(rhs.invert())
-    }
-}
-
-impl DivAssign for FieldP256 {
-    fn div_assign(&mut self, rhs: Self) {
-        *self = self.div(rhs);
-    }
-}
-
 impl From<&[u8; 32]> for FieldP256 {
     fn from(value: &[u8; 32]) -> Self {
         Self::from_be_bytes(value)
@@ -151,12 +137,6 @@ impl From<&[u8; 32]> for FieldP256 {
 impl From<[u8; 32]> for FieldP256 {
     fn from(value: [u8; 32]) -> Self {
         Self::from(&value)
-    }
-}
-
-impl From<u32> for FieldP256 {
-    fn from(value: u32) -> Self {
-        Self::from_u32(value)
     }
 }
 
@@ -207,6 +187,10 @@ impl FieldElement for FieldP256 {
 
     fn sqrt(self, b: Self) -> (Self, Choice) {
         self.sqrt(b)
+    }
+
+    fn from_u32(value: u32) -> Self {
+        Self::from_u32(value)
     }
 }
 

@@ -102,6 +102,6 @@ impl Curve448 {
         }
         Field448::swap(&mut x2, &mut x3, swap);
         Field448::swap(&mut z2, &mut z3, swap);
-        x2 / z2
+        x2 * z2.invert()
     }
 }

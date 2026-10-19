@@ -16,3 +16,6 @@ pub(crate) use {
 };
 
 pub use {pad::*, verify::*, wipe::*, xor::*};
+
+#[cfg(feature = "hazmat")]
+pub use choice::Choice;

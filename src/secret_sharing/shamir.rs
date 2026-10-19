@@ -117,7 +117,7 @@ impl<F: FieldElement> Shamir<F> {
     }
 
     fn calculate_share<const K: usize>(x: u32, coefficients: &[F; K]) -> F::Bytes {
-        let x = F::from(x);
+        let x = F::from_u32(x);
         let mut t = F::ZERO;
         for &coefficient in coefficients.iter().rev() {
             t = t * x + coefficient;
@@ -162,7 +162,7 @@ impl<F: FieldElement> Shamir<F> {
                     continue;
                 }
                 let (xm, _) = pair;
-                lambda *= xm / (xm - xj);
+                lambda *= xm * (xm - xj).invert();
             }
             secret += yj * lambda;
         }
@@ -181,7 +181,7 @@ impl<F: FieldElement> Shamir<F> {
                 let share = shares[j];
                 let bytes = F::Bytes::try_from_slice(&share[begin..end])
                     .expect("Each secret column is one field element");
-                let x = F::from(Self::index(share));
+                let x = F::from_u32(Self::index(share));
                 let y = F::from(bytes);
                 (x, y)
             });
