@@ -4,9 +4,9 @@ mod scalar;
 use crate::{
     Error,
     elliptic_curves::weierstrass::Weierstrass,
-    traits::{EcdsaCurve, EllipticCurve, WeierstrassScalar},
+    traits::{EllipticCurve, WeierstrassScalar},
 };
-pub use {field::*, scalar::*};
+pub use {field::FieldP256, scalar::ScalarP256};
 
 pub struct P256;
 
@@ -59,5 +59,3 @@ impl EllipticCurve for P256 {
         }
     }
 }
-
-impl EcdsaCurve for P256 {}

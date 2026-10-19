@@ -1,10 +1,12 @@
-mod common;
+mod external;
+mod internal;
 
-#[cfg(not(feature = "hazmat"))]
-#[allow(unused_imports)]
-pub(crate) use common::*;
-
-pub use common::ByteArray;
+pub use external::ByteArray;
 
 #[cfg(feature = "hazmat")]
-pub use common::*;
+pub use external::*;
+
+pub(crate) use internal::*;
+
+#[cfg(not(feature = "hazmat"))]
+pub(crate) use external::*;
