@@ -139,22 +139,6 @@ impl Field25519 {
         result
     }
 
-    pub(super) fn from_bytes(bytes: &[u8; 32]) -> Self {
-        let mut words = [0u64; 4];
-        let (chunks, _) = bytes.as_chunks::<8>();
-        for (i, chunk) in chunks.iter().enumerate() {
-            words[i] = u64::from_le_bytes(*chunk);
-        }
-        let mut result = Self::ZERO;
-        result[0] = words[0];
-        result[1] = (words[0] >> 51) | (words[1] << 13);
-        result[2] = (words[1] >> 38) | (words[2] << 26);
-        result[3] = (words[2] >> 25) | (words[3] << 39);
-        result[4] = words[3] >> 12;
-        result.mask();
-        result
-    }
-
     pub(super) fn to_bytes(mut self) -> [u8; 32] {
         self.reduce();
         self.canonical();

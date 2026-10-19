@@ -165,6 +165,22 @@ macro_rules! impl_montgomery {
                 Self(Self::words_from_le(bytes.iter()), PhantomData).mul(Self::R2)
             }
 
+            pub(crate) const fn from_be_bytes_const(bytes: &[u8; $bytes]) -> Self {
+                let mut words = [0 as Word; $words];
+                let mut i = 0;
+                while i < $bytes {
+                    let byte = bytes[$bytes - 1 - i] as Word;
+                    words[i / WORD_BYTES] |= byte << (8 * (i % WORD_BYTES));
+                    i += 1;
+                }
+                let mut i = 0;
+                while i < Word::BITS as usize * $words {
+                    words = Self::double_mod(words);
+                    i += 1;
+                }
+                Self(words, PhantomData)
+            }
+
             pub(crate) fn to_be_bytes(self) -> [u8; $bytes] {
                 let mut bytes = self.to_le_bytes();
                 bytes.reverse();
@@ -188,6 +204,32 @@ macro_rules! impl_montgomery {
                 words
             }
 
+            const fn double_mod(words: [Word; $words]) -> [Word; $words] {
+                let mut doubled = [0 as Word; $words];
+                let mut carry = 0;
+                let mut i = 0;
+                while i < $words {
+                    doubled[i] = (words[i] << 1) | carry;
+                    carry = words[i] >> (Word::BITS - 1);
+                    i += 1;
+                }
+                let mut reduced = [0 as Word; $words];
+                let mut borrow = 0;
+                let mut i = 0;
+                while i < $words {
+                    (reduced[i], borrow) = Self::sbb(doubled[i], Self::MOD[i], borrow);
+                    i += 1;
+                }
+                let mask = (carry | (borrow ^ 1)).wrapping_neg();
+                let mut result = [0 as Word; $words];
+                let mut i = 0;
+                while i < $words {
+                    result[i] = (reduced[i] & mask) | (doubled[i] & !mask);
+                    i += 1;
+                }
+                result
+            }
+
             fn reduce(words: [Word; $words], top: Word) -> Self {
                 let mut diff = [0 as Word; $words];
                 let mut borrow = 0;
@@ -207,13 +249,13 @@ macro_rules! impl_montgomery {
             }
 
             #[inline(always)]
-            fn adc(a: Word, b: Word, carry: Word) -> (Word, Word) {
+            const fn adc(a: Word, b: Word, carry: Word) -> (Word, Word) {
                 let t = a as WideWord + b as WideWord + carry as WideWord;
                 (t as Word, (t >> Word::BITS) as Word)
             }
 
             #[inline(always)]
-            fn sbb(a: Word, b: Word, borrow: Word) -> (Word, Word) {
+            const fn sbb(a: Word, b: Word, borrow: Word) -> (Word, Word) {
                 let t = (a as WideWord)
                     .wrapping_sub(b as WideWord)
                     .wrapping_sub(borrow as WideWord);

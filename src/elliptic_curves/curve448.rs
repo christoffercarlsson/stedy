@@ -4,10 +4,11 @@ use crate::{
     utils::{Choice, Secret},
 };
 
+mod edwards;
 mod field;
 mod scalar;
 
-pub use {field::Field448, scalar::Scalar448};
+pub use {edwards::Edwards448, field::Field448, scalar::Scalar448};
 
 pub struct Curve448;
 

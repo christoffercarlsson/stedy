@@ -1,5 +1,6 @@
 mod field;
 mod scalar;
+mod weierstrass;
 
 use crate::{
     Error,

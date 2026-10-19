@@ -93,16 +93,6 @@ impl Field448 {
         result
     }
 
-    pub(crate) fn from_le_bytes(bytes: &[u8; 56]) -> Self {
-        let mut result = Self::ZERO;
-        for (i, chunk) in bytes.chunks(7).enumerate() {
-            let mut word = [0u8; 8];
-            word[..7].copy_from_slice(chunk);
-            result[i] = u64::from_le_bytes(word);
-        }
-        result
-    }
-
     pub(crate) fn to_le_bytes(mut self) -> [u8; 56] {
         self.canonical();
         let mut bytes = [0u8; 56];

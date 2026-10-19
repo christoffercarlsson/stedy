@@ -295,28 +295,6 @@ impl Field25519 {
         Self::reduce_wide(words)
     }
 
-    pub(super) fn from_bytes(bytes: &[u8; 32]) -> Self {
-        let mut words = [0u32; 8];
-        let (chunks, _) = bytes.as_chunks::<4>();
-        for (i, chunk) in chunks.iter().enumerate() {
-            words[i] = u32::from_le_bytes(*chunk);
-        }
-        let mut result = Self::ZERO;
-        result[0] = (words[0]) as i32;
-        result[1] = ((words[0] >> 26) | (words[1] << 6)) as i32;
-        result[2] = ((words[1] >> 19) | (words[2] << 13)) as i32;
-        result[3] = ((words[2] >> 13) | (words[3] << 19)) as i32;
-        result[4] = (words[3] >> 6) as i32;
-        result[5] = (words[4]) as i32;
-        result[6] = ((words[4] >> 25) | (words[5] << 7)) as i32;
-        result[7] = ((words[5] >> 19) | (words[6] << 13)) as i32;
-        result[8] = ((words[6] >> 12) | (words[7] << 20)) as i32;
-        result[9] = (words[7] >> 6) as i32;
-        result.mask();
-        result.reduce();
-        result
-    }
-
     pub(super) fn to_bytes(mut self) -> [u8; 32] {
         self.reduce();
         self.canonical();

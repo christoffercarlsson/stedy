@@ -195,28 +195,6 @@ impl FieldP521 {
         result
     }
 
-    pub(super) fn from_bytes(bytes: &[u8; 66]) -> Self {
-        let mut bytes = *bytes;
-        bytes.reverse();
-        let mut words = [0u64; 8];
-        let (chunks, remainder) = bytes.as_chunks::<8>();
-        for (i, chunk) in chunks.iter().enumerate() {
-            words[i] = u64::from_le_bytes(*chunk);
-        }
-        let top_word = (remainder[0] as u64) | ((remainder[1] as u64 & 1) << 8);
-        let mut result = Self::ZERO;
-        result[0] = words[0] & Self::MASK;
-        result[1] = ((words[0] >> 58) | (words[1] << 6)) & Self::MASK;
-        result[2] = ((words[1] >> 52) | (words[2] << 12)) & Self::MASK;
-        result[3] = ((words[2] >> 46) | (words[3] << 18)) & Self::MASK;
-        result[4] = ((words[3] >> 40) | (words[4] << 24)) & Self::MASK;
-        result[5] = ((words[4] >> 34) | (words[5] << 30)) & Self::MASK;
-        result[6] = ((words[5] >> 28) | (words[6] << 36)) & Self::MASK;
-        result[7] = ((words[6] >> 22) | (words[7] << 42)) & Self::MASK;
-        result[8] = ((words[7] >> 16) | (top_word << 48)) & Self::TOP_MASK;
-        result
-    }
-
     pub(super) fn to_bytes(mut self) -> [u8; 66] {
         self.canonical();
         let words = [

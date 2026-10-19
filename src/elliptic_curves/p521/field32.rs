@@ -624,37 +624,6 @@ impl FieldP521 {
         result
     }
 
-    pub(super) fn from_bytes(bytes: &[u8; 66]) -> Self {
-        let mut padded = [0u8; 72];
-        for i in 0..66 {
-            padded[i] = bytes[65 - i];
-        }
-        let mut words = [0u32; 18];
-        for (i, chunk) in padded.as_chunks::<4>().0.iter().enumerate() {
-            words[i] = u32::from_le_bytes(*chunk);
-        }
-        let mut result = Self::ZERO;
-        result[0] = words[0] & Self::MASK;
-        result[1] = ((words[0] >> 29) | (words[1] << 3)) & Self::MASK;
-        result[2] = ((words[1] >> 26) | (words[2] << 6)) & Self::MASK;
-        result[3] = ((words[2] >> 23) | (words[3] << 9)) & Self::MASK;
-        result[4] = ((words[3] >> 20) | (words[4] << 12)) & Self::MASK;
-        result[5] = ((words[4] >> 17) | (words[5] << 15)) & Self::MASK;
-        result[6] = ((words[5] >> 14) | (words[6] << 18)) & Self::MASK;
-        result[7] = ((words[6] >> 11) | (words[7] << 21)) & Self::MASK;
-        result[8] = ((words[7] >> 8) | (words[8] << 24)) & Self::MASK;
-        result[9] = ((words[8] >> 5) | (words[9] << 27)) & Self::MASK;
-        result[10] = (words[9] >> 2) & Self::MASK;
-        result[11] = ((words[9] >> 31) | (words[10] << 1)) & Self::MASK;
-        result[12] = ((words[10] >> 28) | (words[11] << 4)) & Self::MASK;
-        result[13] = ((words[11] >> 25) | (words[12] << 7)) & Self::MASK;
-        result[14] = ((words[12] >> 22) | (words[13] << 10)) & Self::MASK;
-        result[15] = ((words[13] >> 19) | (words[14] << 13)) & Self::MASK;
-        result[16] = ((words[14] >> 16) | (words[15] << 16)) & Self::MASK;
-        result[17] = ((words[15] >> 13) | (words[16] << 19)) & Self::TOP_MASK;
-        result
-    }
-
     pub(super) fn to_bytes(mut self) -> [u8; 66] {
         self.canonical();
         let words: [u32; 17] = [
