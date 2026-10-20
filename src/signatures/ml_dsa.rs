@@ -8,6 +8,10 @@ use {
     core::marker::PhantomData,
 };
 
+mod params;
+
+use params::{MlDsa44Params, MlDsa65Params, MlDsa87Params};
+
 pub type MlDsa44With<A, H, G> = MlDsa<4, 4, MlDsa44Params, A, H, G>;
 pub type MlDsa65With<A, H, G> = MlDsa<6, 5, MlDsa65Params, A, H, G>;
 pub type MlDsa87With<A, H, G> = MlDsa<8, 7, MlDsa87Params, A, H, G>;
@@ -15,55 +19,6 @@ pub type MlDsa87With<A, H, G> = MlDsa<8, 7, MlDsa87Params, A, H, G>;
 pub type MlDsa44 = MlDsa44With<MlDsaNtt, Shake256, Shake128>;
 pub type MlDsa65 = MlDsa65With<MlDsaNtt, Shake256, Shake128>;
 pub type MlDsa87 = MlDsa87With<MlDsaNtt, Shake256, Shake128>;
-
-pub struct MlDsa44Params;
-pub struct MlDsa65Params;
-pub struct MlDsa87Params;
-
-impl MlDsaParams<4, 4> for MlDsa44Params {
-    const TAU: usize = 39;
-    const LAMBDA: usize = 128;
-    const GAMMA1: i32 = 1 << 17;
-    const GAMMA2: i32 = (8380417 - 1) / 88;
-    const ETA: i32 = 2;
-    const BETA: i32 = 78;
-    const OMEGA: usize = 80;
-
-    type Seed = [u8; 32];
-    type PrivateKey = [u8; 2560];
-    type PublicKey = [u8; 1312];
-    type Signature = [u8; 2420];
-}
-
-impl MlDsaParams<6, 5> for MlDsa65Params {
-    const TAU: usize = 49;
-    const LAMBDA: usize = 192;
-    const GAMMA1: i32 = 1 << 19;
-    const GAMMA2: i32 = (8380417 - 1) / 32;
-    const ETA: i32 = 4;
-    const BETA: i32 = 196;
-    const OMEGA: usize = 55;
-
-    type Seed = [u8; 32];
-    type PrivateKey = [u8; 4032];
-    type PublicKey = [u8; 1952];
-    type Signature = [u8; 3309];
-}
-
-impl MlDsaParams<8, 7> for MlDsa87Params {
-    const TAU: usize = 60;
-    const LAMBDA: usize = 256;
-    const GAMMA1: i32 = 1 << 19;
-    const GAMMA2: i32 = (8380417 - 1) / 32;
-    const ETA: i32 = 2;
-    const BETA: i32 = 120;
-    const OMEGA: usize = 75;
-
-    type Seed = [u8; 32];
-    type PrivateKey = [u8; 4896];
-    type PublicKey = [u8; 2592];
-    type Signature = [u8; 4627];
-}
 
 pub struct MlDsaNtt;
 
