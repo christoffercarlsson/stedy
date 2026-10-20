@@ -2,73 +2,164 @@ use {
     crate::{
         Error,
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
-        traits::{ByteArray, CryptoRng, Hasher, MlKemParams, Xof, XofReader},
+        traits::{ByteArray, CryptoRng, Hasher, MlKemArithmetic, MlKemParams, Xof, XofReader},
         utils::{Choice, Secret, verify},
     },
     core::marker::PhantomData,
 };
 
-pub type MlKem512 = MlKem<2, MlKem512Params, Sha3_512, Sha3_256, Shake128, Shake256>;
-pub type MlKem768 = MlKem<3, MlKem768Params, Sha3_512, Sha3_256, Shake128, Shake256>;
-pub type MlKem1024 = MlKem<4, MlKem1024Params, Sha3_512, Sha3_256, Shake128, Shake256>;
+mod params;
 
-pub struct MlKem512Params;
-pub struct MlKem768Params;
-pub struct MlKem1024Params;
+use params::{MlKem512Params, MlKem768Params, MlKem1024Params};
 
-impl MlKemParams<2> for MlKem512Params {
-    const ETA1: usize = 3;
-    const ETA2: usize = 2;
-    const DU: usize = 10;
-    const DV: usize = 4;
+pub type MlKem512With<A, G, H, X, F> = MlKem<2, MlKem512Params, A, G, H, X, F>;
+pub type MlKem768With<A, G, H, X, F> = MlKem<3, MlKem768Params, A, G, H, X, F>;
+pub type MlKem1024With<A, G, H, X, F> = MlKem<4, MlKem1024Params, A, G, H, X, F>;
 
-    type Seed = [u8; 64];
-    type SharedSecret = [u8; 32];
-    type PrivateKey = [u8; 1632];
-    type PublicKey = [u8; 800];
-    type Ciphertext = [u8; 768];
+pub type MlKem512 = MlKem512With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>;
+pub type MlKem768 = MlKem768With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>;
+pub type MlKem1024 = MlKem1024With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>;
+
+pub struct MlKemNtt;
+
+impl MlKemArithmetic for MlKemNtt {
+    // Algorithm 9
+    fn ntt(f: &mut [i16; 256]) {
+        Self::ntt_layer::<128>(f, &Self::ZETAS[1..2]);
+        Self::ntt_layer::<64>(f, &Self::ZETAS[2..4]);
+        Self::ntt_layer::<32>(f, &Self::ZETAS[4..8]);
+        Self::ntt_layer::<16>(f, &Self::ZETAS[8..16]);
+        Self::ntt_layer::<8>(f, &Self::ZETAS[16..32]);
+        Self::ntt_layer::<4>(f, &Self::ZETAS[32..64]);
+        Self::ntt_layer::<2>(f, &Self::ZETAS[64..128]);
+        for a in f.iter_mut() {
+            *a = reduce(*a);
+        }
+    }
+
+    // Algorithm 10
+    fn inverse_ntt(f: &mut [i16; 256]) {
+        Self::inverse_ntt_layer::<2>(f, &Self::ZETAS[64..128]);
+        Self::inverse_ntt_layer::<4>(f, &Self::ZETAS[32..64]);
+        Self::inverse_ntt_layer::<8>(f, &Self::ZETAS[16..32]);
+        Self::inverse_ntt_layer::<16>(f, &Self::ZETAS[8..16]);
+        Self::inverse_ntt_layer::<32>(f, &Self::ZETAS[4..8]);
+        Self::inverse_ntt_layer::<64>(f, &Self::ZETAS[2..4]);
+        Self::inverse_ntt_layer::<128>(f, &Self::ZETAS[1..2]);
+        for a in f.iter_mut() {
+            *a = reduce(Self::montgomery_multiply(*a, 512));
+        }
+    }
+
+    // Algorithm 11
+    fn multiply_ntt(f: &[i16; 256], g: &[i16; 256], h: &mut [i16; 256]) {
+        let (f, _) = f.as_chunks::<2>();
+        let (g, _) = g.as_chunks::<2>();
+        let (h, _) = h.as_chunks_mut::<2>();
+        for (((&[a0, a1], &[b0, b1]), [c0, c1]), gamma) in f.iter().zip(g).zip(h).zip(Self::GAMMAS)
+        {
+            let (p0, p1) = Self::base_case_multiply(a0, a1, b0, b1, gamma);
+            *c0 = reduce(p0);
+            *c1 = reduce(p1);
+        }
+    }
 }
 
-impl MlKemParams<3> for MlKem768Params {
-    const ETA1: usize = 2;
-    const ETA2: usize = 2;
-    const DU: usize = 10;
-    const DV: usize = 4;
+impl MlKemNtt {
+    const ZETAS: [i16; 128] = {
+        let mut zetas = [0i16; 128];
+        let mut i = 0;
+        while i < 128 {
+            zetas[i] = Self::zeta_power(Self::bit_rev7(i));
+            i += 1;
+        }
+        zetas
+    };
+    const GAMMAS: [i16; 128] = {
+        let mut gammas = [0i16; 128];
+        let mut i = 0;
+        while i < 128 {
+            gammas[i] = Self::zeta_power(2 * Self::bit_rev7(i) + 1);
+            i += 1;
+        }
+        gammas
+    };
 
-    type Seed = [u8; 64];
-    type SharedSecret = [u8; 32];
-    type PrivateKey = [u8; 2400];
-    type PublicKey = [u8; 1184];
-    type Ciphertext = [u8; 1088];
+    fn ntt_layer<const LEN: usize>(f: &mut [i16; 256], zetas: &[i16]) {
+        let (halves, _) = f.as_chunks_mut::<LEN>();
+        let (blocks, _) = halves.as_chunks_mut::<2>();
+        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas) {
+            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
+                let t = Self::montgomery_multiply(zeta, *b);
+                *b = *a - t;
+                *a += t;
+            }
+        }
+    }
+
+    fn inverse_ntt_layer<const LEN: usize>(f: &mut [i16; 256], zetas: &[i16]) {
+        let (halves, _) = f.as_chunks_mut::<LEN>();
+        let (blocks, _) = halves.as_chunks_mut::<2>();
+        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas.iter().rev()) {
+            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
+                let t = *a;
+                *a = barrett_reduce(t + *b);
+                *b = Self::montgomery_multiply(zeta, *b - t);
+            }
+        }
+    }
+
+    // Algorithm 12
+    const fn base_case_multiply(a0: i16, a1: i16, b0: i16, b1: i16, gamma: i16) -> (i16, i16) {
+        let b1_gamma = Self::montgomery_multiply(b1, gamma);
+        let c0 = Self::montgomery_reduce(a0 as i32 * b0 as i32 + a1 as i32 * b1_gamma as i32);
+        let c1 = Self::montgomery_reduce(a0 as i32 * b1 as i32 + a1 as i32 * b0 as i32);
+        (
+            Self::montgomery_multiply(c0, 1353),
+            Self::montgomery_multiply(c1, 1353),
+        )
+    }
+
+    const fn montgomery_reduce(a: i32) -> i16 {
+        let t = (a as i16).wrapping_mul(-3327);
+        ((a - t as i32 * Q as i32) >> 16) as i16
+    }
+
+    const fn montgomery_multiply(a: i16, b: i16) -> i16 {
+        Self::montgomery_reduce(a as i32 * b as i32)
+    }
+
+    const fn zeta_power(exponent: usize) -> i16 {
+        let mut power = (1 << 16) % Q as u32;
+        let mut k = 0;
+        while k < exponent {
+            power = power * 17 % Q as u32;
+            k += 1;
+        }
+        power as i16
+    }
+
+    const fn bit_rev7(i: usize) -> usize {
+        (i as u8).reverse_bits() as usize >> 1
+    }
 }
 
-impl MlKemParams<4> for MlKem1024Params {
-    const ETA1: usize = 2;
-    const ETA2: usize = 2;
-    const DU: usize = 11;
-    const DV: usize = 5;
-
-    type Seed = [u8; 64];
-    type SharedSecret = [u8; 32];
-    type PrivateKey = [u8; 3168];
-    type PublicKey = [u8; 1568];
-    type Ciphertext = [u8; 1568];
-}
-
-pub struct MlKem<const K: usize, P, G, H, X, F>
+pub struct MlKem<const K: usize, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
+    A: MlKemArithmetic,
     G: Hasher<Output = [u8; 64]>,
     H: Hasher<Output = [u8; 32]>,
     X: Xof,
     F: Xof,
 {
-    _marker: PhantomData<(P, G, H, X, F)>,
+    _marker: PhantomData<(P, A, G, H, X, F)>,
 }
 
-impl<const K: usize, P, G, H, X, F> MlKem<K, P, G, H, X, F>
+impl<const K: usize, P, A, G, H, X, F> MlKem<K, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
+    A: MlKemArithmetic,
     G: Hasher<Output = [u8; 64]>,
     H: Hasher<Output = [u8; 32]>,
     X: Xof,
@@ -121,40 +212,21 @@ where
     }
 }
 
-impl<const K: usize, P, G, H, X, F> MlKem<K, P, G, H, X, F>
+impl<const K: usize, P, A, G, H, X, F> MlKem<K, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
+    A: MlKemArithmetic,
     G: Hasher<Output = [u8; 64]>,
     H: Hasher<Output = [u8; 32]>,
     X: Xof,
     F: Xof,
 {
-    const Q: i16 = 3329;
-    const ZETAS: [i16; 128] = {
-        let mut zetas = [0i16; 128];
-        let mut i = 0;
-        while i < 128 {
-            zetas[i] = Self::zeta_power(Self::bit_rev7(i));
-            i += 1;
-        }
-        zetas
-    };
-    const GAMMAS: [i16; 128] = {
-        let mut gammas = [0i16; 128];
-        let mut i = 0;
-        while i < 128 {
-            gammas[i] = Self::zeta_power(2 * Self::bit_rev7(i) + 1);
-            i += 1;
-        }
-        gammas
-    };
-
     // Algorithm 5
     fn byte_encode(d: usize, f: &[i16; 256], bytes: &mut [u8]) {
         let (groups, _) = f.as_chunks::<8>();
         for (group, chunk) in groups.iter().zip(bytes.chunks_exact_mut(d)) {
             let packed = group.iter().enumerate().fold(0u128, |packed, (i, &a)| {
-                packed | ((Self::reduce(a) as u128) << (i * d))
+                packed | ((reduce(a) as u128) << (i * d))
             });
             chunk.copy_from_slice(&packed.to_le_bytes()[..d]);
         }
@@ -170,18 +242,18 @@ where
             let packed = u128::from_le_bytes(packed);
             for (i, a) in group.iter_mut().enumerate() {
                 let x = ((packed >> (i * d)) & mask) as i16;
-                *a = if d < 12 { x } else { x % Self::Q };
+                *a = if d < 12 { x } else { x % Q };
             }
         }
     }
 
     fn compress(d: usize, x: i16) -> i16 {
-        let x = Self::reduce(x) as u32;
-        (((x << d) + Self::Q as u32 / 2) / Self::Q as u32 % (1 << d)) as i16
+        let x = reduce(x) as u32;
+        (((x << d) + Q as u32 / 2) / Q as u32 % (1 << d)) as i16
     }
 
     fn decompress(d: usize, y: i16) -> i16 {
-        ((Self::Q as u32 * y as u32 + (1 << (d - 1))) >> d) as i16
+        ((Q as u32 * y as u32 + (1 << (d - 1))) >> d) as i16
     }
 
     // Algorithm 7
@@ -198,11 +270,11 @@ where
             for c in block {
                 let d1 = i16::from(c[0]) + 256 * i16::from(c[1] % 16);
                 let d2 = i16::from(c[1] / 16) + 16 * i16::from(c[2]);
-                if d1 < Self::Q && j < 256 {
+                if d1 < Q && j < 256 {
                     a[j] = d1;
                     j += 1;
                 }
-                if d2 < Self::Q && j < 256 {
+                if d2 < Q && j < 256 {
                     a[j] = d2;
                     j += 1;
                 }
@@ -222,82 +294,6 @@ where
         }
     }
 
-    // Algorithm 9
-    fn ntt(f: &mut [i16; 256]) {
-        Self::ntt_layer::<128>(f, &Self::ZETAS[1..2]);
-        Self::ntt_layer::<64>(f, &Self::ZETAS[2..4]);
-        Self::ntt_layer::<32>(f, &Self::ZETAS[4..8]);
-        Self::ntt_layer::<16>(f, &Self::ZETAS[8..16]);
-        Self::ntt_layer::<8>(f, &Self::ZETAS[16..32]);
-        Self::ntt_layer::<4>(f, &Self::ZETAS[32..64]);
-        Self::ntt_layer::<2>(f, &Self::ZETAS[64..128]);
-        for a in f.iter_mut() {
-            *a = Self::reduce(*a);
-        }
-    }
-
-    fn ntt_layer<const LEN: usize>(f: &mut [i16; 256], zetas: &[i16]) {
-        let (halves, _) = f.as_chunks_mut::<LEN>();
-        let (blocks, _) = halves.as_chunks_mut::<2>();
-        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas) {
-            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
-                let t = Self::montgomery_multiply(zeta, *b);
-                *b = *a - t;
-                *a += t;
-            }
-        }
-    }
-
-    // Algorithm 10
-    fn inverse_ntt(f: &mut [i16; 256]) {
-        Self::inverse_ntt_layer::<2>(f, &Self::ZETAS[64..128]);
-        Self::inverse_ntt_layer::<4>(f, &Self::ZETAS[32..64]);
-        Self::inverse_ntt_layer::<8>(f, &Self::ZETAS[16..32]);
-        Self::inverse_ntt_layer::<16>(f, &Self::ZETAS[8..16]);
-        Self::inverse_ntt_layer::<32>(f, &Self::ZETAS[4..8]);
-        Self::inverse_ntt_layer::<64>(f, &Self::ZETAS[2..4]);
-        Self::inverse_ntt_layer::<128>(f, &Self::ZETAS[1..2]);
-        for a in f.iter_mut() {
-            *a = Self::montgomery_multiply(*a, 512);
-        }
-    }
-
-    fn inverse_ntt_layer<const LEN: usize>(f: &mut [i16; 256], zetas: &[i16]) {
-        let (halves, _) = f.as_chunks_mut::<LEN>();
-        let (blocks, _) = halves.as_chunks_mut::<2>();
-        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas.iter().rev()) {
-            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
-                let t = *a;
-                *a = Self::barrett_reduce(t + *b);
-                *b = Self::montgomery_multiply(zeta, *b - t);
-            }
-        }
-    }
-
-    // Algorithm 11
-    fn add_multiply_ntts(h: &mut [i16; 256], f: &[i16; 256], g: &[i16; 256]) {
-        let (f, _) = f.as_chunks::<2>();
-        let (g, _) = g.as_chunks::<2>();
-        let (h, _) = h.as_chunks_mut::<2>();
-        for (((&[a0, a1], &[b0, b1]), [c0, c1]), gamma) in f.iter().zip(g).zip(h).zip(Self::GAMMAS)
-        {
-            let (p0, p1) = Self::base_case_multiply(a0, a1, b0, b1, gamma);
-            *c0 += p0;
-            *c1 += p1;
-        }
-    }
-
-    // Algorithm 12
-    const fn base_case_multiply(a0: i16, a1: i16, b0: i16, b1: i16, gamma: i16) -> (i16, i16) {
-        let b1_gamma = Self::montgomery_multiply(b1, gamma);
-        let c0 = Self::montgomery_reduce(a0 as i32 * b0 as i32 + a1 as i32 * b1_gamma as i32);
-        let c1 = Self::montgomery_reduce(a0 as i32 * b1 as i32 + a1 as i32 * b0 as i32);
-        (
-            Self::montgomery_multiply(c0, 1353),
-            Self::montgomery_multiply(c1, 1353),
-        )
-    }
-
     // Algorithm 13
     fn k_pke_key_gen(d: &[u8], ek_pke: &mut [u8], dk_pke: &mut [u8]) {
         let seeds = Self::g(d, &[K as u8]);
@@ -306,19 +302,23 @@ where
         let mut s = [const { Secret([0i16; 256]) }; K];
         for poly in &mut s {
             Self::sample_poly(P::ETA1, sigma, &mut n, poly.get_mut());
-            Self::ntt(poly.get_mut());
+            Self::reduce_poly(poly.get_mut());
+            A::ntt(poly.get_mut());
         }
         let (t_bytes, rho_bytes) = ek_pke.split_at_mut(384 * K);
         let (t_bytes, _) = t_bytes.as_chunks_mut::<384>();
+        let mut product = Secret::from([0i16; 256]);
         for (i, bytes) in t_bytes.iter_mut().enumerate() {
             let mut t = Secret::from([0i16; 256]);
             for (j, s) in s.iter().enumerate() {
                 let a = Self::sample_ntt(rho, j as u8, i as u8);
-                Self::add_multiply_ntts(t.get_mut(), &a, s.get());
+                A::multiply_ntt(&a, s.get(), product.get_mut());
+                Self::accumulate_poly(t.get_mut(), product.get());
             }
             let mut e = Secret::from([0i16; 256]);
             Self::sample_poly(P::ETA1, sigma, &mut n, e.get_mut());
-            Self::ntt(e.get_mut());
+            Self::reduce_poly(e.get_mut());
+            A::ntt(e.get_mut());
             Self::add_poly(t.get_mut(), e.get());
             Self::byte_encode(12, t.get(), bytes);
         }
@@ -338,16 +338,20 @@ where
         let mut y = [const { Secret([0i16; 256]) }; K];
         for poly in &mut y {
             Self::sample_poly(P::ETA1, r, &mut n, poly.get_mut());
-            Self::ntt(poly.get_mut());
+            Self::reduce_poly(poly.get_mut());
+            A::ntt(poly.get_mut());
         }
+        let mut product = Secret::from([0i16; 256]);
         let (c1, c2) = c.split_at_mut(32 * P::DU * K);
         for (i, bytes) in c1.chunks_exact_mut(32 * P::DU).enumerate() {
             let mut u = Secret::from([0i16; 256]);
             for (j, y) in y.iter().enumerate() {
                 let a = Self::sample_ntt(rho, i as u8, j as u8);
-                Self::add_multiply_ntts(u.get_mut(), &a, y.get());
+                A::multiply_ntt(&a, y.get(), product.get_mut());
+                Self::accumulate_poly(u.get_mut(), product.get());
             }
-            Self::inverse_ntt(u.get_mut());
+            Self::reduce_poly(u.get_mut());
+            A::inverse_ntt(u.get_mut());
             let mut e1 = Secret::from([0i16; 256]);
             Self::sample_poly(P::ETA2, r, &mut n, e1.get_mut());
             Self::add_poly(u.get_mut(), e1.get());
@@ -367,9 +371,11 @@ where
         let mut t = [0i16; 256];
         for (bytes, y) in t_bytes.iter().zip(&y) {
             Self::byte_decode(12, bytes, &mut t);
-            Self::add_multiply_ntts(v.get_mut(), &t, y.get());
+            A::multiply_ntt(&t, y.get(), product.get_mut());
+            Self::accumulate_poly(v.get_mut(), product.get());
         }
-        Self::inverse_ntt(v.get_mut());
+        Self::reduce_poly(v.get_mut());
+        A::inverse_ntt(v.get_mut());
         Self::add_poly(v.get_mut(), e2.get());
         Self::add_poly(v.get_mut(), mu.get());
         for x in v.get_mut() {
@@ -385,24 +391,27 @@ where
         let (s_chunks, _) = dk_pke.as_chunks::<384>();
         let mut w = Secret::from([0i16; 256]);
         let mut s = Secret::from([0i16; 256]);
+        let mut product = Secret::from([0i16; 256]);
         let mut u = [0i16; 256];
         for (u_bytes, s_bytes) in c1.chunks_exact(32 * P::DU).zip(s_chunks) {
             Self::byte_decode(P::DU, u_bytes, &mut u);
             for x in &mut u {
                 *x = Self::decompress(P::DU, *x);
             }
-            Self::ntt(&mut u);
+            A::ntt(&mut u);
             Self::byte_decode(12, s_bytes, s.get_mut());
-            Self::add_multiply_ntts(w.get_mut(), s.get(), &u);
+            A::multiply_ntt(s.get(), &u, product.get_mut());
+            Self::accumulate_poly(w.get_mut(), product.get());
         }
-        Self::inverse_ntt(w.get_mut());
+        Self::reduce_poly(w.get_mut());
+        A::inverse_ntt(w.get_mut());
         let mut v = [0i16; 256];
         Self::byte_decode(P::DV, c2, &mut v);
         for x in &mut v {
             *x = Self::decompress(P::DV, *x);
         }
         for (w, v) in w.get_mut().iter_mut().zip(&v) {
-            *w = Self::barrett_reduce(*v - *w);
+            *w = barrett_reduce(*v - *w);
         }
         for x in w.get_mut() {
             *x = Self::compress(1, *x);
@@ -505,42 +514,33 @@ where
 
     fn add_poly(f: &mut [i16; 256], g: &[i16; 256]) {
         for (a, b) in f.iter_mut().zip(g) {
-            *a = Self::barrett_reduce(*a + *b);
+            *a = barrett_reduce(*a + *b);
         }
     }
 
-    const fn montgomery_reduce(a: i32) -> i16 {
-        let t = (a as i16).wrapping_mul(-3327);
-        ((a - t as i32 * Self::Q as i32) >> 16) as i16
-    }
-
-    const fn montgomery_multiply(a: i16, b: i16) -> i16 {
-        Self::montgomery_reduce(a as i32 * b as i32)
-    }
-
-    const fn barrett_reduce(a: i16) -> i16 {
-        let t = ((20159 * a as i32 + (1 << 25)) >> 26) as i16;
-        a.wrapping_sub(t.wrapping_mul(Self::Q))
-    }
-
-    const fn reduce(a: i16) -> i16 {
-        let a = Self::barrett_reduce(a);
-        a + ((a >> 15) & Self::Q)
-    }
-
-    const fn zeta_power(exponent: usize) -> i16 {
-        let mut power = (1 << 16) % Self::Q as u32;
-        let mut k = 0;
-        while k < exponent {
-            power = power * 17 % Self::Q as u32;
-            k += 1;
+    fn accumulate_poly(f: &mut [i16; 256], g: &[i16; 256]) {
+        for (a, b) in f.iter_mut().zip(g) {
+            *a += *b;
         }
-        power as i16
     }
 
-    const fn bit_rev7(i: usize) -> usize {
-        (i as u8).reverse_bits() as usize >> 1
+    fn reduce_poly(f: &mut [i16; 256]) {
+        for a in f.iter_mut() {
+            *a = reduce(*a);
+        }
     }
+}
+
+const Q: i16 = 3329;
+
+const fn barrett_reduce(a: i16) -> i16 {
+    let t = ((20159 * a as i32 + (1 << 25)) >> 26) as i16;
+    a.wrapping_sub(t.wrapping_mul(Q))
+}
+
+const fn reduce(a: i16) -> i16 {
+    let a = barrett_reduce(a);
+    a + ((a >> 15) & Q)
 }
 
 #[cfg(test)]
