@@ -13,7 +13,8 @@ mod scalar;
 #[cfg(feature = "hazmat")]
 pub use arithmetic::Field25519With;
 pub(crate) use edwards::Edwards25519;
-pub use {field::Field25519, scalar::Scalar25519};
+pub use field::Field25519;
+pub(crate) use scalar::Scalar25519;
 
 pub struct Curve25519;
 

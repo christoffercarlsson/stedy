@@ -1,3 +1,5 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::FieldP256With;
 use crate::{
     elliptic_curves::{FieldP256, ScalarP256},
     hashes::Sha256,
@@ -5,6 +7,9 @@ use crate::{
 };
 
 pub type P256 = Ecdsa<FieldP256, Sha256, ScalarP256, [u8; 64]>;
+
+#[cfg(feature = "hazmat")]
+pub type P256With<A, H> = Ecdsa<FieldP256With<A>, H, ScalarP256, [u8; 64]>;
 
 #[cfg(test)]
 mod tests {

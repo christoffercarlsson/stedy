@@ -1,3 +1,5 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::Field448With;
 use crate::{
     elliptic_curves::{Field448, Scalar448},
     hashes::ShakeDigest,
@@ -7,6 +9,11 @@ use crate::{
 pub type Ed448 = Eddsa<Scalar448, Field448, ShakeDigest<136, 114>, [u8; 114]>;
 pub type Ed448ph =
     HashEddsa<Scalar448, Field448, ShakeDigest<136, 114>, [u8; 114], ShakeDigest<136, 64>>;
+
+#[cfg(feature = "hazmat")]
+pub type Ed448With<A, H> = Eddsa<Scalar448, Field448With<A>, H, [u8; 114]>;
+#[cfg(feature = "hazmat")]
+pub type Ed448phWith<A, H, P> = HashEddsa<Scalar448, Field448With<A>, H, [u8; 114], P>;
 
 #[cfg(test)]
 mod tests {

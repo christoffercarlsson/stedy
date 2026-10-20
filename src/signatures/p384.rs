@@ -1,3 +1,5 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::FieldP384With;
 use crate::{
     elliptic_curves::{FieldP384, ScalarP384},
     hashes::Sha384,
@@ -5,6 +7,9 @@ use crate::{
 };
 
 pub type P384 = Ecdsa<FieldP384, Sha384, ScalarP384, [u8; 96]>;
+
+#[cfg(feature = "hazmat")]
+pub type P384With<A, H> = Ecdsa<FieldP384With<A>, H, ScalarP384, [u8; 96]>;
 
 #[cfg(test)]
 mod tests {

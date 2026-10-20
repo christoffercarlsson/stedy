@@ -1,3 +1,5 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::Field25519With;
 use crate::{
     elliptic_curves::{Field25519, Scalar25519},
     hashes::Sha512,
@@ -6,6 +8,11 @@ use crate::{
 
 pub type Ed25519 = Eddsa<Scalar25519, Field25519, Sha512, [u8; 64]>;
 pub type Ed25519ph = HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512>;
+
+#[cfg(feature = "hazmat")]
+pub type Ed25519With<A, H> = Eddsa<Scalar25519, Field25519With<A>, H, [u8; 64]>;
+#[cfg(feature = "hazmat")]
+pub type Ed25519phWith<A, H, P> = HashEddsa<Scalar25519, Field25519With<A>, H, [u8; 64], P>;
 
 #[cfg(test)]
 mod tests {

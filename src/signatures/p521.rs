@@ -1,3 +1,5 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::FieldP521With;
 use crate::{
     elliptic_curves::{FieldP521, ScalarP521},
     hashes::Sha512,
@@ -5,6 +7,9 @@ use crate::{
 };
 
 pub type P521 = Ecdsa<FieldP521, Sha512, ScalarP521, [u8; 132]>;
+
+#[cfg(feature = "hazmat")]
+pub type P521With<A, H> = Ecdsa<FieldP521With<A>, H, ScalarP521, [u8; 132]>;
 
 #[cfg(test)]
 mod tests {

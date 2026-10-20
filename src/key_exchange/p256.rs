@@ -1,6 +1,11 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::{FieldP256With, ScalarP256, Weierstrass};
 use crate::{elliptic_curves::P256 as P256Curve, key_exchange::Ecdh};
 
 pub type P256 = Ecdh<P256Curve>;
+
+#[cfg(feature = "hazmat")]
+pub type P256With<A> = Ecdh<Weierstrass<FieldP256With<A>, ScalarP256>>;
 
 #[cfg(test)]
 mod tests {

@@ -1,6 +1,11 @@
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::{Field25519With, MontgomeryLadder};
 use crate::{elliptic_curves::Curve25519, key_exchange::Ecdh};
 
 pub type X25519 = Ecdh<Curve25519>;
+
+#[cfg(feature = "hazmat")]
+pub type X25519With<A> = Ecdh<MontgomeryLadder<Field25519With<A>>>;
 
 #[cfg(test)]
 mod tests {

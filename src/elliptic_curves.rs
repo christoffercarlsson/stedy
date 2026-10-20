@@ -11,17 +11,9 @@ mod p521;
 mod weierstrass;
 
 #[allow(unused_imports)]
-pub(crate) use {edwards::*, montgomery::*, weierstrass::*};
+pub(crate) use {edwards::*, montgomery::*, montgomery_ladder::*, weierstrass::*};
 
 #[cfg(feature = "hazmat")]
 pub(crate) use arithmetic::*;
 
-pub use {
-    curve448::*,
-    curve25519::*,
-    montgomery_ladder::{MontgomeryLadder, MontgomeryScalar},
-    p256::*,
-    p384::*,
-    p521::*,
-    weierstrass::Weierstrass,
-};
+pub use {curve448::*, curve25519::*, p256::*, p384::*, p521::*};
