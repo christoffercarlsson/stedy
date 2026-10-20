@@ -130,6 +130,23 @@ pub trait MlKemArithmetic {
     fn inverse_ntt(f: &mut [i16; 256]);
 
     fn multiply_ntt(f: &[i16; 256], g: &[i16; 256], h: &mut [i16; 256]);
+
+    fn multiply_accumulate_ntt<const K: usize>(
+        row: &[[i16; 256]; K],
+        v: &[[i16; 256]; K],
+        h: &mut [i16; 256],
+    ) {
+        const Q: i16 = 3329;
+        let mut product = Secret::from([0i16; 256]);
+        *h = [0; 256];
+        for (f, g) in row.iter().zip(v) {
+            Self::multiply_ntt(f, g, product.get_mut());
+            for (h, &product) in h.iter_mut().zip(product.get()) {
+                let sum = *h + product - Q;
+                *h = sum + ((sum >> 15) & Q);
+            }
+        }
+    }
 }
 
 pub trait Prf: KeyInit + Digest {}

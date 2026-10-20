@@ -63,6 +63,33 @@ impl MlKemArithmetic for MlKemNtt {
             *c1 = Self::reduce(p1);
         }
     }
+
+    fn multiply_accumulate_ntt<const K: usize>(
+        row: &[[i16; 256]; K],
+        v: &[[i16; 256]; K],
+        h: &mut [i16; 256],
+    ) {
+        let (h, _) = h.as_chunks_mut::<2>();
+        for (i, ([c0, c1], gamma)) in h.iter_mut().zip(Self::GAMMAS).enumerate() {
+            let mut sum0 = 0i32;
+            let mut sum1 = 0i32;
+            for (f, g) in row.iter().zip(v) {
+                let (a0, a1) = (f[2 * i] as i32, f[2 * i + 1] as i32);
+                let (b0, b1) = (g[2 * i] as i32, g[2 * i + 1] as i32);
+                let b1_gamma = Self::montgomery_multiply(g[2 * i + 1], gamma) as i32;
+                sum0 += a0 * b0 + a1 * b1_gamma;
+                sum1 += a0 * b1 + a1 * b0;
+            }
+            *c0 = Self::reduce(Self::montgomery_multiply(
+                Self::montgomery_reduce(sum0),
+                1353,
+            ));
+            *c1 = Self::reduce(Self::montgomery_multiply(
+                Self::montgomery_reduce(sum1),
+                1353,
+            ));
+        }
+    }
 }
 
 impl MlKemNtt {
@@ -310,22 +337,21 @@ where
         let seeds = Self::g(d, &[K as u8]);
         let (rho, sigma) = seeds.get().split_at(32);
         let mut n = 0;
-        let mut s = [const { Secret([0i16; 256]) }; K];
-        for poly in &mut s {
-            Self::sample_poly(P::ETA1, sigma, &mut n, poly.get_mut());
-            Self::reduce_poly(poly.get_mut());
-            A::ntt(poly.get_mut());
+        let mut s = Secret::from([[0i16; 256]; K]);
+        for poly in s.get_mut() {
+            Self::sample_poly(P::ETA1, sigma, &mut n, poly);
+            Self::reduce_poly(poly);
+            A::ntt(poly);
         }
         let (t_bytes, rho_bytes) = ek_pke.split_at_mut(384 * K);
         let (t_bytes, _) = t_bytes.as_chunks_mut::<384>();
-        let mut product = Secret::from([0i16; 256]);
+        let mut row = [[0i16; 256]; K];
         for (i, bytes) in t_bytes.iter_mut().enumerate() {
-            let mut t = Secret::from([0i16; 256]);
-            for (j, s) in s.iter().enumerate() {
-                let a = Self::sample_ntt(rho, j as u8, i as u8);
-                A::multiply_ntt(&a, s.get(), product.get_mut());
-                Self::accumulate_poly(t.get_mut(), product.get());
+            for (j, a) in row.iter_mut().enumerate() {
+                *a = Self::sample_ntt(rho, j as u8, i as u8);
             }
+            let mut t = Secret::from([0i16; 256]);
+            A::multiply_accumulate_ntt(&row, s.get(), t.get_mut());
             let mut e = Secret::from([0i16; 256]);
             Self::sample_poly(P::ETA1, sigma, &mut n, e.get_mut());
             Self::reduce_poly(e.get_mut());
@@ -335,8 +361,8 @@ where
         }
         rho_bytes.copy_from_slice(rho);
         let (s_bytes, _) = dk_pke.as_chunks_mut::<384>();
-        for (s, bytes) in s.iter().zip(s_bytes) {
-            Self::byte_encode(12, s.get(), bytes);
+        for (s, bytes) in s.get().iter().zip(s_bytes) {
+            Self::byte_encode(12, s, bytes);
         }
     }
 
@@ -346,22 +372,20 @@ where
         let mut n = 0;
         let (t_bytes, rho) = ek_pke.split_at(384 * K);
         let (t_bytes, _) = t_bytes.as_chunks::<384>();
-        let mut y = [const { Secret([0i16; 256]) }; K];
-        for poly in &mut y {
-            Self::sample_poly(P::ETA1, r, &mut n, poly.get_mut());
-            Self::reduce_poly(poly.get_mut());
-            A::ntt(poly.get_mut());
+        let mut y = Secret::from([[0i16; 256]; K]);
+        for poly in y.get_mut() {
+            Self::sample_poly(P::ETA1, r, &mut n, poly);
+            Self::reduce_poly(poly);
+            A::ntt(poly);
         }
-        let mut product = Secret::from([0i16; 256]);
+        let mut row = [[0i16; 256]; K];
         let (c1, c2) = c.split_at_mut(32 * P::DU * K);
         for (i, bytes) in c1.chunks_exact_mut(32 * P::DU).enumerate() {
-            let mut u = Secret::from([0i16; 256]);
-            for (j, y) in y.iter().enumerate() {
-                let a = Self::sample_ntt(rho, i as u8, j as u8);
-                A::multiply_ntt(&a, y.get(), product.get_mut());
-                Self::accumulate_poly(u.get_mut(), product.get());
+            for (j, a) in row.iter_mut().enumerate() {
+                *a = Self::sample_ntt(rho, i as u8, j as u8);
             }
-            Self::reduce_poly(u.get_mut());
+            let mut u = Secret::from([0i16; 256]);
+            A::multiply_accumulate_ntt(&row, y.get(), u.get_mut());
             A::inverse_ntt(u.get_mut());
             let mut e1 = Secret::from([0i16; 256]);
             Self::sample_poly(P::ETA2, r, &mut n, e1.get_mut());
@@ -378,14 +402,11 @@ where
         for x in mu.get_mut() {
             *x = Self::decompress(1, *x);
         }
-        let mut v = Secret::from([0i16; 256]);
-        let mut t = [0i16; 256];
-        for (bytes, y) in t_bytes.iter().zip(&y) {
-            Self::byte_decode(12, bytes, &mut t);
-            A::multiply_ntt(&t, y.get(), product.get_mut());
-            Self::accumulate_poly(v.get_mut(), product.get());
+        for (t, bytes) in row.iter_mut().zip(t_bytes) {
+            Self::byte_decode(12, bytes, t);
         }
-        Self::reduce_poly(v.get_mut());
+        let mut v = Secret::from([0i16; 256]);
+        A::multiply_accumulate_ntt(&row, y.get(), v.get_mut());
         A::inverse_ntt(v.get_mut());
         Self::add_poly(v.get_mut(), e2.get());
         Self::add_poly(v.get_mut(), mu.get());
@@ -400,21 +421,19 @@ where
     fn k_pke_decrypt(dk_pke: &[u8], c: &[u8]) -> Secret<[u8; 32]> {
         let (c1, c2) = c.split_at(32 * P::DU * K);
         let (s_chunks, _) = dk_pke.as_chunks::<384>();
-        let mut w = Secret::from([0i16; 256]);
-        let mut s = Secret::from([0i16; 256]);
-        let mut product = Secret::from([0i16; 256]);
-        let mut u = [0i16; 256];
-        for (u_bytes, s_bytes) in c1.chunks_exact(32 * P::DU).zip(s_chunks) {
-            Self::byte_decode(P::DU, u_bytes, &mut u);
-            for x in &mut u {
+        let mut s = Secret::from([[0i16; 256]; K]);
+        let mut u = [[0i16; 256]; K];
+        for (j, (u_bytes, s_bytes)) in c1.chunks_exact(32 * P::DU).zip(s_chunks).enumerate() {
+            let u = &mut u[j];
+            Self::byte_decode(P::DU, u_bytes, u);
+            for x in u.iter_mut() {
                 *x = Self::decompress(P::DU, *x);
             }
-            A::ntt(&mut u);
-            Self::byte_decode(12, s_bytes, s.get_mut());
-            A::multiply_ntt(s.get(), &u, product.get_mut());
-            Self::accumulate_poly(w.get_mut(), product.get());
+            A::ntt(u);
+            Self::byte_decode(12, s_bytes, &mut s.get_mut()[j]);
         }
-        Self::reduce_poly(w.get_mut());
+        let mut w = Secret::from([0i16; 256]);
+        A::multiply_accumulate_ntt(s.get(), &u, w.get_mut());
         A::inverse_ntt(w.get_mut());
         let mut v = [0i16; 256];
         Self::byte_decode(P::DV, c2, &mut v);
@@ -526,12 +545,6 @@ where
     fn add_poly(f: &mut [i16; 256], g: &[i16; 256]) {
         for (a, b) in f.iter_mut().zip(g) {
             *a = MlKemNtt::barrett_reduce(*a + *b);
-        }
-    }
-
-    fn accumulate_poly(f: &mut [i16; 256], g: &[i16; 256]) {
-        for (a, b) in f.iter_mut().zip(g) {
-            *a += *b;
         }
     }
 
