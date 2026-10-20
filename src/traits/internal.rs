@@ -1,7 +1,8 @@
 use {
     crate::{
-        traits::ByteArray,
-        utils::{Choice, is_zero, less_than},
+        Error,
+        traits::{ByteArray, CryptoRng},
+        utils::{Choice, Secret, is_zero, less_than},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -36,6 +37,38 @@ pub trait EdwardsScalar:
     fn non_adjacent_form_5(&self) -> Self::Naf5;
 
     fn as_signed_bits(&self) -> Self::SecretBytes;
+}
+
+pub trait EllipticCurve {
+    type Point;
+    type Scalar;
+    type PointBytes: ByteArray;
+    type ScalarBytes: ByteArray;
+    type SharedSecretBytes: ByteArray;
+
+    fn generate_scalar(rng: &mut impl CryptoRng) -> Result<Self::Scalar, Error> {
+        loop {
+            let mut bytes = Secret::from(Self::ScalarBytes::new());
+            rng.fill(bytes.get_mut().as_mut())?;
+            if let Ok(scalar) = Self::scalar_from_bytes(bytes.get()) {
+                return Ok(scalar);
+            }
+        }
+    }
+
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point;
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error>;
+
+    fn point_to_bytes(point: &Self::Point) -> Self::PointBytes;
+
+    fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes;
+
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error>;
+
+    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes;
+
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error>;
 }
 
 pub trait MlKemParams<const K: usize> {
