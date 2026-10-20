@@ -65,9 +65,3 @@ impl EllipticCurve for Curve25519 {
         Ladder::scalar_mult(scalar, point)
     }
 }
-
-impl Curve25519 {
-    pub(crate) fn mul_base(scalar: &[u8; 32]) -> [u8; 32] {
-        Ladder::mul_base(scalar)
-    }
-}

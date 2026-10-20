@@ -25,11 +25,6 @@ where
 {
     const TOP: usize = F::BITS - 1;
 
-    pub(crate) fn mul_base(scalar: &F::PointBytes) -> F::PointBytes {
-        let scalar = MontgomeryScalar(Secret::from(*scalar));
-        Self::point_to_bytes(&Self::scalar_mult_base(&scalar))
-    }
-
     fn clamp(bytes: &mut F::PointBytes) {
         bytes[0] &= !(F::COFACTOR - 1);
         Self::truncate(bytes);

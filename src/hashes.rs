@@ -9,6 +9,8 @@ mod sha384;
 mod sha512;
 mod shake;
 
+pub(crate) use keccak::KeccakF1600;
+
 pub use {blake2b::*, blake2s::*, sha3::*, sha256::*, sha384::*, sha512::*, shake::*};
 
 #[cfg(feature = "hazmat")]

@@ -1,16 +1,41 @@
-use crate::{
-    Error,
-    elliptic_curves::Curve25519,
-    hashes::{Sha3_256, Shake256},
-    kems::MlKem768,
-    key_exchange::X25519,
-    traits::CryptoRng,
-    utils::Secret,
+#[cfg(feature = "hazmat")]
+use crate::elliptic_curves::{Field25519With, MontgomeryLadder};
+use {
+    crate::{
+        Error,
+        elliptic_curves::Curve25519,
+        hashes::{KeccakF1600, Sha3_256With, Sha3_512With, Shake128With, Shake256With},
+        kems::ml_kem::{MlKem768With, MlKemNtt},
+        key_exchange::Ecdh,
+        traits::{CryptoRng, EllipticCurve, KeccakPermutation, MlKemArithmetic},
+        utils::Secret,
+    },
+    core::marker::PhantomData,
 };
 
-pub struct XWing;
+pub type XWing = XWingKem<MlKemNtt, Curve25519, KeccakF1600>;
 
-impl XWing {
+#[cfg(feature = "hazmat")]
+pub type XWingWith<A, B, P> = XWingKem<A, MontgomeryLadder<Field25519With<B>>, P>;
+
+type Kem<A, P> =
+    MlKem768With<A, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
+
+pub struct XWingKem<A, C, P>
+where
+    A: MlKemArithmetic,
+    C: EllipticCurve<ScalarBytes = [u8; 32], PointBytes = [u8; 32], SharedSecretBytes = [u8; 32]>,
+    P: KeccakPermutation,
+{
+    _marker: PhantomData<(A, C, P)>,
+}
+
+impl<A, C, P> XWingKem<A, C, P>
+where
+    A: MlKemArithmetic,
+    C: EllipticCurve<ScalarBytes = [u8; 32], PointBytes = [u8; 32], SharedSecretBytes = [u8; 32]>,
+    P: KeccakPermutation,
+{
     const LABEL: [u8; 6] = [92, 46, 47, 47, 94, 92];
 
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
@@ -44,7 +69,7 @@ impl XWing {
             .try_into()
             .expect("X25519 ciphertext is 32 bytes");
         let ml_kem_shared_secret =
-            MlKem768::decaps_internal(ml_kem_private_key.get(), ml_kem_ciphertext);
+            Kem::<A, P>::decaps_internal(ml_kem_private_key.get(), ml_kem_ciphertext);
         let x25519_shared_secret = Self::x25519(x25519_private_key.get(), x25519_ciphertext);
         Self::combine(
             ml_kem_shared_secret.get(),
@@ -62,17 +87,17 @@ impl XWing {
         let x25519_public_key = x25519_public_key
             .try_into()
             .expect("X25519 public key is 32 bytes");
-        if !MlKem768::encapsulation_key_check(ml_kem_public_key) {
+        if !Kem::<A, P>::encapsulation_key_check(ml_kem_public_key) {
             return Err(Error::InvalidKey);
         }
         let (m, x25519_ephemeral_key) = eseed.split_at(32);
         let x25519_ephemeral_key = Secret::from(
             <[u8; 32]>::try_from(x25519_ephemeral_key).expect("X25519 ephemeral key is 32 bytes"),
         );
-        let x25519_ciphertext = Curve25519::mul_base(x25519_ephemeral_key.get());
+        let x25519_ciphertext = Self::x25519_public_key(x25519_ephemeral_key.get());
         let x25519_shared_secret = Self::x25519(x25519_ephemeral_key.get(), &x25519_public_key);
         let (ml_kem_shared_secret, ml_kem_ciphertext) =
-            MlKem768::encaps_internal(ml_kem_public_key, m);
+            Kem::<A, P>::encaps_internal(ml_kem_public_key, m);
         let shared_secret = Self::combine(
             ml_kem_shared_secret.get(),
             x25519_shared_secret.get(),
@@ -87,14 +112,14 @@ impl XWing {
 
     fn expand(seed: &[u8; 32]) -> (Secret<[u8; 2400]>, Secret<[u8; 32]>, [u8; 1216]) {
         let mut expanded = Secret::from([0u8; 96]);
-        Shake256::digest(seed, expanded.get_mut());
+        Shake256With::<P>::digest(seed, expanded.get_mut());
         let (ml_kem_seed, x25519_private_key) = expanded.get().split_at(64);
         let ml_kem_seed = ml_kem_seed.try_into().expect("ML-KEM seed is 64 bytes");
         let x25519_private_key = Secret::from(
             <[u8; 32]>::try_from(x25519_private_key).expect("X25519 private key is 32 bytes"),
         );
-        let (ml_kem_private_key, ml_kem_public_key) = MlKem768::key_pair(ml_kem_seed);
-        let x25519_public_key = Curve25519::mul_base(x25519_private_key.get());
+        let (ml_kem_private_key, ml_kem_public_key) = Kem::<A, P>::key_pair(ml_kem_seed);
+        let x25519_public_key = Self::x25519_public_key(x25519_private_key.get());
         let mut public_key = [0u8; 1216];
         public_key[..1184].copy_from_slice(&ml_kem_public_key);
         public_key[1184..].copy_from_slice(&x25519_public_key);
@@ -105,8 +130,12 @@ impl XWing {
         )
     }
 
+    fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
+        Ecdh::<C>::public_key(private_key).expect("every X25519 private key has a public key")
+    }
+
     fn x25519(private_key: &[u8; 32], public_key: &[u8; 32]) -> Secret<[u8; 32]> {
-        Secret::from(X25519::key_exchange(private_key, public_key).unwrap_or([0u8; 32]))
+        Secret::from(Ecdh::<C>::key_exchange(private_key, public_key).unwrap_or([0u8; 32]))
     }
 
     fn combine(
@@ -115,7 +144,7 @@ impl XWing {
         x25519_ciphertext: &[u8; 32],
         x25519_public_key: &[u8],
     ) -> [u8; 32] {
-        let mut hasher = Sha3_256::new();
+        let mut hasher = Sha3_256With::<P>::new();
         hasher.update(ml_kem_shared_secret);
         hasher.update(x25519_shared_secret);
         hasher.update(x25519_ciphertext);
