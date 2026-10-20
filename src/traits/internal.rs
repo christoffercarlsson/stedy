@@ -66,7 +66,7 @@ pub trait MlDsaParams<const K: usize, const L: usize> {
     type Signature: ByteArray;
 }
 
-pub trait MontgomeryParams<const LIMBS: usize>: Copy + Clone {
+pub trait MontgomeryFormParams<const LIMBS: usize>: Copy + Clone {
     const MOD: [u64; LIMBS];
     const ONE: [u64; LIMBS];
     const R2: [u64; LIMBS];

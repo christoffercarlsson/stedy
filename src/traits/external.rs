@@ -204,6 +204,20 @@ pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> Result<(), Error>;
 }
 
+pub trait MontgomeryParams<F: FieldElement> {
+    const BITS: usize;
+    const COFACTOR: u8;
+    const BASE_POINT: F;
+
+    type PointBytes: ByteArray;
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> F;
+
+    fn point_to_bytes(point: &F) -> Self::PointBytes;
+
+    fn mul_a24(element: F) -> F;
+}
+
 pub trait Prf: KeyInit + Digest {}
 
 pub trait StreamCipher {

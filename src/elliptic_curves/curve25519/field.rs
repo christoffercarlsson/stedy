@@ -1,7 +1,7 @@
 use {
-    super::Edwards25519,
+    super::{Curve25519, Edwards25519},
     crate::{
-        traits::{ByteOrder, EdwardsParams, FieldElement},
+        traits::{ByteOrder, EdwardsParams, FieldElement, MontgomeryParams},
         utils::Choice,
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -231,4 +231,24 @@ impl EdwardsParams<Field25519> for Field25519 {
     const BASE_POINT_T: Self = Self::from_bytes(&Edwards25519::BASE_POINT_T);
     const BASE_COMB_LOW: [[Self; 3]; 8] = Self::table_from_bytes(&Edwards25519::BASE_COMB_LOW);
     const BASE_COMB_HIGH: [[Self; 3]; 8] = Self::table_from_bytes(&Edwards25519::BASE_COMB_HIGH);
+}
+
+impl MontgomeryParams<Field25519> for Field25519 {
+    const BITS: usize = Curve25519::BITS;
+    const COFACTOR: u8 = Curve25519::COFACTOR;
+    const BASE_POINT: Self = Self::from_bytes(&Curve25519::BASE_POINT);
+
+    type PointBytes = [u8; 32];
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Self {
+        Self::from_bytes(bytes)
+    }
+
+    fn point_to_bytes(point: &Self) -> Self::PointBytes {
+        point.to_bytes()
+    }
+
+    fn mul_a24(element: Self) -> Self {
+        element.mul_small(Curve25519::A24)
+    }
 }

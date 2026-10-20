@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::{MontgomeryParams, WeierstrassScalar},
+        traits::{MontgomeryFormParams, WeierstrassScalar},
         utils::{Choice, Secret, wipe},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -15,7 +15,7 @@ use scalar_p521::ScalarP521Inner;
 #[derive(Clone, Copy)]
 pub struct ScalarP521Params;
 
-impl MontgomeryParams<9> for ScalarP521Params {
+impl MontgomeryFormParams<9> for ScalarP521Params {
     const MOD: [u64; 9] = [
         13506215149420700681,
         4302566813442262958,

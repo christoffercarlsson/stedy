@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::{MontgomeryParams, WeierstrassScalar},
+        traits::{MontgomeryFormParams, WeierstrassScalar},
         utils::{Choice, Secret, wipe},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -15,7 +15,7 @@ use scalar_p384::ScalarP384Inner;
 #[derive(Clone, Copy)]
 pub struct ScalarP384Params;
 
-impl MontgomeryParams<6> for ScalarP384Params {
+impl MontgomeryFormParams<6> for ScalarP384Params {
     const MOD: [u64; 6] = [
         17072048233947408755,
         6348401684107011962,

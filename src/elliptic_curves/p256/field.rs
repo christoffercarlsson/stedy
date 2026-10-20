@@ -1,7 +1,7 @@
 use {
     super::P256,
     crate::{
-        traits::{ByteOrder, FieldElement, MontgomeryParams, WeierstrassParams},
+        traits::{ByteOrder, FieldElement, MontgomeryFormParams, WeierstrassParams},
         utils::Choice,
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -16,7 +16,7 @@ pub use field_p256::FieldP256;
 #[derive(Clone, Copy)]
 pub struct FieldP256Params;
 
-impl MontgomeryParams<4> for FieldP256Params {
+impl MontgomeryFormParams<4> for FieldP256Params {
     const MOD: [u64; 4] = [18446744073709551615, 4294967295, 0, 18446744069414584321];
     const ONE: [u64; 4] = [1, 18446744069414584320, 18446744073709551615, 4294967294];
     const R2: [u64; 4] = [3, 18446744056529682431, 18446744073709551614, 21474836477];

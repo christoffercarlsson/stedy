@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::{EdwardsScalar, MontgomeryParams},
+        traits::{EdwardsScalar, MontgomeryFormParams},
         utils::{Choice, Secret, wipe},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg},
@@ -15,7 +15,7 @@ use scalar448::Scalar448Inner;
 #[derive(Clone, Copy)]
 pub struct Scalar448Params;
 
-impl MontgomeryParams<7> for Scalar448Params {
+impl MontgomeryFormParams<7> for Scalar448Params {
     const MOD: [u64; 7] = [
         2556006723728458995,
         2408513697996967765,

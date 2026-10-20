@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::{MontgomeryParams, WeierstrassScalar},
+        traits::{MontgomeryFormParams, WeierstrassScalar},
         utils::{Choice, Secret, wipe},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -15,7 +15,7 @@ use scalar_p256::ScalarP256Inner;
 #[derive(Clone, Copy)]
 pub struct ScalarP256Params;
 
-impl MontgomeryParams<4> for ScalarP256Params {
+impl MontgomeryFormParams<4> for ScalarP256Params {
     const MOD: [u64; 4] = [
         17562291160714782033,
         13611842547513532036,

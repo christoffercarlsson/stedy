@@ -1,7 +1,7 @@
 use {
     super::P384,
     crate::{
-        traits::{ByteOrder, FieldElement, MontgomeryParams, WeierstrassParams},
+        traits::{ByteOrder, FieldElement, MontgomeryFormParams, WeierstrassParams},
         utils::Choice,
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -16,7 +16,7 @@ pub use field_p384::FieldP384;
 #[derive(Clone, Copy)]
 pub struct FieldP384Params;
 
-impl MontgomeryParams<6> for FieldP384Params {
+impl MontgomeryFormParams<6> for FieldP384Params {
     const MOD: [u64; 6] = [
         4294967295,
         18446744069414584320,
