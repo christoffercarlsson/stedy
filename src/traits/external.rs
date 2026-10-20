@@ -99,6 +99,14 @@ pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> Result<(), Error>;
 }
 
+pub trait MlDsaArithmetic {
+    fn ntt(w: &mut [i32; 256]);
+
+    fn inverse_ntt(w: &mut [i32; 256]);
+
+    fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]);
+}
+
 pub trait Prf: KeyInit + Digest {}
 
 pub trait StreamCipher {
