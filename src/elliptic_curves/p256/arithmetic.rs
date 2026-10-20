@@ -37,6 +37,10 @@ impl<A: FieldArithmetic<Bytes = [u8; 32]>> FieldElement for FieldP256With<A> {
         Self::from_bytes(&selected)
     }
 
+    fn square(self) -> Self {
+        Self::from_bytes(&A::square(&self.0))
+    }
+
     fn invert(self) -> Self {
         self * pow2n(pow_p_minus_3_div_4(self), 2)
     }

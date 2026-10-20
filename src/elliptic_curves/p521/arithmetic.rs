@@ -39,6 +39,10 @@ impl<A: FieldArithmetic<Bytes = [u8; 66]>> FieldElement for FieldP521With<A> {
         Self::from_bytes(&selected)
     }
 
+    fn square(self) -> Self {
+        Self::from_bytes(&A::square(&self.0))
+    }
+
     fn invert(self) -> Self {
         invert(self)
     }

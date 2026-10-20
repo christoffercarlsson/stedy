@@ -67,6 +67,10 @@ pub trait FieldArithmetic {
     fn sub(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
 
     fn mul(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
+
+    fn square(a: &Self::Bytes) -> Self::Bytes {
+        Self::mul(a, a)
+    }
 }
 
 pub trait Hasher: Init + Digest {
