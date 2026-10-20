@@ -162,15 +162,23 @@ impl<const RATE: usize, const N: usize, P: KeccakPermutation> Digest for ShakeDi
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Hasher for ShakeDigest<RATE, N, P> {
-    const BLOCK_SIZE: usize = RATE;
+macro_rules! impl_hasher {
+    ($rate:literal, $n:literal) => {
+        impl<P: KeccakPermutation> Hasher for ShakeDigest<$rate, $n, P> {
+            const BLOCK_SIZE: usize = $rate;
 
-    type Block = [u8; RATE];
+            type Block = [u8; $rate];
 
-    fn digest(message: &[u8]) -> Self::Output {
-        Self::digest(message)
-    }
+            fn digest(message: &[u8]) -> Self::Output {
+                Self::digest(message)
+            }
+        }
+    };
 }
+
+impl_hasher!(168, 32);
+impl_hasher!(136, 64);
+impl_hasher!(136, 114);
 
 pub struct ShakeReader<const RATE: usize, P: KeccakPermutation> {
     sponge: Sponge<RATE, P>,

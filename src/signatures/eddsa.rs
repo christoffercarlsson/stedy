@@ -63,7 +63,7 @@ where
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
-    P: Hasher,
+    P: Hasher<Output = [u8; 64]>,
 {
     prehash: P,
     _marker: PhantomData<(E, F, H, S)>,
@@ -75,7 +75,7 @@ where
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
-    P: Hasher,
+    P: Hasher<Output = [u8; 64]>,
 {
     pub fn new() -> Self {
         Self {
@@ -112,7 +112,7 @@ where
     F: FieldElement + EdwardsParams<F>,
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
-    P: Hasher,
+    P: Hasher<Output = [u8; 64]>,
 {
     fn default() -> Self {
         Self::new()

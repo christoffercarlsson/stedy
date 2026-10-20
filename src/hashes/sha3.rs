@@ -102,6 +102,7 @@ macro_rules! impl_hasher {
     };
 }
 
+#[cfg(feature = "hazmat")]
 impl_hasher!(144, 28);
 impl_hasher!(136, 32);
 impl_hasher!(104, 48);

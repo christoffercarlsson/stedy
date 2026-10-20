@@ -2,13 +2,13 @@ use {
     crate::{Summary, TestFile, load},
     serde::Deserialize,
     stedy::{
-        hashes::{Sha3_224, Sha3_256, Sha3_384, Sha3_512, Sha256, Sha384, Sha512},
+        hashes::{Sha3_256, Sha3_384, Sha3_512, Sha256, Sha384, Sha512},
         macs::Hmac,
     },
 };
 
 #[cfg(feature = "hazmat")]
-use stedy::hashes::Sha1;
+use stedy::hashes::{Sha1, Sha3_224};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -101,6 +101,7 @@ fn hmac_sha512() {
     );
 }
 
+#[cfg(feature = "hazmat")]
 #[test]
 fn hmac_sha3_224() {
     run(

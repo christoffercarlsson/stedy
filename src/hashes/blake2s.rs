@@ -113,8 +113,11 @@ macro_rules! impl_hasher {
 }
 
 impl_hasher!(Blake2s256);
+#[cfg(feature = "hazmat")]
 impl_hasher!(Blake2s224);
+#[cfg(feature = "hazmat")]
 impl_hasher!(Blake2s160);
+#[cfg(feature = "hazmat")]
 impl_hasher!(Blake2s128);
 
 #[derive(Clone)]

@@ -138,6 +138,7 @@ where
     }
 
     fn message_representative(message: &[u8]) -> S {
+        const { assert!(H::OUTPUT_SIZE >= 32, "ECDSA digests are at least 32 bytes") }
         let digest = H::digest(message);
         let bytes = Self::bits2octets(digest.as_ref());
         S::from(bytes)
