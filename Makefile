@@ -62,11 +62,6 @@ WYCHEPROOF_FILES := \
 	pbkdf2_hmacsha256 \
 	pbkdf2_hmacsha384 \
 	pbkdf2_hmacsha512 \
-	siphash_1_3 \
-	siphash_2_4 \
-	siphash_4_8 \
-	siphashx_2_4 \
-	siphashx_4_8 \
 	x25519 \
 	x448 \
 	xchacha20_poly1305

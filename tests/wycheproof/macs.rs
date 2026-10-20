@@ -3,8 +3,7 @@ use {
     serde::Deserialize,
     stedy::{
         hashes::{Sha3_224, Sha3_256, Sha3_384, Sha3_512, Sha256, Sha384, Sha512},
-        macs::{Hmac, SipHash13, SipHash24, SipHash48, SipHashX24, SipHashX48},
-        utils::verify,
+        macs::Hmac,
     },
 };
 
@@ -42,25 +41,6 @@ macro_rules! hmac {
                 let mut mac = Hmac::<$hash>::new(key);
                 mac.update(message);
                 Some(mac.verify(&tag.try_into().ok()?).is_ok())
-            },
-        )
-    };
-}
-
-macro_rules! siphash {
-    ($siphash:ty) => {
-        (
-            |key: &[u8], message: &[u8], tag: &mut [u8]| {
-                let key = key.try_into().expect("SipHash keys are 16 bytes");
-                let mut mac = <$siphash>::new(key);
-                mac.update(message);
-                mac.finalize_into(tag);
-            },
-            |key: &[u8], message: &[u8], tag: &[u8]| {
-                let key = key.try_into().expect("SipHash keys are 16 bytes");
-                let mut mac = <$siphash>::new(key);
-                mac.update(message);
-                Some(verify(&mac.finalize(), tag))
             },
         )
     };
@@ -154,50 +134,5 @@ fn hmac_sha3_512() {
         "hmac_sha3_512",
         include_str!("vectors/hmac_sha3_512_test.json"),
         hmac!(Sha3_512),
-    );
-}
-
-#[test]
-fn siphash_1_3() {
-    run(
-        "siphash_1_3",
-        include_str!("vectors/siphash_1_3_test.json"),
-        siphash!(SipHash13),
-    );
-}
-
-#[test]
-fn siphash_2_4() {
-    run(
-        "siphash_2_4",
-        include_str!("vectors/siphash_2_4_test.json"),
-        siphash!(SipHash24),
-    );
-}
-
-#[test]
-fn siphashx_2_4() {
-    run(
-        "siphashx_2_4",
-        include_str!("vectors/siphashx_2_4_test.json"),
-        siphash!(SipHashX24),
-    );
-}
-
-#[test]
-fn siphash_4_8() {
-    run(
-        "siphash_4_8",
-        include_str!("vectors/siphash_4_8_test.json"),
-        siphash!(SipHash48),
-    );
-}
-
-#[test]
-fn siphashx_4_8() {
-    run(
-        "siphashx_4_8",
-        include_str!("vectors/siphashx_4_8_test.json"),
-        siphash!(SipHashX48),
     );
 }
