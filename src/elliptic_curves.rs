@@ -10,7 +10,6 @@ mod p384;
 mod p521;
 mod weierstrass;
 
-#[allow(unused_imports)]
 pub(crate) use {edwards::*, montgomery::*, montgomery_ladder::*, weierstrass::*};
 
 #[cfg(feature = "hazmat")]
