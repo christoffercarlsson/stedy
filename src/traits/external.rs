@@ -107,6 +107,14 @@ pub trait MlDsaArithmetic {
     fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]);
 }
 
+pub trait MlKemArithmetic {
+    fn ntt(f: &mut [i16; 256]);
+
+    fn inverse_ntt(f: &mut [i16; 256]);
+
+    fn multiply_ntt(f: &[i16; 256], g: &[i16; 256], h: &mut [i16; 256]);
+}
+
 pub trait Prf: KeyInit + Digest {}
 
 pub trait StreamCipher {
