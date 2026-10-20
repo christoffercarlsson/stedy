@@ -76,8 +76,6 @@ pub trait EdwardsParams<F: FieldElement> {
 }
 
 pub trait EllipticCurve {
-    const BASE_POINT: Self::Point;
-
     type Point;
     type Scalar;
     type PointBytes: ByteArray;

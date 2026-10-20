@@ -1,6 +1,7 @@
 use {
     crate::{
-        traits::{ByteArray, FieldElement, WeierstrassParams, WeierstrassScalar},
+        Error,
+        traits::{ByteArray, EllipticCurve, FieldElement, WeierstrassParams, WeierstrassScalar},
         utils::{Choice, Secret},
     },
     core::{
@@ -43,7 +44,6 @@ where
     F: FieldElement + WeierstrassParams<F>,
     S: WeierstrassScalar,
 {
-    pub(crate) const BASE_POINT: Self = Self::new(F::BASE_POINT_X, F::BASE_POINT_Y, F::ONE);
     const IDENTITY: Self = Self::new(F::ZERO, F::ONE, F::ZERO);
 
     pub(crate) fn is_identity(&self) -> Choice {
@@ -205,6 +205,56 @@ where
             .last()
             .expect("Field element bytes are always non-empty");
         lsb & 1
+    }
+}
+
+impl<F, S> EllipticCurve for Weierstrass<F, S>
+where
+    F: FieldElement + WeierstrassParams<F>,
+    S: WeierstrassScalar,
+{
+    type Point = Self;
+    type Scalar = S;
+    type PointBytes = F::PointBytes;
+    type ScalarBytes = S::Bytes;
+    type SharedSecretBytes = F::Bytes;
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error> {
+        let (point, valid) = Self::decompress(bytes);
+        if valid.to_bool() {
+            Ok(point)
+        } else {
+            Err(Error::InvalidKey)
+        }
+    }
+
+    fn point_to_bytes(point: &Self::Point) -> Self::PointBytes {
+        point.compress()
+    }
+
+    fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes {
+        point.affine_x()
+    }
+
+    fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error> {
+        S::from_canonical(bytes).ok_or(Error::InvalidKey)
+    }
+
+    fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
+        Self::mul_base(scalar)
+    }
+
+    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
+        scalar.clone().into()
+    }
+
+    fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
+        let result = point * scalar;
+        if result.is_identity().to_bool() {
+            Err(Error::InvalidKey)
+        } else {
+            Ok(result)
+        }
     }
 }
 

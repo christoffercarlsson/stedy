@@ -21,8 +21,6 @@ impl Curve25519 {
 }
 
 impl EllipticCurve for Curve25519 {
-    const BASE_POINT: Field25519 = Self::BASE_POINT;
-
     type Point = Field25519;
     type Scalar = Curve25519Scalar;
     type PointBytes = [u8; 32];

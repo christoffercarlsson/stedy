@@ -10,4 +10,4 @@ mod weierstrass;
 #[allow(unused_imports)]
 pub(crate) use {edwards::*, montgomery::*, weierstrass::*};
 
-pub use {curve448::*, curve25519::*, p256::*, p384::*, p521::*};
+pub use {curve448::*, curve25519::*, p256::*, p384::*, p521::*, weierstrass::Weierstrass};
