@@ -1,17 +1,27 @@
 use crate::{
-    hashes::keccak::Sponge,
-    traits::{Digest, Hasher, Init},
+    hashes::keccak::{KeccakF1600, Sponge},
+    traits::{Digest, Hasher, Init, KeccakPermutation},
 };
 
-pub type Sha3_224 = Sha3<144, 28>;
-pub type Sha3_256 = Sha3<136, 32>;
-pub type Sha3_384 = Sha3<104, 48>;
-pub type Sha3_512 = Sha3<72, 64>;
+pub type Sha3_224With<P> = Sha3<144, 28, P>;
+pub type Sha3_256With<P> = Sha3<136, 32, P>;
+pub type Sha3_384With<P> = Sha3<104, 48, P>;
+pub type Sha3_512With<P> = Sha3<72, 64, P>;
 
-#[derive(Clone)]
-pub struct Sha3<const RATE: usize, const N: usize>(Sponge<RATE>);
+pub type Sha3_224 = Sha3_224With<KeccakF1600>;
+pub type Sha3_256 = Sha3_256With<KeccakF1600>;
+pub type Sha3_384 = Sha3_384With<KeccakF1600>;
+pub type Sha3_512 = Sha3_512With<KeccakF1600>;
 
-impl<const RATE: usize, const N: usize> Sha3<RATE, N> {
+pub struct Sha3<const RATE: usize, const N: usize, P: KeccakPermutation>(Sponge<RATE, P>);
+
+impl<const RATE: usize, const N: usize, P: KeccakPermutation> Clone for Sha3<RATE, N, P> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<const RATE: usize, const N: usize, P: KeccakPermutation> Sha3<RATE, N, P> {
     const DOMAIN: u8 = 0x06;
     const WIDTH: usize = 200;
 
@@ -28,7 +38,7 @@ impl<const RATE: usize, const N: usize> Sha3<RATE, N> {
                 "SHA-3 digests are 28, 32, 48 or 64 bytes with the matching rate"
             );
         }
-        Self(Sponge::<RATE>::new())
+        Self(Sponge::<RATE, P>::new())
     }
 
     pub fn update(&mut self, message: &[u8]) {
@@ -48,19 +58,19 @@ impl<const RATE: usize, const N: usize> Sha3<RATE, N> {
     }
 }
 
-impl<const RATE: usize, const N: usize> Default for Sha3<RATE, N> {
+impl<const RATE: usize, const N: usize, P: KeccakPermutation> Default for Sha3<RATE, N, P> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, const N: usize> Init for Sha3<RATE, N> {
+impl<const RATE: usize, const N: usize, P: KeccakPermutation> Init for Sha3<RATE, N, P> {
     fn new() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, const N: usize> Digest for Sha3<RATE, N> {
+impl<const RATE: usize, const N: usize, P: KeccakPermutation> Digest for Sha3<RATE, N, P> {
     const OUTPUT_SIZE: usize = N;
 
     type Output = [u8; N];
@@ -79,8 +89,8 @@ impl<const RATE: usize, const N: usize> Digest for Sha3<RATE, N> {
 }
 
 macro_rules! impl_hasher {
-    ($hasher:ty, $rate:literal) => {
-        impl Hasher for $hasher {
+    ($rate:literal, $n:literal) => {
+        impl<P: KeccakPermutation> Hasher for Sha3<$rate, $n, P> {
             const BLOCK_SIZE: usize = $rate;
 
             type Block = [u8; $rate];
@@ -92,10 +102,10 @@ macro_rules! impl_hasher {
     };
 }
 
-impl_hasher!(Sha3_224, 144);
-impl_hasher!(Sha3_256, 136);
-impl_hasher!(Sha3_384, 104);
-impl_hasher!(Sha3_512, 72);
+impl_hasher!(144, 28);
+impl_hasher!(136, 32);
+impl_hasher!(104, 48);
+impl_hasher!(72, 64);
 
 #[cfg(test)]
 mod tests {

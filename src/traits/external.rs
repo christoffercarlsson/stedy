@@ -85,6 +85,10 @@ pub trait Init {
     fn new() -> Self;
 }
 
+pub trait KeccakPermutation {
+    fn permute(lanes: &mut [u64; 25]);
+}
+
 pub trait KeyInit {
     fn new(key: &[u8]) -> Result<Self, Error>
     where

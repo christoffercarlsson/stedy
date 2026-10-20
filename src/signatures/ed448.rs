@@ -2,13 +2,13 @@
 use crate::elliptic_curves::Field448With;
 use crate::{
     elliptic_curves::{Field448, Scalar448},
-    hashes::ShakeDigest,
+    hashes::Shake256Digest,
     signatures::{Eddsa, HashEddsa},
 };
 
-pub type Ed448 = Eddsa<Scalar448, Field448, ShakeDigest<136, 114>, [u8; 114]>;
+pub type Ed448 = Eddsa<Scalar448, Field448, Shake256Digest<114>, [u8; 114]>;
 pub type Ed448ph =
-    HashEddsa<Scalar448, Field448, ShakeDigest<136, 114>, [u8; 114], ShakeDigest<136, 64>>;
+    HashEddsa<Scalar448, Field448, Shake256Digest<114>, [u8; 114], Shake256Digest<64>>;
 
 #[cfg(feature = "hazmat")]
 pub type Ed448With<A, H> = Eddsa<Scalar448, Field448With<A>, H, [u8; 114]>;

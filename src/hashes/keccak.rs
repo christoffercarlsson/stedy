@@ -1,16 +1,41 @@
-use crate::utils::{Block, Secret};
+use {
+    crate::{
+        traits::KeccakPermutation,
+        utils::{Block, Secret},
+    },
+    core::marker::PhantomData,
+};
 
-#[derive(Clone)]
-pub struct Sponge<const RATE: usize> {
-    lanes: Secret<[u64; 25]>,
-    block: Block<RATE>,
+pub struct KeccakF1600;
+
+impl KeccakPermutation for KeccakF1600 {
+    fn permute(lanes: &mut [u64; 25]) {
+        keccak_f1600(lanes);
+    }
 }
 
-impl<const RATE: usize> Sponge<RATE> {
+pub struct Sponge<const RATE: usize, P: KeccakPermutation> {
+    lanes: Secret<[u64; 25]>,
+    block: Block<RATE>,
+    _marker: PhantomData<P>,
+}
+
+impl<const RATE: usize, P: KeccakPermutation> Clone for Sponge<RATE, P> {
+    fn clone(&self) -> Self {
+        Self {
+            lanes: self.lanes.clone(),
+            block: self.block.clone(),
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<const RATE: usize, P: KeccakPermutation> Sponge<RATE, P> {
     pub fn new() -> Self {
         Self {
             lanes: Secret::from([0u64; 25]),
             block: Block::<RATE>::new(),
+            _marker: PhantomData,
         }
     }
 
@@ -41,7 +66,7 @@ impl<const RATE: usize> Sponge<RATE> {
     }
 
     pub fn permute(&mut self) {
-        keccak_f1600(self.lanes.get_mut());
+        P::permute(self.lanes.get_mut());
     }
 
     pub fn read(&self, offset: usize, output: &mut [u8]) {
