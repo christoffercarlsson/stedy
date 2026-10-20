@@ -1,3 +1,5 @@
+#[cfg(feature = "hazmat")]
+mod arithmetic;
 mod curve25519;
 mod curve448;
 mod edwards;
@@ -10,6 +12,9 @@ mod weierstrass;
 
 #[allow(unused_imports)]
 pub(crate) use {edwards::*, montgomery::*, weierstrass::*};
+
+#[cfg(feature = "hazmat")]
+pub(crate) use arithmetic::*;
 
 pub use {
     curve448::*,

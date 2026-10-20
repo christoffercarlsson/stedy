@@ -1,8 +1,12 @@
+#[cfg(feature = "hazmat")]
+mod arithmetic;
 mod field;
 mod scalar;
 mod weierstrass;
 
 use crate::{Error, elliptic_curves::weierstrass::Weierstrass, traits::EllipticCurve};
+#[cfg(feature = "hazmat")]
+pub use arithmetic::FieldP521With;
 pub use {field::FieldP521, scalar::ScalarP521};
 
 pub struct P521;

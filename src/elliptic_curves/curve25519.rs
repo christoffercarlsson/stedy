@@ -4,10 +4,14 @@ use crate::{
     traits::EllipticCurve,
 };
 
+#[cfg(feature = "hazmat")]
+mod arithmetic;
 mod edwards;
 mod field;
 mod scalar;
 
+#[cfg(feature = "hazmat")]
+pub use arithmetic::Field25519With;
 pub use {edwards::Edwards25519, field::Field25519, scalar::Scalar25519};
 
 pub struct Curve25519;

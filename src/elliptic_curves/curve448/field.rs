@@ -43,7 +43,7 @@ impl Field448 {
     }
 }
 
-fn invert<F: FieldElement>(x: F) -> F {
+pub(super) fn invert<F: FieldElement>(x: F) -> F {
     x * pow2n(pow_p_minus_3_div_4(x), 2)
 }
 
@@ -70,7 +70,7 @@ fn pow2n<F: FieldElement>(x: F, n: usize) -> F {
     x
 }
 
-fn sqrt<F: FieldElement>(u: F, v: F) -> (F, Choice) {
+pub(super) fn sqrt<F: FieldElement>(u: F, v: F) -> (F, Choice) {
     let v2 = v.square();
     let v3 = v2 * v;
     let r = u * v * pow_p_minus_3_div_4(u * v3);
