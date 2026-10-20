@@ -81,6 +81,16 @@ pub enum ByteOrder {
     LittleEndian,
 }
 
+pub trait FieldArithmetic {
+    type Bytes: ByteArray;
+
+    fn add(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
+
+    fn sub(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
+
+    fn mul(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
+}
+
 pub trait FieldElement:
     Sized
     + Copy
