@@ -2,15 +2,19 @@ use {
     crate::{
         Error,
         hashes::{Shake128, Shake256},
-        traits::{ByteArray, CryptoRng, MlDsaParams, Xof, XofReader},
+        traits::{ByteArray, CryptoRng, MlDsaArithmetic, MlDsaParams, Xof, XofReader},
         utils::{Choice, Secret, verify},
     },
-    core::{array::from_fn, marker::PhantomData},
+    core::marker::PhantomData,
 };
 
-pub type MlDsa44 = MlDsa<4, 4, MlDsa44Params, Shake256, Shake128>;
-pub type MlDsa65 = MlDsa<6, 5, MlDsa65Params, Shake256, Shake128>;
-pub type MlDsa87 = MlDsa<8, 7, MlDsa87Params, Shake256, Shake128>;
+pub type MlDsa44With<A, H, G> = MlDsa<4, 4, MlDsa44Params, A, H, G>;
+pub type MlDsa65With<A, H, G> = MlDsa<6, 5, MlDsa65Params, A, H, G>;
+pub type MlDsa87With<A, H, G> = MlDsa<8, 7, MlDsa87Params, A, H, G>;
+
+pub type MlDsa44 = MlDsa44With<MlDsaNtt, Shake256, Shake128>;
+pub type MlDsa65 = MlDsa65With<MlDsaNtt, Shake256, Shake128>;
+pub type MlDsa87 = MlDsa87With<MlDsaNtt, Shake256, Shake128>;
 
 pub struct MlDsa44Params;
 pub struct MlDsa65Params;
@@ -61,18 +65,130 @@ impl MlDsaParams<8, 7> for MlDsa87Params {
     type Signature = [u8; 4627];
 }
 
-pub struct MlDsa<const K: usize, const L: usize, P, H, G>
+pub struct MlDsaNtt;
+
+impl MlDsaArithmetic for MlDsaNtt {
+    // Algorithm 41
+    fn ntt(w: &mut [i32; 256]) {
+        Self::ntt_layer::<128>(w, &Self::ZETAS[1..2]);
+        Self::ntt_layer::<64>(w, &Self::ZETAS[2..4]);
+        Self::ntt_layer::<32>(w, &Self::ZETAS[4..8]);
+        Self::ntt_layer::<16>(w, &Self::ZETAS[8..16]);
+        Self::ntt_layer::<8>(w, &Self::ZETAS[16..32]);
+        Self::ntt_layer::<4>(w, &Self::ZETAS[32..64]);
+        Self::ntt_layer::<2>(w, &Self::ZETAS[64..128]);
+        Self::ntt_layer::<1>(w, &Self::ZETAS[128..256]);
+        for a in w.iter_mut() {
+            *a = mod_q(*a);
+        }
+    }
+
+    // Algorithm 42
+    fn inverse_ntt(w: &mut [i32; 256]) {
+        Self::inverse_ntt_layer::<1>(w, &Self::ZETAS[128..256]);
+        Self::inverse_ntt_layer::<2>(w, &Self::ZETAS[64..128]);
+        Self::inverse_ntt_layer::<4>(w, &Self::ZETAS[32..64]);
+        Self::inverse_ntt_layer::<8>(w, &Self::ZETAS[16..32]);
+        Self::inverse_ntt_layer::<16>(w, &Self::ZETAS[8..16]);
+        Self::inverse_ntt_layer::<32>(w, &Self::ZETAS[4..8]);
+        Self::inverse_ntt_layer::<64>(w, &Self::ZETAS[2..4]);
+        Self::inverse_ntt_layer::<128>(w, &Self::ZETAS[1..2]);
+        for a in w.iter_mut() {
+            *a = mod_q(Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE));
+        }
+    }
+
+    // Algorithm 45
+    fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]) {
+        for ((w, &a), &b) in w.iter_mut().zip(a).zip(b) {
+            *w = mod_q(Self::montgomery_multiply(
+                Self::montgomery_multiply(a, b),
+                Self::R2,
+            ));
+        }
+    }
+}
+
+impl MlDsaNtt {
+    const R2: i32 = Self::montgomery_form(Self::montgomery_form(1));
+    const INVERSE_NTT_SCALE: i32 = Self::montgomery_form(8347681);
+    const ZETAS: [i32; 256] = {
+        let mut zetas = [0i32; 256];
+        let mut m = 0;
+        while m < 256 {
+            zetas[m] = Self::zeta_power(Self::bit_rev8(m));
+            m += 1;
+        }
+        zetas
+    };
+
+    fn ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[i32]) {
+        let (halves, _) = w.as_chunks_mut::<LEN>();
+        let (blocks, _) = halves.as_chunks_mut::<2>();
+        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas) {
+            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
+                let t = Self::montgomery_multiply(zeta, *b);
+                *b = *a - t;
+                *a += t;
+            }
+        }
+    }
+
+    fn inverse_ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[i32]) {
+        let (halves, _) = w.as_chunks_mut::<LEN>();
+        let (blocks, _) = halves.as_chunks_mut::<2>();
+        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas.iter().rev()) {
+            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
+                let t = *a;
+                *a = t + *b;
+                *b = Self::montgomery_multiply(-zeta, t - *b);
+            }
+        }
+    }
+
+    // Algorithm 43
+    const fn bit_rev8(m: usize) -> usize {
+        (m as u8).reverse_bits() as usize
+    }
+
+    const fn montgomery_reduce(a: i64) -> i32 {
+        let t = (a as i32).wrapping_mul(58728449);
+        ((a - t as i64 * Q as i64) >> 32) as i32
+    }
+
+    const fn montgomery_multiply(a: i32, b: i32) -> i32 {
+        Self::montgomery_reduce(a as i64 * b as i64)
+    }
+
+    const fn montgomery_form(a: i32) -> i32 {
+        ((a as u64 * (1 << 32)) % Q as u64) as i32
+    }
+
+    const fn zeta_power(exponent: usize) -> i32 {
+        let mut power = Self::montgomery_form(1);
+        let mut k = 0;
+        while k < exponent {
+            power = Self::montgomery_multiply(power, Self::montgomery_form(1753));
+            k += 1;
+        }
+        power
+    }
+}
+
+pub struct MlDsa<const K: usize, const L: usize, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
+    A: MlDsaArithmetic,
     H: Xof,
     G: Xof,
 {
-    _marker: PhantomData<(P, H, G)>,
+    _marker: PhantomData<(P, A, H, G)>,
 }
 
-impl<const K: usize, const L: usize, P, H, G> MlDsa<K, L, P, H, G>
+impl<const K: usize, const L: usize, P, A, H, G> MlDsa<K, L, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
+    A: MlDsaArithmetic,
     H: Xof,
     G: Xof,
 {
@@ -98,7 +214,8 @@ where
         Self::unpack_s(s1_bytes, s1.get_mut());
         Self::unpack_s(s2_bytes, s2.get_mut());
         let mut t = Secret::from([[0i32; 256]; K]);
-        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut());
+        let mut product = Secret::from([0i32; 256]);
+        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut(), product.get_mut());
         let mut t1 = [0i32; 256];
         let mut pk = P::PublicKey::new();
         Self::pk_encode(rho, t.get_mut(), &mut t1, pk.as_mut());
@@ -214,28 +331,16 @@ where
     }
 }
 
-impl<const K: usize, const L: usize, P, H, G> MlDsa<K, L, P, H, G>
+impl<const K: usize, const L: usize, P, A, H, G> MlDsa<K, L, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
+    A: MlDsaArithmetic,
     H: Xof,
     G: Xof,
 {
-    const Q: i32 = 8380417;
     const D: usize = 13;
-    const R2: i32 = Self::montgomery_form(Self::montgomery_form(1));
-    const W1_BOUND: i32 = (Self::Q - 1) / (2 * P::GAMMA2) - 1;
-    const INVERSE_NTT_SCALE: i32 = Self::montgomery_form(8347681);
-    const INVERSE_NTT_SCALE_MONTGOMERY: i32 = Self::montgomery_form(Self::INVERSE_NTT_SCALE);
+    const W1_BOUND: i32 = (Q - 1) / (2 * P::GAMMA2) - 1;
     const DECOMPOSE_RECIPROCAL: u64 = (1u64 << 48).div_ceil(2 * P::GAMMA2 as u64);
-    const ZETAS: [i32; 256] = {
-        let mut zetas = [0i32; 256];
-        let mut m = 0;
-        while m < 256 {
-            zetas[m] = Self::zeta_power(Self::bit_rev8(m));
-            m += 1;
-        }
-        zetas
-    };
 
     // Algorithm 6
     fn domain(context: &[u8]) -> Option<[u8; 2]> {
@@ -259,7 +364,8 @@ where
         Self::pack_s(s1.get(), s1_bytes);
         Self::pack_s(s2.get(), s2_bytes);
         let mut t = Secret::from([[0i32; 256]; K]);
-        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut());
+        let mut product = Secret::from([0i32; 256]);
+        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut(), product.get_mut());
         let mut t1 = [0i32; 256];
         Self::pk_encode(rho, t.get_mut(), &mut t1, pk);
         H::digest(pk, tr_bytes);
@@ -282,6 +388,7 @@ where
     fn sign_internal_mu(sk: &[u8], mu: &[u8; 64], rnd: &[u8], signature: &mut [u8]) {
         let [rho, k, _, s1_bytes, s2_bytes, t0_bytes] = Self::sk_parts(sk);
         let mut product = Secret::from([0i32; 256]);
+        let mut operand = Secret::from([0i32; 256]);
         let mut s1_hat = Secret::from([[0u8; 768]; L]);
         let mut s2_hat = Secret::from([[0u8; 768]; K]);
         Self::unpack_s_ntt(s1_bytes, product.get_mut(), s1_hat.get_mut());
@@ -307,13 +414,14 @@ where
             Self::expand_mask(rho_double_prime.get(), kappa, z.get_mut());
             kappa += L as u16;
             for y in z.get_mut() {
-                Self::ntt(y);
+                Self::mod_q_poly(y);
+                A::ntt(y);
             }
-            Self::matrix_vector_ntt(&a_hat, z.get(), w.get_mut());
+            Self::matrix_vector_ntt(&a_hat, z.get(), w.get_mut(), product.get_mut());
             let mut xof = H::new();
             xof.update(mu);
             for w in w.get_mut() {
-                Self::inverse_ntt_montgomery(w);
+                A::inverse_ntt(w);
                 let w1 = product.get_mut();
                 for (w1, &w) in w1.iter_mut().zip(w.iter()) {
                     *w1 = Self::high_bits(w);
@@ -323,22 +431,24 @@ where
             }
             xof.finalize_into(&mut c_tilde[..P::LAMBDA / 4]);
             Self::sample_in_ball(&c_tilde[..P::LAMBDA / 4], &mut c_hat);
-            Self::ntt(&mut c_hat);
-            Self::to_montgomery(&mut c_hat);
+            Self::mod_q_poly(&mut c_hat);
+            A::ntt(&mut c_hat);
             let z_bound = z.get_mut().iter_mut().zip(s1_hat.get()).any(|(z, s1)| {
-                Self::multiply_ntt(&c_hat, s1, product.get_mut());
+                Self::unpack_poly(s1, operand.get_mut());
+                A::multiply_ntt(&c_hat, operand.get(), product.get_mut());
                 Self::add_ntt(z, product.get());
-                Self::inverse_ntt(z);
+                A::inverse_ntt(z);
                 Self::norm_exceeds(z.iter().copied(), P::GAMMA1 - P::BETA)
             });
             if z_bound {
                 continue;
             }
             for (w, s2) in w.get_mut().iter_mut().zip(s2_hat.get()) {
-                Self::multiply_ntt(&c_hat, s2, product.get_mut());
-                Self::inverse_ntt(product.get_mut());
+                Self::unpack_poly(s2, operand.get_mut());
+                A::multiply_ntt(&c_hat, operand.get(), product.get_mut());
+                A::inverse_ntt(product.get_mut());
                 for (w, &cs2) in w.iter_mut().zip(product.get()) {
-                    *w = Self::reduce(*w - cs2);
+                    *w = reduce(*w - cs2);
                 }
             }
             let r0 = w.get().as_flattened().iter().map(|&w| Self::low_bits(w));
@@ -352,11 +462,13 @@ where
                 .zip(t0_bytes.chunks_exact(t0_size))
                 .zip(w.get())
             {
+                let t0_hat = operand.get_mut();
+                Self::bit_unpack(t0, (1 << (Self::D - 1)) - 1, 1 << (Self::D - 1), t0_hat);
+                Self::mod_q_poly(t0_hat);
+                A::ntt(t0_hat);
                 let ct0 = product.get_mut();
-                Self::bit_unpack(t0, (1 << (Self::D - 1)) - 1, 1 << (Self::D - 1), ct0);
-                Self::ntt(ct0);
-                Self::multiply_ntt_assign(&c_hat, ct0);
-                Self::inverse_ntt(ct0);
+                A::multiply_ntt(&c_hat, t0_hat, ct0);
+                A::inverse_ntt(ct0);
                 *h = [0; 32];
                 for (j, (&x, &w)) in ct0.iter().zip(w).enumerate() {
                     let hint = u8::from(Self::make_hint(-x, w + x));
@@ -394,24 +506,27 @@ where
         let z_bound = Self::norm_exceeds(z.as_flattened().iter().copied(), P::GAMMA1 - P::BETA);
         let mut c_hat = [0i32; 256];
         Self::sample_in_ball(c_tilde, &mut c_hat);
-        Self::ntt(&mut c_hat);
+        Self::mod_q_poly(&mut c_hat);
+        A::ntt(&mut c_hat);
         for z in &mut z {
-            Self::ntt(z);
+            Self::mod_q_poly(z);
+            A::ntt(z);
         }
         let mut w = [[0i32; 256]; K];
-        Self::expand_a_vector_ntt(rho, &z, &mut w);
+        let mut product = [0i32; 256];
+        Self::expand_a_vector_ntt(rho, &z, &mut w, &mut product);
         for t1 in &mut t1 {
             for x in t1.iter_mut() {
                 *x <<= Self::D;
             }
-            Self::ntt(t1);
+            A::ntt(t1);
         }
-        Self::scalar_vector_ntt(&c_hat, &mut t1);
-        for (w, ct1) in w.iter_mut().zip(&t1) {
-            for (w, &ct1) in w.iter_mut().zip(ct1) {
-                *w = Self::reduce(*w - ct1);
+        for (w, t1) in w.iter_mut().zip(&t1) {
+            A::multiply_ntt(&c_hat, t1, &mut product);
+            for (w, &ct1) in w.iter_mut().zip(&product) {
+                *w = mod_q(*w - ct1);
             }
-            Self::inverse_ntt_montgomery(w);
+            A::inverse_ntt(w);
         }
         for (w, h) in w.iter_mut().zip(&h) {
             for (j, w) in w.iter_mut().enumerate() {
@@ -437,7 +552,7 @@ where
     // Algorithm 14
     fn coeff_from_three_bytes(b0: u8, b1: u8, b2: u8) -> Option<i32> {
         let z = 65536 * i32::from(b2 % 128) + 256 * i32::from(b1) + i32::from(b0);
-        (z < Self::Q).then_some(z)
+        (z < Q).then_some(z)
     }
 
     // Algorithm 15
@@ -616,7 +731,8 @@ where
         let s_size = Self::packed_size(2 * P::ETA);
         for (s_hat, bytes) in s_hat.iter_mut().zip(bytes.chunks_exact(s_size)) {
             Self::bit_unpack(bytes, P::ETA, P::ETA, s);
-            Self::ntt(s);
+            Self::mod_q_poly(s);
+            A::ntt(s);
             Self::pack_poly(s, s_hat);
         }
     }
@@ -731,13 +847,15 @@ where
         s1: &mut [[i32; 256]; L],
         s2: &[[i32; 256]; K],
         t: &mut [[i32; 256]; K],
+        product: &mut [i32; 256],
     ) {
         for s in s1.iter_mut() {
-            Self::ntt(s);
+            Self::mod_q_poly(s);
+            A::ntt(s);
         }
-        Self::expand_a_vector_ntt(rho, s1, t);
+        Self::expand_a_vector_ntt(rho, s1, t, product);
         for t in t.iter_mut() {
-            Self::inverse_ntt_montgomery(t);
+            A::inverse_ntt(t);
         }
         Self::add_vector_ntt(t, s2);
     }
@@ -776,7 +894,7 @@ where
 
     // Algorithm 35
     fn power2round(r: i32) -> (i32, i32) {
-        let r = Self::mod_q(r);
+        let r = mod_q(r);
         let mut r0 = r % (1 << Self::D);
         r0 -= (((1 << (Self::D - 1)) - r0) >> 31) & (1 << Self::D);
         ((r - r0) >> Self::D, r0)
@@ -784,7 +902,7 @@ where
 
     // Algorithm 36
     fn decompose(r: i32) -> (i32, i32) {
-        let r = Self::mod_q(r);
+        let r = mod_q(r);
         let r1 = (((r + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_RECIPROCAL) >> 48) as i32;
         let r0 = r - r1 * 2 * P::GAMMA2;
         let corner = Self::zero_mask(r1 - (Self::W1_BOUND + 1));
@@ -808,7 +926,7 @@ where
 
     // Algorithm 40
     fn use_hint(h: bool, r: i32) -> i32 {
-        let m = (Self::Q - 1) / (2 * P::GAMMA2);
+        let m = (Q - 1) / (2 * P::GAMMA2);
         let (r1, r0) = Self::decompose(r);
         match (h, r0 > 0) {
             (true, true) => (r1 + 1) % m,
@@ -817,91 +935,10 @@ where
         }
     }
 
-    // Algorithm 41
-    fn ntt(w: &mut [i32; 256]) {
-        Self::ntt_layer::<128>(w, &Self::ZETAS[1..2]);
-        Self::ntt_layer::<64>(w, &Self::ZETAS[2..4]);
-        Self::ntt_layer::<32>(w, &Self::ZETAS[4..8]);
-        Self::ntt_layer::<16>(w, &Self::ZETAS[8..16]);
-        Self::ntt_layer::<8>(w, &Self::ZETAS[16..32]);
-        Self::ntt_layer::<4>(w, &Self::ZETAS[32..64]);
-        Self::ntt_layer::<2>(w, &Self::ZETAS[64..128]);
-        Self::ntt_layer::<1>(w, &Self::ZETAS[128..256]);
-    }
-
-    fn ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[i32]) {
-        let (halves, _) = w.as_chunks_mut::<LEN>();
-        let (blocks, _) = halves.as_chunks_mut::<2>();
-        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas) {
-            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
-                let t = Self::montgomery_multiply(zeta, *b);
-                *b = *a - t;
-                *a += t;
-            }
-        }
-    }
-
-    // Algorithm 42
-    fn inverse_ntt(w: &mut [i32; 256]) {
-        Self::inverse_ntt_layers(w);
-        for a in w.iter_mut() {
-            *a = Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE);
-        }
-    }
-
-    fn inverse_ntt_montgomery(w: &mut [i32; 256]) {
-        Self::inverse_ntt_layers(w);
-        for a in w.iter_mut() {
-            *a = Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE_MONTGOMERY);
-        }
-    }
-
-    fn inverse_ntt_layers(w: &mut [i32; 256]) {
-        Self::inverse_ntt_layer::<1>(w, &Self::ZETAS[128..256]);
-        Self::inverse_ntt_layer::<2>(w, &Self::ZETAS[64..128]);
-        Self::inverse_ntt_layer::<4>(w, &Self::ZETAS[32..64]);
-        Self::inverse_ntt_layer::<8>(w, &Self::ZETAS[16..32]);
-        Self::inverse_ntt_layer::<16>(w, &Self::ZETAS[8..16]);
-        Self::inverse_ntt_layer::<32>(w, &Self::ZETAS[4..8]);
-        Self::inverse_ntt_layer::<64>(w, &Self::ZETAS[2..4]);
-        Self::inverse_ntt_layer::<128>(w, &Self::ZETAS[1..2]);
-    }
-
-    fn inverse_ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[i32]) {
-        let (halves, _) = w.as_chunks_mut::<LEN>();
-        let (blocks, _) = halves.as_chunks_mut::<2>();
-        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas.iter().rev()) {
-            for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
-                let t = *a;
-                *a = t + *b;
-                *b = Self::montgomery_multiply(-zeta, t - *b);
-            }
-        }
-    }
-
-    // Algorithm 43
-    const fn bit_rev8(m: usize) -> usize {
-        (m as u8).reverse_bits() as usize
-    }
-
     // Algorithm 44
     fn add_ntt(a: &mut [i32; 256], b: &[i32; 256]) {
         for (a, b) in a.iter_mut().zip(b) {
-            *a = Self::reduce(*a + b);
-        }
-    }
-
-    // Algorithm 45
-    fn multiply_ntt(a: &[i32; 256], b: &[u8; 768], w: &mut [i32; 256]) {
-        let (b, _) = b.as_chunks::<3>();
-        for ((w, &a), b) in w.iter_mut().zip(a).zip(b) {
-            *w = Self::montgomery_multiply(a, Self::unpack_coefficient(b));
-        }
-    }
-
-    fn multiply_ntt_assign(a: &[i32; 256], w: &mut [i32; 256]) {
-        for (w, &a) in w.iter_mut().zip(a) {
-            *w = Self::montgomery_multiply(a, *w);
+            *a = mod_q(*a + b);
         }
     }
 
@@ -912,67 +949,67 @@ where
         }
     }
 
-    // Algorithm 47
-    fn scalar_vector_ntt<const N: usize>(c: &[i32; 256], v: &mut [[i32; 256]; N]) {
-        for v in v {
-            Self::multiply_ntt_assign(c, v);
-        }
-    }
-
     // Algorithm 48
     fn matrix_vector_ntt(
         a_hat: &[[[u8; 768]; L]; K],
         v: &[[i32; 256]; L],
         w: &mut [[i32; 256]; K],
+        product: &mut [i32; 256],
     ) {
+        let mut entry = [0i32; 256];
         for (row, w) in a_hat.iter().zip(w) {
-            let row: [&[[u8; 3]]; L] = from_fn(|s| row[s].as_chunks::<3>().0);
-            for (j, w) in w.iter_mut().enumerate() {
-                let mut sum = 0i64;
-                for (a, v) in row.iter().zip(v) {
-                    sum += Self::unpack_coefficient(&a[j]) as i64 * v[j] as i64;
+            *w = [0; 256];
+            for (a, v) in row.iter().zip(v) {
+                Self::unpack_poly(a, &mut entry);
+                A::multiply_ntt(&entry, v, product);
+                for (w, &product) in w.iter_mut().zip(product.iter()) {
+                    *w += product;
                 }
-                *w = Self::montgomery_reduce(sum);
             }
+            Self::mod_q_poly(w);
         }
     }
 
-    fn expand_a_vector_ntt(rho: &[u8], v: &[[i32; 256]; L], w: &mut [[i32; 256]; K]) {
+    fn expand_a_vector_ntt(
+        rho: &[u8],
+        v: &[[i32; 256]; L],
+        w: &mut [[i32; 256]; K],
+        product: &mut [i32; 256],
+    ) {
         let mut a = [0u8; 768];
+        let mut entry = [0i32; 256];
         for (r, w) in w.iter_mut().enumerate() {
             *w = [0; 256];
             for (s, v) in v.iter().enumerate() {
                 Self::rej_ntt_poly(rho, s as u8, r as u8, &mut a);
-                Self::add_multiply_ntt(w, &a, v);
+                Self::unpack_poly(&a, &mut entry);
+                A::multiply_ntt(&entry, v, product);
+                for (w, &product) in w.iter_mut().zip(product.iter()) {
+                    *w += product;
+                }
             }
-            Self::reduce_ntt(w);
+            Self::mod_q_poly(w);
         }
     }
 
-    fn add_multiply_ntt(w: &mut [i32; 256], a: &[u8; 768], v: &[i32; 256]) {
-        let (a, _) = a.as_chunks::<3>();
-        for ((w, a), v) in w.iter_mut().zip(a).zip(v) {
-            *w += Self::montgomery_multiply(Self::unpack_coefficient(a), *v);
-        }
-    }
-
-    fn reduce_ntt(w: &mut [i32; 256]) {
+    fn mod_q_poly(w: &mut [i32; 256]) {
         for w in w.iter_mut() {
-            *w = Self::reduce(*w);
-        }
-    }
-
-    fn to_montgomery(w: &mut [i32; 256]) {
-        for w in w.iter_mut() {
-            *w = Self::montgomery_multiply(*w, Self::R2);
+            *w = mod_q(*w);
         }
     }
 
     fn pack_poly(w: &[i32; 256], packed: &mut [u8; 768]) {
         let (coefficients, _) = packed.as_chunks_mut::<3>();
         for (packed, &x) in coefficients.iter_mut().zip(w) {
-            let [b0, b1, b2, _] = Self::mod_q(x).to_le_bytes();
+            let [b0, b1, b2, _] = mod_q(x).to_le_bytes();
             *packed = [b0, b1, b2];
+        }
+    }
+
+    fn unpack_poly(packed: &[u8; 768], w: &mut [i32; 256]) {
+        let (coefficients, _) = packed.as_chunks::<3>();
+        for (w, packed) in w.iter_mut().zip(coefficients) {
+            *w = Self::unpack_coefficient(packed);
         }
     }
 
@@ -981,15 +1018,6 @@ where
     }
 
     // Algorithm 49
-    const fn montgomery_reduce(a: i64) -> i32 {
-        let t = (a as i32).wrapping_mul(58728449);
-        ((a - t as i64 * Self::Q as i64) >> 32) as i32
-    }
-
-    const fn montgomery_multiply(a: i32, b: i32) -> i32 {
-        Self::montgomery_reduce(a as i64 * b as i64)
-    }
-
     const fn bitlen(b: i32) -> usize {
         (32 - b.leading_zeros()) as usize
     }
@@ -998,47 +1026,35 @@ where
         32 * Self::bitlen(b)
     }
 
-    const fn reduce(a: i32) -> i32 {
-        a - ((a + (1 << 22)) >> 23) * Self::Q
-    }
-
-    const fn mod_q(a: i32) -> i32 {
-        let a = Self::reduce(a);
-        a + ((a >> 31) & Self::Q)
-    }
-
     const fn zero_mask(a: i32) -> i32 {
         !((a | a.wrapping_neg()) >> 31)
     }
 
     const fn centered(a: i32) -> i32 {
-        let a = Self::mod_q(a);
-        a - ((((Self::Q - 1) / 2 - a) >> 31) & Self::Q)
+        let a = mod_q(a);
+        a - ((((Q - 1) / 2 - a) >> 31) & Q)
     }
 
     fn norm_exceeds(values: impl Iterator<Item = i32>, bound: i32) -> bool {
         Choice::nonzero(values.fold(0, |violation, x| {
-            let x = Self::reduce(x);
+            let x = reduce(x);
             let mask = x >> 31;
             let magnitude = (x ^ mask) - mask;
             violation | ((bound - 1 - magnitude) >> 31)
         }))
         .to_bool()
     }
+}
 
-    const fn montgomery_form(a: i32) -> i32 {
-        ((a as u64 * (1 << 32)) % Self::Q as u64) as i32
-    }
+const Q: i32 = 8380417;
 
-    const fn zeta_power(exponent: usize) -> i32 {
-        let mut power = Self::montgomery_form(1);
-        let mut k = 0;
-        while k < exponent {
-            power = Self::montgomery_multiply(power, Self::montgomery_form(1753));
-            k += 1;
-        }
-        power
-    }
+const fn reduce(a: i32) -> i32 {
+    a - ((a + (1 << 22)) >> 23) * Q
+}
+
+const fn mod_q(a: i32) -> i32 {
+    let a = reduce(a);
+    a + ((a >> 31) & Q)
 }
 
 #[cfg(test)]
