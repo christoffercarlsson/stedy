@@ -36,46 +36,40 @@ impl FieldP256 {
         }
         result
     }
+}
 
-    #[cfg(target_pointer_width = "64")]
-    fn invert(self) -> Self {
-        let x = self;
-        x * x.pow_p_minus_3_div_4().pow2n(2)
-    }
+fn pow_p_minus_3_div_4<F: FieldElement>(x: F) -> F {
+    let f2 = x * x.square();
+    let f4 = f2 * pow2n(f2, 2);
+    let f8 = f4 * pow2n(f4, 4);
+    let f16 = f8 * pow2n(f8, 8);
+    let f32 = f16 * pow2n(f16, 16);
+    let f64 = f32 * pow2n(f32, 32);
+    let f24 = f8 * pow2n(f16, 8);
+    let f28 = f4 * pow2n(f24, 4);
+    let f30 = f2 * pow2n(f28, 2);
+    let f94 = f30 * pow2n(f64, 30);
+    let acc = x * pow2n(f32, 32);
+    let acc = pow2n(acc, 96);
+    f94 * pow2n(acc, 94)
+}
 
-    #[cfg(target_pointer_width = "32")]
-    fn invert(self) -> Self {
-        self.invert_binary()
+fn pow2n<F: FieldElement>(x: F, n: usize) -> F {
+    let mut x = x.square();
+    for _ in 1..n {
+        x = x.square();
     }
+    x
+}
 
-    fn pow_p_minus_3_div_4(self) -> Self {
-        let x = self;
-        let f2 = x * x.square();
-        let f4 = f2 * f2.pow2n(2);
-        let f8 = f4 * f4.pow2n(4);
-        let f16 = f8 * f8.pow2n(8);
-        let f32 = f16 * f16.pow2n(16);
-        let f64 = f32 * f32.pow2n(32);
-        let f24 = f8 * f16.pow2n(8);
-        let f28 = f4 * f24.pow2n(4);
-        let f30 = f2 * f28.pow2n(2);
-        let f94 = f30 * f64.pow2n(30);
-        let acc = x * f32.pow2n(32);
-        let acc = acc.pow2n(96);
-        f94 * acc.pow2n(94)
-    }
-
-    fn sqrt(self, b: Self) -> (Self, Choice) {
-        let u = self;
-        let v = b;
-        let v2 = v.square();
-        let v3 = v2 * v;
-        let r = u * v * (u * v3).pow_p_minus_3_div_4();
-        let c = v * r.square();
-        let valid = u.ct_eq(&c);
-        let r = Self::select(&Self::ZERO, &r, valid);
-        (r, valid)
-    }
+fn sqrt<F: FieldElement>(u: F, v: F) -> (F, Choice) {
+    let v2 = v.square();
+    let v3 = v2 * v;
+    let r = u * v * pow_p_minus_3_div_4(u * v3);
+    let c = v * r.square();
+    let valid = u.ct_eq(&c);
+    let r = F::select(&F::ZERO, &r, valid);
+    (r, valid)
 }
 
 impl Add for FieldP256 {
@@ -181,12 +175,18 @@ impl FieldElement for FieldP256 {
         self.square()
     }
 
+    #[cfg(target_pointer_width = "64")]
     fn invert(self) -> Self {
-        self.invert()
+        self * pow2n(pow_p_minus_3_div_4(self), 2)
+    }
+
+    #[cfg(target_pointer_width = "32")]
+    fn invert(self) -> Self {
+        self.invert_binary()
     }
 
     fn sqrt(self, b: Self) -> (Self, Choice) {
-        self.sqrt(b)
+        sqrt(self, b)
     }
 
     fn from_u32(value: u32) -> Self {

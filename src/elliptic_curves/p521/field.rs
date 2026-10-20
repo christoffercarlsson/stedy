@@ -56,49 +56,45 @@ impl FieldP521 {
         }
         result
     }
+}
 
-    fn invert(self) -> Self {
-        let x = self;
-        x * x.pow25191().pow2n(2)
-    }
+fn invert<F: FieldElement>(x: F) -> F {
+    x * pow2n(pow25191(x), 2)
+}
 
-    fn pow25191(self) -> Self {
-        let x = self;
-        let x2 = x.square();
-        let x3 = x * x2;
-        let x6 = x3.square();
-        let x7 = x * x6;
-        let x63 = x7 * x7.pow2n(3);
-        let x127 = x * x63.square();
-        let x8 = x * x127.square();
-        let x16 = x8 * x8.pow2n(8);
-        let x32 = x16 * x16.pow2n(16);
-        let x64 = x32 * x32.pow2n(32);
-        let x128 = x64 * x64.pow2n(64);
-        let x256 = x128 * x128.pow2n(128);
-        let x512 = x256 * x256.pow2n(256);
-        x127 * x512.pow2n(7)
-    }
+fn pow25191<F: FieldElement>(x: F) -> F {
+    let x2 = x.square();
+    let x3 = x * x2;
+    let x6 = x3.square();
+    let x7 = x * x6;
+    let x63 = x7 * pow2n(x7, 3);
+    let x127 = x * x63.square();
+    let x8 = x * x127.square();
+    let x16 = x8 * pow2n(x8, 8);
+    let x32 = x16 * pow2n(x16, 16);
+    let x64 = x32 * pow2n(x32, 32);
+    let x128 = x64 * pow2n(x64, 64);
+    let x256 = x128 * pow2n(x128, 128);
+    let x512 = x256 * pow2n(x256, 256);
+    x127 * pow2n(x512, 7)
+}
 
-    fn pow2n(self, n: usize) -> Self {
-        let mut x = self.square();
-        for _ in 1..n {
-            x = x.square();
-        }
-        x
+fn pow2n<F: FieldElement>(x: F, n: usize) -> F {
+    let mut x = x.square();
+    for _ in 1..n {
+        x = x.square();
     }
+    x
+}
 
-    fn sqrt(self, b: Self) -> (Self, Choice) {
-        let u = self;
-        let v = b;
-        let v2 = v.square();
-        let v3 = v2 * v;
-        let r = u * v * (u * v3).pow25191();
-        let c = v * r.square();
-        let valid = u.ct_eq(&c);
-        let r = Self::select(&Self::ZERO, &r, valid);
-        (r, valid)
-    }
+fn sqrt<F: FieldElement>(u: F, v: F) -> (F, Choice) {
+    let v2 = v.square();
+    let v3 = v2 * v;
+    let r = u * v * pow25191(u * v3);
+    let c = v * r.square();
+    let valid = u.ct_eq(&c);
+    let r = F::select(&F::ZERO, &r, valid);
+    (r, valid)
 }
 
 impl Add for FieldP521 {
@@ -201,11 +197,11 @@ impl FieldElement for FieldP521 {
     }
 
     fn invert(self) -> Self {
-        self.invert()
+        invert(self)
     }
 
     fn sqrt(self, b: Self) -> (Self, Choice) {
-        self.sqrt(b)
+        sqrt(self, b)
     }
 
     fn from_u32(value: u32) -> Self {
