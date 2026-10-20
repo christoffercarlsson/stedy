@@ -1,30 +1,30 @@
 pub struct Edwards25519;
 
 impl Edwards25519 {
-    pub const A: i8 = -1;
-    pub const DOMAIN: &'static [u8] = b"SigEd25519 no Ed25519 collisions";
-    pub const DOMAIN_PURE: bool = false;
-    pub const D: [u8; 32] = [
+    pub(crate) const A: i8 = -1;
+    pub(crate) const DOMAIN: &'static [u8] = b"SigEd25519 no Ed25519 collisions";
+    pub(crate) const DOMAIN_PURE: bool = false;
+    pub(crate) const D: [u8; 32] = [
         163, 120, 89, 19, 202, 77, 235, 117, 171, 216, 65, 65, 77, 10, 112, 0, 152, 232, 121, 119,
         121, 64, 199, 140, 115, 254, 111, 43, 238, 108, 3, 82,
     ];
-    pub const D2: [u8; 32] = [
+    pub(crate) const D2: [u8; 32] = [
         89, 241, 178, 38, 148, 155, 214, 235, 86, 177, 131, 130, 154, 20, 224, 0, 48, 209, 243,
         238, 242, 128, 142, 25, 231, 252, 223, 86, 220, 217, 6, 36,
     ];
-    pub const BASE_POINT_X: [u8; 32] = [
+    pub(crate) const BASE_POINT_X: [u8; 32] = [
         26, 213, 37, 143, 96, 45, 86, 201, 178, 167, 37, 149, 96, 199, 44, 105, 92, 220, 214, 253,
         49, 226, 164, 192, 254, 83, 110, 205, 211, 54, 105, 33,
     ];
-    pub const BASE_POINT_Y: [u8; 32] = [
+    pub(crate) const BASE_POINT_Y: [u8; 32] = [
         88, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102,
         102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102,
     ];
-    pub const BASE_POINT_T: [u8; 32] = [
+    pub(crate) const BASE_POINT_T: [u8; 32] = [
         163, 221, 183, 165, 179, 138, 222, 109, 245, 82, 81, 119, 128, 159, 240, 32, 125, 227, 171,
         100, 142, 78, 234, 102, 101, 118, 139, 215, 15, 95, 135, 103,
     ];
-    pub const BASE_COMB_LOW: [[[u8; 32]; 3]; 8] = [
+    pub(crate) const BASE_COMB_LOW: [[[u8; 32]; 3]; 8] = [
         [
             [
                 167, 252, 151, 3, 37, 114, 87, 42, 62, 117, 185, 60, 128, 64, 185, 68, 233, 196,
@@ -138,7 +138,7 @@ impl Edwards25519 {
             ],
         ],
     ];
-    pub const BASE_COMB_HIGH: [[[u8; 32]; 3]; 8] = [
+    pub(crate) const BASE_COMB_HIGH: [[[u8; 32]; 3]; 8] = [
         [
             [
                 124, 100, 248, 141, 129, 241, 38, 78, 192, 159, 26, 177, 204, 28, 161, 3, 160, 97,

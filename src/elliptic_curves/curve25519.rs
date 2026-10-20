@@ -12,15 +12,16 @@ mod scalar;
 
 #[cfg(feature = "hazmat")]
 pub use arithmetic::Field25519With;
-pub use {edwards::Edwards25519, field::Field25519, scalar::Scalar25519};
+pub(crate) use edwards::Edwards25519;
+pub use {field::Field25519, scalar::Scalar25519};
 
 pub struct Curve25519;
 
 impl Curve25519 {
-    pub const BITS: usize = 255;
-    pub const COFACTOR: u8 = 8;
-    pub const A24: u32 = 121665;
-    pub const BASE_POINT: [u8; 32] = [
+    pub(crate) const BITS: usize = 255;
+    pub(crate) const COFACTOR: u8 = 8;
+    pub(crate) const A24: u32 = 121665;
+    pub(crate) const BASE_POINT: [u8; 32] = [
         9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0,
     ];

@@ -7,6 +7,25 @@ use {
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ByteOrder {
+    BigEndian,
+    LittleEndian,
+}
+
+pub trait EdwardsParams<F: FieldElement> {
+    const A: i8;
+    const D: F;
+    const D2: F;
+    const DOMAIN: &'static [u8];
+    const DOMAIN_PURE: bool;
+    const BASE_POINT_X: F;
+    const BASE_POINT_Y: F;
+    const BASE_POINT_T: F;
+    const BASE_COMB_LOW: [[F; 3]; 8];
+    const BASE_COMB_HIGH: [[F; 3]; 8];
+}
+
 pub trait EdwardsScalar:
     Sized
     + Clone
@@ -71,6 +90,75 @@ pub trait EllipticCurve {
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error>;
 }
 
+pub trait FieldElement:
+    Sized
+    + Copy
+    + Add<Output = Self>
+    + AddAssign
+    + Sub<Output = Self>
+    + SubAssign
+    + Mul<Output = Self>
+    + MulAssign
+    + Neg<Output = Self>
+    + From<Self::Bytes>
+    + Into<Self::Bytes>
+{
+    const CAPACITY: usize;
+    const BYTE_ORDER: ByteOrder;
+
+    const ZERO: Self;
+    const ONE: Self;
+
+    type Bytes: ByteArray;
+
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
+        let swapped = Self::select(a, b, condition);
+        *b = Self::select(b, a, condition);
+        *a = swapped;
+    }
+
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self;
+
+    fn assign(&mut self, other: &Self, condition: Choice) {
+        *self = Self::select(self, other, condition);
+    }
+
+    fn ct_eq(&self, other: &Self) -> Choice {
+        let difference: Self::Bytes = (*self - *other).into();
+        is_zero(difference.as_ref())
+    }
+
+    fn square(self) -> Self {
+        self * self
+    }
+
+    fn square2(self) -> Self {
+        let square = self.square();
+        square + square
+    }
+
+    fn double_value(self) -> Self {
+        self + self
+    }
+
+    fn invert(self) -> Self;
+
+    fn sqrt(self, b: Self) -> (Self, Choice);
+
+    fn from_u32(value: u32) -> Self {
+        let mut bytes = Self::Bytes::new();
+        let size = Self::Bytes::SIZE.min(4);
+        match Self::BYTE_ORDER {
+            ByteOrder::BigEndian => bytes.as_mut()[Self::Bytes::SIZE - size..]
+                .copy_from_slice(&value.to_be_bytes()[4 - size..]),
+            ByteOrder::LittleEndian => {
+                bytes.as_mut()[..size].copy_from_slice(&value.to_le_bytes()[..size])
+            }
+        }
+        Self::from(bytes)
+    }
+}
+
 pub trait MlKemParams<const K: usize> {
     const ETA1: usize;
     const ETA2: usize;
@@ -104,6 +192,32 @@ pub trait MontgomeryFormParams<const LIMBS: usize>: Copy + Clone {
     const ONE: [u64; LIMBS];
     const R2: [u64; LIMBS];
     const N0: u64;
+}
+
+pub trait MontgomeryParams<F: FieldElement> {
+    const BITS: usize;
+    const COFACTOR: u8;
+    const BASE_POINT: F;
+
+    type PointBytes: ByteArray;
+
+    fn point_from_bytes(bytes: &Self::PointBytes) -> F;
+
+    fn point_to_bytes(point: &F) -> Self::PointBytes;
+
+    fn mul_a24(element: F) -> F;
+}
+
+pub trait WeierstrassParams<F: FieldElement> {
+    const A: F;
+    const B: F;
+    const BASE_POINT_X: F;
+    const BASE_POINT_Y: F;
+    const BASE_NAF: [[F; 2]; 8];
+    const BASE_COMB_LOW: [[F; 2]; 8];
+    const BASE_COMB_HIGH: [[F; 2]; 8];
+
+    type PointBytes: ByteArray;
 }
 
 pub trait WeierstrassScalar:

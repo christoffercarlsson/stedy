@@ -1,13 +1,10 @@
 #![allow(dead_code)]
 use {
     super::Sealed,
-    crate::{
-        Error,
-        utils::{Choice, is_zero},
-    },
+    crate::Error,
     core::{
         array::TryFromSliceError,
-        ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, RangeFrom, Sub, SubAssign},
+        ops::{Index, IndexMut, RangeFrom},
     },
 };
 
@@ -62,25 +59,6 @@ pub trait Digest {
     fn finalize_into(self, output: &mut [u8]);
 }
 
-pub trait EdwardsParams<F: FieldElement> {
-    const A: i8;
-    const D: F;
-    const D2: F;
-    const DOMAIN: &'static [u8];
-    const DOMAIN_PURE: bool;
-    const BASE_POINT_X: F;
-    const BASE_POINT_Y: F;
-    const BASE_POINT_T: F;
-    const BASE_COMB_LOW: [[F; 3]; 8];
-    const BASE_COMB_HIGH: [[F; 3]; 8];
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ByteOrder {
-    BigEndian,
-    LittleEndian,
-}
-
 pub trait FieldArithmetic {
     type Bytes: ByteArray;
 
@@ -89,75 +67,6 @@ pub trait FieldArithmetic {
     fn sub(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
 
     fn mul(a: &Self::Bytes, b: &Self::Bytes) -> Self::Bytes;
-}
-
-pub trait FieldElement:
-    Sized
-    + Copy
-    + Add<Output = Self>
-    + AddAssign
-    + Sub<Output = Self>
-    + SubAssign
-    + Mul<Output = Self>
-    + MulAssign
-    + Neg<Output = Self>
-    + From<Self::Bytes>
-    + Into<Self::Bytes>
-{
-    const CAPACITY: usize;
-    const BYTE_ORDER: ByteOrder;
-
-    const ZERO: Self;
-    const ONE: Self;
-
-    type Bytes: ByteArray;
-
-    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
-        let swapped = Self::select(a, b, condition);
-        *b = Self::select(b, a, condition);
-        *a = swapped;
-    }
-
-    fn select(a: &Self, b: &Self, condition: Choice) -> Self;
-
-    fn assign(&mut self, other: &Self, condition: Choice) {
-        *self = Self::select(self, other, condition);
-    }
-
-    fn ct_eq(&self, other: &Self) -> Choice {
-        let difference: Self::Bytes = (*self - *other).into();
-        is_zero(difference.as_ref())
-    }
-
-    fn square(self) -> Self {
-        self * self
-    }
-
-    fn square2(self) -> Self {
-        let square = self.square();
-        square + square
-    }
-
-    fn double_value(self) -> Self {
-        self + self
-    }
-
-    fn invert(self) -> Self;
-
-    fn sqrt(self, b: Self) -> (Self, Choice);
-
-    fn from_u32(value: u32) -> Self {
-        let mut bytes = Self::Bytes::new();
-        let size = Self::Bytes::SIZE.min(4);
-        match Self::BYTE_ORDER {
-            ByteOrder::BigEndian => bytes.as_mut()[Self::Bytes::SIZE - size..]
-                .copy_from_slice(&value.to_be_bytes()[4 - size..]),
-            ByteOrder::LittleEndian => {
-                bytes.as_mut()[..size].copy_from_slice(&value.to_le_bytes()[..size])
-            }
-        }
-        Self::from(bytes)
-    }
 }
 
 pub trait Hasher: Init + Digest {
@@ -180,20 +89,6 @@ pub trait KeyInit {
 
 pub trait Mac: KeyInit + Digest {
     fn verify(self, code: &Self::Output) -> Result<(), Error>;
-}
-
-pub trait MontgomeryParams<F: FieldElement> {
-    const BITS: usize;
-    const COFACTOR: u8;
-    const BASE_POINT: F;
-
-    type PointBytes: ByteArray;
-
-    fn point_from_bytes(bytes: &Self::PointBytes) -> F;
-
-    fn point_to_bytes(point: &F) -> Self::PointBytes;
-
-    fn mul_a24(element: F) -> F;
 }
 
 pub trait Prf: KeyInit + Digest {}
@@ -227,18 +122,6 @@ pub trait SeekableStreamCipher: StreamCipher {
     fn seed(seed: &Self::Seed) -> Self;
 
     fn seek(&mut self, counter: u32);
-}
-
-pub trait WeierstrassParams<F: FieldElement> {
-    const A: F;
-    const B: F;
-    const BASE_POINT_X: F;
-    const BASE_POINT_Y: F;
-    const BASE_NAF: [[F; 2]; 8];
-    const BASE_COMB_LOW: [[F; 2]; 8];
-    const BASE_COMB_HIGH: [[F; 2]; 8];
-
-    type PointBytes: ByteArray;
 }
 
 pub trait Xof: Init {
