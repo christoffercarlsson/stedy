@@ -4,7 +4,7 @@ use {
 };
 
 #[cfg(feature = "aes")]
-use stedy::aeads::{Aegis128L, Aegis256, Aes128Gcm, Aes256Gcm};
+use stedy::aeads::{Aes128Gcm, Aes256Gcm};
 
 pub fn bench(c: &mut Criterion) {
     let key = [
@@ -143,62 +143,6 @@ pub fn bench(c: &mut Criterion) {
                 118, 252, 110, 206, 15, 78, 23, 104, 205, 223, 136, 83, 187, 45, 85, 27,
             ];
             b.iter(|| Aes256Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
-        });
-    }
-
-    #[cfg(feature = "aes")]
-    {
-        let key = [16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let nonce = [16, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let aad = [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-        ];
-        let message = [
-            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-            38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
-        ];
-
-        c.bench_function(&crate::aes_id("aegis128l_encrypt"), |b| {
-            let mut message = message;
-            b.iter(|| Aegis128L::encrypt(&key, &nonce, Some(&aad), &mut message))
-        });
-
-        c.bench_function(&crate::aes_id("aegis128l_decrypt"), |b| {
-            let mut ciphertext = message;
-            let tag = Aegis128L::encrypt(&key, &nonce, Some(&aad), &mut ciphertext).unwrap();
-            b.iter(|| Aegis128L::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
-        });
-    }
-
-    #[cfg(feature = "aes")]
-    {
-        let key = [
-            16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ];
-        let nonce = [
-            16, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ];
-        let aad = [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-        ];
-        let message = [
-            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-            38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
-        ];
-
-        c.bench_function(&crate::aes_id("aegis256_encrypt"), |b| {
-            let mut message = message;
-            b.iter(|| Aegis256::encrypt(&key, &nonce, Some(&aad), &mut message))
-        });
-
-        c.bench_function(&crate::aes_id("aegis256_decrypt"), |b| {
-            let mut ciphertext = message;
-            let tag = Aegis256::encrypt(&key, &nonce, Some(&aad), &mut ciphertext).unwrap();
-            b.iter(|| Aegis256::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
         });
     }
 }

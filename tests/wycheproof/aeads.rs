@@ -7,9 +7,6 @@ use {
 #[cfg(feature = "aes")]
 use stedy::aeads::{Aes128Gcm, Aes256Gcm};
 
-#[cfg(all(feature = "aes", feature = "hazmat"))]
-use stedy::aeads::{Aegis128LTag128, Aegis256Tag128};
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Group {
@@ -129,23 +126,4 @@ fn aes_gcm() {
     let json = include_str!("vectors/aes_gcm_test.json");
     run("aes_gcm (AES-128)", json, 96, 128, aead!(Aes128Gcm));
     run("aes_gcm (AES-256)", json, 96, 256, aead!(Aes256Gcm));
-}
-
-#[cfg(all(feature = "aes", feature = "hazmat"))]
-#[test]
-fn aegis() {
-    run(
-        "aegis128L",
-        include_str!("vectors/aegis128L_test.json"),
-        128,
-        128,
-        aead!(Aegis128LTag128),
-    );
-    run(
-        "aegis256",
-        include_str!("vectors/aegis256_test.json"),
-        256,
-        256,
-        aead!(Aegis256Tag128),
-    );
 }

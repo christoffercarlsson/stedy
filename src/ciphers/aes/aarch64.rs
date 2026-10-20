@@ -1,8 +1,8 @@
 #![allow(unsafe_code)]
 use core::arch::aarch64::{
-    uint8x16_t, uint64x2_t, vaeseq_u8, vaesmcq_u8, vandq_u8, vdupq_n_u8, vdupq_n_u64, veorq_u8,
-    veorq_u64, vextq_u64, vgetq_lane_u64, vmull_high_p64, vmull_p64, vreinterpretq_p64_u64,
-    vreinterpretq_p128_u8, vreinterpretq_p128_u64, vreinterpretq_u8_p128, vreinterpretq_u64_p128,
+    uint8x16_t, uint64x2_t, vaeseq_u8, vaesmcq_u8, vdupq_n_u64, veorq_u8, veorq_u64, vextq_u64,
+    vgetq_lane_u64, vmull_high_p64, vmull_p64, vreinterpretq_p64_u64, vreinterpretq_p128_u8,
+    vreinterpretq_p128_u64, vreinterpretq_u8_p128, vreinterpretq_u64_p128,
 };
 
 pub(super) const fn is_accelerated() -> bool {
@@ -80,21 +80,3 @@ fn load(block: [u8; 16]) -> uint8x16_t {
 fn store(state: uint8x16_t) -> [u8; 16] {
     unsafe { vreinterpretq_p128_u8(state).to_le_bytes() }
 }
-
-fn rounds<const N: usize>(a: [uint8x16_t; N], b: [uint8x16_t; N]) -> [uint8x16_t; N] {
-    let mut out = a;
-    for (out, b) in out.iter_mut().zip(b) {
-        *out = unsafe { veorq_u8(vaesmcq_u8(vaeseq_u8(*out, vdupq_n_u8(0))), b) };
-    }
-    out
-}
-
-fn xor(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
-    unsafe { veorq_u8(a, b) }
-}
-
-fn and(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
-    unsafe { vandq_u8(a, b) }
-}
-
-impl_aegis_backend!(uint8x16_t, load, store, xor, and, rounds);

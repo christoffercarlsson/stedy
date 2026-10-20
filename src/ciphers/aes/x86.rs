@@ -1,13 +1,13 @@
 #![allow(unsafe_code)]
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
-    __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_and_si128, _mm_clmulepi64_si128,
-    _mm_cvtsi128_si32, _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
+    __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_clmulepi64_si128, _mm_cvtsi128_si32,
+    _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
 };
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
-    __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_and_si128, _mm_clmulepi64_si128,
-    _mm_cvtsi128_si32, _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
+    __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_clmulepi64_si128, _mm_cvtsi128_si32,
+    _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
 };
 
 pub(super) const fn is_accelerated() -> bool {
@@ -77,21 +77,3 @@ fn load(block: [u8; 16]) -> __m128i {
 fn store(state: __m128i) -> [u8; 16] {
     join(state).to_le_bytes()
 }
-
-fn rounds<const N: usize>(a: [__m128i; N], b: [__m128i; N]) -> [__m128i; N] {
-    let mut out = a;
-    for (out, b) in out.iter_mut().zip(b) {
-        *out = unsafe { _mm_aesenc_si128(*out, b) };
-    }
-    out
-}
-
-fn xor(a: __m128i, b: __m128i) -> __m128i {
-    unsafe { _mm_xor_si128(a, b) }
-}
-
-fn and(a: __m128i, b: __m128i) -> __m128i {
-    unsafe { _mm_and_si128(a, b) }
-}
-
-impl_aegis_backend!(__m128i, load, store, xor, and, rounds);

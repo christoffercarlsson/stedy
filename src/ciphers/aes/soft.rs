@@ -1,7 +1,4 @@
-use {
-    crate::utils::Secret,
-    core::ops::{BitAnd, BitXor},
-};
+use crate::utils::Secret;
 
 pub(super) const fn is_accelerated() -> bool {
     false
@@ -286,27 +283,3 @@ const fn splat(word: u32) -> u128 {
     let word = word as u128;
     word | word << 32 | word << 64 | word << 96
 }
-
-fn rounds<const N: usize>(a: [u128; N], b: [u128; N]) -> [u128; N] {
-    let mut planes = Secret::from([0u128; 8]);
-    planes.get_mut()[..N].copy_from_slice(&a);
-    transpose(planes.get_mut());
-    sub_bytes(planes.get_mut());
-    shift_rows(planes.get_mut());
-    mix_columns(planes.get_mut());
-    transpose(planes.get_mut());
-    let mut out = b;
-    for (out, plane) in out.iter_mut().zip(planes.get()) {
-        *out ^= plane;
-    }
-    out
-}
-
-impl_aegis_backend!(
-    u128,
-    u128::from_le_bytes,
-    u128::to_le_bytes,
-    BitXor::bitxor,
-    BitAnd::bitand,
-    rounds
-);

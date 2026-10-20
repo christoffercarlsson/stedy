@@ -80,13 +80,6 @@ pub struct BlockIterator<'a, const BLOCK_SIZE: usize> {
     end: usize,
 }
 
-#[cfg(feature = "aes")]
-impl<'a, const BLOCK_SIZE: usize> BlockIterator<'a, BLOCK_SIZE> {
-    pub fn as_chunks(&self) -> &'a [[u8; BLOCK_SIZE]] {
-        self.tail[self.begin..self.end].as_chunks().0
-    }
-}
-
 impl<'a, const BLOCK_SIZE: usize> Iterator for BlockIterator<'a, BLOCK_SIZE> {
     type Item = &'a [u8; BLOCK_SIZE];
 

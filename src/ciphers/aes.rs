@@ -4,9 +4,6 @@ use crate::{
     utils::Secret,
 };
 
-#[macro_use]
-mod aegis;
-
 #[cfg_attr(
     all(target_arch = "aarch64", target_feature = "aes"),
     path = "aes/aarch64.rs"
@@ -245,66 +242,6 @@ pub(crate) const fn is_accelerated() -> bool {
 
 pub(crate) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
     backend::multiply::<N>(x, h)
-}
-
-pub(crate) fn aegis128l_encrypt<const TAG_SIZE: usize>(
-    key: &[u8; 16],
-    nonce: &[u8; 16],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    backend::aegis128l_encrypt::<TAG_SIZE>(key, nonce, aad, data)
-}
-
-pub(crate) fn aegis128l_decrypt<const TAG_SIZE: usize>(
-    key: &[u8; 16],
-    nonce: &[u8; 16],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    backend::aegis128l_decrypt::<TAG_SIZE>(key, nonce, aad, data)
-}
-
-pub(crate) fn aegis128l_mac_init(key: &[u8; 16], nonce: &[u8; 16], state: &mut [[u8; 16]; 8]) {
-    backend::aegis128l_mac_init(key, nonce, state)
-}
-
-pub(crate) fn aegis128l_mac_absorb(state: &mut [[u8; 16]; 8], blocks: &[[u8; 32]]) {
-    backend::aegis128l_mac_absorb(state, blocks)
-}
-
-pub(crate) fn aegis128l_mac_finalize(state: &mut [[u8; 16]; 8], data_len: u64) -> [u8; 32] {
-    backend::aegis128l_mac_finalize(state, data_len)
-}
-
-pub(crate) fn aegis256_encrypt<const TAG_SIZE: usize>(
-    key: &[u8; 32],
-    nonce: &[u8; 32],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    backend::aegis256_encrypt::<TAG_SIZE>(key, nonce, aad, data)
-}
-
-pub(crate) fn aegis256_decrypt<const TAG_SIZE: usize>(
-    key: &[u8; 32],
-    nonce: &[u8; 32],
-    aad: &[u8],
-    data: &mut [u8],
-) -> [u8; TAG_SIZE] {
-    backend::aegis256_decrypt::<TAG_SIZE>(key, nonce, aad, data)
-}
-
-pub(crate) fn aegis256_mac_init(key: &[u8; 32], nonce: &[u8; 32], state: &mut [[u8; 16]; 6]) {
-    backend::aegis256_mac_init(key, nonce, state)
-}
-
-pub(crate) fn aegis256_mac_absorb(state: &mut [[u8; 16]; 6], blocks: &[[u8; 16]]) {
-    backend::aegis256_mac_absorb(state, blocks)
-}
-
-pub(crate) fn aegis256_mac_finalize(state: &mut [[u8; 16]; 6], data_len: u64) -> [u8; 32] {
-    backend::aegis256_mac_finalize(state, data_len)
 }
 
 fn encrypt_blocks<const ROUNDS: usize, const N: usize>(

@@ -13,8 +13,6 @@ WYCHEPROOF_REF := main
 WYCHEPROOF_URL := https://raw.githubusercontent.com/C2SP/wycheproof/$(WYCHEPROOF_REF)
 WYCHEPROOF_DIR := tests/wycheproof/vectors
 WYCHEPROOF_FILES := \
-	aegis128L \
-	aegis256 \
 	aes_gcm \
 	chacha20_poly1305 \
 	ecdh_secp256r1_ecpoint \
