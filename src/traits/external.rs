@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use {
     super::Sealed,
-    crate::Error,
+    crate::{Error, utils::Secret},
     core::{
         array::TryFromSliceError,
         ops::{Index, IndexMut, RangeFrom},
@@ -105,6 +105,23 @@ pub trait MlDsaArithmetic {
     fn inverse_ntt(w: &mut [i32; 256]);
 
     fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]);
+
+    fn multiply_accumulate_ntt<const L: usize>(
+        row: &[[i32; 256]; L],
+        v: &[[i32; 256]; L],
+        w: &mut [i32; 256],
+    ) {
+        const Q: i32 = 8380417;
+        let mut product = Secret::from([0i32; 256]);
+        *w = [0; 256];
+        for (a, b) in row.iter().zip(v) {
+            Self::multiply_ntt(a, b, product.get_mut());
+            for (w, &product) in w.iter_mut().zip(product.get()) {
+                let sum = *w + product - Q;
+                *w = sum + ((sum >> 31) & Q);
+            }
+        }
+    }
 }
 
 pub trait MlKemArithmetic {

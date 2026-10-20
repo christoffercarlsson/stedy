@@ -34,7 +34,7 @@ impl MlDsaArithmetic for MlDsaNtt {
         Self::ntt_layer::<2>(w, &Self::ZETAS[64..128]);
         Self::ntt_layer::<1>(w, &Self::ZETAS[128..256]);
         for a in w.iter_mut() {
-            *a = mod_q(*a);
+            *a = Self::mod_q(*a);
         }
     }
 
@@ -49,15 +49,32 @@ impl MlDsaArithmetic for MlDsaNtt {
         Self::inverse_ntt_layer::<64>(w, &Self::ZETAS[2..4]);
         Self::inverse_ntt_layer::<128>(w, &Self::ZETAS[1..2]);
         for a in w.iter_mut() {
-            *a = mod_q(Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE));
+            *a = Self::mod_q(Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE));
         }
     }
 
     // Algorithm 45
     fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]) {
         for ((w, &a), &b) in w.iter_mut().zip(a).zip(b) {
-            *w = mod_q(Self::montgomery_multiply(
+            *w = Self::mod_q(Self::montgomery_multiply(
                 Self::montgomery_multiply(a, b),
+                Self::R2,
+            ));
+        }
+    }
+
+    fn multiply_accumulate_ntt<const L: usize>(
+        row: &[[i32; 256]; L],
+        v: &[[i32; 256]; L],
+        w: &mut [i32; 256],
+    ) {
+        for (j, w) in w.iter_mut().enumerate() {
+            let mut sum = 0i64;
+            for (a, b) in row.iter().zip(v) {
+                sum += a[j] as i64 * b[j] as i64;
+            }
+            *w = Self::mod_q(Self::montgomery_multiply(
+                Self::montgomery_reduce(sum),
                 Self::R2,
             ));
         }
@@ -65,6 +82,7 @@ impl MlDsaArithmetic for MlDsaNtt {
 }
 
 impl MlDsaNtt {
+    const Q: i32 = 8380417;
     const R2: i32 = Self::montgomery_form(Self::montgomery_form(1));
     const INVERSE_NTT_SCALE: i32 = Self::montgomery_form(8347681);
     const ZETAS: [i32; 256] = {
@@ -108,7 +126,7 @@ impl MlDsaNtt {
 
     const fn montgomery_reduce(a: i64) -> i32 {
         let t = (a as i32).wrapping_mul(58728449);
-        ((a - t as i64 * Q as i64) >> 32) as i32
+        ((a - t as i64 * Self::Q as i64) >> 32) as i32
     }
 
     const fn montgomery_multiply(a: i32, b: i32) -> i32 {
@@ -116,7 +134,7 @@ impl MlDsaNtt {
     }
 
     const fn montgomery_form(a: i32) -> i32 {
-        ((a as u64 * (1 << 32)) % Q as u64) as i32
+        ((a as u64 * (1 << 32)) % Self::Q as u64) as i32
     }
 
     const fn zeta_power(exponent: usize) -> i32 {
@@ -127,6 +145,15 @@ impl MlDsaNtt {
             k += 1;
         }
         power
+    }
+
+    const fn reduce(a: i32) -> i32 {
+        a - ((a + (1 << 22)) >> 23) * Self::Q
+    }
+
+    const fn mod_q(a: i32) -> i32 {
+        let a = Self::reduce(a);
+        a + ((a >> 31) & Self::Q)
     }
 }
 
@@ -169,8 +196,7 @@ where
         Self::unpack_s(s1_bytes, s1.get_mut());
         Self::unpack_s(s2_bytes, s2.get_mut());
         let mut t = Secret::from([[0i32; 256]; K]);
-        let mut product = Secret::from([0i32; 256]);
-        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut(), product.get_mut());
+        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut());
         let mut t1 = [0i32; 256];
         let mut pk = P::PublicKey::new();
         Self::pk_encode(rho, t.get_mut(), &mut t1, pk.as_mut());
@@ -294,7 +320,7 @@ where
     G: Xof,
 {
     const D: usize = 13;
-    const W1_BOUND: i32 = (Q - 1) / (2 * P::GAMMA2) - 1;
+    const W1_BOUND: i32 = (MlDsaNtt::Q - 1) / (2 * P::GAMMA2) - 1;
     const DECOMPOSE_RECIPROCAL: u64 = (1u64 << 48).div_ceil(2 * P::GAMMA2 as u64);
 
     // Algorithm 6
@@ -319,8 +345,7 @@ where
         Self::pack_s(s1.get(), s1_bytes);
         Self::pack_s(s2.get(), s2_bytes);
         let mut t = Secret::from([[0i32; 256]; K]);
-        let mut product = Secret::from([0i32; 256]);
-        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut(), product.get_mut());
+        Self::compute_t(rho, s1.get_mut(), s2.get(), t.get_mut());
         let mut t1 = [0i32; 256];
         Self::pk_encode(rho, t.get_mut(), &mut t1, pk);
         H::digest(pk, tr_bytes);
@@ -372,7 +397,7 @@ where
                 Self::mod_q_poly(y);
                 A::ntt(y);
             }
-            Self::matrix_vector_ntt(&a_hat, z.get(), w.get_mut(), product.get_mut());
+            Self::matrix_vector_ntt(&a_hat, z.get(), w.get_mut());
             let mut xof = H::new();
             xof.update(mu);
             for w in w.get_mut() {
@@ -403,7 +428,7 @@ where
                 A::multiply_ntt(&c_hat, operand.get(), product.get_mut());
                 A::inverse_ntt(product.get_mut());
                 for (w, &cs2) in w.iter_mut().zip(product.get()) {
-                    *w = reduce(*w - cs2);
+                    *w = MlDsaNtt::reduce(*w - cs2);
                 }
             }
             let r0 = w.get().as_flattened().iter().map(|&w| Self::low_bits(w));
@@ -469,7 +494,7 @@ where
         }
         let mut w = [[0i32; 256]; K];
         let mut product = [0i32; 256];
-        Self::expand_a_vector_ntt(rho, &z, &mut w, &mut product);
+        Self::expand_a_vector_ntt(rho, &z, &mut w);
         for t1 in &mut t1 {
             for x in t1.iter_mut() {
                 *x <<= Self::D;
@@ -479,7 +504,7 @@ where
         for (w, t1) in w.iter_mut().zip(&t1) {
             A::multiply_ntt(&c_hat, t1, &mut product);
             for (w, &ct1) in w.iter_mut().zip(&product) {
-                *w = mod_q(*w - ct1);
+                *w = MlDsaNtt::mod_q(*w - ct1);
             }
             A::inverse_ntt(w);
         }
@@ -507,7 +532,7 @@ where
     // Algorithm 14
     fn coeff_from_three_bytes(b0: u8, b1: u8, b2: u8) -> Option<i32> {
         let z = 65536 * i32::from(b2 % 128) + 256 * i32::from(b1) + i32::from(b0);
-        (z < Q).then_some(z)
+        (z < MlDsaNtt::Q).then_some(z)
     }
 
     // Algorithm 15
@@ -749,19 +774,20 @@ where
     }
 
     // Algorithm 30
-    fn rej_ntt_poly(rho: &[u8], s: u8, r: u8, a: &mut [u8; 768]) {
+    fn rej_ntt_poly(rho: &[u8], s: u8, r: u8, a: &mut [i32; 256]) {
         let mut xof = G::new();
         xof.update(rho);
         xof.update(&[s, r]);
         let mut reader = xof.finalize_xof();
-        let (coefficients, _) = a.as_chunks_mut::<3>();
         let mut j = 0;
         while j < 256 {
             let mut block = [[0u8; 3]; 56];
             reader.read(block.as_flattened_mut());
             for &[b0, b1, b2] in &block {
-                if j < 256 && Self::coeff_from_three_bytes(b0, b1, b2).is_some() {
-                    coefficients[j] = [b0, b1, b2 & 127];
+                if j < 256
+                    && let Some(z) = Self::coeff_from_three_bytes(b0, b1, b2)
+                {
+                    a[j] = z;
                     j += 1;
                 }
             }
@@ -802,13 +828,12 @@ where
         s1: &mut [[i32; 256]; L],
         s2: &[[i32; 256]; K],
         t: &mut [[i32; 256]; K],
-        product: &mut [i32; 256],
     ) {
         for s in s1.iter_mut() {
             Self::mod_q_poly(s);
             A::ntt(s);
         }
-        Self::expand_a_vector_ntt(rho, s1, t, product);
+        Self::expand_a_vector_ntt(rho, s1, t);
         for t in t.iter_mut() {
             A::inverse_ntt(t);
         }
@@ -817,9 +842,11 @@ where
 
     // Algorithm 32
     fn expand_a(rho: &[u8], a_hat: &mut [[[u8; 768]; L]; K]) {
+        let mut a = [0i32; 256];
         for (r, row) in a_hat.iter_mut().enumerate() {
-            for (s, a) in row.iter_mut().enumerate() {
-                Self::rej_ntt_poly(rho, s as u8, r as u8, a);
+            for (s, packed) in row.iter_mut().enumerate() {
+                Self::rej_ntt_poly(rho, s as u8, r as u8, &mut a);
+                Self::pack_poly(&a, packed);
             }
         }
     }
@@ -849,7 +876,7 @@ where
 
     // Algorithm 35
     fn power2round(r: i32) -> (i32, i32) {
-        let r = mod_q(r);
+        let r = MlDsaNtt::mod_q(r);
         let mut r0 = r % (1 << Self::D);
         r0 -= (((1 << (Self::D - 1)) - r0) >> 31) & (1 << Self::D);
         ((r - r0) >> Self::D, r0)
@@ -857,7 +884,7 @@ where
 
     // Algorithm 36
     fn decompose(r: i32) -> (i32, i32) {
-        let r = mod_q(r);
+        let r = MlDsaNtt::mod_q(r);
         let r1 = (((r + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_RECIPROCAL) >> 48) as i32;
         let r0 = r - r1 * 2 * P::GAMMA2;
         let corner = Self::zero_mask(r1 - (Self::W1_BOUND + 1));
@@ -881,7 +908,7 @@ where
 
     // Algorithm 40
     fn use_hint(h: bool, r: i32) -> i32 {
-        let m = (Q - 1) / (2 * P::GAMMA2);
+        let m = (MlDsaNtt::Q - 1) / (2 * P::GAMMA2);
         let (r1, r0) = Self::decompose(r);
         match (h, r0 > 0) {
             (true, true) => (r1 + 1) % m,
@@ -893,7 +920,7 @@ where
     // Algorithm 44
     fn add_ntt(a: &mut [i32; 256], b: &[i32; 256]) {
         for (a, b) in a.iter_mut().zip(b) {
-            *a = mod_q(*a + b);
+            *a = MlDsaNtt::mod_q(*a + b);
         }
     }
 
@@ -909,54 +936,36 @@ where
         a_hat: &[[[u8; 768]; L]; K],
         v: &[[i32; 256]; L],
         w: &mut [[i32; 256]; K],
-        product: &mut [i32; 256],
     ) {
-        let mut entry = [0i32; 256];
-        for (row, w) in a_hat.iter().zip(w) {
-            *w = [0; 256];
-            for (a, v) in row.iter().zip(v) {
-                Self::unpack_poly(a, &mut entry);
-                A::multiply_ntt(&entry, v, product);
-                for (w, &product) in w.iter_mut().zip(product.iter()) {
-                    *w += product;
-                }
+        let mut row = [[0i32; 256]; L];
+        for (packed, w) in a_hat.iter().zip(w) {
+            for (entry, packed) in row.iter_mut().zip(packed) {
+                Self::unpack_poly(packed, entry);
             }
-            Self::mod_q_poly(w);
+            A::multiply_accumulate_ntt(&row, v, w);
         }
     }
 
-    fn expand_a_vector_ntt(
-        rho: &[u8],
-        v: &[[i32; 256]; L],
-        w: &mut [[i32; 256]; K],
-        product: &mut [i32; 256],
-    ) {
-        let mut a = [0u8; 768];
-        let mut entry = [0i32; 256];
+    fn expand_a_vector_ntt(rho: &[u8], v: &[[i32; 256]; L], w: &mut [[i32; 256]; K]) {
+        let mut row = [[0i32; 256]; L];
         for (r, w) in w.iter_mut().enumerate() {
-            *w = [0; 256];
-            for (s, v) in v.iter().enumerate() {
-                Self::rej_ntt_poly(rho, s as u8, r as u8, &mut a);
-                Self::unpack_poly(&a, &mut entry);
-                A::multiply_ntt(&entry, v, product);
-                for (w, &product) in w.iter_mut().zip(product.iter()) {
-                    *w += product;
-                }
+            for (s, a) in row.iter_mut().enumerate() {
+                Self::rej_ntt_poly(rho, s as u8, r as u8, a);
             }
-            Self::mod_q_poly(w);
+            A::multiply_accumulate_ntt(&row, v, w);
         }
     }
 
     fn mod_q_poly(w: &mut [i32; 256]) {
         for w in w.iter_mut() {
-            *w = mod_q(*w);
+            *w = MlDsaNtt::mod_q(*w);
         }
     }
 
     fn pack_poly(w: &[i32; 256], packed: &mut [u8; 768]) {
         let (coefficients, _) = packed.as_chunks_mut::<3>();
         for (packed, &x) in coefficients.iter_mut().zip(w) {
-            let [b0, b1, b2, _] = mod_q(x).to_le_bytes();
+            let [b0, b1, b2, _] = MlDsaNtt::mod_q(x).to_le_bytes();
             *packed = [b0, b1, b2];
         }
     }
@@ -986,30 +995,19 @@ where
     }
 
     const fn centered(a: i32) -> i32 {
-        let a = mod_q(a);
-        a - ((((Q - 1) / 2 - a) >> 31) & Q)
+        let a = MlDsaNtt::mod_q(a);
+        a - ((((MlDsaNtt::Q - 1) / 2 - a) >> 31) & MlDsaNtt::Q)
     }
 
     fn norm_exceeds(values: impl Iterator<Item = i32>, bound: i32) -> bool {
         Choice::nonzero(values.fold(0, |violation, x| {
-            let x = reduce(x);
+            let x = MlDsaNtt::reduce(x);
             let mask = x >> 31;
             let magnitude = (x ^ mask) - mask;
             violation | ((bound - 1 - magnitude) >> 31)
         }))
         .to_bool()
     }
-}
-
-const Q: i32 = 8380417;
-
-const fn reduce(a: i32) -> i32 {
-    a - ((a + (1 << 22)) >> 23) * Q
-}
-
-const fn mod_q(a: i32) -> i32 {
-    let a = reduce(a);
-    a + ((a >> 31) & Q)
 }
 
 #[cfg(test)]

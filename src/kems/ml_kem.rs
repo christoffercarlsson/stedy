@@ -33,7 +33,7 @@ impl MlKemArithmetic for MlKemNtt {
         Self::ntt_layer::<4>(f, &Self::ZETAS[32..64]);
         Self::ntt_layer::<2>(f, &Self::ZETAS[64..128]);
         for a in f.iter_mut() {
-            *a = reduce(*a);
+            *a = Self::reduce(*a);
         }
     }
 
@@ -47,7 +47,7 @@ impl MlKemArithmetic for MlKemNtt {
         Self::inverse_ntt_layer::<64>(f, &Self::ZETAS[2..4]);
         Self::inverse_ntt_layer::<128>(f, &Self::ZETAS[1..2]);
         for a in f.iter_mut() {
-            *a = reduce(Self::montgomery_multiply(*a, 512));
+            *a = Self::reduce(Self::montgomery_multiply(*a, 512));
         }
     }
 
@@ -59,13 +59,14 @@ impl MlKemArithmetic for MlKemNtt {
         for (((&[a0, a1], &[b0, b1]), [c0, c1]), gamma) in f.iter().zip(g).zip(h).zip(Self::GAMMAS)
         {
             let (p0, p1) = Self::base_case_multiply(a0, a1, b0, b1, gamma);
-            *c0 = reduce(p0);
-            *c1 = reduce(p1);
+            *c0 = Self::reduce(p0);
+            *c1 = Self::reduce(p1);
         }
     }
 }
 
 impl MlKemNtt {
+    const Q: i16 = 3329;
     const ZETAS: [i16; 128] = {
         let mut zetas = [0i16; 128];
         let mut i = 0;
@@ -103,7 +104,7 @@ impl MlKemNtt {
         for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas.iter().rev()) {
             for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
                 let t = *a;
-                *a = barrett_reduce(t + *b);
+                *a = Self::barrett_reduce(t + *b);
                 *b = Self::montgomery_multiply(zeta, *b - t);
             }
         }
@@ -122,7 +123,7 @@ impl MlKemNtt {
 
     const fn montgomery_reduce(a: i32) -> i16 {
         let t = (a as i16).wrapping_mul(-3327);
-        ((a - t as i32 * Q as i32) >> 16) as i16
+        ((a - t as i32 * Self::Q as i32) >> 16) as i16
     }
 
     const fn montgomery_multiply(a: i16, b: i16) -> i16 {
@@ -130,10 +131,10 @@ impl MlKemNtt {
     }
 
     const fn zeta_power(exponent: usize) -> i16 {
-        let mut power = (1 << 16) % Q as u32;
+        let mut power = (1 << 16) % Self::Q as u32;
         let mut k = 0;
         while k < exponent {
-            power = power * 17 % Q as u32;
+            power = power * 17 % Self::Q as u32;
             k += 1;
         }
         power as i16
@@ -141,6 +142,16 @@ impl MlKemNtt {
 
     const fn bit_rev7(i: usize) -> usize {
         (i as u8).reverse_bits() as usize >> 1
+    }
+
+    const fn barrett_reduce(a: i16) -> i16 {
+        let t = ((20159 * a as i32 + (1 << 25)) >> 26) as i16;
+        a.wrapping_sub(t.wrapping_mul(Self::Q))
+    }
+
+    const fn reduce(a: i16) -> i16 {
+        let a = Self::barrett_reduce(a);
+        a + ((a >> 15) & Self::Q)
     }
 }
 
@@ -226,7 +237,7 @@ where
         let (groups, _) = f.as_chunks::<8>();
         for (group, chunk) in groups.iter().zip(bytes.chunks_exact_mut(d)) {
             let packed = group.iter().enumerate().fold(0u128, |packed, (i, &a)| {
-                packed | ((reduce(a) as u128) << (i * d))
+                packed | ((MlKemNtt::reduce(a) as u128) << (i * d))
             });
             chunk.copy_from_slice(&packed.to_le_bytes()[..d]);
         }
@@ -242,18 +253,18 @@ where
             let packed = u128::from_le_bytes(packed);
             for (i, a) in group.iter_mut().enumerate() {
                 let x = ((packed >> (i * d)) & mask) as i16;
-                *a = if d < 12 { x } else { x % Q };
+                *a = if d < 12 { x } else { x % MlKemNtt::Q };
             }
         }
     }
 
     fn compress(d: usize, x: i16) -> i16 {
-        let x = reduce(x) as u32;
-        (((x << d) + Q as u32 / 2) / Q as u32 % (1 << d)) as i16
+        let x = MlKemNtt::reduce(x) as u32;
+        (((x << d) + MlKemNtt::Q as u32 / 2) / MlKemNtt::Q as u32 % (1 << d)) as i16
     }
 
     fn decompress(d: usize, y: i16) -> i16 {
-        ((Q as u32 * y as u32 + (1 << (d - 1))) >> d) as i16
+        ((MlKemNtt::Q as u32 * y as u32 + (1 << (d - 1))) >> d) as i16
     }
 
     // Algorithm 7
@@ -270,11 +281,11 @@ where
             for c in block {
                 let d1 = i16::from(c[0]) + 256 * i16::from(c[1] % 16);
                 let d2 = i16::from(c[1] / 16) + 16 * i16::from(c[2]);
-                if d1 < Q && j < 256 {
+                if d1 < MlKemNtt::Q && j < 256 {
                     a[j] = d1;
                     j += 1;
                 }
-                if d2 < Q && j < 256 {
+                if d2 < MlKemNtt::Q && j < 256 {
                     a[j] = d2;
                     j += 1;
                 }
@@ -411,7 +422,7 @@ where
             *x = Self::decompress(P::DV, *x);
         }
         for (w, v) in w.get_mut().iter_mut().zip(&v) {
-            *w = barrett_reduce(*v - *w);
+            *w = MlKemNtt::barrett_reduce(*v - *w);
         }
         for x in w.get_mut() {
             *x = Self::compress(1, *x);
@@ -514,7 +525,7 @@ where
 
     fn add_poly(f: &mut [i16; 256], g: &[i16; 256]) {
         for (a, b) in f.iter_mut().zip(g) {
-            *a = barrett_reduce(*a + *b);
+            *a = MlKemNtt::barrett_reduce(*a + *b);
         }
     }
 
@@ -526,21 +537,9 @@ where
 
     fn reduce_poly(f: &mut [i16; 256]) {
         for a in f.iter_mut() {
-            *a = reduce(*a);
+            *a = MlKemNtt::reduce(*a);
         }
     }
-}
-
-const Q: i16 = 3329;
-
-const fn barrett_reduce(a: i16) -> i16 {
-    let t = ((20159 * a as i32 + (1 << 25)) >> 26) as i16;
-    a.wrapping_sub(t.wrapping_mul(Q))
-}
-
-const fn reduce(a: i16) -> i16 {
-    let a = barrett_reduce(a);
-    a + ((a >> 15) & Q)
 }
 
 #[cfg(test)]
