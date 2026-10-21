@@ -21,8 +21,8 @@ impl Gf256 {
         let mut b = rhs.0;
         let mut r = 0u8;
         for _ in 0..8 {
-            r ^= a & (b & 1).wrapping_neg();
-            a = (a << 1) ^ (Self::POLYNOMIAL & (a >> 7).wrapping_neg());
+            r ^= a & Choice::nonzero(b & 1).mask::<u8>();
+            a = (a << 1) ^ (Self::POLYNOMIAL & Choice::nonzero(a >> 7).mask::<u8>());
             b >>= 1;
         }
         Self(r)

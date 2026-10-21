@@ -152,9 +152,9 @@ impl MlDsaNtt {
         a - ((a + (1 << 22)) >> 23) * Self::Q
     }
 
-    const fn mod_q(a: i32) -> i32 {
+    fn mod_q(a: i32) -> i32 {
         let a = Self::reduce(a);
-        a + ((a >> 31) & Self::Q)
+        Choice::nonzero(a >> 31).select(a, a + Self::Q)
     }
 }
 
@@ -469,7 +469,7 @@ where
                 A::inverse_ntt(ct0);
                 *h = [0; 32];
                 for (j, (&x, &w)) in ct0.iter().zip(w).enumerate() {
-                    let hint = u8::from(Self::make_hint(-x, w + x));
+                    let hint = Self::make_hint(-x, w + x).select(0u8, 1);
                     h[j / 8] |= hint << (j % 8);
                     ones += usize::from(hint);
                 }
@@ -556,7 +556,11 @@ where
     // Algorithm 15
     fn coeff_from_half_byte(b: u8) -> Option<i32> {
         match (P::ETA, b) {
-            (2, 0..=14) => Some(2 - i32::from(b % 5)),
+            (2, 0..=14) => {
+                let b = Choice::less_than(b, 10).select(b.wrapping_sub(10), b);
+                let b = Choice::less_than(b, 5).select(b.wrapping_sub(5), b);
+                Some(2 - i32::from(b))
+            }
             (4, 0..=8) => Some(4 - i32::from(b)),
             _ => None,
         }
@@ -878,8 +882,9 @@ where
     // Algorithm 35
     fn power2round(r: i32) -> (i32, i32) {
         let r = MlDsaNtt::mod_q(r);
-        let mut r0 = r % (1 << Self::D);
-        r0 -= (((1 << (Self::D - 1)) - r0) >> 31) & (1 << Self::D);
+        let r0 = r & ((1 << Self::D) - 1);
+        let r0 =
+            Choice::less_than(1u32 << (Self::D - 1), r0 as u32).select(r0, r0 - (1 << Self::D));
         ((r - r0) >> Self::D, r0)
     }
 
@@ -888,8 +893,8 @@ where
         let r = MlDsaNtt::mod_q(r);
         let r1 = (((r + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_RECIPROCAL) >> 48) as i32;
         let r0 = r - r1 * 2 * P::GAMMA2;
-        let corner = Self::zero_mask(r1 - (Self::W1_BOUND + 1));
-        (r1 & !corner, r0 + corner)
+        let corner = Choice::eq(r1, Self::W1_BOUND + 1);
+        (corner.select(r1, 0), corner.select(r0, r0 - 1))
     }
 
     // Algorithm 37
@@ -903,8 +908,8 @@ where
     }
 
     // Algorithm 39
-    fn make_hint(z: i32, r: i32) -> bool {
-        Self::high_bits(r) != Self::high_bits(r + z)
+    fn make_hint(z: i32, r: i32) -> Choice {
+        !Choice::eq(Self::high_bits(r), Self::high_bits(r + z))
     }
 
     // Algorithm 40
@@ -990,23 +995,19 @@ where
         32 * Self::bitlen(b)
     }
 
-    const fn zero_mask(a: i32) -> i32 {
-        !((a | a.wrapping_neg()) >> 31)
-    }
-
-    const fn centered(a: i32) -> i32 {
+    fn centered(a: i32) -> i32 {
         let a = MlDsaNtt::mod_q(a);
-        a - ((((MlDsaNtt::Q - 1) / 2 - a) >> 31) & MlDsaNtt::Q)
+        Choice::less_than(((MlDsaNtt::Q - 1) / 2) as u32, a as u32).select(a, a - MlDsaNtt::Q)
     }
 
     fn norm_exceeds(values: impl Iterator<Item = i32>, bound: i32) -> bool {
-        Choice::nonzero(values.fold(0, |violation, x| {
-            let x = MlDsaNtt::reduce(x);
-            let mask = x >> 31;
-            let magnitude = (x ^ mask) - mask;
-            violation | ((bound - 1 - magnitude) >> 31)
-        }))
-        .to_bool()
+        values
+            .fold(Choice::FALSE, |violation, x| {
+                let x = MlDsaNtt::reduce(x);
+                let magnitude = Choice::nonzero(x >> 31).select(x, -x);
+                violation | Choice::less_than((bound - 1) as u32, magnitude as u32)
+            })
+            .to_bool()
     }
 }
 

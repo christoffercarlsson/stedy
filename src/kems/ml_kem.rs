@@ -94,6 +94,7 @@ impl MlKemArithmetic for MlKemNtt {
 
 impl MlKemNtt {
     const Q: i16 = 3329;
+    const BARRETT_MULTIPLIER: i32 = 20159;
     const ZETAS: [i16; 128] = {
         let mut zetas = [0i16; 128];
         let mut i = 0;
@@ -172,13 +173,13 @@ impl MlKemNtt {
     }
 
     const fn barrett_reduce(a: i16) -> i16 {
-        let t = ((20159 * a as i32 + (1 << 25)) >> 26) as i16;
+        let t = ((Self::BARRETT_MULTIPLIER * a as i32 + (1 << 25)) >> 26) as i16;
         a.wrapping_sub(t.wrapping_mul(Self::Q))
     }
 
-    const fn reduce(a: i16) -> i16 {
+    fn reduce(a: i16) -> i16 {
         let a = Self::barrett_reduce(a);
-        a + ((a >> 15) & Self::Q)
+        Choice::nonzero(a >> 15).select(a, a + Self::Q)
     }
 }
 
@@ -280,14 +281,21 @@ where
             let packed = u128::from_le_bytes(packed);
             for (i, a) in group.iter_mut().enumerate() {
                 let x = ((packed >> (i * d)) & mask) as i16;
-                *a = if d < 12 { x } else { x % MlKemNtt::Q };
+                *a = if d < 12 {
+                    x
+                } else {
+                    Choice::less_than(x as u16, MlKemNtt::Q as u16).select(x - MlKemNtt::Q, x)
+                };
             }
         }
     }
 
     fn compress(d: usize, x: i16) -> i16 {
-        let x = MlKemNtt::reduce(x) as u32;
-        (((x << d) + MlKemNtt::Q as u32 / 2) / MlKemNtt::Q as u32 % (1 << d)) as i16
+        let numerator = ((MlKemNtt::reduce(x) as i32) << d) + MlKemNtt::Q as i32 / 2;
+        let quotient = ((numerator as i64 * MlKemNtt::BARRETT_MULTIPLIER as i64) >> 26) as i32;
+        let remainder = numerator - quotient * MlKemNtt::Q as i32;
+        let quotient = Choice::nonzero(remainder >> 31).select(quotient, quotient - 1);
+        (quotient & ((1 << d) - 1)) as i16
     }
 
     fn decompress(d: usize, y: i16) -> i16 {

@@ -1,6 +1,9 @@
 use {
     super::Sealed,
-    crate::{Error, utils::Secret},
+    crate::{
+        Error,
+        utils::{Choice, Secret},
+    },
     core::{
         array::TryFromSliceError,
         ops::{Index, IndexMut, RangeFrom},
@@ -117,7 +120,7 @@ pub trait MlDsaArithmetic {
             Self::multiply_ntt(a, b, product.get_mut());
             for (w, &product) in w.iter_mut().zip(product.get()) {
                 let sum = *w + product - Q;
-                *w = sum + ((sum >> 31) & Q);
+                *w = Choice::nonzero(sum >> 31).select(sum, sum + Q);
             }
         }
     }
@@ -142,7 +145,7 @@ pub trait MlKemArithmetic {
             Self::multiply_ntt(f, g, product.get_mut());
             for (h, &product) in h.iter_mut().zip(product.get()) {
                 let sum = *h + product - Q;
-                *h = sum + ((sum >> 15) & Q);
+                *h = Choice::nonzero(sum >> 15).select(sum, sum + Q);
             }
         }
     }

@@ -139,15 +139,14 @@ where
             | (bit(i + spacing) << 1)
             | (bit(i + 2 * spacing) << 2)
             | (bit(i + 3 * spacing) << 3);
-        let high = teeth >> 3;
-        let index = (teeth ^ high.wrapping_sub(1)) & 7;
+        let high = Choice::nonzero(teeth >> 3);
+        let index = high.select(!teeth & 7, teeth & 7);
         let mut t = AffineNiels::<F>::IDENTITY;
         for (j, entry) in table.iter().enumerate() {
             let is_index = Choice::eq(j, usize::from(index));
             t = AffineNiels::<F>::select(&t, &AffineNiels::from(entry), is_index);
         }
-        let negate = !Choice::nonzero(high);
-        AffineNiels::<F>::select(&t, &t.neg(), negate)
+        AffineNiels::<F>::select(&t, &t.neg(), !high)
     }
 
     fn niels_terms(x1: F, y1: F, y_plus_x: F, y_minus_x: F) -> (F, F) {
@@ -516,16 +515,14 @@ where
     F: FieldElement + EdwardsParams<F>,
 {
     fn select(&self, x: i8) -> ProjectiveNiels<F> {
-        let y = x as i16;
-        let z = y >> 15;
-        let i = ((y ^ z) - z) as u8;
+        let negative = Choice::nonzero((x >> 7) as u8);
+        let i = negative.select(x, x.wrapping_neg()) as u8;
         let mut t = ProjectiveNiels::<F>::IDENTITY;
         for j in 0..8 {
             let is_index = Choice::eq(j + 1, i);
             t = ProjectiveNiels::<F>::select(&t, &self[j as usize], is_index);
         }
-        let negate = Choice::nonzero((z & 1) as u8);
-        ProjectiveNiels::<F>::select(&t, &t.neg(), negate)
+        ProjectiveNiels::<F>::select(&t, &t.neg(), negative)
     }
 }
 

@@ -158,7 +158,7 @@ macro_rules! impl_backend {
             }
 
             fn mask(choice: Choice) -> Self {
-                (choice.0 as $word).wrapping_neg()
+                (backend::opaque(u32::from(choice.0)) as $word).wrapping_neg()
             }
 
             fn assign(&mut self, src: Self, choice: Choice) {

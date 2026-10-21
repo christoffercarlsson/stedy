@@ -1,4 +1,7 @@
-use crate::{Error, utils::wipe};
+use crate::{
+    Error,
+    utils::{Choice, wipe},
+};
 
 pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Result<&'a [u8], Error> {
     pad(unpadded, buffer, buffer.len())
@@ -18,23 +21,22 @@ pub fn pad_to_block<'a>(
 }
 
 pub fn unpad(padded: &[u8]) -> Result<&[u8], Error> {
-    let mut found_marker = 0usize;
+    let mut found_marker = Choice::FALSE;
     let mut position = 0usize;
-    let mut error = 0usize;
+    let mut error = Choice::FALSE;
     for i in (0..padded.len()).rev() {
         let byte = padded[i];
-        let is_zero = is_byte(byte, 0);
-        let is_marker = is_byte(byte, 128);
-        let not_found = found_marker ^ 1;
-        error |= not_found & (is_zero ^ 1) & (is_marker ^ 1);
-        position |= (not_found & is_marker) * i;
+        let is_zero = Choice::eq(byte, 0);
+        let is_marker = Choice::eq(byte, 128);
+        error |= !found_marker & !is_zero & !is_marker;
+        position = (!found_marker & is_marker).select(position, i);
         found_marker |= is_marker;
     }
-    error |= found_marker ^ 1;
-    if error == 0 {
-        Ok(&padded[..position])
-    } else {
+    error |= !found_marker;
+    if error.to_bool() {
         Err(Error::Encoding)
+    } else {
+        Ok(&padded[..position])
     }
 }
 
@@ -48,11 +50,6 @@ fn pad<'a>(unpadded: &[u8], buffer: &'a mut [u8], padded_size: usize) -> Result<
     buffer[unpadded_size] = 128;
     wipe(&mut buffer[unpadded_size + 1..padded_size]);
     Ok(&buffer[..padded_size])
-}
-
-fn is_byte(a: u8, b: u8) -> usize {
-    let diff = (a as usize) ^ (b as usize);
-    1 ^ ((diff | diff.wrapping_neg()) >> (usize::BITS - 1))
 }
 
 #[cfg(test)]

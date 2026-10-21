@@ -73,7 +73,10 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
 
     fn encode_bits(&mut self, chunk: &[u8; BITS], encoded: &mut [u8]) {
         let index = Self::from_binary(chunk);
-        let byte = self.alphabet[index as usize];
+        let mut byte = 0;
+        for (i, &a) in self.alphabet.iter().enumerate() {
+            byte = Choice::eq(i as u8, index).select(byte, a);
+        }
         self.push(byte, encoded);
     }
 
@@ -145,14 +148,13 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
     fn find_index(&self, error: &mut Choice, byte: u8) -> u8 {
         let byte = Self::normalize(byte);
         let mut index = 0;
-        let mut found = 0;
+        let mut found = Choice::FALSE;
         for (i, &a) in self.alphabet.iter().enumerate() {
-            let difference = byte ^ a;
-            let mask = ((difference | difference.wrapping_neg()) >> 7).wrapping_sub(1);
-            index = (index & !mask) | ((i as u8) & mask);
-            found |= mask;
+            let is_match = Choice::eq(byte, a);
+            index = is_match.select(index, i as u8);
+            found |= is_match;
         }
-        *error |= !Choice::nonzero(found);
+        *error |= !found;
         index
     }
 

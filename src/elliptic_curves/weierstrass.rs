@@ -100,8 +100,8 @@ where
             | (bit(i + columns) << 1)
             | (bit(i + 2 * columns) << 2)
             | (bit(i + 3 * columns) << 3);
-        let high = teeth >> 3;
-        let index = (teeth ^ high.wrapping_sub(1)) & 7;
+        let high = Choice::nonzero(teeth >> 3);
+        let index = high.select(!teeth & 7, teeth & 7);
         let mut t = Affine::<F>::IDENTITY;
         for (j, entry) in table.iter().enumerate() {
             let is_index = Choice::eq(j, usize::from(index));
@@ -109,7 +109,7 @@ where
             t.y.assign(&entry[1], is_index);
         }
         let negated = t.y.neg();
-        t.y.assign(&negated, !Choice::nonzero(high));
+        t.y.assign(&negated, !high);
         t
     }
 
@@ -534,9 +534,8 @@ where
     F: FieldElement + WeierstrassParams<F>,
 {
     fn select(&self, x: i8) -> (Affine<F>, Choice) {
-        let xn = x as i16;
-        let sign = xn >> 15;
-        let idx = ((xn ^ sign) - sign) as u8;
+        let negative = Choice::nonzero((x >> 7) as u8);
+        let idx = negative.select(x, x.wrapping_neg()) as u8;
         let mut t = Affine::<F>::IDENTITY;
         for j in 0u8..8 {
             let is_index = Choice::eq(j + 1, idx);
@@ -544,7 +543,7 @@ where
             t.y.assign(&self.0[j as usize].y, is_index);
         }
         let negated = t.y.neg();
-        t.y.assign(&negated, Choice::nonzero((sign & 1) as u8));
+        t.y.assign(&negated, negative);
         (t, Choice::eq(idx, 0))
     }
 }
