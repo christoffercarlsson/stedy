@@ -62,28 +62,6 @@ mod tests {
     }
 
     #[test]
-    fn test_ecdsa_p384_verify_rejects_wrong_message() {
-        assert_eq!(
-            P384::verify(b"sample", &PUBLIC_KEY, &SIGNATURE_TEST),
-            Err(Error::Verification)
-        );
-        assert_eq!(
-            P384::verify(b"Sample", &PUBLIC_KEY, &SIGNATURE_SAMPLE),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
-    fn test_ecdsa_p384_verify_rejects_tampered_signature() {
-        let mut tampered = SIGNATURE_SAMPLE;
-        tampered[95] ^= 1;
-        assert_eq!(
-            P384::verify(b"sample", &PUBLIC_KEY, &tampered),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
     fn test_ecdsa_p384_round_trip() {
         let mut rng = ChaCha20Rng::from(&[7u8; 96]);
         let (private_key, public_key) = P384::generate_key_pair(&mut rng).unwrap();

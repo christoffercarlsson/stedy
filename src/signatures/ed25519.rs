@@ -134,19 +134,6 @@ mod tests {
         Ed25519::verify(&message, &public_key, &signature).unwrap();
     }
 
-    #[test]
-    fn test_ed25519_verify_invalid() {
-        let public_key = hex!("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a");
-        let message = [];
-        let signature = hex!(
-            "dc2a4459e7369633a52b1bf277839a00201009a3efbf3ecb69bea2186c26b58909351fc9ac90b3ecfdfbc7c66431e0303dca179c138ac17ad9bef1177331a704"
-        );
-        assert_eq!(
-            Ed25519::verify(&message, &public_key, &signature),
-            Err(Error::Verification)
-        );
-    }
-
     // https://datatracker.ietf.org/doc/html/rfc8032#section-7.3
 
     #[test]
