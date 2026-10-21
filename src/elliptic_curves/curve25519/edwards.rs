@@ -2,6 +2,7 @@ pub struct Edwards25519;
 
 impl Edwards25519 {
     pub(crate) const A: i8 = -1;
+    pub(crate) const COFACTOR: u8 = super::Curve25519::COFACTOR;
     pub(crate) const DOMAIN: &'static [u8] = b"SigEd25519 no Ed25519 collisions";
     pub(crate) const DOMAIN_PURE: bool = false;
     pub(crate) const D: [u8; 32] = [

@@ -199,4 +199,38 @@ mod tests {
             Err(Error::Misuse)
         );
     }
+
+    #[test]
+    fn test_ed448_rejects_identity_public_key() {
+        let mut point = [0u8; 57];
+        point[0] = 1;
+        let mut signature = [0u8; 114];
+        signature[..57].copy_from_slice(&point);
+        assert_eq!(
+            Ed448::verify(b"any message", &point, &signature),
+            Err(Error::Verification)
+        );
+    }
+
+    #[test]
+    fn test_ed448_rejects_order_two_public_key() {
+        let mut point = [0xffu8; 57];
+        point[0] = 0xfe;
+        point[28] = 0xfe;
+        point[56] = 0;
+        let mut signature = [0u8; 114];
+        signature[..57].copy_from_slice(&point);
+        assert_eq!(
+            Ed448::verify(b"message 0", &point, &signature),
+            Err(Error::Verification)
+        );
+    }
+
+    #[test]
+    fn test_ed448_rejects_all_zero_public_key() {
+        assert_eq!(
+            Ed448::verify(b"message 0", &[0u8; 57], &[0u8; 114]),
+            Err(Error::Verification)
+        );
+    }
 }

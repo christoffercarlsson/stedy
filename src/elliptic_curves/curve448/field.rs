@@ -198,6 +198,7 @@ impl FieldElement for Field448 {
 
 impl EdwardsParams<Field448> for Field448 {
     const A: i8 = Edwards448::A;
+    const COFACTOR: u8 = Edwards448::COFACTOR;
     const DOMAIN: &'static [u8] = Edwards448::DOMAIN;
     const DOMAIN_PURE: bool = Edwards448::DOMAIN_PURE;
     const D: Self = Self::from_le_bytes(&Edwards448::D);

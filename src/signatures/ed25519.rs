@@ -18,7 +18,7 @@ pub type Ed25519phWith<A, H, P> = HashEddsa<Scalar25519, Field25519With<A>, H, [
 mod tests {
     use {
         super::*,
-        crate::{Error, csprngs::ChaCha20Rng},
+        crate::{Error, csprngs::ChaCha20Rng, traits::EdwardsScalar},
         hex_literal::hex,
     };
 
@@ -201,6 +201,60 @@ mod tests {
         assert_eq!(
             Ed25519ph::new().verify(&[0u8; 256], &public_key, &signature),
             Err(Error::Misuse)
+        );
+    }
+
+    #[test]
+    fn test_ed25519_rejects_identity_public_key() {
+        let mut point = [0u8; 32];
+        point[0] = 1;
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&point);
+        assert_eq!(
+            Ed25519::verify(b"any message", &point, &signature),
+            Err(Error::Verification)
+        );
+    }
+
+    #[test]
+    fn test_ed25519_rejects_order_two_public_key() {
+        let mut point = [0xffu8; 32];
+        point[0] = 0xec;
+        point[31] = 0x7f;
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&point);
+        assert_eq!(
+            Ed25519::verify(b"any message", &point, &signature),
+            Err(Error::Verification)
+        );
+    }
+
+    #[test]
+    fn test_ed25519_rejects_identity_r() {
+        let seed = hex!("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60");
+        let (_, public_key) = Ed25519::key_pair(&seed);
+        let mut r = [0u8; 32];
+        r[0] = 1;
+        let (mut a, _) = Scalar25519::split(&Sha512::digest(&seed));
+        Scalar25519::clamp(&mut a);
+        let mut hasher = Sha512::new();
+        hasher.update(&r);
+        hasher.update(&public_key);
+        let s: [u8; 32] = (Scalar25519::from(hasher.finalize()) * Scalar25519::from(a)).into();
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&r);
+        signature[32..].copy_from_slice(&s);
+        assert_eq!(
+            Ed25519::verify(b"", &public_key, &signature),
+            Err(Error::Verification)
+        );
+    }
+
+    #[test]
+    fn test_ed25519_rejects_all_zero_public_key() {
+        assert_eq!(
+            Ed25519::verify(b"message 1", &[0u8; 32], &[0u8; 64]),
+            Err(Error::Verification)
         );
     }
 }

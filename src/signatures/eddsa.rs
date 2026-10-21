@@ -156,6 +156,7 @@ where
         let valid_s = E::is_canonical(&s);
         let (A, valid_a) = Edwards::<F, E>::decompress(public_key);
         let (R, valid_r) = Edwards::<F, E>::decompress(&r);
+        let small_order = A.has_small_order() | R.has_small_order();
         let mut state = Self::hasher(phflag, context);
         state.update(r.as_ref());
         state.update(public_key.as_ref());
@@ -163,7 +164,7 @@ where
         let k = E::from(state.finalize());
         let s = E::from(s);
         let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
-        if (r2.ct_eq(&R) & valid_a & valid_r & valid_s).to_bool() {
+        if (r2.ct_eq(&R) & valid_a & valid_r & valid_s & !small_order).to_bool() {
             Ok(())
         } else {
             Err(Error::Verification)

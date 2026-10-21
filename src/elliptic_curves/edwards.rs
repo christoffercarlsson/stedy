@@ -89,6 +89,20 @@ where
         x & y
     }
 
+    pub(crate) fn has_small_order(&self) -> Choice {
+        const {
+            assert!(
+                F::COFACTOR.is_power_of_two(),
+                "the cofactor is a power of two"
+            )
+        }
+        let mut point = Projective::<F, S>::new(self.x, self.y, self.z);
+        for _ in 0..F::COFACTOR.trailing_zeros() {
+            point = point.double().to_projective();
+        }
+        point.x.ct_eq(&F::ZERO) & point.y.ct_eq(&point.z)
+    }
+
     pub(crate) fn compress(&self) -> F::Bytes {
         let zi = self.z.invert();
         let x = self.x * zi;

@@ -15,6 +15,7 @@ pub enum ByteOrder {
 
 pub trait EdwardsParams<F: FieldElement> {
     const A: i8;
+    const COFACTOR: u8;
     const D: F;
     const D2: F;
     const DOMAIN: &'static [u8];

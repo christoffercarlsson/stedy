@@ -2,6 +2,7 @@ pub struct Edwards448;
 
 impl Edwards448 {
     pub(crate) const A: i8 = 1;
+    pub(crate) const COFACTOR: u8 = super::Curve448::COFACTOR;
     pub(crate) const DOMAIN: &'static [u8] = b"SigEd448";
     pub(crate) const DOMAIN_PURE: bool = true;
     pub(crate) const D: [u8; 56] = [

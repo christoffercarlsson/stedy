@@ -85,6 +85,7 @@ impl<A: FieldArithmetic<Bytes = [u8; 56]>> FieldElement for Field448With<A> {
 
 impl<A: FieldArithmetic<Bytes = [u8; 56]>> EdwardsParams<Field448With<A>> for Field448With<A> {
     const A: i8 = Edwards448::A;
+    const COFACTOR: u8 = Edwards448::COFACTOR;
     const DOMAIN: &'static [u8] = Edwards448::DOMAIN;
     const DOMAIN_PURE: bool = Edwards448::DOMAIN_PURE;
     const D: Self = Self::from_bytes(&Edwards448::D);
