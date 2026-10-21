@@ -124,6 +124,7 @@ impl MlDsaNtt {
         (m as u8).reverse_bits() as usize
     }
 
+    // Algorithm 49
     const fn montgomery_reduce(a: i64) -> i32 {
         let t = (a as i32).wrapping_mul(58728449);
         ((a - t as i64 * Self::Q as i64) >> 32) as i32
@@ -231,37 +232,6 @@ where
         signature
     }
 
-    #[cfg(feature = "hazmat")]
-    pub fn sign_external_mu(
-        private_key: &P::PrivateKey,
-        mu: &[u8; 64],
-        rng: &mut impl CryptoRng,
-    ) -> Result<P::Signature, Error> {
-        let mut rnd = Secret::from([0u8; 32]);
-        rng.fill(rnd.as_mut())?;
-        let mut signature = P::Signature::new();
-        Self::sign_internal_mu(private_key.as_ref(), mu, rnd.get(), signature.as_mut());
-        Ok(signature)
-    }
-
-    #[cfg(feature = "hazmat")]
-    pub fn sign_external_mu_deterministic(
-        private_key: &P::PrivateKey,
-        mu: &[u8; 64],
-    ) -> P::Signature {
-        let mut signature = P::Signature::new();
-        Self::sign_internal_mu(private_key.as_ref(), mu, &[0; 32], signature.as_mut());
-        signature
-    }
-
-    pub fn verify(
-        message: &[u8],
-        public_key: &P::PublicKey,
-        signature: &P::Signature,
-    ) -> Result<(), Error> {
-        Self::verify_internal(public_key.as_ref(), &[&[0, 0], message], signature.as_ref())
-    }
-
     pub fn sign_with_context(
         private_key: &P::PrivateKey,
         message: &[u8],
@@ -297,6 +267,37 @@ where
         Ok(signature)
     }
 
+    #[cfg(feature = "hazmat")]
+    pub fn sign_external_mu(
+        private_key: &P::PrivateKey,
+        mu: &[u8; 64],
+        rng: &mut impl CryptoRng,
+    ) -> Result<P::Signature, Error> {
+        let mut rnd = Secret::from([0u8; 32]);
+        rng.fill(rnd.as_mut())?;
+        let mut signature = P::Signature::new();
+        Self::sign_internal_mu(private_key.as_ref(), mu, rnd.get(), signature.as_mut());
+        Ok(signature)
+    }
+
+    #[cfg(feature = "hazmat")]
+    pub fn sign_external_mu_deterministic(
+        private_key: &P::PrivateKey,
+        mu: &[u8; 64],
+    ) -> P::Signature {
+        let mut signature = P::Signature::new();
+        Self::sign_internal_mu(private_key.as_ref(), mu, &[0; 32], signature.as_mut());
+        signature
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &P::PublicKey,
+        signature: &P::Signature,
+    ) -> Result<(), Error> {
+        Self::verify_internal(public_key.as_ref(), &[&[0, 0], message], signature.as_ref())
+    }
+
     pub fn verify_with_context(
         message: &[u8],
         context: &[u8],
@@ -323,11 +324,11 @@ where
     const W1_BOUND: i32 = (MlDsaNtt::Q - 1) / (2 * P::GAMMA2) - 1;
     const DECOMPOSE_RECIPROCAL: u64 = (1u64 << 48).div_ceil(2 * P::GAMMA2 as u64);
 
-    // Algorithm 6
     fn domain(context: &[u8]) -> Option<[u8; 2]> {
         (context.len() <= 255).then_some([0, context.len() as u8])
     }
 
+    // Algorithm 6
     fn key_gen_internal(xi: &[u8], pk: &mut [u8], sk: &mut [u8]) {
         let mut seeds = Secret::from([0u8; 128]);
         let mut xof = H::new();
@@ -350,6 +351,23 @@ where
         Self::pk_encode(rho, t.get_mut(), &mut t1, pk);
         H::digest(pk, tr_bytes);
         Self::pack_t0(t.get(), t0_bytes);
+    }
+
+    fn compute_t(
+        rho: &[u8],
+        s1: &mut [[i32; 256]; L],
+        s2: &[[i32; 256]; K],
+        t: &mut [[i32; 256]; K],
+    ) {
+        for s in s1.iter_mut() {
+            Self::mod_q_poly(s);
+            A::ntt(s);
+        }
+        Self::expand_a_vector_ntt(rho, s1, t);
+        for t in t.iter_mut() {
+            A::inverse_ntt(t);
+        }
+        Self::add_vector_ntt(t, s2);
     }
 
     // Algorithm 7
@@ -413,14 +431,14 @@ where
             Self::sample_in_ball(&c_tilde[..P::LAMBDA / 4], &mut c_hat);
             Self::mod_q_poly(&mut c_hat);
             A::ntt(&mut c_hat);
-            let z_bound = z.get_mut().iter_mut().zip(s1_hat.get()).any(|(z, s1)| {
+            for (z, s1) in z.get_mut().iter_mut().zip(s1_hat.get()) {
                 Self::unpack_poly(s1, operand.get_mut());
                 A::multiply_ntt(&c_hat, operand.get(), product.get_mut());
                 Self::add_ntt(z, product.get());
                 A::inverse_ntt(z);
-                Self::norm_exceeds(z.iter().copied(), P::GAMMA1 - P::BETA)
-            });
-            if z_bound {
+            }
+            let z = z.get().as_flattened().iter().copied();
+            if Self::norm_exceeds(z, P::GAMMA1 - P::BETA) {
                 continue;
             }
             for (w, s2) in w.get_mut().iter_mut().zip(s2_hat.get()) {
@@ -823,23 +841,6 @@ where
         }
     }
 
-    fn compute_t(
-        rho: &[u8],
-        s1: &mut [[i32; 256]; L],
-        s2: &[[i32; 256]; K],
-        t: &mut [[i32; 256]; K],
-    ) {
-        for s in s1.iter_mut() {
-            Self::mod_q_poly(s);
-            A::ntt(s);
-        }
-        Self::expand_a_vector_ntt(rho, s1, t);
-        for t in t.iter_mut() {
-            A::inverse_ntt(t);
-        }
-        Self::add_vector_ntt(t, s2);
-    }
-
     // Algorithm 32
     fn expand_a(rho: &[u8], a_hat: &mut [[[u8; 768]; L]; K]) {
         let mut a = [0i32; 256];
@@ -981,7 +982,6 @@ where
         i32::from_le_bytes([packed[0], packed[1], packed[2], 0])
     }
 
-    // Algorithm 49
     const fn bitlen(b: i32) -> usize {
         (32 - b.leading_zeros()) as usize
     }
