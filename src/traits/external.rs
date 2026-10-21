@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use {
     super::Sealed,
     crate::{Error, utils::Secret},
@@ -20,7 +19,6 @@ pub trait Authenticator<C: SeekableStreamCipher> {
     fn verify(self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool;
 }
 
-#[allow(private_bounds)]
 pub trait ByteArray:
     Copy
     + Sized
@@ -59,6 +57,7 @@ pub trait Digest {
     fn finalize_into(self, output: &mut [u8]);
 }
 
+#[cfg(feature = "hazmat")]
 pub trait FieldArithmetic {
     type Bytes: ByteArray;
 
@@ -163,6 +162,7 @@ pub trait StreamCipher {
     fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error>;
 }
 
+#[cfg(feature = "hazmat")]
 pub trait SeedableCryptoRng:
     CryptoRng + Sized + for<'a> TryFrom<&'a [u8], Error = TryFromSliceError>
 {

@@ -1,8 +1,10 @@
+#[cfg(feature = "hazmat")]
+use crate::traits::SeedableCryptoRng;
 use {
     crate::{
         Error,
         macs::Hmac,
-        traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng},
+        traits::{ByteArray, CryptoRng, Hasher},
         utils::wipe,
     },
     core::array::TryFromSliceError,
@@ -55,6 +57,7 @@ impl<H: Hasher> CryptoRng for HmacDrbg<H> {
     }
 }
 
+#[cfg(feature = "hazmat")]
 impl<H: Hasher> SeedableCryptoRng for HmacDrbg<H> {}
 
 impl<H: Hasher> TryFrom<&[u8]> for HmacDrbg<H> {

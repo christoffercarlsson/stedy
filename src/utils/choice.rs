@@ -122,7 +122,6 @@ impl BitXorAssign for Choice {
     }
 }
 
-#[allow(private_bounds)]
 pub trait Cmov:
     Copy + Default + BitAnd<Output = Self> + BitOr<Output = Self> + BitXor<Output = Self> + Sealed
 {
@@ -140,7 +139,6 @@ pub trait Cmov:
     }
 }
 
-#[allow(private_bounds)]
 pub trait Unsigned: Cmov {
     fn is_less_than(self, other: Self) -> Choice;
 }

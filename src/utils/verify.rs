@@ -1,6 +1,5 @@
 use crate::utils::{Choice, Cmov};
 
-#[allow(private_bounds)]
 pub fn verify<T: Cmov>(a: &[T], b: &[T]) -> bool {
     Choice::eq_slice(a, b).to_bool()
 }

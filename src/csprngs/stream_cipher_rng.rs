@@ -1,7 +1,9 @@
+#[cfg(feature = "hazmat")]
+use crate::traits::SeedableCryptoRng;
 use {
     crate::{
         Error,
-        traits::{ByteArray, CryptoRng, Hasher, SeedableCryptoRng, SeekableStreamCipher},
+        traits::{ByteArray, CryptoRng, Hasher, SeekableStreamCipher},
         utils::Secret,
     },
     core::{array::TryFromSliceError, marker::PhantomData},
@@ -95,6 +97,7 @@ where
     }
 }
 
+#[cfg(feature = "hazmat")]
 impl<C, H> SeedableCryptoRng for StreamCipherRng<C, H>
 where
     C: SeekableStreamCipher,

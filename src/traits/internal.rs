@@ -260,6 +260,6 @@ pub trait WeierstrassScalar:
     fn as_signed_bits(&self) -> Self::Bytes;
 }
 
-pub(crate) trait Sealed {}
+pub trait Sealed {}
 
 impl<const N: usize> Sealed for [u8; N] {}
