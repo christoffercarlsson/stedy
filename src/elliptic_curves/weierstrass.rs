@@ -67,7 +67,10 @@ where
         let prefix = bytes[0];
         let valid_prefix = Choice::eq(prefix, 2) | Choice::eq(prefix, 3);
         let sign = prefix & 1;
-        let x = F::from(F::Bytes::from_slice(&bytes[1..]));
+        let encoded = F::Bytes::from_slice(&bytes[1..]);
+        let x = F::from(encoded);
+        let canonical: F::Bytes = x.into();
+        let valid_x = Choice::eq_slice(encoded.as_ref(), canonical.as_ref());
         let x2 = x.square();
         let x3 = x2 * x;
         let rhs = x3 + F::A * x + F::B;
@@ -75,7 +78,7 @@ where
         let negate = Choice::nonzero(Self::is_odd(&y) ^ sign);
         let y = F::select(&y, &y.neg(), negate);
         let point = Self::new(x, y, F::ONE);
-        (point, valid_prefix & valid_sqrt)
+        (point, valid_prefix & valid_x & valid_sqrt)
     }
 
     pub(crate) fn mul_base(scalar: &S) -> Self {

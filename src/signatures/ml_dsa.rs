@@ -322,7 +322,7 @@ where
 {
     const D: usize = 13;
     const W1_BOUND: i32 = (MlDsaNtt::Q - 1) / (2 * P::GAMMA2) - 1;
-    const DECOMPOSE_RECIPROCAL: u64 = (1u64 << 48).div_ceil(2 * P::GAMMA2 as u64);
+    const DECOMPOSE_MULTIPLIER: u64 = (1u64 << 48).div_ceil(2 * P::GAMMA2 as u64);
 
     fn domain(context: &[u8]) -> Option<[u8; 2]> {
         (context.len() <= 255).then_some([0, context.len() as u8])
@@ -891,7 +891,7 @@ where
     // Algorithm 36
     fn decompose(r: i32) -> (i32, i32) {
         let r = MlDsaNtt::mod_q(r);
-        let r1 = (((r + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_RECIPROCAL) >> 48) as i32;
+        let r1 = (((r + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_MULTIPLIER) >> 48) as i32;
         let r0 = r - r1 * 2 * P::GAMMA2;
         let corner = Choice::eq(r1, Self::W1_BOUND + 1);
         (corner.select(r1, 0), corner.select(r0, r0 - 1))

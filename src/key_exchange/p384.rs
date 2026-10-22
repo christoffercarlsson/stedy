@@ -12,6 +12,7 @@ mod tests {
     use {
         super::*,
         crate::{Error, csprngs::ChaCha20Rng},
+        hex_literal::hex,
     };
 
     const ALICE_PRIVATE_KEY: [u8; 48] = [
@@ -67,5 +68,18 @@ mod tests {
     #[test]
     fn test_ecdh_p384_rejects_zero_private_key() {
         assert_eq!(P384::public_key(&[0u8; 48]), Err(Error::InvalidKey));
+    }
+
+    #[test]
+    fn test_ecdh_p384_rejects_non_canonical_public_key() {
+        assert_eq!(
+            P384::key_exchange(
+                &ALICE_PRIVATE_KEY,
+                &hex!(
+                    "02fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff000000000000000100000001"
+                )
+            ),
+            Err(Error::InvalidKey)
+        );
     }
 }
