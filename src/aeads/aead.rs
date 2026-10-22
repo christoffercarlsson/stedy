@@ -60,7 +60,11 @@ where
     }
 }
 
-impl<C: SeekableStreamCipher, M: Authenticator<C>> Aead<C, M> {
+impl<C, M> Aead<C, M>
+where
+    C: SeekableStreamCipher,
+    M: Authenticator<C>,
+{
     fn new(key: &C::Key, nonce: &C::Nonce) -> Self {
         let mut cipher = C::new(key, nonce);
         let mac = M::new(&mut cipher);

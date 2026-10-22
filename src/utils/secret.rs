@@ -8,9 +8,14 @@ use {
     },
 };
 
-pub struct Secret<T: Copy>(pub T);
+pub struct Secret<T>(pub T)
+where
+    T: Copy;
 
-impl<T: Copy> Secret<T> {
+impl<T> Secret<T>
+where
+    T: Copy,
+{
     pub fn get(&self) -> &T {
         &self.0
     }
@@ -20,19 +25,28 @@ impl<T: Copy> Secret<T> {
     }
 }
 
-impl<T: Copy + Default> Default for Secret<T> {
+impl<T> Default for Secret<T>
+where
+    T: Copy + Default,
+{
     fn default() -> Self {
         Self(T::default())
     }
 }
 
-impl<T: Copy> Clone for Secret<T> {
+impl<T> Clone for Secret<T>
+where
+    T: Copy,
+{
     fn clone(&self) -> Self {
         Self(self.0)
     }
 }
 
-impl<T: Copy> Drop for Secret<T> {
+impl<T> Drop for Secret<T>
+where
+    T: Copy,
+{
     fn drop(&mut self) {
         let bytes = ptr::from_mut(&mut self.0).cast::<u8>();
         let bytes = unsafe { slice::from_raw_parts_mut(bytes, size_of::<T>()) };
@@ -63,7 +77,10 @@ where
     }
 }
 
-impl<T: Copy> From<T> for Secret<T> {
+impl<T> From<T> for Secret<T>
+where
+    T: Copy,
+{
     fn from(inner: T) -> Self {
         Self(inner)
     }

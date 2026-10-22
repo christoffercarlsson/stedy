@@ -14,13 +14,19 @@ impl KeccakPermutation for KeccakF1600 {
     }
 }
 
-pub struct Sponge<const RATE: usize, P: KeccakPermutation> {
+pub struct Sponge<const RATE: usize, P>
+where
+    P: KeccakPermutation,
+{
     lanes: Secret<[u64; 25]>,
     block: Block<RATE>,
     _marker: PhantomData<P>,
 }
 
-impl<const RATE: usize, P: KeccakPermutation> Clone for Sponge<RATE, P> {
+impl<const RATE: usize, P> Clone for Sponge<RATE, P>
+where
+    P: KeccakPermutation,
+{
     fn clone(&self) -> Self {
         Self {
             lanes: self.lanes.clone(),
@@ -30,7 +36,10 @@ impl<const RATE: usize, P: KeccakPermutation> Clone for Sponge<RATE, P> {
     }
 }
 
-impl<const RATE: usize, P: KeccakPermutation> Sponge<RATE, P> {
+impl<const RATE: usize, P> Sponge<RATE, P>
+where
+    P: KeccakPermutation,
+{
     pub fn new() -> Self {
         Self {
             lanes: Secret::from([0u64; 25]),

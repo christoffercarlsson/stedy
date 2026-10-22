@@ -5,12 +5,18 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct Hmac<H: Hasher> {
+pub struct Hmac<H>
+where
+    H: Hasher,
+{
     inner: H,
     outer: H,
 }
 
-impl<H: Hasher> Hmac<H> {
+impl<H> Hmac<H>
+where
+    H: Hasher,
+{
     pub fn new(key: &[u8]) -> Self {
         const {
             assert!(
@@ -65,13 +71,19 @@ impl<H: Hasher> Hmac<H> {
     }
 }
 
-impl<H: Hasher> KeyInit for Hmac<H> {
+impl<H> KeyInit for Hmac<H>
+where
+    H: Hasher,
+{
     fn new(key: &[u8]) -> Result<Self, Error> {
         Ok(Self::new(key))
     }
 }
 
-impl<H: Hasher> Digest for Hmac<H> {
+impl<H> Digest for Hmac<H>
+where
+    H: Hasher,
+{
     const OUTPUT_SIZE: usize = H::OUTPUT_SIZE;
 
     type Output = H::Output;
@@ -89,9 +101,12 @@ impl<H: Hasher> Digest for Hmac<H> {
     }
 }
 
-impl<H: Hasher> Prf for Hmac<H> {}
+impl<H> Prf for Hmac<H> where H: Hasher {}
 
-impl<H: Hasher> Mac for Hmac<H> {
+impl<H> Mac for Hmac<H>
+where
+    H: Hasher,
+{
     fn verify(self, code: &Self::Output) -> Result<(), Error> {
         self.verify(code)
     }
@@ -108,13 +123,19 @@ mod tests {
     #[cfg(feature = "hazmat")]
     use crate::hashes::Sha1;
 
-    fn calculate_code<H: Hasher>(key: &[u8], message: &[u8]) -> H::Output {
+    fn calculate_code<H>(key: &[u8], message: &[u8]) -> H::Output
+    where
+        H: Hasher,
+    {
         let mut mac = Hmac::<H>::new(key);
         mac.update(message);
         mac.finalize()
     }
 
-    fn verify_code<H: Hasher>(key: &[u8], message: &[u8], code: &H::Output) -> Result<(), Error> {
+    fn verify_code<H>(key: &[u8], message: &[u8], code: &H::Output) -> Result<(), Error>
+    where
+        H: Hasher,
+    {
         let mut mac = Hmac::<H>::new(key);
         mac.update(message);
         mac.verify(code)

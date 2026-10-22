@@ -124,11 +124,18 @@ impl Summary {
     }
 }
 
-pub fn load<G: DeserializeOwned, C: DeserializeOwned>(json: &str) -> TestFile<G, C> {
+pub fn load<G, C>(json: &str) -> TestFile<G, C>
+where
+    G: DeserializeOwned,
+    C: DeserializeOwned,
+{
     serde_json::from_str(json).expect("Wycheproof test file parses")
 }
 
-pub fn hex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+pub fn hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let encoded = String::deserialize(deserializer)?;
     let mut decoded = vec![0u8; encoded.len() / 2];
     let size = decode(Encoding::Base16, encoded.as_bytes(), &mut decoded)
@@ -138,7 +145,10 @@ pub fn hex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Err
     Ok(decoded)
 }
 
-pub fn hex_opt<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error> {
+pub fn hex_opt<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
     #[derive(Deserialize)]
     struct Hex(#[serde(deserialize_with = "hex")] Vec<u8>);
     Ok(Option::<Hex>::deserialize(deserializer)?.map(|hex| hex.0))

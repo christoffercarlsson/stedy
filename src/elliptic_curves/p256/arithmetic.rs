@@ -22,7 +22,10 @@ impl_field_arithmetic!(
     2
 );
 
-impl<A: FieldArithmetic<Bytes = [u8; 32]>> FieldElement for FieldP256With<A> {
+impl<A> FieldElement for FieldP256With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
@@ -50,8 +53,9 @@ impl<A: FieldArithmetic<Bytes = [u8; 32]>> FieldElement for FieldP256With<A> {
     }
 }
 
-impl<A: FieldArithmetic<Bytes = [u8; 32]>> WeierstrassParams<FieldP256With<A>>
-    for FieldP256With<A>
+impl<A> WeierstrassParams<FieldP256With<A>> for FieldP256With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
 {
     const A: FieldP256With<A> = FieldP256With::from_bytes(&P256::A);
     const B: FieldP256With<A> = FieldP256With::from_bytes(&P256::B);

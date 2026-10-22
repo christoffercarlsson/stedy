@@ -187,10 +187,10 @@ pub struct MlKem<const K: usize, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
     A: MlKemArithmetic,
-    G: Hasher<Output = [u8; 64]>,
-    H: Hasher<Output = [u8; 32]>,
-    X: Xof,
-    F: Xof,
+    G: Hasher<Output = [u8; 64], Block = [u8; 72]>,
+    H: Hasher<Output = [u8; 32], Block = [u8; 136]>,
+    X: Xof<Block = [u8; 168]>,
+    F: Xof<Block = [u8; 136]>,
 {
     _marker: PhantomData<(P, A, G, H, X, F)>,
 }
@@ -199,10 +199,10 @@ impl<const K: usize, P, A, G, H, X, F> MlKem<K, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
     A: MlKemArithmetic,
-    G: Hasher<Output = [u8; 64]>,
-    H: Hasher<Output = [u8; 32]>,
-    X: Xof,
-    F: Xof,
+    G: Hasher<Output = [u8; 64], Block = [u8; 72]>,
+    H: Hasher<Output = [u8; 32], Block = [u8; 136]>,
+    X: Xof<Block = [u8; 168]>,
+    F: Xof<Block = [u8; 136]>,
 {
     pub fn generate_key_pair(
         rng: &mut impl CryptoRng,
@@ -255,10 +255,10 @@ impl<const K: usize, P, A, G, H, X, F> MlKem<K, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
     A: MlKemArithmetic,
-    G: Hasher<Output = [u8; 64]>,
-    H: Hasher<Output = [u8; 32]>,
-    X: Xof,
-    F: Xof,
+    G: Hasher<Output = [u8; 64], Block = [u8; 72]>,
+    H: Hasher<Output = [u8; 32], Block = [u8; 136]>,
+    X: Xof<Block = [u8; 168]>,
+    F: Xof<Block = [u8; 136]>,
 {
     // Algorithm 5
     fn byte_encode(d: usize, f: &[i16; 256], bytes: &mut [u8]) {

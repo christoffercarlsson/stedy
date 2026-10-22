@@ -162,8 +162,8 @@ pub struct MlDsa<const K: usize, const L: usize, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
     A: MlDsaArithmetic,
-    H: Xof,
-    G: Xof,
+    H: Xof<Block = [u8; 136]>,
+    G: Xof<Block = [u8; 168]>,
 {
     _marker: PhantomData<(P, A, H, G)>,
 }
@@ -172,8 +172,8 @@ impl<const K: usize, const L: usize, P, A, H, G> MlDsa<K, L, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
     A: MlDsaArithmetic,
-    H: Xof,
-    G: Xof,
+    H: Xof<Block = [u8; 136]>,
+    G: Xof<Block = [u8; 168]>,
 {
     pub fn generate_key_pair(
         rng: &mut impl CryptoRng,
@@ -317,8 +317,8 @@ impl<const K: usize, const L: usize, P, A, H, G> MlDsa<K, L, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
     A: MlDsaArithmetic,
-    H: Xof,
-    G: Xof,
+    H: Xof<Block = [u8; 136]>,
+    G: Xof<Block = [u8; 168]>,
 {
     const D: usize = 13;
     const W1_BOUND: i32 = (MlDsaNtt::Q - 1) / (2 * P::GAMMA2) - 1;

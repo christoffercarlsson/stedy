@@ -374,7 +374,10 @@ where
         y: F::ZERO,
     };
 
-    fn batch_from<S: WeierstrassScalar>(points: &[Weierstrass<F, S>; 8]) -> [Self; 8] {
+    fn batch_from<S>(points: &[Weierstrass<F, S>; 8]) -> [Self; 8]
+    where
+        S: WeierstrassScalar,
+    {
         let mut prefix = [F::ONE; 8];
         let mut acc = F::ONE;
         for (i, point) in points.iter().enumerate() {

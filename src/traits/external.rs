@@ -10,7 +10,10 @@ use {
     },
 };
 
-pub trait Authenticator<C: SeekableStreamCipher> {
+pub trait Authenticator<C>
+where
+    C: SeekableStreamCipher,
+{
     const ACCEPTS_AAD: bool = true;
 
     type Output;
@@ -186,6 +189,7 @@ pub trait SeekableStreamCipher: StreamCipher {
 }
 
 pub trait Xof: Init {
+    type Block: ByteArray;
     type Reader: XofReader;
 
     fn digest(message: &[u8], output: &mut [u8]);

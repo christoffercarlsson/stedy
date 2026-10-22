@@ -5,15 +5,21 @@ macro_rules! impl_field_arithmetic {
             core::marker::PhantomData<A>,
         );
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> Clone for $field<A> {
+        impl<A> Clone for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
             fn clone(&self) -> Self {
                 *self
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> Copy for $field<A> {}
+        impl<A> Copy for $field<A> where A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]> {}
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> $field<A> {
+        impl<A> $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
             const MODULUS: [u8; $size] = $modulus;
             const ZERO: Self = Self::from_bytes(&[0; $size]);
             const ONE: Self = {
@@ -68,7 +74,10 @@ macro_rules! impl_field_arithmetic {
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::Add for $field<A> {
+        impl<A> core::ops::Add for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
             type Output = Self;
 
             fn add(self, rhs: Self) -> Self::Output {
@@ -76,15 +85,19 @@ macro_rules! impl_field_arithmetic {
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::AddAssign
-            for $field<A>
+        impl<A> core::ops::AddAssign for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
         {
             fn add_assign(&mut self, rhs: Self) {
                 *self = *self + rhs;
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::Sub for $field<A> {
+        impl<A> core::ops::Sub for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
             type Output = Self;
 
             fn sub(self, rhs: Self) -> Self::Output {
@@ -92,15 +105,19 @@ macro_rules! impl_field_arithmetic {
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::SubAssign
-            for $field<A>
+        impl<A> core::ops::SubAssign for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
         {
             fn sub_assign(&mut self, rhs: Self) {
                 *self = *self - rhs;
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::Mul for $field<A> {
+        impl<A> core::ops::Mul for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
             type Output = Self;
 
             fn mul(self, rhs: Self) -> Self::Output {
@@ -108,15 +125,19 @@ macro_rules! impl_field_arithmetic {
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::MulAssign
-            for $field<A>
+        impl<A> core::ops::MulAssign for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
         {
             fn mul_assign(&mut self, rhs: Self) {
                 *self = *self * rhs;
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> core::ops::Neg for $field<A> {
+        impl<A> core::ops::Neg for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
             type Output = Self;
 
             fn neg(self) -> Self::Output {
@@ -124,16 +145,18 @@ macro_rules! impl_field_arithmetic {
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> From<[u8; $size]>
-            for $field<A>
+        impl<A> From<[u8; $size]> for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
         {
             fn from(bytes: [u8; $size]) -> Self {
                 Self::reduce(bytes)
             }
         }
 
-        impl<A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>> From<$field<A>>
-            for [u8; $size]
+        impl<A> From<$field<A>> for [u8; $size]
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
         {
             fn from(value: $field<A>) -> Self {
                 value.0

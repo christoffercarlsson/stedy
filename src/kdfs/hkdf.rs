@@ -5,11 +5,17 @@ use crate::{
     utils::wipe,
 };
 
-pub struct Hkdf<H: Hasher> {
+pub struct Hkdf<H>
+where
+    H: Hasher,
+{
     prk: H::Output,
 }
 
-impl<H: Hasher> Hkdf<H> {
+impl<H> Hkdf<H>
+where
+    H: Hasher,
+{
     pub fn derive(
         ikm: &[u8],
         salt: Option<&[u8]>,
@@ -25,7 +31,10 @@ impl<H: Hasher> Hkdf<H> {
     }
 }
 
-impl<H: Hasher> Hkdf<H> {
+impl<H> Hkdf<H>
+where
+    H: Hasher,
+{
     fn extract(salt: Option<&[u8]>, ikm: &[u8]) -> Self {
         let mut mac = Hmac::<H>::new(salt.unwrap_or(H::Output::new().as_ref()));
         mac.update(ikm);
@@ -50,7 +59,10 @@ impl<H: Hasher> Hkdf<H> {
     }
 }
 
-impl<H: Hasher> Drop for Hkdf<H> {
+impl<H> Drop for Hkdf<H>
+where
+    H: Hasher,
+{
     fn drop(&mut self) {
         wipe(self.prk.as_mut());
     }

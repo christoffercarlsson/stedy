@@ -10,13 +10,19 @@ use {
     core::array::TryFromSliceError,
 };
 
-pub struct HmacDrbg<H: Hasher> {
+pub struct HmacDrbg<H>
+where
+    H: Hasher,
+{
     k: H::Output,
     v: H::Output,
     reseed_counter: u64,
 }
 
-impl<H: Hasher> HmacDrbg<H> {
+impl<H> HmacDrbg<H>
+where
+    H: Hasher,
+{
     pub fn new(seed: &H::Output) -> Self {
         Self::instantiate(seed.as_ref(), &[])
     }
@@ -51,16 +57,22 @@ impl<H: Hasher> HmacDrbg<H> {
     }
 }
 
-impl<H: Hasher> CryptoRng for HmacDrbg<H> {
+impl<H> CryptoRng for HmacDrbg<H>
+where
+    H: Hasher,
+{
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         self.fill(bytes)
     }
 }
 
 #[cfg(feature = "hazmat")]
-impl<H: Hasher> SeedableCryptoRng for HmacDrbg<H> {}
+impl<H> SeedableCryptoRng for HmacDrbg<H> where H: Hasher {}
 
-impl<H: Hasher> TryFrom<&[u8]> for HmacDrbg<H> {
+impl<H> TryFrom<&[u8]> for HmacDrbg<H>
+where
+    H: Hasher,
+{
     type Error = TryFromSliceError;
 
     fn try_from(seed: &[u8]) -> Result<Self, Self::Error> {
@@ -68,7 +80,10 @@ impl<H: Hasher> TryFrom<&[u8]> for HmacDrbg<H> {
     }
 }
 
-impl<H: Hasher> HmacDrbg<H> {
+impl<H> HmacDrbg<H>
+where
+    H: Hasher,
+{
     const RESEED_INTERVAL: u64 = 1 << 48;
 
     fn update(&mut self, entropy: &[u8], nonce: &[u8]) {
@@ -96,7 +111,10 @@ impl<H: Hasher> HmacDrbg<H> {
     }
 }
 
-impl<H: Hasher> Drop for HmacDrbg<H> {
+impl<H> Drop for HmacDrbg<H>
+where
+    H: Hasher,
+{
     fn drop(&mut self) {
         wipe(self.k.as_mut());
         wipe(self.v.as_mut());

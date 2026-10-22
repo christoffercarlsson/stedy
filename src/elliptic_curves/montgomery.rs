@@ -28,7 +28,10 @@ pub struct Montgomery<const N: usize, P>([Word; N], PhantomData<P>);
 macro_rules! impl_montgomery {
     ($words:literal, $limbs:literal, $bytes:literal) => {
         #[allow(dead_code)]
-        impl<P: MontgomeryFormParams<$limbs>> Montgomery<$words, P> {
+        impl<P> Montgomery<$words, P>
+        where
+            P: MontgomeryFormParams<$limbs>,
+        {
             pub(crate) const ZERO: Self = Self([0; $words], PhantomData);
             pub(crate) const ONE: Self = Self::from_limbs(P::ONE);
             const PLAIN_ONE: Self = {
@@ -377,7 +380,10 @@ macro_rules! impl_montgomery {
 macro_rules! impl_montgomery_wide {
     ($words:literal, $limbs:literal, $bytes:literal) => {
         #[allow(dead_code)]
-        impl<P: MontgomeryFormParams<$limbs>> Montgomery<$words, P> {
+        impl<P> Montgomery<$words, P>
+        where
+            P: MontgomeryFormParams<$limbs>,
+        {
             pub(crate) fn from_wide_le_bytes(bytes: &[u8; 2 * $bytes]) -> Self {
                 let (low, high) = bytes.split_at($bytes);
                 let low = Self(Self::words_from_le(low.iter()), PhantomData);

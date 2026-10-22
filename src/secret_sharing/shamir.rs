@@ -7,11 +7,17 @@ use {
     core::{array::from_fn, marker::PhantomData},
 };
 
-pub struct Shamir<F: FieldElement> {
+pub struct Shamir<F>
+where
+    F: FieldElement,
+{
     _marker: PhantomData<F>,
 }
 
-impl<F: FieldElement> Shamir<F> {
+impl<F> Shamir<F>
+where
+    F: FieldElement,
+{
     pub const CHUNK_SIZE: usize = F::CAPACITY / 8;
     pub const MAX_SHARES: usize = if F::CAPACITY < u32::BITS as usize {
         (1 << F::CAPACITY) - 1
@@ -69,7 +75,10 @@ impl<F: FieldElement> Shamir<F> {
     }
 }
 
-impl<F: FieldElement> Shamir<F> {
+impl<F> Shamir<F>
+where
+    F: FieldElement,
+{
     const ELEMENT_SIZE: usize = F::Bytes::SIZE;
 
     fn encode_chunk(secret: &[u8], index: usize) -> F::Bytes {

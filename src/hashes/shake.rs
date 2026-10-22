@@ -13,13 +13,20 @@ pub type Shake256 = Shake256With<KeccakF1600>;
 pub type Shake128Digest<const N: usize> = Shake128DigestWith<N, KeccakF1600>;
 pub type Shake256Digest<const N: usize> = Shake256DigestWith<N, KeccakF1600>;
 
-impl<const RATE: usize, P: KeccakPermutation> Init for Shake<RATE, P> {
+impl<const RATE: usize, P> Init for Shake<RATE, P>
+where
+    P: KeccakPermutation,
+{
     fn new() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, P: KeccakPermutation> Xof for Shake<RATE, P> {
+impl<const RATE: usize, P> Xof for Shake<RATE, P>
+where
+    P: KeccakPermutation,
+{
+    type Block = [u8; RATE];
     type Reader = ShakeReader<RATE, P>;
 
     fn digest(message: &[u8], output: &mut [u8]) {
@@ -39,21 +46,32 @@ impl<const RATE: usize, P: KeccakPermutation> Xof for Shake<RATE, P> {
     }
 }
 
-impl<const RATE: usize, P: KeccakPermutation> XofReader for ShakeReader<RATE, P> {
+impl<const RATE: usize, P> XofReader for ShakeReader<RATE, P>
+where
+    P: KeccakPermutation,
+{
     fn read(&mut self, output: &mut [u8]) {
         self.read(output);
     }
 }
 
-pub struct Shake<const RATE: usize, P: KeccakPermutation>(Sponge<RATE, P>);
+pub struct Shake<const RATE: usize, P>(Sponge<RATE, P>)
+where
+    P: KeccakPermutation;
 
-impl<const RATE: usize, P: KeccakPermutation> Clone for Shake<RATE, P> {
+impl<const RATE: usize, P> Clone for Shake<RATE, P>
+where
+    P: KeccakPermutation,
+{
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<const RATE: usize, P: KeccakPermutation> Shake<RATE, P> {
+impl<const RATE: usize, P> Shake<RATE, P>
+where
+    P: KeccakPermutation,
+{
     const DOMAIN: u8 = 0x1f;
 
     pub fn digest(message: &[u8], output: &mut [u8]) {
@@ -90,21 +108,32 @@ impl<const RATE: usize, P: KeccakPermutation> Shake<RATE, P> {
     }
 }
 
-impl<const RATE: usize, P: KeccakPermutation> Default for Shake<RATE, P> {
+impl<const RATE: usize, P> Default for Shake<RATE, P>
+where
+    P: KeccakPermutation,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-pub struct ShakeDigest<const RATE: usize, const N: usize, P: KeccakPermutation>(Shake<RATE, P>);
+pub struct ShakeDigest<const RATE: usize, const N: usize, P>(Shake<RATE, P>)
+where
+    P: KeccakPermutation;
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Clone for ShakeDigest<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Clone for ShakeDigest<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> ShakeDigest<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> ShakeDigest<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     pub fn digest(message: &[u8]) -> [u8; N] {
         let mut hasher = Self::new();
         hasher.update(message);
@@ -132,19 +161,28 @@ impl<const RATE: usize, const N: usize, P: KeccakPermutation> ShakeDigest<RATE, 
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Default for ShakeDigest<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Default for ShakeDigest<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Init for ShakeDigest<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Init for ShakeDigest<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     fn new() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Digest for ShakeDigest<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Digest for ShakeDigest<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     const OUTPUT_SIZE: usize = N;
 
     type Output = [u8; N];
@@ -164,7 +202,10 @@ impl<const RATE: usize, const N: usize, P: KeccakPermutation> Digest for ShakeDi
 
 macro_rules! impl_hasher {
     ($rate:literal, $n:literal) => {
-        impl<P: KeccakPermutation> Hasher for ShakeDigest<$rate, $n, P> {
+        impl<P> Hasher for ShakeDigest<$rate, $n, P>
+        where
+            P: KeccakPermutation,
+        {
             const BLOCK_SIZE: usize = $rate;
 
             type Block = [u8; $rate];
@@ -180,12 +221,18 @@ impl_hasher!(168, 32);
 impl_hasher!(136, 64);
 impl_hasher!(136, 114);
 
-pub struct ShakeReader<const RATE: usize, P: KeccakPermutation> {
+pub struct ShakeReader<const RATE: usize, P>
+where
+    P: KeccakPermutation,
+{
     sponge: Sponge<RATE, P>,
     offset: usize,
 }
 
-impl<const RATE: usize, P: KeccakPermutation> Clone for ShakeReader<RATE, P> {
+impl<const RATE: usize, P> Clone for ShakeReader<RATE, P>
+where
+    P: KeccakPermutation,
+{
     fn clone(&self) -> Self {
         Self {
             sponge: self.sponge.clone(),
@@ -194,7 +241,10 @@ impl<const RATE: usize, P: KeccakPermutation> Clone for ShakeReader<RATE, P> {
     }
 }
 
-impl<const RATE: usize, P: KeccakPermutation> ShakeReader<RATE, P> {
+impl<const RATE: usize, P> ShakeReader<RATE, P>
+where
+    P: KeccakPermutation,
+{
     pub fn read(&mut self, output: &mut [u8]) {
         let mut output = output;
         while !output.is_empty() {

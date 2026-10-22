@@ -410,7 +410,10 @@ where
     }
 }
 
-impl<F: FieldElement + EdwardsParams<F>> Neg for ProjectiveNiels<F> {
+impl<F> Neg for ProjectiveNiels<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -467,7 +470,10 @@ where
     }
 }
 
-impl<F: FieldElement + EdwardsParams<F>> Neg for AffineNiels<F> {
+impl<F> Neg for AffineNiels<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -479,7 +485,10 @@ impl<F: FieldElement + EdwardsParams<F>> Neg for AffineNiels<F> {
     }
 }
 
-impl<F: FieldElement + EdwardsParams<F>> From<&[F; 3]> for AffineNiels<F> {
+impl<F> From<&[F; 3]> for AffineNiels<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
     fn from(entry: &[F; 3]) -> Self {
         Self {
             y_plus_x: entry[0],
@@ -526,7 +535,10 @@ where
     }
 }
 
-impl<F: FieldElement + EdwardsParams<F>> Index<usize> for Window<F> {
+impl<F> Index<usize> for Window<F>
+where
+    F: FieldElement + EdwardsParams<F>,
+{
     type Output = ProjectiveNiels<F>;
 
     fn index(&self, index: usize) -> &Self::Output {

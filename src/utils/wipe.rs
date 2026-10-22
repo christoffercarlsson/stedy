@@ -5,7 +5,10 @@ use core::{
 };
 
 #[inline(never)]
-pub fn wipe<T: Copy + Default>(data: &mut [T]) {
+pub fn wipe<T>(data: &mut [T])
+where
+    T: Copy + Default,
+{
     let p = data.as_mut_ptr();
     for i in 0..data.len() {
         unsafe {

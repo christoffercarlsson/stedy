@@ -129,7 +129,13 @@ impl_seekable_stream_cipher!(16);
 impl_seekable_stream_cipher!(32);
 
 impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
-    const ROUNDS: usize = KEY_SIZE / 4 + 6;
+    const ROUNDS: usize = {
+        assert!(
+            KEY_SIZE == 16 || KEY_SIZE == 32,
+            "AES keys are 16 or 32 bytes"
+        );
+        KEY_SIZE / 4 + 6
+    };
 
     pub(crate) fn hash_subkey(&self) -> [u8; 16] {
         self.encrypt_block([0u8; 16])

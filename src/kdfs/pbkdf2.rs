@@ -3,11 +3,17 @@ use {
     core::marker::PhantomData,
 };
 
-pub struct Pbkdf2<P: Prf + Clone> {
+pub struct Pbkdf2<P>
+where
+    P: Prf + Clone,
+{
     _marker: PhantomData<P>,
 }
 
-impl<P: Prf + Clone> Pbkdf2<P> {
+impl<P> Pbkdf2<P>
+where
+    P: Prf + Clone,
+{
     pub fn derive(
         password: &[u8],
         salt: &[u8],
@@ -25,7 +31,10 @@ impl<P: Prf + Clone> Pbkdf2<P> {
     }
 }
 
-impl<P: Prf + Clone> Pbkdf2<P> {
+impl<P> Pbkdf2<P>
+where
+    P: Prf + Clone,
+{
     fn f(prf: &P, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8]) {
         let mut u = {
             let mut p = prf.clone();

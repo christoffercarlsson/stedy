@@ -6,11 +6,17 @@ use {
     core::marker::PhantomData,
 };
 
-pub struct Ecdh<C: EllipticCurve> {
+pub struct Ecdh<C>
+where
+    C: EllipticCurve,
+{
     _marker: PhantomData<C>,
 }
 
-impl<C: EllipticCurve> Ecdh<C> {
+impl<C> Ecdh<C>
+where
+    C: EllipticCurve,
+{
     pub fn generate_key_pair(
         rng: &mut impl CryptoRng,
     ) -> Result<(C::ScalarBytes, C::PointBytes), Error> {

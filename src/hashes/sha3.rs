@@ -13,15 +13,23 @@ pub type Sha3_256 = Sha3_256With<KeccakF1600>;
 pub type Sha3_384 = Sha3_384With<KeccakF1600>;
 pub type Sha3_512 = Sha3_512With<KeccakF1600>;
 
-pub struct Sha3<const RATE: usize, const N: usize, P: KeccakPermutation>(Sponge<RATE, P>);
+pub struct Sha3<const RATE: usize, const N: usize, P>(Sponge<RATE, P>)
+where
+    P: KeccakPermutation;
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Clone for Sha3<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Clone for Sha3<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Sha3<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Sha3<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     const DOMAIN: u8 = 0x06;
     const WIDTH: usize = 200;
 
@@ -58,19 +66,28 @@ impl<const RATE: usize, const N: usize, P: KeccakPermutation> Sha3<RATE, N, P> {
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Default for Sha3<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Default for Sha3<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Init for Sha3<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Init for Sha3<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     fn new() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, const N: usize, P: KeccakPermutation> Digest for Sha3<RATE, N, P> {
+impl<const RATE: usize, const N: usize, P> Digest for Sha3<RATE, N, P>
+where
+    P: KeccakPermutation,
+{
     const OUTPUT_SIZE: usize = N;
 
     type Output = [u8; N];
@@ -90,7 +107,10 @@ impl<const RATE: usize, const N: usize, P: KeccakPermutation> Digest for Sha3<RA
 
 macro_rules! impl_hasher {
     ($rate:literal, $n:literal) => {
-        impl<P: KeccakPermutation> Hasher for Sha3<$rate, $n, P> {
+        impl<P> Hasher for Sha3<$rate, $n, P>
+        where
+            P: KeccakPermutation,
+        {
             const BLOCK_SIZE: usize = $rate;
 
             type Block = [u8; $rate];

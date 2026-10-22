@@ -23,7 +23,10 @@ impl_field_arithmetic!(
     2
 );
 
-impl<A: FieldArithmetic<Bytes = [u8; 48]>> FieldElement for FieldP384With<A> {
+impl<A> FieldElement for FieldP384With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 48]>,
+{
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
@@ -51,8 +54,9 @@ impl<A: FieldArithmetic<Bytes = [u8; 48]>> FieldElement for FieldP384With<A> {
     }
 }
 
-impl<A: FieldArithmetic<Bytes = [u8; 48]>> WeierstrassParams<FieldP384With<A>>
-    for FieldP384With<A>
+impl<A> WeierstrassParams<FieldP384With<A>> for FieldP384With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 48]>,
 {
     const A: FieldP384With<A> = FieldP384With::from_bytes(&P384::A);
     const B: FieldP384With<A> = FieldP384With::from_bytes(&P384::B);

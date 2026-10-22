@@ -182,12 +182,10 @@ macro_rules! ml_dsa {
     };
 }
 
-fn run_verify<G: DeserializeOwned>(
-    name: &str,
-    json: &str,
-    public_key: fn(&G) -> &[u8],
-    verify: Verify,
-) {
+fn run_verify<G>(name: &str, json: &str, public_key: fn(&G) -> &[u8], verify: Verify)
+where
+    G: DeserializeOwned,
+{
     let file: TestFile<G, VerifyCase> = load(json);
     let mut summary = Summary::new(name, &file);
     for group in &file.test_groups {

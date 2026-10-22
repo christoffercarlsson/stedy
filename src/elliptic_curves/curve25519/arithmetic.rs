@@ -22,14 +22,20 @@ impl_field_arithmetic!(
     3
 );
 
-impl<A: FieldArithmetic<Bytes = [u8; 32]>> Field25519With<A> {
+impl<A> Field25519With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
     const SQRT_M1: Self = Self::from_bytes(&[
         176, 160, 14, 74, 39, 27, 238, 196, 120, 228, 47, 173, 6, 24, 67, 47, 167, 215, 251, 61,
         153, 0, 77, 43, 11, 223, 193, 79, 128, 36, 131, 43,
     ]);
 }
 
-impl<A: FieldArithmetic<Bytes = [u8; 32]>> FieldElement for Field25519With<A> {
+impl<A> FieldElement for Field25519With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
@@ -57,7 +63,10 @@ impl<A: FieldArithmetic<Bytes = [u8; 32]>> FieldElement for Field25519With<A> {
     }
 }
 
-impl<A: FieldArithmetic<Bytes = [u8; 32]>> EdwardsParams<Field25519With<A>> for Field25519With<A> {
+impl<A> EdwardsParams<Field25519With<A>> for Field25519With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
     const A: i8 = Edwards25519::A;
     const COFACTOR: u8 = Edwards25519::COFACTOR;
     const DOMAIN: &'static [u8] = Edwards25519::DOMAIN;
@@ -71,8 +80,9 @@ impl<A: FieldArithmetic<Bytes = [u8; 32]>> EdwardsParams<Field25519With<A>> for 
     const BASE_COMB_HIGH: [[Self; 3]; 8] = Self::table_from_bytes(&Edwards25519::BASE_COMB_HIGH);
 }
 
-impl<A: FieldArithmetic<Bytes = [u8; 32]>> MontgomeryParams<Field25519With<A>>
-    for Field25519With<A>
+impl<A> MontgomeryParams<Field25519With<A>> for Field25519With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
 {
     const BITS: usize = Curve25519::BITS;
     const COFACTOR: u8 = Curve25519::COFACTOR;

@@ -58,11 +58,17 @@ impl FieldP521 {
     }
 }
 
-pub(super) fn invert<F: FieldElement>(x: F) -> F {
+pub(super) fn invert<F>(x: F) -> F
+where
+    F: FieldElement,
+{
     x * pow2n(pow25191(x), 2)
 }
 
-fn pow25191<F: FieldElement>(x: F) -> F {
+fn pow25191<F>(x: F) -> F
+where
+    F: FieldElement,
+{
     let x2 = x.square();
     let x3 = x * x2;
     let x6 = x3.square();
@@ -79,7 +85,10 @@ fn pow25191<F: FieldElement>(x: F) -> F {
     x127 * pow2n(x512, 7)
 }
 
-fn pow2n<F: FieldElement>(x: F, n: usize) -> F {
+fn pow2n<F>(x: F, n: usize) -> F
+where
+    F: FieldElement,
+{
     let mut x = x.square();
     for _ in 1..n {
         x = x.square();
@@ -87,7 +96,10 @@ fn pow2n<F: FieldElement>(x: F, n: usize) -> F {
     x
 }
 
-pub(super) fn sqrt<F: FieldElement>(u: F, v: F) -> (F, Choice) {
+pub(super) fn sqrt<F>(u: F, v: F) -> (F, Choice)
+where
+    F: FieldElement,
+{
     let v2 = v.square();
     let v3 = v2 * v;
     let r = u * v * pow25191(u * v3);

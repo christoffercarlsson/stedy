@@ -13,7 +13,10 @@ pub enum ByteOrder {
     LittleEndian,
 }
 
-pub trait EdwardsParams<F: FieldElement> {
+pub trait EdwardsParams<F>
+where
+    F: FieldElement,
+{
     const A: i8;
     const COFACTOR: u8;
     const D: F;
@@ -195,7 +198,10 @@ pub trait MontgomeryFormParams<const LIMBS: usize>: Copy + Clone {
     const N0: u64;
 }
 
-pub trait MontgomeryParams<F: FieldElement> {
+pub trait MontgomeryParams<F>
+where
+    F: FieldElement,
+{
     const BITS: usize;
     const COFACTOR: u8;
     const BASE_POINT: F;
@@ -209,7 +215,10 @@ pub trait MontgomeryParams<F: FieldElement> {
     fn mul_a24(element: F) -> F;
 }
 
-pub trait WeierstrassParams<F: FieldElement> {
+pub trait WeierstrassParams<F>
+where
+    F: FieldElement,
+{
     const A: F;
     const B: F;
     const BASE_POINT_X: F;

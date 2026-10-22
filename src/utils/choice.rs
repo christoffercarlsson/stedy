@@ -24,15 +24,24 @@ impl Choice {
     pub const FALSE: Self = Self(0);
     pub const TRUE: Self = Self(1);
 
-    pub fn nonzero<T: Cmov>(value: T) -> Self {
+    pub fn nonzero<T>(value: T) -> Self
+    where
+        T: Cmov,
+    {
         value.is_nonzero()
     }
 
-    pub fn eq<T: Cmov>(a: T, b: T) -> Self {
+    pub fn eq<T>(a: T, b: T) -> Self
+    where
+        T: Cmov,
+    {
         !(a ^ b).is_nonzero()
     }
 
-    pub fn eq_slice<T: Cmov>(a: &[T], b: &[T]) -> Self {
+    pub fn eq_slice<T>(a: &[T], b: &[T]) -> Self
+    where
+        T: Cmov,
+    {
         let difference = a
             .iter()
             .zip(b)
@@ -40,21 +49,33 @@ impl Choice {
         Self::eq(a.len(), b.len()) & !difference.is_nonzero()
     }
 
-    pub fn less_than<T: Unsigned>(a: T, b: T) -> Self {
+    pub fn less_than<T>(a: T, b: T) -> Self
+    where
+        T: Unsigned,
+    {
         a.is_less_than(b)
     }
 
-    pub fn select<T: Cmov>(self, a: T, b: T) -> T {
+    pub fn select<T>(self, a: T, b: T) -> T
+    where
+        T: Cmov,
+    {
         let mut selected = a;
         selected.assign(b, self);
         selected
     }
 
-    pub fn assign<T: Cmov>(self, dst: &mut [T], src: &[T]) {
+    pub fn assign<T>(self, dst: &mut [T], src: &[T])
+    where
+        T: Cmov,
+    {
         T::assign_slice(dst, src, self);
     }
 
-    pub fn swap<T: Cmov>(self, a: &mut [T], b: &mut [T]) {
+    pub fn swap<T>(self, a: &mut [T], b: &mut [T])
+    where
+        T: Cmov,
+    {
         let mask = T::mask(self);
         for (a, b) in a.iter_mut().zip(b) {
             let difference = mask & (*a ^ *b);
@@ -63,7 +84,10 @@ impl Choice {
         }
     }
 
-    pub fn mask<T: Cmov>(self) -> T {
+    pub fn mask<T>(self) -> T
+    where
+        T: Cmov,
+    {
         T::mask(self)
     }
 

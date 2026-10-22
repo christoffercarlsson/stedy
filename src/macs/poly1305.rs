@@ -182,7 +182,10 @@ impl Poly1305 {
         self.a *= self.r;
     }
 
-    fn create_mac<C: SeekableStreamCipher<Key = [u8; 32]>>(cipher: &mut C) -> Self {
+    fn create_mac<C>(cipher: &mut C) -> Self
+    where
+        C: SeekableStreamCipher<Key = [u8; 32]>,
+    {
         let mut key = [0u8; 32];
         cipher
             .apply_keystream(&mut key)

@@ -1,6 +1,9 @@
 use crate::utils::{Choice, Cmov};
 
-pub fn verify<T: Cmov>(a: &[T], b: &[T]) -> bool {
+pub fn verify<T>(a: &[T], b: &[T]) -> bool
+where
+    T: Cmov,
+{
     Choice::eq_slice(a, b).to_bool()
 }
 
