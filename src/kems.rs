@@ -11,3 +11,6 @@ pub use {
     ml_kem::{MlKem512With, MlKem768With, MlKem1024With, MlKemNtt},
     x_wing::XWingWith,
 };
+
+#[cfg(not(feature = "hazmat"))]
+pub(crate) use ml_kem::MlKemNtt;

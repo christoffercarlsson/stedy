@@ -1,7 +1,14 @@
-use {super::Backend, core::hint::black_box};
+use {
+    super::{Backend, Choice},
+    core::hint::black_box,
+};
 
 pub(super) fn opaque(value: u32) -> u32 {
     black_box(value)
+}
+
+pub(super) fn opaque_choices(choices: &mut [Choice]) {
+    black_box(choices);
 }
 
 impl Backend for u32 {

@@ -1,9 +1,6 @@
 use {
     super::Sealed,
-    crate::{
-        Error,
-        utils::{Choice, Secret},
-    },
+    crate::{Error, kems::MlKemNtt, signatures::MlDsaNtt, utils::Secret},
     core::{
         array::TryFromSliceError,
         ops::{Index, IndexMut, RangeFrom},
@@ -105,6 +102,10 @@ pub trait Mac: KeyInit + Digest {
 }
 
 pub trait MlDsaArithmetic {
+    fn reduce_poly(w: &mut [i32; 256]) {
+        MlDsaNtt::reduce_poly(w);
+    }
+
     fn ntt(w: &mut [i32; 256]);
 
     fn inverse_ntt(w: &mut [i32; 256]);
@@ -116,20 +117,23 @@ pub trait MlDsaArithmetic {
         v: &[[i32; 256]; L],
         w: &mut [i32; 256],
     ) {
-        const Q: i32 = 8380417;
         let mut product = Secret::from([0i32; 256]);
         *w = [0; 256];
         for (a, b) in row.iter().zip(v) {
             Self::multiply_ntt(a, b, product.get_mut());
             for (w, &product) in w.iter_mut().zip(product.get()) {
-                let sum = *w + product - Q;
-                *w = Choice::nonzero(sum >> 31).select(sum, sum + Q);
+                *w += product;
             }
         }
+        Self::reduce_poly(w);
     }
 }
 
 pub trait MlKemArithmetic {
+    fn reduce_poly(f: &mut [i16; 256]) {
+        MlKemNtt::reduce_poly(f);
+    }
+
     fn ntt(f: &mut [i16; 256]);
 
     fn inverse_ntt(f: &mut [i16; 256]);
@@ -141,16 +145,15 @@ pub trait MlKemArithmetic {
         v: &[[i16; 256]; K],
         h: &mut [i16; 256],
     ) {
-        const Q: i16 = 3329;
         let mut product = Secret::from([0i16; 256]);
         *h = [0; 256];
         for (f, g) in row.iter().zip(v) {
             Self::multiply_ntt(f, g, product.get_mut());
             for (h, &product) in h.iter_mut().zip(product.get()) {
-                let sum = *h + product - Q;
-                *h = Choice::nonzero(sum >> 15).select(sum, sum + Q);
+                *h += product;
             }
         }
+        Self::reduce_poly(h);
     }
 }
 

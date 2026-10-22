@@ -146,12 +146,82 @@ impl BitXorAssign for Choice {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct Choices<const N: usize>([Choice; N]);
+
+impl<const N: usize> Choices<N> {
+    pub fn nonzero<T>(mut value: impl FnMut(usize) -> T) -> Self
+    where
+        T: Cmov,
+    {
+        Self::from_bits(|i| value(i).nonzero_bit())
+    }
+
+    pub fn eq<T>(mut a: impl FnMut(usize) -> T, mut b: impl FnMut(usize) -> T) -> Self
+    where
+        T: Cmov,
+    {
+        Self::from_bits(|i| (a(i) ^ b(i)).nonzero_bit() ^ 1)
+    }
+
+    pub fn less_than<T>(mut a: impl FnMut(usize) -> T, mut b: impl FnMut(usize) -> T) -> Self
+    where
+        T: Unsigned,
+    {
+        Self::from_bits(|i| a(i).less_than_bit(b(i)))
+    }
+
+    pub fn assign_with<T>(&self, dst: &mut [T; N], replacement: impl Fn(T) -> T)
+    where
+        T: Cmov,
+    {
+        for (dst, choice) in dst.iter_mut().zip(&self.0) {
+            let mask = T::mask_bit(choice.0);
+            *dst = *dst ^ (mask & (*dst ^ replacement(*dst)));
+        }
+    }
+
+    pub fn any(&self) -> Choice {
+        self.0
+            .iter()
+            .fold(Choice::FALSE, |any, &choice| any | choice)
+    }
+
+    fn from_bits(mut bit: impl FnMut(usize) -> u8) -> Self {
+        let mut choices = Self([Choice::FALSE; N]);
+        for (i, choice) in choices.0.iter_mut().enumerate() {
+            *choice = Choice(bit(i));
+        }
+        backend::opaque_choices(&mut choices.0);
+        choices
+    }
+}
+
+impl<const N: usize> Not for Choices<N> {
+    type Output = Self;
+
+    fn not(mut self) -> Self {
+        for choice in &mut self.0 {
+            *choice = !*choice;
+        }
+        self
+    }
+}
+
 pub trait Cmov:
     Copy + Default + BitAnd<Output = Self> + BitOr<Output = Self> + BitXor<Output = Self> + Sealed
 {
-    fn is_nonzero(self) -> Choice;
+    fn nonzero_bit(self) -> u8;
 
-    fn mask(choice: Choice) -> Self;
+    fn mask_bit(bit: u8) -> Self;
+
+    fn is_nonzero(self) -> Choice {
+        Choice(backend::opaque(u32::from(self.nonzero_bit())) as u8)
+    }
+
+    fn mask(choice: Choice) -> Self {
+        Self::mask_bit(backend::opaque(u32::from(choice.0)) as u8)
+    }
 
     fn assign(&mut self, src: Self, choice: Choice);
 
@@ -164,7 +234,11 @@ pub trait Cmov:
 }
 
 pub trait Unsigned: Cmov {
-    fn is_less_than(self, other: Self) -> Choice;
+    fn less_than_bit(self, other: Self) -> u8;
+
+    fn is_less_than(self, other: Self) -> Choice {
+        Choice(self.less_than_bit(other))
+    }
 }
 
 trait Backend: Copy {
@@ -176,13 +250,12 @@ macro_rules! impl_backend {
         impl Sealed for $word {}
 
         impl Cmov for $word {
-            fn is_nonzero(self) -> Choice {
-                let nonzero = (self | self.wrapping_neg()) >> (<$word>::BITS - 1);
-                Choice(backend::opaque(nonzero as u32) as u8)
+            fn nonzero_bit(self) -> u8 {
+                ((self | self.wrapping_neg()) >> (<$word>::BITS - 1)) as u8
             }
 
-            fn mask(choice: Choice) -> Self {
-                (backend::opaque(u32::from(choice.0)) as $word).wrapping_neg()
+            fn mask_bit(bit: u8) -> Self {
+                (bit as $word).wrapping_neg()
             }
 
             fn assign(&mut self, src: Self, choice: Choice) {
@@ -197,12 +270,12 @@ macro_rules! impl_via {
         impl Sealed for $int {}
 
         impl Cmov for $int {
-            fn is_nonzero(self) -> Choice {
-                (self as $via).is_nonzero()
+            fn nonzero_bit(self) -> u8 {
+                (self as $via).nonzero_bit()
             }
 
-            fn mask(choice: Choice) -> Self {
-                <$via>::mask(choice) as $int
+            fn mask_bit(bit: u8) -> Self {
+                <$via>::mask_bit(bit) as $int
             }
 
             fn assign(&mut self, src: Self, choice: Choice) {
@@ -217,9 +290,9 @@ macro_rules! impl_via {
 macro_rules! impl_unsigned {
     ($unsigned:ty) => {
         impl Unsigned for $unsigned {
-            fn is_less_than(self, other: Self) -> Choice {
+            fn less_than_bit(self, other: Self) -> u8 {
                 let (_, borrow) = self.overflowing_sub(other);
-                Choice(u8::from(borrow))
+                u8::from(borrow)
             }
         }
     };
@@ -253,12 +326,12 @@ impl_unsigned!(usize);
 impl Sealed for u128 {}
 
 impl Cmov for u128 {
-    fn is_nonzero(self) -> Choice {
-        (self as u64 | (self >> 64) as u64).is_nonzero()
+    fn nonzero_bit(self) -> u8 {
+        (self as u64 | (self >> 64) as u64).nonzero_bit()
     }
 
-    fn mask(choice: Choice) -> Self {
-        (choice.0 as u128).wrapping_neg()
+    fn mask_bit(bit: u8) -> Self {
+        (bit as u128).wrapping_neg()
     }
 
     fn assign(&mut self, src: Self, choice: Choice) {

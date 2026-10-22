@@ -3,7 +3,7 @@ use {
         Error,
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
         traits::{ByteArray, CryptoRng, Hasher, MlKemArithmetic, MlKemParams, Xof, XofReader},
-        utils::{Choice, Secret, verify},
+        utils::{Choice, Choices, Secret, verify},
     },
     core::marker::PhantomData,
 };
@@ -23,6 +23,14 @@ pub type MlKem1024 = MlKem1024With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake
 pub struct MlKemNtt;
 
 impl MlKemArithmetic for MlKemNtt {
+    fn reduce_poly(f: &mut [i16; 256]) {
+        let negative = Choices::nonzero(|i| {
+            f[i] = Self::barrett_reduce(f[i]);
+            f[i] >> 15
+        });
+        negative.assign_with(f, |a| a + Self::Q);
+    }
+
     // Algorithm 9
     fn ntt(f: &mut [i16; 256]) {
         Self::ntt_layer::<128>(f, &Self::ZETAS[1..2]);
@@ -32,9 +40,7 @@ impl MlKemArithmetic for MlKemNtt {
         Self::ntt_layer::<8>(f, &Self::ZETAS[16..32]);
         Self::ntt_layer::<4>(f, &Self::ZETAS[32..64]);
         Self::ntt_layer::<2>(f, &Self::ZETAS[64..128]);
-        for a in f.iter_mut() {
-            *a = Self::reduce(*a);
-        }
+        Self::reduce_poly(f);
     }
 
     // Algorithm 10
@@ -47,21 +53,22 @@ impl MlKemArithmetic for MlKemNtt {
         Self::inverse_ntt_layer::<64>(f, &Self::ZETAS[2..4]);
         Self::inverse_ntt_layer::<128>(f, &Self::ZETAS[1..2]);
         for a in f.iter_mut() {
-            *a = Self::reduce(Self::montgomery_multiply(*a, 512));
+            *a = Self::montgomery_multiply(*a, 512);
         }
+        Self::reduce_poly(f);
     }
 
     // Algorithm 11
     fn multiply_ntt(f: &[i16; 256], g: &[i16; 256], h: &mut [i16; 256]) {
         let (f, _) = f.as_chunks::<2>();
         let (g, _) = g.as_chunks::<2>();
-        let (h, _) = h.as_chunks_mut::<2>();
-        for (((&[a0, a1], &[b0, b1]), [c0, c1]), gamma) in f.iter().zip(g).zip(h).zip(Self::GAMMAS)
+        let (pairs, _) = h.as_chunks_mut::<2>();
+        for (((&[a0, a1], &[b0, b1]), [c0, c1]), gamma) in
+            f.iter().zip(g).zip(pairs).zip(Self::GAMMAS)
         {
-            let (p0, p1) = Self::base_case_multiply(a0, a1, b0, b1, gamma);
-            *c0 = Self::reduce(p0);
-            *c1 = Self::reduce(p1);
+            (*c0, *c1) = Self::base_case_multiply(a0, a1, b0, b1, gamma);
         }
+        Self::reduce_poly(h);
     }
 
     fn multiply_accumulate_ntt<const K: usize>(
@@ -69,8 +76,8 @@ impl MlKemArithmetic for MlKemNtt {
         v: &[[i16; 256]; K],
         h: &mut [i16; 256],
     ) {
-        let (h, _) = h.as_chunks_mut::<2>();
-        for (i, ([c0, c1], gamma)) in h.iter_mut().zip(Self::GAMMAS).enumerate() {
+        let (pairs, _) = h.as_chunks_mut::<2>();
+        for (i, ([c0, c1], gamma)) in pairs.iter_mut().zip(Self::GAMMAS).enumerate() {
             let mut sum0 = 0i32;
             let mut sum1 = 0i32;
             for (f, g) in row.iter().zip(v) {
@@ -80,15 +87,10 @@ impl MlKemArithmetic for MlKemNtt {
                 sum0 += a0 * b0 + a1 * b1_gamma;
                 sum1 += a0 * b1 + a1 * b0;
             }
-            *c0 = Self::reduce(Self::montgomery_multiply(
-                Self::montgomery_reduce(sum0),
-                1353,
-            ));
-            *c1 = Self::reduce(Self::montgomery_multiply(
-                Self::montgomery_reduce(sum1),
-                1353,
-            ));
+            *c0 = Self::montgomery_multiply(Self::montgomery_reduce(sum0), 1353);
+            *c1 = Self::montgomery_multiply(Self::montgomery_reduce(sum1), 1353);
         }
+        Self::reduce_poly(h);
     }
 }
 
@@ -176,11 +178,6 @@ impl MlKemNtt {
         let t = ((Self::BARRETT_MULTIPLIER * a as i32 + (1 << 25)) >> 26) as i16;
         a.wrapping_sub(t.wrapping_mul(Self::Q))
     }
-
-    fn reduce(a: i16) -> i16 {
-        let a = Self::barrett_reduce(a);
-        Choice::nonzero(a >> 15).select(a, a + Self::Q)
-    }
 }
 
 pub struct MlKem<const K: usize, P, A, G, H, X, F>
@@ -262,11 +259,14 @@ where
 {
     // Algorithm 5
     fn byte_encode(d: usize, f: &[i16; 256], bytes: &mut [u8]) {
+        let mut f = *f;
+        A::reduce_poly(&mut f);
         let (groups, _) = f.as_chunks::<8>();
         for (group, chunk) in groups.iter().zip(bytes.chunks_exact_mut(d)) {
-            let packed = group.iter().enumerate().fold(0u128, |packed, (i, &a)| {
-                packed | ((MlKemNtt::reduce(a) as u128) << (i * d))
-            });
+            let packed = group
+                .iter()
+                .enumerate()
+                .fold(0u128, |packed, (i, &a)| packed | ((a as u128) << (i * d)));
             chunk.copy_from_slice(&packed.to_le_bytes()[..d]);
         }
     }
@@ -280,22 +280,28 @@ where
             packed[..d].copy_from_slice(chunk);
             let packed = u128::from_le_bytes(packed);
             for (i, a) in group.iter_mut().enumerate() {
-                let x = ((packed >> (i * d)) & mask) as i16;
-                *a = if d < 12 {
-                    x
-                } else {
-                    Choice::less_than(x as u16, MlKemNtt::Q as u16).select(x - MlKemNtt::Q, x)
-                };
+                *a = ((packed >> (i * d)) & mask) as i16;
             }
+        }
+        if d == 12 {
+            let above = Choices::less_than(|_| (MlKemNtt::Q - 1) as u16, |i| f[i] as u16);
+            above.assign_with(f, |x| x - MlKemNtt::Q);
         }
     }
 
-    fn compress(d: usize, x: i16) -> i16 {
-        let numerator = ((MlKemNtt::reduce(x) as i32) << d) + MlKemNtt::Q as i32 / 2;
-        let quotient = ((numerator as i64 * MlKemNtt::BARRETT_MULTIPLIER as i64) >> 26) as i32;
-        let remainder = numerator - quotient * MlKemNtt::Q as i32;
-        let quotient = Choice::nonzero(remainder >> 31).select(quotient, quotient - 1);
-        (quotient & ((1 << d) - 1)) as i16
+    fn compress(d: usize, f: &mut [i16; 256]) {
+        A::reduce_poly(f);
+        let numerator = |x: i16| ((x as i32) << d) + MlKemNtt::Q as i32 / 2;
+        let mut quotient = [0i32; 256];
+        let negative = Choices::nonzero(|i| {
+            let numerator = numerator(f[i]);
+            quotient[i] = ((numerator as i64 * MlKemNtt::BARRETT_MULTIPLIER as i64) >> 26) as i32;
+            (numerator - quotient[i] * MlKemNtt::Q as i32) >> 31
+        });
+        negative.assign_with(&mut quotient, |q| q - 1);
+        for (x, &q) in f.iter_mut().zip(&quotient) {
+            *x = (q & ((1 << d) - 1)) as i16;
+        }
     }
 
     fn decompress(d: usize, y: i16) -> i16 {
@@ -348,7 +354,7 @@ where
         let mut s = Secret::from([[0i16; 256]; K]);
         for poly in s.get_mut() {
             Self::sample_poly(P::ETA1, sigma, &mut n, poly);
-            Self::reduce_poly(poly);
+            A::reduce_poly(poly);
             A::ntt(poly);
         }
         let (t_bytes, rho_bytes) = ek_pke.split_at_mut(384 * K);
@@ -362,7 +368,7 @@ where
             A::multiply_accumulate_ntt(&row, s.get(), t.get_mut());
             let mut e = Secret::from([0i16; 256]);
             Self::sample_poly(P::ETA1, sigma, &mut n, e.get_mut());
-            Self::reduce_poly(e.get_mut());
+            A::reduce_poly(e.get_mut());
             A::ntt(e.get_mut());
             Self::add_poly(t.get_mut(), e.get());
             Self::byte_encode(12, t.get(), bytes);
@@ -383,7 +389,7 @@ where
         let mut y = Secret::from([[0i16; 256]; K]);
         for poly in y.get_mut() {
             Self::sample_poly(P::ETA1, r, &mut n, poly);
-            Self::reduce_poly(poly);
+            A::reduce_poly(poly);
             A::ntt(poly);
         }
         let mut row = [[0i16; 256]; K];
@@ -398,9 +404,7 @@ where
             let mut e1 = Secret::from([0i16; 256]);
             Self::sample_poly(P::ETA2, r, &mut n, e1.get_mut());
             Self::add_poly(u.get_mut(), e1.get());
-            for x in u.get_mut() {
-                *x = Self::compress(P::DU, *x);
-            }
+            Self::compress(P::DU, u.get_mut());
             Self::byte_encode(P::DU, u.get(), bytes);
         }
         let mut e2 = Secret::from([0i16; 256]);
@@ -418,9 +422,7 @@ where
         A::inverse_ntt(v.get_mut());
         Self::add_poly(v.get_mut(), e2.get());
         Self::add_poly(v.get_mut(), mu.get());
-        for x in v.get_mut() {
-            *x = Self::compress(P::DV, *x);
-        }
+        Self::compress(P::DV, v.get_mut());
         Self::byte_encode(P::DV, v.get(), c2);
     }
 
@@ -449,11 +451,9 @@ where
             *x = Self::decompress(P::DV, *x);
         }
         for (w, v) in w.get_mut().iter_mut().zip(&v) {
-            *w = MlKemNtt::barrett_reduce(*v - *w);
+            *w = *v - *w;
         }
-        for x in w.get_mut() {
-            *x = Self::compress(1, *x);
-        }
+        Self::compress(1, w.get_mut());
         let mut m = Secret::from([0u8; 32]);
         Self::byte_encode(1, w.get(), m.as_mut());
         m
@@ -552,13 +552,7 @@ where
 
     fn add_poly(f: &mut [i16; 256], g: &[i16; 256]) {
         for (a, b) in f.iter_mut().zip(g) {
-            *a = MlKemNtt::barrett_reduce(*a + *b);
-        }
-    }
-
-    fn reduce_poly(f: &mut [i16; 256]) {
-        for a in f.iter_mut() {
-            *a = MlKemNtt::reduce(*a);
+            *a += *b;
         }
     }
 }

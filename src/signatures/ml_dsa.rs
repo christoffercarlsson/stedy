@@ -3,7 +3,7 @@ use {
         Error,
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaArithmetic, MlDsaParams, Xof, XofReader},
-        utils::{Choice, Secret, verify},
+        utils::{Choice, Choices, Secret, verify},
     },
     core::marker::PhantomData,
 };
@@ -23,6 +23,14 @@ pub type MlDsa87 = MlDsa87With<MlDsaNtt, Shake256, Shake128>;
 pub struct MlDsaNtt;
 
 impl MlDsaArithmetic for MlDsaNtt {
+    fn reduce_poly(w: &mut [i32; 256]) {
+        let negative = Choices::nonzero(|i| {
+            w[i] = Self::reduce(w[i]);
+            w[i] >> 31
+        });
+        negative.assign_with(w, |a| a + Self::Q);
+    }
+
     // Algorithm 41
     fn ntt(w: &mut [i32; 256]) {
         Self::ntt_layer::<128>(w, &Self::ZETAS[1..2]);
@@ -33,9 +41,7 @@ impl MlDsaArithmetic for MlDsaNtt {
         Self::ntt_layer::<4>(w, &Self::ZETAS[32..64]);
         Self::ntt_layer::<2>(w, &Self::ZETAS[64..128]);
         Self::ntt_layer::<1>(w, &Self::ZETAS[128..256]);
-        for a in w.iter_mut() {
-            *a = Self::mod_q(*a);
-        }
+        Self::reduce_poly(w);
     }
 
     // Algorithm 42
@@ -49,18 +55,17 @@ impl MlDsaArithmetic for MlDsaNtt {
         Self::inverse_ntt_layer::<64>(w, &Self::ZETAS[2..4]);
         Self::inverse_ntt_layer::<128>(w, &Self::ZETAS[1..2]);
         for a in w.iter_mut() {
-            *a = Self::mod_q(Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE));
+            *a = Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE);
         }
+        Self::reduce_poly(w);
     }
 
     // Algorithm 45
     fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]) {
         for ((w, &a), &b) in w.iter_mut().zip(a).zip(b) {
-            *w = Self::mod_q(Self::montgomery_multiply(
-                Self::montgomery_multiply(a, b),
-                Self::R2,
-            ));
+            *w = Self::montgomery_multiply(Self::montgomery_multiply(a, b), Self::R2);
         }
+        Self::reduce_poly(w);
     }
 
     fn multiply_accumulate_ntt<const L: usize>(
@@ -73,11 +78,9 @@ impl MlDsaArithmetic for MlDsaNtt {
             for (a, b) in row.iter().zip(v) {
                 sum += a[j] as i64 * b[j] as i64;
             }
-            *w = Self::mod_q(Self::montgomery_multiply(
-                Self::montgomery_reduce(sum),
-                Self::R2,
-            ));
+            *w = Self::montgomery_multiply(Self::montgomery_reduce(sum), Self::R2);
         }
+        Self::reduce_poly(w);
     }
 }
 
@@ -150,11 +153,6 @@ impl MlDsaNtt {
 
     const fn reduce(a: i32) -> i32 {
         a - ((a + (1 << 22)) >> 23) * Self::Q
-    }
-
-    fn mod_q(a: i32) -> i32 {
-        let a = Self::reduce(a);
-        Choice::nonzero(a >> 31).select(a, a + Self::Q)
     }
 }
 
@@ -360,7 +358,7 @@ where
         t: &mut [[i32; 256]; K],
     ) {
         for s in s1.iter_mut() {
-            Self::mod_q_poly(s);
+            A::reduce_poly(s);
             A::ntt(s);
         }
         Self::expand_a_vector_ntt(rho, s1, t);
@@ -412,7 +410,7 @@ where
             Self::expand_mask(rho_double_prime.get(), kappa, z.get_mut());
             kappa += L as u16;
             for y in z.get_mut() {
-                Self::mod_q_poly(y);
+                A::reduce_poly(y);
                 A::ntt(y);
             }
             Self::matrix_vector_ntt(&a_hat, z.get(), w.get_mut());
@@ -421,15 +419,13 @@ where
             for w in w.get_mut() {
                 A::inverse_ntt(w);
                 let w1 = product.get_mut();
-                for (w1, &w) in w1.iter_mut().zip(w.iter()) {
-                    *w1 = Self::high_bits(w);
-                }
+                Self::high_bits(w, w1);
                 Self::simple_bit_pack(w1, Self::W1_BOUND, &mut w1_bytes[..w1_size]);
                 xof.update(&w1_bytes[..w1_size]);
             }
             xof.finalize_into(&mut c_tilde[..P::LAMBDA / 4]);
             Self::sample_in_ball(&c_tilde[..P::LAMBDA / 4], &mut c_hat);
-            Self::mod_q_poly(&mut c_hat);
+            A::reduce_poly(&mut c_hat);
             A::ntt(&mut c_hat);
             for (z, s1) in z.get_mut().iter_mut().zip(s1_hat.get()) {
                 Self::unpack_poly(s1, operand.get_mut());
@@ -437,8 +433,7 @@ where
                 Self::add_ntt(z, product.get());
                 A::inverse_ntt(z);
             }
-            let z = z.get().as_flattened().iter().copied();
-            if Self::norm_exceeds(z, P::GAMMA1 - P::BETA) {
+            if Self::norm_exceeds(z.get(), P::GAMMA1 - P::BETA) {
                 continue;
             }
             for (w, s2) in w.get_mut().iter_mut().zip(s2_hat.get()) {
@@ -446,15 +441,21 @@ where
                 A::multiply_ntt(&c_hat, operand.get(), product.get_mut());
                 A::inverse_ntt(product.get_mut());
                 for (w, &cs2) in w.iter_mut().zip(product.get()) {
-                    *w = MlDsaNtt::reduce(*w - cs2);
+                    *w -= cs2;
                 }
             }
-            let r0 = w.get().as_flattened().iter().map(|&w| Self::low_bits(w));
-            if Self::norm_exceeds(r0, P::GAMMA2 - P::BETA) {
+            let mut r0_bound = Choice::FALSE;
+            for w in w.get() {
+                let r0 = operand.get_mut();
+                Self::low_bits(w, r0);
+                A::reduce_poly(r0);
+                r0_bound |= Self::norm_exceeds_poly(r0, P::GAMMA2 - P::BETA);
+            }
+            if r0_bound.to_bool() {
                 continue;
             }
             let mut ones = 0;
-            let mut ct0_bound = false;
+            let mut ct0_bound = Choice::FALSE;
             for ((h, t0), w) in h
                 .iter_mut()
                 .zip(t0_bytes.chunks_exact(t0_size))
@@ -462,25 +463,32 @@ where
             {
                 let t0_hat = operand.get_mut();
                 Self::bit_unpack(t0, (1 << (Self::D - 1)) - 1, 1 << (Self::D - 1), t0_hat);
-                Self::mod_q_poly(t0_hat);
+                A::reduce_poly(t0_hat);
                 A::ntt(t0_hat);
                 let ct0 = product.get_mut();
                 A::multiply_ntt(&c_hat, t0_hat, ct0);
                 A::inverse_ntt(ct0);
                 *h = [0; 32];
-                for (j, (&x, &w)) in ct0.iter().zip(w).enumerate() {
-                    let hint = Self::make_hint(-x, w + x).select(0u8, 1);
+                let mut z = *ct0;
+                let mut r = *w;
+                for (z, r) in z.iter_mut().zip(r.iter_mut()) {
+                    *r += *z;
+                    *z = -*z;
+                }
+                let mut hints = [0u8; 256];
+                Self::make_hint(&z, &r).assign_with(&mut hints, |_| 1);
+                for (j, &hint) in hints.iter().enumerate() {
                     h[j / 8] |= hint << (j % 8);
                     ones += usize::from(hint);
                 }
-                ct0_bound |= Self::norm_exceeds(ct0.iter().copied(), P::GAMMA2);
+                ct0_bound |= Self::norm_exceeds_poly(ct0, P::GAMMA2);
             }
-            if !ct0_bound & (ones <= P::OMEGA) {
+            if !ct0_bound.to_bool() & (ones <= P::OMEGA) {
                 break;
             }
         }
-        for z in z.get_mut().as_flattened_mut() {
-            *z = Self::centered(*z);
+        for z in z.get_mut() {
+            Self::centered(z);
         }
         Self::sig_encode(&c_tilde[..P::LAMBDA / 4], z.get(), &h, signature);
     }
@@ -501,13 +509,15 @@ where
             xof.update(part);
         }
         xof.finalize_into(&mut mu);
-        let z_bound = Self::norm_exceeds(z.as_flattened().iter().copied(), P::GAMMA1 - P::BETA);
+        for z in &mut z {
+            A::reduce_poly(z);
+        }
+        let z_bound = Self::norm_exceeds(&z, P::GAMMA1 - P::BETA);
         let mut c_hat = [0i32; 256];
         Self::sample_in_ball(c_tilde, &mut c_hat);
-        Self::mod_q_poly(&mut c_hat);
+        A::reduce_poly(&mut c_hat);
         A::ntt(&mut c_hat);
         for z in &mut z {
-            Self::mod_q_poly(z);
             A::ntt(z);
         }
         let mut w = [[0i32; 256]; K];
@@ -522,14 +532,13 @@ where
         for (w, t1) in w.iter_mut().zip(&t1) {
             A::multiply_ntt(&c_hat, t1, &mut product);
             for (w, &ct1) in w.iter_mut().zip(&product) {
-                *w = MlDsaNtt::mod_q(*w - ct1);
+                *w -= ct1;
             }
+            A::reduce_poly(w);
             A::inverse_ntt(w);
         }
         for (w, h) in w.iter_mut().zip(&h) {
-            for (j, w) in w.iter_mut().enumerate() {
-                *w = Self::use_hint((h[j / 8] >> (j % 8)) & 1 != 0, *w);
-            }
+            Self::use_hint(h, w);
         }
         let w1 = &w;
         let mut w1_bytes = [0u8; 1024];
@@ -669,9 +678,7 @@ where
         let (t1_bytes, _) = t1_bytes.as_chunks_mut::<320>();
         rho_bytes.copy_from_slice(rho);
         for (t, bytes) in t.iter_mut().zip(t1_bytes) {
-            for (t1, t) in t1.iter_mut().zip(t.iter_mut()) {
-                (*t1, *t) = Self::power2round(*t);
-            }
+            Self::power2round(t, t1);
             Self::simple_bit_pack(t1, 1023, bytes);
         }
     }
@@ -733,7 +740,7 @@ where
         let s_size = Self::packed_size(2 * P::ETA);
         for (s_hat, bytes) in s_hat.iter_mut().zip(bytes.chunks_exact(s_size)) {
             Self::bit_unpack(bytes, P::ETA, P::ETA, s);
-            Self::mod_q_poly(s);
+            A::reduce_poly(s);
             A::ntt(s);
             Self::pack_poly(s, s_hat);
         }
@@ -880,54 +887,79 @@ where
     }
 
     // Algorithm 35
-    fn power2round(r: i32) -> (i32, i32) {
-        let r = MlDsaNtt::mod_q(r);
-        let r0 = r & ((1 << Self::D) - 1);
-        let r0 =
-            Choice::less_than(1u32 << (Self::D - 1), r0 as u32).select(r0, r0 - (1 << Self::D));
-        ((r - r0) >> Self::D, r0)
+    fn power2round(t: &mut [i32; 256], t1: &mut [i32; 256]) {
+        A::reduce_poly(t);
+        for (t1, t) in t1.iter_mut().zip(t.iter()) {
+            *t1 = t & ((1 << Self::D) - 1);
+        }
+        let high = Choices::less_than(|_| 1u32 << (Self::D - 1), |i| t1[i] as u32);
+        high.assign_with(t1, |r0| r0 - (1 << Self::D));
+        for (t1, t) in t1.iter_mut().zip(t.iter_mut()) {
+            let t0 = *t1;
+            *t1 = (*t - t0) >> Self::D;
+            *t = t0;
+        }
     }
 
     // Algorithm 36
-    fn decompose(r: i32) -> (i32, i32) {
-        let r = MlDsaNtt::mod_q(r);
-        let r1 = (((r + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_MULTIPLIER) >> 48) as i32;
-        let r0 = r - r1 * 2 * P::GAMMA2;
-        let corner = Choice::eq(r1, Self::W1_BOUND + 1);
-        (corner.select(r1, 0), corner.select(r0, r0 - 1))
+    fn decompose(r: &mut [i32; 256], r1: &mut [i32; 256]) {
+        A::reduce_poly(r);
+        for (r1, r0) in r1.iter_mut().zip(r.iter_mut()) {
+            *r1 = (((*r0 + P::GAMMA2 - 1) as u64 * Self::DECOMPOSE_MULTIPLIER) >> 48) as i32;
+            *r0 -= *r1 * 2 * P::GAMMA2;
+        }
+        let corner = Choices::eq(|i| r1[i], |_| Self::W1_BOUND + 1);
+        corner.assign_with(r1, |_| 0);
+        corner.assign_with(r, |r0| r0 - 1);
     }
 
     // Algorithm 37
-    fn high_bits(r: i32) -> i32 {
-        Self::decompose(r).0
+    fn high_bits(r: &[i32; 256], r1: &mut [i32; 256]) {
+        let mut r0 = *r;
+        Self::decompose(&mut r0, r1);
     }
 
     // Algorithm 38
-    fn low_bits(r: i32) -> i32 {
-        Self::decompose(r).1
+    fn low_bits(r: &[i32; 256], r0: &mut [i32; 256]) {
+        let mut r1 = [0i32; 256];
+        *r0 = *r;
+        Self::decompose(r0, &mut r1);
     }
 
     // Algorithm 39
-    fn make_hint(z: i32, r: i32) -> Choice {
-        !Choice::eq(Self::high_bits(r), Self::high_bits(r + z))
+    fn make_hint(z: &[i32; 256], r: &[i32; 256]) -> Choices<256> {
+        let mut r_plus_z = *r;
+        for (r_plus_z, z) in r_plus_z.iter_mut().zip(z) {
+            *r_plus_z += z;
+        }
+        let mut high = [0i32; 256];
+        let mut high_plus_z = [0i32; 256];
+        Self::high_bits(r, &mut high);
+        Self::high_bits(&r_plus_z, &mut high_plus_z);
+        !Choices::eq(|i| high[i], |i| high_plus_z[i])
     }
 
     // Algorithm 40
-    fn use_hint(h: bool, r: i32) -> i32 {
+    fn use_hint(h: &[u8; 32], r: &mut [i32; 256]) {
         let m = (MlDsaNtt::Q - 1) / (2 * P::GAMMA2);
-        let (r1, r0) = Self::decompose(r);
-        match (h, r0 > 0) {
-            (true, true) => (r1 + 1) % m,
-            (true, false) => (r1 - 1).rem_euclid(m),
-            (false, _) => r1,
+        let mut r1 = [0i32; 256];
+        Self::decompose(r, &mut r1);
+        for (j, r0) in r.iter_mut().enumerate() {
+            let h = (h[j / 8] >> (j % 8)) & 1 != 0;
+            *r0 = match (h, *r0 > 0) {
+                (true, true) => (r1[j] + 1) % m,
+                (true, false) => (r1[j] - 1).rem_euclid(m),
+                (false, _) => r1[j],
+            };
         }
     }
 
     // Algorithm 44
     fn add_ntt(a: &mut [i32; 256], b: &[i32; 256]) {
         for (a, b) in a.iter_mut().zip(b) {
-            *a = MlDsaNtt::mod_q(*a + b);
+            *a += b;
         }
+        A::reduce_poly(a);
     }
 
     // Algorithm 46
@@ -962,16 +994,12 @@ where
         }
     }
 
-    fn mod_q_poly(w: &mut [i32; 256]) {
-        for w in w.iter_mut() {
-            *w = MlDsaNtt::mod_q(*w);
-        }
-    }
-
     fn pack_poly(w: &[i32; 256], packed: &mut [u8; 768]) {
+        let mut w = *w;
+        A::reduce_poly(&mut w);
         let (coefficients, _) = packed.as_chunks_mut::<3>();
-        for (packed, &x) in coefficients.iter_mut().zip(w) {
-            let [b0, b1, b2, _] = MlDsaNtt::mod_q(x).to_le_bytes();
+        for (packed, &x) in coefficients.iter_mut().zip(&w) {
+            let [b0, b1, b2, _] = x.to_le_bytes();
             *packed = [b0, b1, b2];
         }
     }
@@ -995,19 +1023,26 @@ where
         32 * Self::bitlen(b)
     }
 
-    fn centered(a: i32) -> i32 {
-        let a = MlDsaNtt::mod_q(a);
-        Choice::less_than(((MlDsaNtt::Q - 1) / 2) as u32, a as u32).select(a, a - MlDsaNtt::Q)
+    fn centered(w: &mut [i32; 256]) {
+        A::reduce_poly(w);
+        let above = Choices::less_than(|_| ((MlDsaNtt::Q - 1) / 2) as u32, |i| w[i] as u32);
+        above.assign_with(w, |a| a - MlDsaNtt::Q);
     }
 
-    fn norm_exceeds(values: impl Iterator<Item = i32>, bound: i32) -> bool {
-        values
-            .fold(Choice::FALSE, |violation, x| {
-                let x = MlDsaNtt::reduce(x);
-                let magnitude = Choice::nonzero(x >> 31).select(x, -x);
-                violation | Choice::less_than((bound - 1) as u32, magnitude as u32)
+    fn norm_exceeds<const M: usize>(v: &[[i32; 256]; M], bound: i32) -> bool {
+        v.iter()
+            .fold(Choice::FALSE, |exceeds, w| {
+                exceeds | Self::norm_exceeds_poly(w, bound)
             })
             .to_bool()
+    }
+
+    fn norm_exceeds_poly(w: &[i32; 256], bound: i32) -> Choice {
+        let within = Choices::<256>::less_than(
+            |_| (MlDsaNtt::Q - 2 * bound) as u32,
+            |i| (w[i] - bound) as u32,
+        );
+        (!within).any()
     }
 }
 
