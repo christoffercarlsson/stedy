@@ -8,9 +8,48 @@ use {
     core::marker::PhantomData,
 };
 
-mod params;
+pub struct MlKem512Params;
+pub struct MlKem768Params;
+pub struct MlKem1024Params;
 
-use params::{MlKem512Params, MlKem768Params, MlKem1024Params};
+impl MlKemParams<2> for MlKem512Params {
+    const ETA1: usize = 3;
+    const ETA2: usize = 2;
+    const DU: usize = 10;
+    const DV: usize = 4;
+
+    type Seed = [u8; 64];
+    type SharedSecret = [u8; 32];
+    type PrivateKey = [u8; 1632];
+    type PublicKey = [u8; 800];
+    type Ciphertext = [u8; 768];
+}
+
+impl MlKemParams<3> for MlKem768Params {
+    const ETA1: usize = 2;
+    const ETA2: usize = 2;
+    const DU: usize = 10;
+    const DV: usize = 4;
+
+    type Seed = [u8; 64];
+    type SharedSecret = [u8; 32];
+    type PrivateKey = [u8; 2400];
+    type PublicKey = [u8; 1184];
+    type Ciphertext = [u8; 1088];
+}
+
+impl MlKemParams<4> for MlKem1024Params {
+    const ETA1: usize = 2;
+    const ETA2: usize = 2;
+    const DU: usize = 11;
+    const DV: usize = 5;
+
+    type Seed = [u8; 64];
+    type SharedSecret = [u8; 32];
+    type PrivateKey = [u8; 3168];
+    type PublicKey = [u8; 1568];
+    type Ciphertext = [u8; 1568];
+}
 
 pub type MlKem512With<A, G, H, X, F> = MlKem<2, MlKem512Params, A, G, H, X, F>;
 pub type MlKem768With<A, G, H, X, F> = MlKem<3, MlKem768Params, A, G, H, X, F>;
