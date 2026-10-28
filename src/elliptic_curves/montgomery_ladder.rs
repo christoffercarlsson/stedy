@@ -40,13 +40,13 @@ where
             assert!(
                 F::COFACTOR.is_power_of_two(),
                 "the cofactor is a power of two"
-            )
+            );
         }
         const {
             assert!(
                 F::BITS <= 8 * F::PointBytes::SIZE,
                 "the scalar bits fit in the encoding"
-            )
+            );
         }
         let mut scalar = scalar.0.clone();
         Self::clamp(scalar.get_mut());

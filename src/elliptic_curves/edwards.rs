@@ -199,6 +199,18 @@ where
     }
 }
 
+impl<F, S> Neg for Edwards<F, S>
+where
+    F: FieldElement + EdwardsParams<F>,
+    S: EdwardsScalar,
+{
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self::new(self.x.neg(), self.y, self.t.neg(), self.z)
+    }
+}
+
 impl<F, S> Add for Edwards<F, S>
 where
     F: FieldElement + EdwardsParams<F>,

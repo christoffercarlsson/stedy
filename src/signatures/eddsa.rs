@@ -6,7 +6,7 @@ use {
         traits::{ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldElement, Hasher},
         utils::Secret,
     },
-    core::marker::PhantomData,
+    core::{marker::PhantomData, ops::Neg},
 };
 
 pub struct Eddsa<E, F, H, S>
@@ -37,7 +37,7 @@ where
         let public_key = Edwards::<F, E>::mul_base(&a).compress();
         let mut private_key = S::new();
         let (s, A) = Self::private_key_components_mut(&mut private_key)
-            .expect("Private key size is correct");
+            .expect("private key size is correct");
         s.copy_from_slice(seed.as_ref());
         A.copy_from_slice(public_key.as_ref());
         (private_key, public_key)
@@ -163,7 +163,7 @@ where
         state.update(message);
         let k = E::from(state.finalize());
         let s = E::from(s);
-        let r2 = Edwards::<F, E>::vartime_double_base(&k.neg(), A, &s);
+        let r2 = Edwards::<F, E>::vartime_double_base(&k, A.neg(), &s);
         if (r2.ct_eq(&R) & valid_a & valid_r & valid_s & !small_order).to_bool() {
             Ok(())
         } else {

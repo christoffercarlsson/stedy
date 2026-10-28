@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::unwrap_used)]
 #![deny(unsafe_code)]
+#![allow(clippy::many_single_char_names)]
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

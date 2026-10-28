@@ -164,7 +164,7 @@ mod tests {
         let (private_key, public_key) = XWing::generate_key_pair(&mut rng).unwrap();
         assert_eq!(XWing::public_key(&private_key), public_key);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate(&public_key, &mut rng).expect("Encapsulation key is valid");
+            XWing::encapsulate(&public_key, &mut rng).expect("encapsulation key is valid");
         assert_eq!(XWing::decapsulate(&private_key, &ciphertext), shared_secret);
     }
 
@@ -189,7 +189,7 @@ mod tests {
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate_derand(&public_key, &eseed).expect("Encapsulation key is valid");
+            XWing::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
@@ -217,7 +217,7 @@ mod tests {
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate_derand(&public_key, &eseed).expect("Encapsulation key is valid");
+            XWing::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
@@ -245,7 +245,7 @@ mod tests {
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate_derand(&public_key, &eseed).expect("Encapsulation key is valid");
+            XWing::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
