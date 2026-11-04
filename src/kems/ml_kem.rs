@@ -120,9 +120,9 @@ impl MlKemArithmetic for MlKemNtt {
             let mut sum0 = 0i32;
             let mut sum1 = 0i32;
             for (f, g) in row.iter().zip(v) {
-                let (a0, a1) = (f[2 * i] as i32, f[2 * i + 1] as i32);
-                let (b0, b1) = (g[2 * i] as i32, g[2 * i + 1] as i32);
-                let b1_gamma = Self::montgomery_multiply(g[2 * i + 1], gamma) as i32;
+                let (a0, a1) = (i32::from(f[2 * i]), i32::from(f[2 * i + 1]));
+                let (b0, b1) = (i32::from(g[2 * i]), i32::from(g[2 * i + 1]));
+                let b1_gamma = i32::from(Self::montgomery_multiply(g[2 * i + 1], gamma));
                 sum0 += a0 * b0 + a1 * b1_gamma;
                 sum1 += a0 * b1 + a1 * b0;
             }
@@ -330,12 +330,13 @@ where
 
     fn compress(d: usize, f: &mut [i16; 256]) {
         A::reduce_poly(f);
-        let numerator = |x: i16| ((x as i32) << d) + MlKemNtt::Q as i32 / 2;
+        let numerator = |x: i16| (i32::from(x) << d) + i32::from(MlKemNtt::Q) / 2;
         let mut quotient = [0i32; 256];
         let negative = Choices::nonzero(|i| {
             let numerator = numerator(f[i]);
-            quotient[i] = ((numerator as i64 * MlKemNtt::BARRETT_MULTIPLIER as i64) >> 26) as i32;
-            (numerator - quotient[i] * MlKemNtt::Q as i32) >> 31
+            quotient[i] =
+                ((i64::from(numerator) * i64::from(MlKemNtt::BARRETT_MULTIPLIER)) >> 26) as i32;
+            (numerator - quotient[i] * i32::from(MlKemNtt::Q)) >> 31
         });
         negative.assign_with(&mut quotient, |q| q - 1);
         for (x, &q) in f.iter_mut().zip(&quotient) {

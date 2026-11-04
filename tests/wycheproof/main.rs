@@ -1,3 +1,9 @@
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate
+)]
+
 mod aeads;
 mod kdfs;
 mod kems;
@@ -63,7 +69,7 @@ impl<C> TestCase<C> {
 }
 
 impl TestResult {
-    pub fn accepts(self, accepted: bool) -> bool {
+    pub const fn accepts(self, accepted: bool) -> bool {
         match self {
             Self::Valid => accepted,
             Self::Invalid => !accepted,
@@ -91,7 +97,7 @@ impl Summary {
         }
     }
 
-    pub fn skip(&mut self) {
+    pub const fn skip(&mut self) {
         self.skipped += 1;
     }
 

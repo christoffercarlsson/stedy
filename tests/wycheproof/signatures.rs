@@ -246,7 +246,7 @@ fn run_ml_dsa_sign(ml_dsa: &MlDsa, name: &str, json: &str) {
                     None => signatures.push((ml_dsa.sign)(private_key, message, context)),
                     #[cfg(feature = "hazmat")]
                     Some(rnd) => {
-                        signatures.push((ml_dsa.sign_hedged)(private_key, message, context, rnd))
+                        signatures.push((ml_dsa.sign_hedged)(private_key, message, context, rnd));
                     }
                     #[cfg(not(feature = "hazmat"))]
                     Some(_) => {}

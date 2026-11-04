@@ -23,7 +23,7 @@ pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
         let keys = round_keys.map(load);
         let mut states = blocks.map(|block| _mm_xor_si128(load(block), keys[0]));
         for key in &keys[1..ROUNDS] {
-            for state in states.iter_mut() {
+            for state in &mut states {
                 *state = _mm_aesenc_si128(*state, *key);
             }
         }
@@ -66,7 +66,7 @@ fn join(value: __m128i) -> u128 {
         let b = _mm_cvtsi128_si32(_mm_srli_si128::<4>(value)) as u32;
         let c = _mm_cvtsi128_si32(_mm_srli_si128::<8>(value)) as u32;
         let d = _mm_cvtsi128_si32(_mm_srli_si128::<12>(value)) as u32;
-        (d as u128) << 96 | (c as u128) << 64 | (b as u128) << 32 | a as u128
+        u128::from(d) << 96 | u128::from(c) << 64 | u128::from(b) << 32 | u128::from(a)
     }
 }
 

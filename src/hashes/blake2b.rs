@@ -51,7 +51,7 @@ impl<const N: usize> Blake2b<N> {
             assert!(
                 N >= 1 && N <= Blake2bCore::MAX_OUTPUT_SIZE,
                 "BLAKE2b digests are 1 to 64 bytes"
-            )
+            );
         }
         Self(Blake2bCore::new(key, N))
     }

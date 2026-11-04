@@ -22,6 +22,7 @@ where
     _marker: PhantomData<S>,
 }
 
+#[allow(clippy::expl_impl_clone_on_copy)]
 impl<F, S> Clone for Edwards<F, S>
 where
     F: FieldElement + EdwardsParams<F>,
@@ -88,7 +89,7 @@ where
             assert!(
                 F::COFACTOR.is_power_of_two(),
                 "the cofactor is a power of two"
-            )
+            );
         }
         let mut point = Projective::<F, S>::new(self.x, self.y, self.z);
         for _ in 0..F::COFACTOR.trailing_zeros() {

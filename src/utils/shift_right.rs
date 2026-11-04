@@ -3,7 +3,7 @@ pub fn shift_right(bytes: &mut [u8], bits: usize) {
     for byte in bytes.iter_mut() {
         let value = *byte;
         *byte = (value >> bits) | carry;
-        carry = ((value as u16) << (8 - bits)) as u8;
+        carry = (u16::from(value) << (8 - bits)) as u8;
     }
 }
 

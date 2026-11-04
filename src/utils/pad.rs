@@ -130,10 +130,10 @@ mod tests {
     fn test_unpad_empty_message() {
         let padded = [128u8];
         let unpadded = unpad(&padded).unwrap();
-        assert!(unpadded.is_empty());
+        assert_eq!(unpadded, []);
         let padded = [128u8, 0, 0, 0];
         let unpadded = unpad(&padded).unwrap();
-        assert!(unpadded.is_empty());
+        assert_eq!(unpadded, []);
     }
 
     #[test]

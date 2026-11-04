@@ -18,6 +18,7 @@ use {
 mod backend;
 
 #[derive(Clone, Copy)]
+#[must_use]
 pub struct Choice(u8);
 
 impl Choice {
@@ -147,6 +148,7 @@ impl BitXorAssign for Choice {
 }
 
 #[derive(Clone, Copy)]
+#[must_use]
 pub struct Choices<const N: usize>([Choice; N]);
 
 impl<const N: usize> Choices<N> {
@@ -331,7 +333,7 @@ impl Cmov for u128 {
     }
 
     fn mask_bit(bit: u8) -> Self {
-        (bit as u128).wrapping_neg()
+        u128::from(bit).wrapping_neg()
     }
 
     fn assign(&mut self, src: Self, choice: Choice) {

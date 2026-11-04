@@ -12,6 +12,6 @@ pub fn bench(c: &mut Criterion) {
         ];
         let mut rng = ChaCha20Rng::from(seed);
         let mut bytes = [0u8; 96];
-        b.iter(|| rng.fill(&mut bytes))
+        b.iter(|| rng.fill(&mut bytes));
     });
 }

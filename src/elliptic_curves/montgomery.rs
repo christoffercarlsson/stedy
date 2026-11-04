@@ -18,7 +18,7 @@ mod words {
     pub(super) type WideWord = u128;
 }
 
-use words::*;
+use words::{WideWord, Word};
 
 const WORD_BYTES: usize = Word::BITS as usize / 8;
 
@@ -156,7 +156,7 @@ macro_rules! impl_montgomery {
 
             pub(crate) fn from_u32(value: u32) -> Self {
                 let mut words = [0 as Word; $words];
-                words[0] = value as Word;
+                words[0] = Word::from(value);
                 Self(words, PhantomData).mul(Self::R2)
             }
 
@@ -202,7 +202,7 @@ macro_rules! impl_montgomery {
             fn words_from_le<'a>(bytes: impl Iterator<Item = &'a u8>) -> [Word; $words] {
                 let mut words = [0 as Word; $words];
                 for (i, &byte) in bytes.enumerate() {
-                    words[i / WORD_BYTES] |= (byte as Word) << (8 * (i % WORD_BYTES));
+                    words[i / WORD_BYTES] |= Word::from(byte) << (8 * (i % WORD_BYTES));
                 }
                 words
             }
@@ -247,7 +247,7 @@ macro_rules! impl_montgomery {
 
             #[inline(always)]
             fn mac(a: Word, b: Word, c: Word, carry: Word) -> (Word, Word) {
-                let t = a as WideWord + unsigned_mul(b, c) + carry as WideWord;
+                let t = WideWord::from(a) + unsigned_mul(b, c) + WideWord::from(carry);
                 (t as Word, (t >> Word::BITS) as Word)
             }
 

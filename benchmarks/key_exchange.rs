@@ -14,11 +14,11 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("x25519_public_key", |b| {
-        b.iter(|| X25519::public_key(&alice_private_key))
+        b.iter(|| X25519::public_key(&alice_private_key));
     });
 
     c.bench_function("x25519_key_exchange", |b| {
-        b.iter(|| X25519::key_exchange(&alice_private_key, &bob_public_key))
+        b.iter(|| X25519::key_exchange(&alice_private_key, &bob_public_key));
     });
 
     let x448_private_key = [
@@ -33,11 +33,11 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("x448_public_key", |b| {
-        b.iter(|| X448::public_key(&x448_private_key))
+        b.iter(|| X448::public_key(&x448_private_key));
     });
 
     c.bench_function("x448_key_exchange", |b| {
-        b.iter(|| X448::key_exchange(&x448_private_key, &x448_peer_public_key))
+        b.iter(|| X448::key_exchange(&x448_private_key, &x448_peer_public_key));
     });
 
     let p256_private_key = [
@@ -50,11 +50,11 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("ecdh_p256_public_key", |b| {
-        b.iter(|| P256::public_key(&p256_private_key))
+        b.iter(|| P256::public_key(&p256_private_key));
     });
 
     c.bench_function("ecdh_p256_key_exchange", |b| {
-        b.iter(|| P256::key_exchange(&p256_private_key, &p256_peer_public_key))
+        b.iter(|| P256::key_exchange(&p256_private_key, &p256_peer_public_key));
     });
 
     let p384_private_key = [
@@ -69,11 +69,11 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("ecdh_p384_public_key", |b| {
-        b.iter(|| P384::public_key(&p384_private_key))
+        b.iter(|| P384::public_key(&p384_private_key));
     });
 
     c.bench_function("ecdh_p384_key_exchange", |b| {
-        b.iter(|| P384::key_exchange(&p384_private_key, &p384_peer_public_key))
+        b.iter(|| P384::key_exchange(&p384_private_key, &p384_peer_public_key));
     });
 
     let p521_private_key = [
@@ -90,10 +90,10 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     c.bench_function("ecdh_p521_public_key", |b| {
-        b.iter(|| P521::public_key(&p521_private_key))
+        b.iter(|| P521::public_key(&p521_private_key));
     });
 
     c.bench_function("ecdh_p521_key_exchange", |b| {
-        b.iter(|| P521::key_exchange(&p521_private_key, &p521_peer_public_key))
+        b.iter(|| P521::key_exchange(&p521_private_key, &p521_peer_public_key));
     });
 }

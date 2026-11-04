@@ -85,7 +85,7 @@ where
             assert!(
                 RATE == 168 || RATE == 136,
                 "SHAKE rates are 168 or 136 bytes"
-            )
+            );
         }
         Self(Sponge::<RATE, P>::new())
     }

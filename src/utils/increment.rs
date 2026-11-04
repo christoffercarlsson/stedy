@@ -3,7 +3,7 @@ use crate::Error;
 pub fn increment(bytes: &mut [u8]) -> Result<(), Error> {
     let mut carry: u16 = 1;
     for b in bytes.iter_mut().rev() {
-        let sum = (*b as u16) + carry;
+        let sum = u16::from(*b) + carry;
         *b = sum as u8;
         carry = sum >> 8;
     }

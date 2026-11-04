@@ -22,7 +22,7 @@ where
             assert!(
                 H::OUTPUT_SIZE <= H::BLOCK_SIZE,
                 "the digest fits within a block"
-            )
+            );
         }
         let mut k = Secret::from(H::Block::new());
         if key.len() > H::BLOCK_SIZE {

@@ -190,7 +190,7 @@ impl FieldP521 {
 
     pub(super) fn from_u32(n: u32) -> Self {
         let mut result = Self::ZERO;
-        result[0] = n as u64;
+        result[0] = u64::from(n);
         result.reduce();
         result
     }

@@ -146,7 +146,7 @@ impl From<&[u8; 57]> for Field448 {
     fn from(value: &[u8; 57]) -> Self {
         let (bytes, top) = value.split_at(56);
         let bytes = bytes.try_into().expect("slice size matches array size");
-        Self::from_le_bytes(bytes) + Self::from_u32(top[0] as u32) * Self::R
+        Self::from_le_bytes(bytes) + Self::from_u32(u32::from(top[0])) * Self::R
     }
 }
 

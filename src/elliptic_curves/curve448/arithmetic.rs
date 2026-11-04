@@ -43,7 +43,7 @@ where
         let bytes: [u8; 56] = bytes
             .try_into()
             .expect("the encoding holds a 56-byte element");
-        Self::from(bytes) + Self::from_u32(top[0] as u32) * Self::R
+        Self::from(bytes) + Self::from_u32(u32::from(top[0])) * Self::R
     }
 }
 

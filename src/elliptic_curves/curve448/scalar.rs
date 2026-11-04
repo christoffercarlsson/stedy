@@ -141,6 +141,7 @@ impl EdwardsScalar for Scalar448 {
         (halves[0], halves[1])
     }
 
+    #[allow(clippy::decimal_bitwise_operands)]
     fn clamp(bytes: &mut [u8; 57]) {
         bytes[0] &= 252;
         bytes[55] |= 128;
@@ -150,8 +151,8 @@ impl EdwardsScalar for Scalar448 {
     fn is_canonical(bytes: &[u8; 57]) -> Choice {
         let mut borrow = 0u16;
         for (byte, order) in bytes.iter().zip(ORDER.iter()) {
-            let diff = (*byte as u16)
-                .wrapping_sub(*order as u16)
+            let diff = u16::from(*byte)
+                .wrapping_sub(u16::from(*order))
                 .wrapping_sub(borrow);
             borrow = (diff >> 8) & 1;
         }

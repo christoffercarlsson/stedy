@@ -17,7 +17,7 @@ pub fn bench(c: &mut Criterion) {
             let mut mac = Hmac::<Sha256>::new(&key);
             mac.update(&message);
             mac.finalize()
-        })
+        });
     });
 
     c.bench_function("hmac_sha256_verify", |b| {
@@ -29,7 +29,7 @@ pub fn bench(c: &mut Criterion) {
             let mut mac = Hmac::<Sha256>::new(&key);
             mac.update(&message);
             mac.verify(&code)
-        })
+        });
     });
 
     c.bench_function("hmac_sha512", |b| {
@@ -37,7 +37,7 @@ pub fn bench(c: &mut Criterion) {
             let mut mac = Hmac::<Sha512>::new(&key);
             mac.update(&message);
             mac.finalize()
-        })
+        });
     });
 
     c.bench_function("hmac_sha512_verify", |b| {
@@ -51,6 +51,6 @@ pub fn bench(c: &mut Criterion) {
             let mut mac = Hmac::<Sha512>::new(&key);
             mac.update(&message);
             mac.verify(&code)
-        })
+        });
     });
 }

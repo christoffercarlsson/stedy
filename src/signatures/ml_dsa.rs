@@ -121,7 +121,7 @@ impl MlDsaArithmetic for MlDsaNtt {
         for (j, w) in w.iter_mut().enumerate() {
             let mut sum = 0i64;
             for (a, b) in row.iter().zip(v) {
-                sum += a[j] as i64 * b[j] as i64;
+                sum += i64::from(a[j]) * i64::from(b[j]);
             }
             *w = Self::montgomery_multiply(Self::montgomery_reduce(sum), Self::R2);
         }
@@ -426,6 +426,7 @@ where
         Self::sign_internal_mu(sk, &mu, rnd, signature);
     }
 
+    #[allow(clippy::too_many_lines)]
     fn sign_internal_mu(sk: &[u8], mu: &[u8; 64], rnd: &[u8], signature: &mut [u8]) {
         let [rho, k, _, s1_bytes, s2_bytes, t0_bytes] = Self::sk_parts(sk);
         let mut product = Secret::from([0i32; 256]);
@@ -528,6 +529,7 @@ where
                 }
                 ct0_bound |= Self::norm_exceeds_poly(ct0, P::GAMMA2);
             }
+            #[allow(clippy::needless_bitwise_bool)]
             if !ct0_bound.to_bool() & (ones <= P::OMEGA) {
                 break;
             }
@@ -739,7 +741,7 @@ where
     }
 
     // Algorithm 24
-    fn sk_parts_mut(sk: &mut [u8]) -> [&mut [u8]; 6] {
+    const fn sk_parts_mut(sk: &mut [u8]) -> [&mut [u8]; 6] {
         let s_size = Self::packed_size(2 * P::ETA);
         let (rho, rest) = sk.split_at_mut(32);
         let (k, rest) = rest.split_at_mut(32);
@@ -764,7 +766,7 @@ where
     }
 
     // Algorithm 25
-    fn sk_parts(sk: &[u8]) -> [&[u8]; 6] {
+    const fn sk_parts(sk: &[u8]) -> [&[u8]; 6] {
         let s_size = Self::packed_size(2 * P::ETA);
         let (rho, rest) = sk.split_at(32);
         let (k, rest) = rest.split_at(32);
@@ -1052,11 +1054,11 @@ where
     fn unpack_poly(packed: &[u8; 768], w: &mut [i32; 256]) {
         let (coefficients, _) = packed.as_chunks::<3>();
         for (w, packed) in w.iter_mut().zip(coefficients) {
-            *w = Self::unpack_coefficient(packed);
+            *w = Self::unpack_coefficient(*packed);
         }
     }
 
-    const fn unpack_coefficient(packed: &[u8; 3]) -> i32 {
+    const fn unpack_coefficient(packed: [u8; 3]) -> i32 {
         i32::from_le_bytes([packed[0], packed[1], packed[2], 0])
     }
 

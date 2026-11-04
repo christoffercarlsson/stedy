@@ -211,7 +211,7 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         for i in nk..4 * (Self::ROUNDS + 1) {
             let mut temp = words[i - 1];
             if i % nk == 0 {
-                temp = Self::sub_word(temp.rotate_right(8)) ^ rcon as u32;
+                temp = Self::sub_word(temp.rotate_right(8)) ^ u32::from(rcon);
                 rcon = (rcon << 1) ^ (0x1b & (rcon >> 7).wrapping_neg());
             } else if nk > 6 && i % nk == 4 {
                 temp = Self::sub_word(temp);
@@ -229,6 +229,7 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         round_keys
     }
 
+    #[allow(clippy::inline_always)]
     #[inline(always)]
     fn sub_word(word: u32) -> u32 {
         let mut block = [0u8; 16];
@@ -255,5 +256,5 @@ fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     blocks: &[[u8; 16]; N],
     data: &mut [[u8; 16]; N],
 ) {
-    backend::encrypt_blocks::<ROUNDS, N>(round_keys, blocks, data)
+    backend::encrypt_blocks::<ROUNDS, N>(round_keys, blocks, data);
 }

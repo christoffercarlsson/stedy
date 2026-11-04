@@ -47,7 +47,7 @@ impl Field25519 {
 
     pub(super) fn square2(self) -> Self {
         let mut t = self.square_wide();
-        for word in t.iter_mut() {
+        for word in &mut t {
             *word *= 2;
         }
         Self::reduce_wide(t)
@@ -109,7 +109,7 @@ impl Field25519 {
     }
 
     pub(crate) fn mul_small(self, n: u32) -> Self {
-        Self::reduce_wide(from_fn(|i| m(self[i], n as u64)))
+        Self::reduce_wide(from_fn(|i| m(self[i], u64::from(n))))
     }
 
     pub(super) fn sub(self, rhs: Self) -> Self {
@@ -134,7 +134,7 @@ impl Field25519 {
 
     pub(super) fn from_u32(n: u32) -> Self {
         let mut result = Self::ZERO;
-        result[0] = n as u64;
+        result[0] = u64::from(n);
         result.reduce();
         result
     }

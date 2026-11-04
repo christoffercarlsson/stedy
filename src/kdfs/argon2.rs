@@ -43,26 +43,31 @@ impl Argon2Params {
         }
     }
 
+    #[must_use]
     pub const fn variant(mut self, variant: Argon2Variant) -> Self {
         self.variant = variant;
         self
     }
 
+    #[must_use]
     pub const fn memory(mut self, memory: u32) -> Self {
         self.memory = memory;
         self
     }
 
+    #[must_use]
     pub const fn passes(mut self, passes: u32) -> Self {
         self.passes = passes;
         self
     }
 
+    #[must_use]
     pub const fn lanes(mut self, lanes: u32) -> Self {
         self.lanes = lanes;
         self
     }
 
+    #[must_use]
     pub const fn threads(mut self, threads: u32) -> Self {
         self.threads = threads;
         self
@@ -132,7 +137,7 @@ impl DerefMut for Argon2Memory {
 #[cfg(feature = "std")]
 impl Drop for Argon2Memory {
     fn drop(&mut self) {
-        for block in self.0.iter_mut() {
+        for block in &mut self.0 {
             wipe(&mut block.0);
         }
     }
@@ -443,7 +448,7 @@ impl Argon2Params {
         input[1] = lane as u64;
         input[2] = slice as u64;
         input[3] = self.blocks() as u64;
-        input[4] = self.passes as u64;
+        input[4] = u64::from(self.passes);
         input[5] = self.variant as u64;
         input
     }
@@ -504,7 +509,7 @@ impl Argon2Params {
         if same_lane || index == 0 {
             area -= 1;
         }
-        let x = ((j1 as u64) * (j1 as u64)) >> 32;
+        let x = (u64::from(j1) * u64::from(j1)) >> 32;
         let y = ((area as u64) * x) >> 32;
         let z = area - 1 - y as usize;
         let start = if pass == 0 || slice == Self::SLICES - 1 {
@@ -784,6 +789,7 @@ impl Argon2Block {
         Self::g(v, 3, 4, 9, 14);
     }
 
+    #[allow(clippy::inline_always)]
     #[inline(always)]
     fn g(v: &mut [u64; 16], a: usize, b: usize, c: usize, d: usize) {
         v[a] = Self::mix(v[a], v[b]);
@@ -796,6 +802,7 @@ impl Argon2Block {
         v[b] = (v[b] ^ v[c]).rotate_right(63);
     }
 
+    #[allow(clippy::inline_always)]
     #[inline(always)]
     fn mix(a: u64, b: u64) -> u64 {
         a.wrapping_add(b)
@@ -855,6 +862,7 @@ mod tests {
                 b"$argon2id$v=19$m=256,t=2,p=2$c29tZXNhbHQ$bQk8UB/VmZZF4Oo79iDXuL5/0ttZwg2f/5U52iv1cDc",
             ),
         ];
+        #[allow(clippy::large_stack_arrays)]
         let mut memory = [Argon2Block::ZERO; 256];
         for (variant, lanes, expected) in vectors {
             let params = Argon2Params::new(variant)
@@ -931,6 +939,7 @@ mod tests {
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
+        #[allow(clippy::large_stack_arrays)]
         let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
         Argon2::derive_with_memory(
@@ -982,6 +991,7 @@ mod tests {
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
+        #[allow(clippy::large_stack_arrays)]
         let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
         Argon2::derive_with_memory(
@@ -1033,6 +1043,7 @@ mod tests {
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
+        #[allow(clippy::large_stack_arrays)]
         let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
         let mut output = [0u8; 32];
         Argon2::derive_with_memory(

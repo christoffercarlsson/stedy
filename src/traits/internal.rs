@@ -156,7 +156,7 @@ pub trait FieldElement:
             ByteOrder::BigEndian => bytes.as_mut()[Self::Bytes::SIZE - size..]
                 .copy_from_slice(&value.to_be_bytes()[4 - size..]),
             ByteOrder::LittleEndian => {
-                bytes.as_mut()[..size].copy_from_slice(&value.to_le_bytes()[..size])
+                bytes.as_mut()[..size].copy_from_slice(&value.to_le_bytes()[..size]);
             }
         }
         Self::from(bytes)

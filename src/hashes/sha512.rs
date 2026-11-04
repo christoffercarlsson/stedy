@@ -232,7 +232,7 @@ impl Sha512 {
         } else {
             256 - remaining.len()
         };
-        let total_bits = ((self.total_size + remaining.len() as u64) * 8) as u128;
+        let total_bits = u128::from((self.total_size + remaining.len() as u64) * 8);
         padding[(padding_size - 16)..padding_size].copy_from_slice(&total_bits.to_be_bytes());
         self.update(&padding[..padding_size]);
     }

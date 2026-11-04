@@ -9,6 +9,7 @@ use stedy::aeads::{Aes128Gcm, Aes256Gcm};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(clippy::struct_field_names)]
 struct Group {
     iv_size: usize,
     key_size: usize,

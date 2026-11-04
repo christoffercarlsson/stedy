@@ -43,5 +43,8 @@ hazmat = []
 secret_sharing = []
 std = []
 
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
 [profile.bench]
 lto = true

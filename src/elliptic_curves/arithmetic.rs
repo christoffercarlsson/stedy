@@ -62,8 +62,8 @@ macro_rules! impl_field_arithmetic {
                         $crate::traits::ByteOrder::BigEndian => $size - 1 - i,
                         $crate::traits::ByteOrder::LittleEndian => i,
                     };
-                    let d = (bytes[j] as u16)
-                        .wrapping_sub(Self::MODULUS[j] as u16)
+                    let d = u16::from(bytes[j])
+                        .wrapping_sub(u16::from(Self::MODULUS[j]))
                         .wrapping_sub(borrow);
                     difference[j] = d as u8;
                     borrow = d >> 15;

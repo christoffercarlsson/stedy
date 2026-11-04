@@ -6,6 +6,7 @@ use {
 #[cfg(feature = "aes")]
 use stedy::aeads::{Aes128Gcm, Aes256Gcm};
 
+#[allow(clippy::too_many_lines)]
 pub fn bench(c: &mut Criterion) {
     let key = [
         128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145,
@@ -24,7 +25,7 @@ pub fn bench(c: &mut Criterion) {
             115, 117, 110, 115, 99, 114, 101, 101, 110, 32, 119, 111, 117, 108, 100, 32, 98, 101,
             32, 105, 116, 46,
         ];
-        b.iter(|| ChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message))
+        b.iter(|| ChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message));
     });
 
     c.bench_function("chacha20poly1305_decrypt", |b| {
@@ -40,7 +41,7 @@ pub fn bench(c: &mut Criterion) {
         let tag = [
             26, 225, 11, 89, 79, 9, 226, 106, 126, 144, 46, 203, 208, 96, 6, 145,
         ];
-        b.iter(|| ChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
+        b.iter(|| ChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag));
     });
 
     let nonce = [
@@ -57,7 +58,7 @@ pub fn bench(c: &mut Criterion) {
             115, 117, 110, 115, 99, 114, 101, 101, 110, 32, 119, 111, 117, 108, 100, 32, 98, 101,
             32, 105, 116, 46,
         ];
-        b.iter(|| XSalsa20Poly1305::encrypt(&key, &nonce, None, &mut message))
+        b.iter(|| XSalsa20Poly1305::encrypt(&key, &nonce, None, &mut message));
     });
 
     c.bench_function("xsalsa20poly1305_decrypt", |b| {
@@ -72,7 +73,7 @@ pub fn bench(c: &mut Criterion) {
         let tag = [
             173, 94, 91, 8, 194, 245, 139, 103, 96, 166, 177, 11, 245, 74, 251, 98,
         ];
-        b.iter(|| XSalsa20Poly1305::decrypt(&key, &nonce, None, &mut ciphertext, &tag))
+        b.iter(|| XSalsa20Poly1305::decrypt(&key, &nonce, None, &mut ciphertext, &tag));
     });
 
     #[cfg(feature = "aes")]
@@ -93,7 +94,7 @@ pub fn bench(c: &mut Criterion) {
                 104, 9, 83, 47, 207, 14, 36, 73, 166, 181, 37, 177, 106, 237, 245, 170, 13, 230,
                 87, 186, 99, 123, 57,
             ];
-            b.iter(|| Aes128Gcm::encrypt(&key, &nonce, Some(&aad), &mut message))
+            b.iter(|| Aes128Gcm::encrypt(&key, &nonce, Some(&aad), &mut message));
         });
 
         c.bench_function(&crate::aes_id("aes128gcm_decrypt"), |b| {
@@ -106,7 +107,7 @@ pub fn bench(c: &mut Criterion) {
             let tag = [
                 91, 201, 79, 188, 50, 33, 165, 219, 148, 250, 233, 90, 231, 18, 26, 71,
             ];
-            b.iter(|| Aes128Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
+            b.iter(|| Aes128Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag));
         });
     }
 
@@ -129,7 +130,7 @@ pub fn bench(c: &mut Criterion) {
                 104, 9, 83, 47, 207, 14, 36, 73, 166, 181, 37, 177, 106, 237, 245, 170, 13, 230,
                 87, 186, 99, 123, 57,
             ];
-            b.iter(|| Aes256Gcm::encrypt(&key, &nonce, Some(&aad), &mut message))
+            b.iter(|| Aes256Gcm::encrypt(&key, &nonce, Some(&aad), &mut message));
         });
 
         c.bench_function(&crate::aes_id("aes256gcm_decrypt"), |b| {
@@ -142,7 +143,7 @@ pub fn bench(c: &mut Criterion) {
             let tag = [
                 118, 252, 110, 206, 15, 78, 23, 104, 205, 223, 136, 83, 187, 45, 85, 27,
             ];
-            b.iter(|| Aes256Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag))
+            b.iter(|| Aes256Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag));
         });
     }
 }

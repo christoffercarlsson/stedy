@@ -9,7 +9,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut buffer = [0u8; 8];
             encode(Encoding::Base64, decoded, &mut buffer).unwrap();
-        })
+        });
     });
 
     c.bench_function("base64_decode", |b| {
@@ -17,7 +17,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut buffer = [0u8; 6];
             decode(Encoding::Base64, encoded, &mut buffer).unwrap();
-        })
+        });
     });
 
     c.bench_function("base32_encode", |b| {
@@ -25,7 +25,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut buffer = [0u8; 16];
             encode(Encoding::Base32, decoded, &mut buffer).unwrap();
-        })
+        });
     });
 
     c.bench_function("base32_decode", |b| {
@@ -33,7 +33,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut buffer = [0u8; 6];
             decode(Encoding::Base32, encoded, &mut buffer).unwrap();
-        })
+        });
     });
 
     c.bench_function("base16_encode", |b| {
@@ -41,7 +41,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut buffer = [0u8; 12];
             encode(Encoding::Base16, decoded, &mut buffer).unwrap();
-        })
+        });
     });
 
     c.bench_function("base16_decode", |b| {
@@ -49,6 +49,6 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut buffer = [0u8; 6];
             decode(Encoding::Base16, encoded, &mut buffer).unwrap();
-        })
+        });
     });
 }

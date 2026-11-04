@@ -34,7 +34,7 @@ where
             assert!(
                 N <= Self::MAX_SHARES,
                 "the field has an index for every share"
-            )
+            );
         }
         const { assert!(K <= N, "the threshold is at most the number of shares") }
         let columns = secret.len().div_ceil(Self::CHUNK_SIZE);

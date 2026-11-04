@@ -21,14 +21,14 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut okm = [0; 42];
             Hkdf::<Sha256>::derive(&ikm, Some(&salt), Some(&info), &mut okm)
-        })
+        });
     });
 
     c.bench_function("hkdf_sha512", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
             Hkdf::<Sha512>::derive(&ikm, Some(&salt), Some(&info), &mut okm)
-        })
+        });
     });
 
     let password = b"password";
@@ -39,14 +39,14 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let mut output = [0u8; 32];
             Pbkdf2::<Hmac<Sha256>>::derive(password, salt, iterations, &mut output)
-        })
+        });
     });
 
     c.bench_function("pbkdf2_hmac_sha512", |b| {
         b.iter(|| {
             let mut output = [0u8; 64];
             Pbkdf2::<Hmac<Sha512>>::derive(password, salt, iterations, &mut output)
-        })
+        });
     });
 
     #[cfg(feature = "std")]
@@ -67,7 +67,7 @@ pub fn bench(c: &mut Criterion) {
                     Some(&associated_data),
                     &mut output,
                 )
-            })
+            });
         });
 
         c.bench_function("argon2i", |b| {
@@ -81,7 +81,7 @@ pub fn bench(c: &mut Criterion) {
                     Some(&associated_data),
                     &mut output,
                 )
-            })
+            });
         });
 
         c.bench_function("argon2id", |b| {
@@ -95,7 +95,7 @@ pub fn bench(c: &mut Criterion) {
                     Some(&associated_data),
                     &mut output,
                 )
-            })
+            });
         });
     }
 }

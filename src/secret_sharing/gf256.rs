@@ -53,15 +53,15 @@ impl Gf256 {
 
     fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
         let swapped = *a;
-        *a = Self::select(a, b, condition);
-        *b = Self::select(b, &swapped, condition);
+        *a = Self::select(*a, *b, condition);
+        *b = Self::select(*b, swapped, condition);
     }
 
-    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
+    fn select(a: Self, b: Self, condition: Choice) -> Self {
         Self(condition.select(a.0, b.0))
     }
 
-    fn ct_eq(&self, other: &Self) -> Choice {
+    fn ct_eq(self, other: Self) -> Choice {
         Choice::eq(self.0, other.0)
     }
 }
@@ -142,11 +142,11 @@ impl FieldElement for Gf256 {
     }
 
     fn select(a: &Self, b: &Self, condition: Choice) -> Self {
-        Self::select(a, b, condition)
+        Self::select(*a, *b, condition)
     }
 
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.ct_eq(other)
+        Self::ct_eq(*self, *other)
     }
 
     fn square(self) -> Self {
@@ -158,9 +158,9 @@ impl FieldElement for Gf256 {
     }
 
     fn sqrt(self, b: Self) -> (Self, Choice) {
-        let valid = !b.ct_eq(&Self::ZERO);
+        let valid = !b.ct_eq(Self::ZERO);
         let r = self.mul(b.invert()).sqrt();
-        (Self::select(&Self::ZERO, &r, valid), valid)
+        (Self::select(Self::ZERO, r, valid), valid)
     }
 
     fn from_u32(value: u32) -> Self {

@@ -1,7 +1,17 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::unwrap_used)]
 #![deny(unsafe_code)]
-#![allow(clippy::many_single_char_names)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::many_single_char_names,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate,
+    clippy::similar_names,
+    clippy::unreadable_literal
+)]
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

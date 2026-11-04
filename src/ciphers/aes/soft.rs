@@ -54,14 +54,14 @@ fn split(value: u128) -> (u64, u64) {
 }
 
 fn reduce(value: u64) -> u128 {
-    let value = value as u128;
+    let value = u128::from(value);
     value ^ (value << 1) ^ (value << 2) ^ (value << 7)
 }
 
 fn clmul(a: u64, b: u64) -> u128 {
     let low = masked_mul(a, b);
     let high = masked_mul(a.reverse_bits(), b.reverse_bits()).reverse_bits() >> 1;
-    (high as u128) << 64 | low as u128
+    u128::from(high) << 64 | u128::from(low)
 }
 
 fn masked_mul(a: u64, b: u64) -> u64 {
@@ -114,6 +114,7 @@ fn add_round_key(planes: &mut [u128; 8], key: &[u128; 8]) {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn sub_bytes(planes: &mut [u128; 8]) {
     let [u7, u6, u5, u4, u3, u2, u1, u0] = *planes;
     let t1 = u0 ^ u3;

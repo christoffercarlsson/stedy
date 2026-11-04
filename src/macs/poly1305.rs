@@ -340,9 +340,9 @@ impl From<[u8; 17]> for Poly1305FieldElement {
         let mut words = [0u64; 5];
         let (chunks, remainder) = value.as_chunks::<4>();
         for (i, chunk) in chunks.iter().enumerate() {
-            words[i] = u32::from_le_bytes(*chunk) as u64;
+            words[i] = u64::from(u32::from_le_bytes(*chunk));
         }
-        words[4] = remainder[0] as u64;
+        words[4] = u64::from(remainder[0]);
         let mut fe = Self([
             words[0],
             words[0] >> 26 | (words[1] << 6),

@@ -77,7 +77,7 @@ impl Field448 {
     }
 
     pub(crate) fn mul_small(self, n: u32) -> Self {
-        Self::reduce_wide(from_fn(|i| m(self[i], n as u64)))
+        Self::reduce_wide(from_fn(|i| m(self[i], u64::from(n))))
     }
 
     pub(super) fn ct_eq(&self, other: &Self) -> Choice {
@@ -89,7 +89,7 @@ impl Field448 {
 
     pub(super) fn from_u32(n: u32) -> Self {
         let mut result = Self::ZERO;
-        result[0] = n as u64;
+        result[0] = u64::from(n);
         result
     }
 

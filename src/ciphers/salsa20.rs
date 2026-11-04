@@ -11,10 +11,12 @@ pub struct Salsa20 {
 }
 
 impl Salsa20 {
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn new(key: &[u8; 32], nonce: &[u8; 8]) -> Self {
-        Self::init(&Self::read_key(key), &Self::read_nonce(nonce))
+        Self::init(&Self::read_key(key), Self::read_nonce(*nonce))
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     pub fn apply_keystream(&mut self, mut data: &mut [u8]) -> Result<(), Error> {
         while !data.is_empty() {
             if self.offset == 64 {
@@ -93,7 +95,7 @@ impl SeekableStreamCipher for Salsa20 {
 impl Salsa20 {
     const SIGMA: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
-    fn init(key: &[u32; 8], nonce: &[u32; 2]) -> Self {
+    fn init(key: &[u32; 8], nonce: [u32; 2]) -> Self {
         Self {
             state: Secret::from(Self::state(key, &[nonce[0], nonce[1], 0, 0])),
             keystream: Secret::from([0u8; 64]),
@@ -117,8 +119,8 @@ impl Salsa20 {
         Self::read::<8>(key)
     }
 
-    fn read_nonce(nonce: &[u8; 8]) -> [u32; 2] {
-        Self::read::<2>(nonce)
+    fn read_nonce(nonce: [u8; 8]) -> [u32; 2] {
+        Self::read::<2>(&nonce)
     }
 
     fn read<const WORDS: usize>(bytes: &[u8]) -> [u32; WORDS] {
@@ -138,7 +140,7 @@ impl Salsa20 {
         }
         let (counter, carry) = self.state[8].overflowing_add(1);
         self.state[8] = counter;
-        self.state[9] = self.state[9].wrapping_add(carry as u32);
+        self.state[9] = self.state[9].wrapping_add(u32::from(carry));
         let (chunks, _) = self.keystream.as_mut().as_chunks_mut::<4>();
         for (i, chunk) in chunks.iter_mut().enumerate() {
             chunk.copy_from_slice(&block[i].to_le_bytes());
@@ -177,7 +179,7 @@ impl XSalsa20 {
         let (n1, n2) = Self::read_nonce(nonce);
         let subkey = Self::calculate_subkey(&k, &n1);
         Self {
-            inner: Salsa20::init(&subkey, &n2),
+            inner: Salsa20::init(&subkey, n2),
         }
     }
 

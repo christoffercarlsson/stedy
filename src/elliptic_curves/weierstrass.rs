@@ -22,6 +22,7 @@ where
     _marker: PhantomData<S>,
 }
 
+#[allow(clippy::expl_impl_clone_on_copy)]
 impl<F, S> Clone for Weierstrass<F, S>
 where
     F: FieldElement + WeierstrassParams<F>,
@@ -185,7 +186,7 @@ where
         Self::new(x, y, z)
     }
 
-    fn mul(self, rhs: S) -> Self {
+    fn mul(self, rhs: &S) -> Self {
         let window = Window::from(self);
         let digits = Secret::from(rhs.as_radix_16());
         let digits = digits.get().as_ref();
@@ -340,7 +341,7 @@ where
     type Output = Self;
 
     fn mul(self, rhs: S) -> Self::Output {
-        self.mul(rhs)
+        self.mul(&rhs)
     }
 }
 
@@ -352,7 +353,7 @@ where
     type Output = Weierstrass<F, S>;
 
     fn mul(self, rhs: &S) -> Self::Output {
-        *self * rhs.clone()
+        (*self).mul(rhs)
     }
 }
 
