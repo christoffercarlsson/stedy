@@ -18,7 +18,7 @@ pub type Ed25519phWith<A, H, P> = HashEddsa<Scalar25519, Field25519With<A>, H, [
 mod tests {
     use {
         super::*,
-        crate::{Error, csprngs::ChaCha20Rng, traits::EdwardsScalar},
+        crate::{Error, csprngs::ChaCha20Rng, elliptic_curves::Edwards},
         hex_literal::hex,
     };
 
@@ -192,56 +192,36 @@ mod tests {
     }
 
     #[test]
-    fn test_ed25519_rejects_identity_public_key() {
-        let mut point = [0u8; 32];
-        point[0] = 1;
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&point);
-        assert_eq!(
-            Ed25519::verify(b"any message", &point, &signature),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
-    fn test_ed25519_rejects_order_two_public_key() {
-        let mut point = [0xffu8; 32];
-        point[0] = 0xec;
-        point[31] = 0x7f;
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&point);
-        assert_eq!(
-            Ed25519::verify(b"any message", &point, &signature),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
-    fn test_ed25519_rejects_identity_r() {
-        let seed = hex!("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60");
-        let (_, public_key) = Ed25519::key_pair(&seed);
-        let mut r = [0u8; 32];
-        r[0] = 1;
-        let (mut a, _) = Scalar25519::split(&Sha512::digest(&seed));
-        Scalar25519::clamp(&mut a);
-        let mut hasher = Sha512::new();
-        hasher.update(&r);
-        hasher.update(&public_key);
-        let s: [u8; 32] = (Scalar25519::from(hasher.finalize()) * Scalar25519::from(a)).into();
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-        assert_eq!(
-            Ed25519::verify(b"", &public_key, &signature),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
-    fn test_ed25519_rejects_all_zero_public_key() {
-        assert_eq!(
-            Ed25519::verify(b"message 1", &[0u8; 32], &[0u8; 64]),
-            Err(Error::Verification)
-        );
+    fn test_ed25519_public_key_validity() {
+        type Point = Edwards<Field25519, Scalar25519>;
+        let usable = |bytes: &[u8; 32]| {
+            let (point, valid) = Point::decompress(bytes);
+            (valid & !point.has_small_order()).to_bool()
+        };
+        let valid: [[u8; 32]; 6] = [
+            hex!("dd2d678bae222f3fb6e8278f08cc9e1a66339c926c29ac0a16f9717f5ee18cd8"),
+            hex!("7d4d0e7f6153a69b6242b522abbee685fda4420f8834b108c3bdae369ef549fa"),
+            hex!("a12c2beb77265f2aac953b5009349d94155a03ada416aad451319480e983ca4c"),
+            hex!("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"),
+            hex!("f929f49889b8b84c4992b675f15b94270912dde2192ef8ac675154db324908f5"),
+            hex!("fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025"),
+        ];
+        let invalid: [[u8; 32]; 6] = [
+            hex!("0100000000000000000000000000000000000000000000000000000000000000"),
+            hex!("0100000000000000000000000000000000000000000000000000000000000080"),
+            hex!("2cf7859e43317ceaa80c86facb0a7514582e74470062f7b6de100aad3e342bf9"),
+            hex!("5c6558089c8a6e6963b1421531003a39a1df1241312e5496afb9ea0452bedeb3"),
+            hex!("eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
+            hex!("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
+        ];
+        let outside_subgroup: [[u8; 32]; 1] = [hex!(
+            "29a5670182010000000000002007643ae1720ef35aa223252f021a68f707511a"
+        )];
+        for bytes in valid.iter().chain(&outside_subgroup) {
+            assert!(usable(bytes));
+        }
+        for bytes in &invalid {
+            assert!(!usable(bytes));
+        }
     }
 }

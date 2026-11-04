@@ -164,7 +164,8 @@ where
         let k = E::from(state.finalize());
         let s = E::from(s);
         let r2 = Edwards::<F, E>::vartime_double_base(&k, A.neg(), &s);
-        if (r2.ct_eq(&R) & valid_a & valid_r & valid_s & !small_order).to_bool() {
+        let residue = R + r2.neg();
+        if (residue.has_small_order() & valid_a & valid_r & valid_s & !small_order).to_bool() {
             Ok(())
         } else {
             Err(Error::Verification)

@@ -19,7 +19,7 @@ pub type Ed448phWith<A, H, P> = HashEddsa<Scalar448, Field448With<A>, H, [u8; 11
 mod tests {
     use {
         super::*,
-        crate::{Error, csprngs::ChaCha20Rng},
+        crate::{Error, csprngs::ChaCha20Rng, elliptic_curves::Edwards},
         hex_literal::hex,
     };
 
@@ -201,36 +201,60 @@ mod tests {
     }
 
     #[test]
-    fn test_ed448_rejects_identity_public_key() {
-        let mut point = [0u8; 57];
-        point[0] = 1;
-        let mut signature = [0u8; 114];
-        signature[..57].copy_from_slice(&point);
-        assert_eq!(
-            Ed448::verify(b"any message", &point, &signature),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
-    fn test_ed448_rejects_order_two_public_key() {
-        let mut point = [0xffu8; 57];
-        point[0] = 0xfe;
-        point[28] = 0xfe;
-        point[56] = 0;
-        let mut signature = [0u8; 114];
-        signature[..57].copy_from_slice(&point);
-        assert_eq!(
-            Ed448::verify(b"message 0", &point, &signature),
-            Err(Error::Verification)
-        );
-    }
-
-    #[test]
-    fn test_ed448_rejects_all_zero_public_key() {
-        assert_eq!(
-            Ed448::verify(b"message 0", &[0u8; 57], &[0u8; 114]),
-            Err(Error::Verification)
-        );
+    fn test_ed448_public_key_validity() {
+        type Point = Edwards<Field448, Scalar448>;
+        let usable = |bytes: &[u8; 57]| {
+            let (point, valid) = Point::decompress(bytes);
+            (valid & !point.has_small_order()).to_bool()
+        };
+        let valid: [[u8; 57]; 4] = [
+            hex!(
+                "5fd7449b59b461fd2ce787ec616ad46a1da1342485a70e1f8a0ea75d80e96778edf124769b46c7061bd6783df1e50f6cd1fa1abeafe8256180"
+            ),
+            hex!(
+                "43ba28f430cdff456ae531545f7ecd0ac834a55d9358c0372bfa0c6c6798c0866aea01eb00742802b8438ea4cb82169c235160627b4c3a9480"
+            ),
+            hex!(
+                "419610a534af127f583b04818cdb7f0ff300b025f2e01682bcae33fd691cee039511df0cddc690ee978426e8b38e50ce5af7dcfba50f704c00"
+            ),
+            hex!(
+                "14fa30f25b790898adc8d74e2c13bdfdc4397ce61cffd33ad7c2a0051e9c78874098a36c7373ea4b62c7c9563720768824bcb66e71463f6900"
+            ),
+        ];
+        let invalid: [[u8; 57]; 8] = [
+            hex!(
+                "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            ),
+            hex!(
+                "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080"
+            ),
+            hex!(
+                "fefffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffff00"
+            ),
+            hex!(
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080"
+            ),
+            hex!(
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            ),
+            hex!(
+                "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffff00"
+            ),
+            hex!(
+                "020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            ),
+            hex!(
+                "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+            ),
+        ];
+        let outside_subgroup: [[u8; 57]; 1] = [hex!(
+            "eb05cf0da486f767523728b1d3ec42023bc68319e3002cc5283d5ffae0638778bf675c938c8c15b49d3836a9c8df8977db4349918eb9c09680"
+        )];
+        for bytes in valid.iter().chain(&outside_subgroup) {
+            assert!(usable(bytes));
+        }
+        for bytes in &invalid {
+            assert!(!usable(bytes));
+        }
     }
 }

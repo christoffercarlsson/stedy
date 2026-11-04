@@ -83,12 +83,6 @@ where
         (point, valid)
     }
 
-    pub(crate) fn ct_eq(&self, other: &Self) -> Choice {
-        let x = (self.x * other.z).ct_eq(&(other.x * self.z));
-        let y = (self.y * other.z).ct_eq(&(other.y * self.z));
-        x & y
-    }
-
     pub(crate) fn has_small_order(&self) -> Choice {
         const {
             assert!(
