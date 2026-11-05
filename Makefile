@@ -1,4 +1,4 @@
-.PHONY: bench clean docs wycheproof
+.PHONY: bench cctv clean docs wycheproof
 
 CRATE := $(shell awk -F'"' '/^\[package\]/ { p = 1 } p && /^name = / { print $$2; exit }' Cargo.toml | tr - _)
 
@@ -8,6 +8,10 @@ AES_FEATURES := +aes,+pclmulqdq
 else ifneq ($(filter aarch64 arm64,$(ARCH)),)
 AES_FEATURES := +aes
 endif
+
+CCTV_REF := main
+CCTV_URL := https://raw.githubusercontent.com/C2SP/CCTV/$(CCTV_REF)
+CCTV_DIR := tests/cctv/vectors
 
 WYCHEPROOF_REF := main
 WYCHEPROOF_URL := https://raw.githubusercontent.com/C2SP/wycheproof/$(WYCHEPROOF_REF)
@@ -66,6 +70,12 @@ WYCHEPROOF_FILES := \
 
 bench:
 	@RUSTFLAGS="-C target-feature=$(AES_FEATURES)" cargo bench --quiet --all-features
+
+cctv:
+	@mkdir -p $(CCTV_DIR)
+	@curl -fsSL -o $(CCTV_DIR)/LICENSE $(CCTV_URL)/ed25519/LICENSE
+	@curl -fsSL -o $(CCTV_DIR)/ed25519vectors.json $(CCTV_URL)/ed25519/ed25519vectors.json
+	@echo "$(CCTV_DIR): 1 file from C2SP/CCTV@$(CCTV_REF)"
 
 clean:
 	@cargo clean --quiet
