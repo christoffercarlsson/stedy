@@ -1,11 +1,111 @@
-use crate::{
-    ciphers::{Aes128Ctr, Aes256Ctr},
-    csprngs::StreamCipherRng,
-    hashes::{Sha256, Sha384},
+#[cfg(feature = "hazmat")]
+use crate::traits::SeedableCryptoRng;
+use {
+    crate::{
+        Error,
+        ciphers::{Aes128Ctr, Aes256Ctr},
+        csprngs::StreamCipherRng,
+        hashes::{Sha256, Sha384},
+        traits::CryptoRng,
+    },
+    core::array::TryFromSliceError,
 };
 
-pub type Aes128CtrRng = StreamCipherRng<Aes128Ctr, Sha256>;
-pub type Aes256CtrRng = StreamCipherRng<Aes256Ctr, Sha384>;
+pub struct Aes128CtrRng(StreamCipherRng<Aes128Ctr, Sha256>);
+
+impl Aes128CtrRng {
+    pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.0.fill(bytes)
+    }
+}
+
+#[cfg(feature = "getrandom")]
+impl Aes128CtrRng {
+    pub fn seed() -> Result<Self, Error> {
+        StreamCipherRng::seed().map(Self)
+    }
+
+    pub fn reseed(&mut self) -> Result<(), Error> {
+        self.0.reseed()
+    }
+}
+
+impl From<&[u8; 64]> for Aes128CtrRng {
+    fn from(seed: &[u8; 64]) -> Self {
+        Self(StreamCipherRng::from(seed))
+    }
+}
+
+impl From<[u8; 64]> for Aes128CtrRng {
+    fn from(seed: [u8; 64]) -> Self {
+        Self(StreamCipherRng::from(seed))
+    }
+}
+
+impl TryFrom<&[u8]> for Aes128CtrRng {
+    type Error = TryFromSliceError;
+
+    fn try_from(seed: &[u8]) -> Result<Self, Self::Error> {
+        StreamCipherRng::try_from(seed).map(Self)
+    }
+}
+
+impl CryptoRng for Aes128CtrRng {
+    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.0.fill(bytes)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+impl SeedableCryptoRng for Aes128CtrRng {}
+
+pub struct Aes256CtrRng(StreamCipherRng<Aes256Ctr, Sha384>);
+
+impl Aes256CtrRng {
+    pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.0.fill(bytes)
+    }
+}
+
+#[cfg(feature = "getrandom")]
+impl Aes256CtrRng {
+    pub fn seed() -> Result<Self, Error> {
+        StreamCipherRng::seed().map(Self)
+    }
+
+    pub fn reseed(&mut self) -> Result<(), Error> {
+        self.0.reseed()
+    }
+}
+
+impl From<&[u8; 96]> for Aes256CtrRng {
+    fn from(seed: &[u8; 96]) -> Self {
+        Self(StreamCipherRng::from(seed))
+    }
+}
+
+impl From<[u8; 96]> for Aes256CtrRng {
+    fn from(seed: [u8; 96]) -> Self {
+        Self(StreamCipherRng::from(seed))
+    }
+}
+
+impl TryFrom<&[u8]> for Aes256CtrRng {
+    type Error = TryFromSliceError;
+
+    fn try_from(seed: &[u8]) -> Result<Self, Self::Error> {
+        StreamCipherRng::try_from(seed).map(Self)
+    }
+}
+
+impl CryptoRng for Aes256CtrRng {
+    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.0.fill(bytes)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+impl SeedableCryptoRng for Aes256CtrRng {}
 
 #[cfg(test)]
 mod tests {

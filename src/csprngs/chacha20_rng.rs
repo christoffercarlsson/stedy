@@ -1,6 +1,59 @@
-use crate::{ciphers::ChaCha20, csprngs::StreamCipherRng, hashes::Blake2b384};
+#[cfg(feature = "hazmat")]
+use crate::traits::SeedableCryptoRng;
+use {
+    crate::{
+        Error, ciphers::ChaCha20, csprngs::StreamCipherRng, hashes::Blake2b384, traits::CryptoRng,
+    },
+    core::array::TryFromSliceError,
+};
 
-pub type ChaCha20Rng = StreamCipherRng<ChaCha20, Blake2b384>;
+pub struct ChaCha20Rng(StreamCipherRng<ChaCha20, Blake2b384>);
+
+impl ChaCha20Rng {
+    pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.0.fill(bytes)
+    }
+}
+
+#[cfg(feature = "getrandom")]
+impl ChaCha20Rng {
+    pub fn seed() -> Result<Self, Error> {
+        StreamCipherRng::seed().map(Self)
+    }
+
+    pub fn reseed(&mut self) -> Result<(), Error> {
+        self.0.reseed()
+    }
+}
+
+impl From<&[u8; 96]> for ChaCha20Rng {
+    fn from(seed: &[u8; 96]) -> Self {
+        Self(StreamCipherRng::from(seed))
+    }
+}
+
+impl From<[u8; 96]> for ChaCha20Rng {
+    fn from(seed: [u8; 96]) -> Self {
+        Self(StreamCipherRng::from(seed))
+    }
+}
+
+impl TryFrom<&[u8]> for ChaCha20Rng {
+    type Error = TryFromSliceError;
+
+    fn try_from(seed: &[u8]) -> Result<Self, Self::Error> {
+        StreamCipherRng::try_from(seed).map(Self)
+    }
+}
+
+impl CryptoRng for ChaCha20Rng {
+    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+        self.0.fill(bytes)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+impl SeedableCryptoRng for ChaCha20Rng {}
 
 #[cfg(test)]
 mod tests {
