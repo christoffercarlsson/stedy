@@ -1,5 +1,3 @@
-#[cfg(feature = "hazmat")]
-use crate::traits::SeedableCryptoRng;
 use {
     crate::{
         Error,
@@ -95,14 +93,6 @@ where
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         self.fill(bytes)
     }
-}
-
-#[cfg(feature = "hazmat")]
-impl<C, H> SeedableCryptoRng for StreamCipherRng<C, H>
-where
-    C: SeekableStreamCipher,
-    H: Hasher<Output = C::Seed>,
-{
 }
 
 impl<C, H> TryFrom<&[u8]> for StreamCipherRng<C, H>

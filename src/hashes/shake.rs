@@ -1,6 +1,6 @@
 use crate::{
     hashes::{KeccakF1600, Sponge},
-    traits::{Init, KeccakPermutation, Xof, XofReader},
+    traits::{KeccakPermutation, Xof, XofReader},
 };
 
 #[derive(Clone)]
@@ -34,15 +34,13 @@ impl Default for Shake128 {
     }
 }
 
-impl Init for Shake128 {
-    fn new() -> Self {
-        Self::new()
-    }
-}
-
 impl Xof for Shake128 {
     type Block = [u8; 168];
     type Reader = Shake128Reader;
+
+    fn new() -> Self {
+        Self::new()
+    }
 
     fn digest(message: &[u8], output: &mut [u8]) {
         Self::digest(message, output);
@@ -107,15 +105,13 @@ impl Default for Shake256 {
     }
 }
 
-impl Init for Shake256 {
-    fn new() -> Self {
-        Self::new()
-    }
-}
-
 impl Xof for Shake256 {
     type Block = [u8; 136];
     type Reader = Shake256Reader;
+
+    fn new() -> Self {
+        Self::new()
+    }
 
     fn digest(message: &[u8], output: &mut [u8]) {
         Self::digest(message, output);
@@ -196,21 +192,16 @@ where
     }
 }
 
-impl<P> Init for Shake128With<P>
-where
-    P: KeccakPermutation,
-{
-    fn new() -> Self {
-        Self::new()
-    }
-}
-
 impl<P> Xof for Shake128With<P>
 where
     P: KeccakPermutation,
 {
     type Block = [u8; 168];
     type Reader = Shake128ReaderWith<P>;
+
+    fn new() -> Self {
+        Self::new()
+    }
 
     fn digest(message: &[u8], output: &mut [u8]) {
         Self::digest(message, output);
@@ -307,21 +298,16 @@ where
     }
 }
 
-impl<P> Init for Shake256With<P>
-where
-    P: KeccakPermutation,
-{
-    fn new() -> Self {
-        Self::new()
-    }
-}
-
 impl<P> Xof for Shake256With<P>
 where
     P: KeccakPermutation,
 {
     type Block = [u8; 136];
     type Reader = Shake256ReaderWith<P>;
+
+    fn new() -> Self {
+        Self::new()
+    }
 
     fn digest(message: &[u8], output: &mut [u8]) {
         Self::digest(message, output);

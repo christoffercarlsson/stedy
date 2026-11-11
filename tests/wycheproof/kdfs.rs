@@ -5,7 +5,6 @@ use {
         Error,
         hashes::{Sha256, Sha384, Sha512},
         kdfs::{Hkdf, Pbkdf2},
-        macs::Hmac,
     },
 };
 
@@ -52,7 +51,7 @@ macro_rules! hkdf {
 macro_rules! pbkdf2_hmac {
     ($hash:ty) => {
         |password: &[u8], salt: &[u8], iterations: usize, output: &mut [u8]| {
-            Pbkdf2::<Hmac<$hash>>::derive(password, salt, iterations, output)
+            Pbkdf2::<$hash>::derive(password, salt, iterations, output)
         }
     };
 }

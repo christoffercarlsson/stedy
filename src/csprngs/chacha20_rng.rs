@@ -1,5 +1,3 @@
-#[cfg(feature = "hazmat")]
-use crate::traits::SeedableCryptoRng;
 use {
     crate::{
         Error, ciphers::ChaCha20, csprngs::StreamCipherRng, hashes::Blake2b384, traits::CryptoRng,
@@ -51,9 +49,6 @@ impl CryptoRng for ChaCha20Rng {
         self.0.fill(bytes)
     }
 }
-
-#[cfg(feature = "hazmat")]
-impl SeedableCryptoRng for ChaCha20Rng {}
 
 #[cfg(test)]
 mod tests {

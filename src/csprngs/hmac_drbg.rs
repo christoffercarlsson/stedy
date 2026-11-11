@@ -1,5 +1,3 @@
-#[cfg(feature = "hazmat")]
-use crate::traits::SeedableCryptoRng;
 use {
     crate::{
         Error,
@@ -65,9 +63,6 @@ where
         self.fill(bytes)
     }
 }
-
-#[cfg(feature = "hazmat")]
-impl<H> SeedableCryptoRng for HmacDrbg<H> where H: Hasher {}
 
 impl<H> TryFrom<&[u8]> for HmacDrbg<H>
 where

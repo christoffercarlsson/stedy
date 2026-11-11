@@ -2,7 +2,7 @@ use {
     crate::{
         Error,
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
-        traits::{Authenticator, Digest, KeyInit, Mac, SeekableStreamCipher},
+        traits::{Authenticator, SeekableStreamCipher},
         utils::{Block, Choice, verify, wipe},
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
@@ -37,12 +37,6 @@ impl Poly1305 {
         }
     }
 
-    pub fn finalize_into(self, output: &mut [u8]) {
-        let tag = self.finalize();
-        let size = output.len().min(tag.len());
-        output[..size].copy_from_slice(&tag[..size]);
-    }
-
     pub fn finalize(mut self) -> [u8; 16] {
         let remaining = self.block.remaining();
         if !remaining.is_empty() {
@@ -63,37 +57,6 @@ impl Poly1305 {
     }
 }
 
-impl KeyInit for Poly1305 {
-    fn new(key: &[u8]) -> Result<Self, Error> {
-        let key = <&[u8; 32]>::try_from(key).map_err(|_| Error::InvalidKey)?;
-        Ok(Self::new(key))
-    }
-}
-
-impl Digest for Poly1305 {
-    const OUTPUT_SIZE: usize = 16;
-
-    type Output = [u8; Self::OUTPUT_SIZE];
-
-    fn update(&mut self, message: &[u8]) {
-        self.update(message);
-    }
-
-    fn finalize(self) -> Self::Output {
-        self.finalize()
-    }
-
-    fn finalize_into(self, output: &mut [u8]) {
-        self.finalize_into(output);
-    }
-}
-
-impl Mac for Poly1305 {
-    fn verify(self, code: &Self::Output) -> Result<(), Error> {
-        self.verify(code)
-    }
-}
-
 impl Authenticator<ChaCha20> for Poly1305 {
     type Output = [u8; 16];
 
@@ -108,7 +71,7 @@ impl Authenticator<ChaCha20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
-        Mac::verify(self, tag).is_ok()
+        Poly1305::verify(self, tag).is_ok()
     }
 }
 
@@ -126,7 +89,7 @@ impl Authenticator<XChaCha20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
-        Mac::verify(self, tag).is_ok()
+        Poly1305::verify(self, tag).is_ok()
     }
 }
 
@@ -150,7 +113,7 @@ impl Authenticator<XSalsa20> for Poly1305 {
 
     fn verify(mut self, ciphertext: &[u8], _aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.update(ciphertext);
-        Mac::verify(self, tag).is_ok()
+        Poly1305::verify(self, tag).is_ok()
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     hashes::{KeccakF1600, Sponge},
-    traits::{Digest, Hasher, Init, KeccakPermutation},
+    traits::{Hasher, KeccakPermutation},
 };
 
 #[derive(Clone)]
@@ -34,16 +34,17 @@ impl Default for Sha3_224 {
     }
 }
 
-impl Init for Sha3_224 {
+impl Hasher for Sha3_224 {
+    const BLOCK_SIZE: usize = 144;
+    const OUTPUT_SIZE: usize = 28;
+
+    type Block = [u8; 144];
+
+    type Output = [u8; 28];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl Digest for Sha3_224 {
-    const OUTPUT_SIZE: usize = 28;
-
-    type Output = [u8; 28];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -56,13 +57,6 @@ impl Digest for Sha3_224 {
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-#[cfg(feature = "hazmat")]
-impl Hasher for Sha3_224 {
-    const BLOCK_SIZE: usize = 144;
-
-    type Block = [u8; 144];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)
@@ -100,16 +94,17 @@ impl Default for Sha3_256 {
     }
 }
 
-impl Init for Sha3_256 {
+impl Hasher for Sha3_256 {
+    const BLOCK_SIZE: usize = 136;
+    const OUTPUT_SIZE: usize = 32;
+
+    type Block = [u8; 136];
+
+    type Output = [u8; 32];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl Digest for Sha3_256 {
-    const OUTPUT_SIZE: usize = 32;
-
-    type Output = [u8; 32];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -122,12 +117,6 @@ impl Digest for Sha3_256 {
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-impl Hasher for Sha3_256 {
-    const BLOCK_SIZE: usize = 136;
-
-    type Block = [u8; 136];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)
@@ -165,16 +154,17 @@ impl Default for Sha3_384 {
     }
 }
 
-impl Init for Sha3_384 {
+impl Hasher for Sha3_384 {
+    const BLOCK_SIZE: usize = 104;
+    const OUTPUT_SIZE: usize = 48;
+
+    type Block = [u8; 104];
+
+    type Output = [u8; 48];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl Digest for Sha3_384 {
-    const OUTPUT_SIZE: usize = 48;
-
-    type Output = [u8; 48];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -187,12 +177,6 @@ impl Digest for Sha3_384 {
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-impl Hasher for Sha3_384 {
-    const BLOCK_SIZE: usize = 104;
-
-    type Block = [u8; 104];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)
@@ -230,16 +214,17 @@ impl Default for Sha3_512 {
     }
 }
 
-impl Init for Sha3_512 {
+impl Hasher for Sha3_512 {
+    const BLOCK_SIZE: usize = 72;
+    const OUTPUT_SIZE: usize = 64;
+
+    type Block = [u8; 72];
+
+    type Output = [u8; 64];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl Digest for Sha3_512 {
-    const OUTPUT_SIZE: usize = 64;
-
-    type Output = [u8; 64];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -252,12 +237,6 @@ impl Digest for Sha3_512 {
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-impl Hasher for Sha3_512 {
-    const BLOCK_SIZE: usize = 72;
-
-    type Block = [u8; 72];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)
@@ -311,22 +290,20 @@ where
     }
 }
 
-impl<P> Init for Sha3_256With<P>
+impl<P> Hasher for Sha3_256With<P>
 where
     P: KeccakPermutation,
 {
+    const BLOCK_SIZE: usize = 136;
+    const OUTPUT_SIZE: usize = 32;
+
+    type Block = [u8; 136];
+
+    type Output = [u8; 32];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl<P> Digest for Sha3_256With<P>
-where
-    P: KeccakPermutation,
-{
-    const OUTPUT_SIZE: usize = 32;
-
-    type Output = [u8; 32];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -339,15 +316,6 @@ where
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-impl<P> Hasher for Sha3_256With<P>
-where
-    P: KeccakPermutation,
-{
-    const BLOCK_SIZE: usize = 136;
-
-    type Block = [u8; 136];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)
@@ -401,22 +369,20 @@ where
     }
 }
 
-impl<P> Init for Sha3_512With<P>
+impl<P> Hasher for Sha3_512With<P>
 where
     P: KeccakPermutation,
 {
+    const BLOCK_SIZE: usize = 72;
+    const OUTPUT_SIZE: usize = 64;
+
+    type Block = [u8; 72];
+
+    type Output = [u8; 64];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl<P> Digest for Sha3_512With<P>
-where
-    P: KeccakPermutation,
-{
-    const OUTPUT_SIZE: usize = 64;
-
-    type Output = [u8; 64];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -429,15 +395,6 @@ where
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-impl<P> Hasher for Sha3_512With<P>
-where
-    P: KeccakPermutation,
-{
-    const BLOCK_SIZE: usize = 72;
-
-    type Block = [u8; 72];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)

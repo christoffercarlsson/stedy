@@ -8,7 +8,7 @@ use {
         Error,
         encoding::{Encoding, decode, encode},
         hashes::{Blake2b512, Blake2bVar},
-        traits::Init,
+        traits::Hasher,
         utils::{Secret, verify},
     },
     core::ops::{BitXorAssign, Index, IndexMut},
@@ -298,7 +298,7 @@ impl Argon2Params {
         associated_data: &[u8],
         output: &[u8],
     ) -> Secret<[u8; 64]> {
-        let mut hasher = <Blake2b512 as Init>::new();
+        let mut hasher = <Blake2b512 as Hasher>::new();
         hasher.update(&self.lanes.to_le_bytes());
         hasher.update(&(output.len() as u32).to_le_bytes());
         hasher.update(&self.memory.to_le_bytes());

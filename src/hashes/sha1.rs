@@ -1,5 +1,5 @@
 use crate::{
-    traits::{Digest, Hasher, Init},
+    traits::Hasher,
     utils::{Block, Secret},
 };
 
@@ -55,16 +55,17 @@ impl Default for Sha1 {
     }
 }
 
-impl Init for Sha1 {
+impl Hasher for Sha1 {
+    const BLOCK_SIZE: usize = 64;
+    const OUTPUT_SIZE: usize = 20;
+
+    type Block = [u8; Self::BLOCK_SIZE];
+
+    type Output = [u8; Self::OUTPUT_SIZE];
+
     fn new() -> Self {
         Self::new()
     }
-}
-
-impl Digest for Sha1 {
-    const OUTPUT_SIZE: usize = 20;
-
-    type Output = [u8; Self::OUTPUT_SIZE];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -77,12 +78,6 @@ impl Digest for Sha1 {
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
-
-impl Hasher for Sha1 {
-    const BLOCK_SIZE: usize = 64;
-
-    type Block = [u8; Self::BLOCK_SIZE];
 
     fn digest(message: &[u8]) -> Self::Output {
         Self::digest(message)

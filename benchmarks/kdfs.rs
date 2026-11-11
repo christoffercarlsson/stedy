@@ -3,7 +3,6 @@ use {
     stedy::{
         hashes::{Sha256, Sha512},
         kdfs::{Hkdf, Pbkdf2},
-        macs::Hmac,
     },
 };
 
@@ -38,14 +37,14 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("pbkdf2_hmac_sha256", |b| {
         b.iter(|| {
             let mut output = [0u8; 32];
-            Pbkdf2::<Hmac<Sha256>>::derive(password, salt, iterations, &mut output)
+            Pbkdf2::<Sha256>::derive(password, salt, iterations, &mut output)
         });
     });
 
     c.bench_function("pbkdf2_hmac_sha512", |b| {
         b.iter(|| {
             let mut output = [0u8; 64];
-            Pbkdf2::<Hmac<Sha512>>::derive(password, salt, iterations, &mut output)
+            Pbkdf2::<Sha512>::derive(password, salt, iterations, &mut output)
         });
     });
 

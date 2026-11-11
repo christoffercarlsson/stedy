@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{Digest, Hasher, Init, KeyInit, Mac},
+    traits::Hasher,
     utils::{Block, Secret, verify},
 };
 
@@ -57,22 +57,16 @@ impl<const N: usize> Blake2b<N> {
     }
 }
 
-impl<const N: usize> Init for Blake2b<N> {
+impl<const N: usize> Hasher for Blake2b<N> {
+    const BLOCK_SIZE: usize = 128;
+    const OUTPUT_SIZE: usize = N;
+
+    type Block = [u8; 128];
+    type Output = [u8; N];
+
     fn new() -> Self {
         Self::with_key(None)
     }
-}
-
-impl<const N: usize> KeyInit for Blake2b<N> {
-    fn new(key: &[u8]) -> Result<Self, Error> {
-        Self::new(Some(key))
-    }
-}
-
-impl<const N: usize> Digest for Blake2b<N> {
-    const OUTPUT_SIZE: usize = N;
-
-    type Output = [u8; N];
 
     fn update(&mut self, message: &[u8]) {
         self.update(message);
@@ -85,11 +79,9 @@ impl<const N: usize> Digest for Blake2b<N> {
     fn finalize_into(self, output: &mut [u8]) {
         self.finalize_into(output);
     }
-}
 
-impl<const N: usize> Mac for Blake2b<N> {
-    fn verify(self, code: &[u8; N]) -> Result<(), Error> {
-        self.verify(code)
+    fn digest(message: &[u8]) -> Self::Output {
+        Self::digest(message)
     }
 }
 
@@ -97,26 +89,6 @@ pub type Blake2b512 = Blake2b<64>;
 pub type Blake2b384 = Blake2b<48>;
 pub type Blake2b256 = Blake2b<32>;
 pub type Blake2b160 = Blake2b<20>;
-
-macro_rules! impl_hasher {
-    ($hasher:ty) => {
-        impl Hasher for $hasher {
-            const BLOCK_SIZE: usize = 128;
-
-            type Block = [u8; 128];
-
-            fn digest(message: &[u8]) -> Self::Output {
-                Self::digest(message)
-            }
-        }
-    };
-}
-
-impl_hasher!(Blake2b512);
-impl_hasher!(Blake2b384);
-impl_hasher!(Blake2b256);
-#[cfg(feature = "hazmat")]
-impl_hasher!(Blake2b160);
 
 #[cfg(feature = "argon2")]
 #[derive(Clone)]

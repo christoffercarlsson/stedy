@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{ByteArray, Digest, Hasher, KeyInit, Mac, Prf},
+    traits::{ByteArray, Hasher},
     utils::{Secret, verify, xor},
 };
 
@@ -68,47 +68,6 @@ where
         } else {
             Err(Error::Verification)
         }
-    }
-}
-
-impl<H> KeyInit for Hmac<H>
-where
-    H: Hasher,
-{
-    fn new(key: &[u8]) -> Result<Self, Error> {
-        Ok(Self::new(key))
-    }
-}
-
-impl<H> Digest for Hmac<H>
-where
-    H: Hasher,
-{
-    const OUTPUT_SIZE: usize = H::OUTPUT_SIZE;
-
-    type Output = H::Output;
-
-    fn update(&mut self, message: &[u8]) {
-        self.update(message);
-    }
-
-    fn finalize(self) -> Self::Output {
-        self.finalize()
-    }
-
-    fn finalize_into(self, output: &mut [u8]) {
-        self.finalize_into(output);
-    }
-}
-
-impl<H> Prf for Hmac<H> where H: Hasher {}
-
-impl<H> Mac for Hmac<H>
-where
-    H: Hasher,
-{
-    fn verify(self, code: &Self::Output) -> Result<(), Error> {
-        self.verify(code)
     }
 }
 

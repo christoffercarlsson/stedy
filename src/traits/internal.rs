@@ -328,3 +328,59 @@ pub trait MlKemArithmetic {
         Self::reduce_poly(h);
     }
 }
+
+pub trait Authenticator<C>
+where
+    C: SeekableStreamCipher,
+{
+    const ACCEPTS_AAD: bool = true;
+
+    type Output;
+
+    fn new(cipher: &mut C) -> Self;
+
+    fn tag(self, ciphertext: &[u8], aad: Option<&[u8]>) -> Self::Output;
+
+    fn verify(self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool;
+}
+
+pub trait Xof {
+    type Block: ByteArray;
+    type Reader: XofReader;
+
+    fn new() -> Self;
+
+    fn digest(message: &[u8], output: &mut [u8]);
+
+    fn update(&mut self, message: &[u8]);
+
+    fn finalize_into(self, output: &mut [u8]);
+
+    fn finalize_xof(self) -> Self::Reader;
+}
+
+pub trait XofReader {
+    fn read(&mut self, output: &mut [u8]);
+}
+
+pub trait StreamCipher {
+    const KEY_SIZE: usize;
+    const NONCE_SIZE: usize;
+
+    type Key: ByteArray;
+    type Nonce: ByteArray;
+
+    fn new(key: &Self::Key, nonce: &Self::Nonce) -> Self;
+
+    fn apply_keystream(&mut self, message: &mut [u8]) -> Result<(), Error>;
+}
+
+pub trait SeekableStreamCipher: StreamCipher {
+    const SEED_SIZE: usize;
+
+    type Seed: ByteArray;
+
+    fn seed(seed: &Self::Seed) -> Self;
+
+    fn seek(&mut self, counter: u32);
+}

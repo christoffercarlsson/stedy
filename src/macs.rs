@@ -3,16 +3,9 @@ mod ghash;
 mod hmac;
 mod poly1305;
 
-#[cfg(not(feature = "hazmat"))]
-pub(crate) use poly1305::*;
+#[cfg(feature = "aes")]
+pub(crate) use ghash::GHash;
 
-#[cfg(all(feature = "aes", not(feature = "hazmat")))]
-pub(crate) use ghash::*;
+pub(crate) use poly1305::Poly1305;
 
 pub use hmac::*;
-
-#[cfg(feature = "hazmat")]
-pub use poly1305::*;
-
-#[cfg(all(feature = "aes", feature = "hazmat"))]
-pub use ghash::*;

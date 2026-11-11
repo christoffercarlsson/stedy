@@ -1,5 +1,3 @@
-#[cfg(feature = "hazmat")]
-use crate::traits::SeedableCryptoRng;
 use {
     crate::{
         Error,
@@ -56,9 +54,6 @@ impl CryptoRng for Aes128CtrRng {
     }
 }
 
-#[cfg(feature = "hazmat")]
-impl SeedableCryptoRng for Aes128CtrRng {}
-
 pub struct Aes256CtrRng(StreamCipherRng<Aes256Ctr, Sha384>);
 
 impl Aes256CtrRng {
@@ -103,9 +98,6 @@ impl CryptoRng for Aes256CtrRng {
         self.0.fill(bytes)
     }
 }
-
-#[cfg(feature = "hazmat")]
-impl SeedableCryptoRng for Aes256CtrRng {}
 
 #[cfg(test)]
 mod tests {
