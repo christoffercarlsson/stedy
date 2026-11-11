@@ -2,30 +2,54 @@ use {
     crate::{
         Error,
         traits::{ByteArray, ByteOrder, CryptoRng, FieldElement},
-        utils::wipe,
+        utils::{Choice, wipe},
     },
-    core::{array::from_fn, marker::PhantomData},
+    core::{
+        array::from_fn,
+        marker::PhantomData,
+        ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    },
 };
 
-pub struct Shamir<F>
+pub struct Shamir;
+
+impl Shamir {
+    pub fn split<'a, const K: usize, const N: usize>(
+        rng: &mut impl CryptoRng,
+        secret: &[u8],
+        output: &'a mut [u8],
+    ) -> Result<[&'a [u8]; N], Error> {
+        ShamirWith::<Gf256>::split::<K, N>(rng, secret, output)
+    }
+
+    pub fn combine<'a, const K: usize>(
+        shares: [&[u8]; K],
+        secret: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
+        ShamirWith::<Gf256>::combine(shares, secret)
+    }
+}
+
+struct ShamirWith<F>
 where
     F: FieldElement,
 {
     _marker: PhantomData<F>,
 }
 
-impl<F> Shamir<F>
+impl<F> ShamirWith<F>
 where
     F: FieldElement,
 {
-    pub const CHUNK_SIZE: usize = F::CAPACITY / 8;
-    pub const MAX_SHARES: usize = if F::CAPACITY < u32::BITS as usize {
+    const CHUNK_SIZE: usize = F::CAPACITY / 8;
+    const MAX_SHARES: usize = if F::CAPACITY < u32::BITS as usize {
         (1 << F::CAPACITY) - 1
     } else {
         u32::MAX as usize
     };
+    const ELEMENT_SIZE: usize = F::Bytes::SIZE;
 
-    pub fn split<'a, const K: usize, const N: usize>(
+    fn split<'a, const K: usize, const N: usize>(
         rng: &mut impl CryptoRng,
         secret: &[u8],
         output: &'a mut [u8],
@@ -61,7 +85,7 @@ where
         Ok(shares)
     }
 
-    pub fn combine<'a, const K: usize>(
+    fn combine<'a, const K: usize>(
         shares: [&[u8]; K],
         secret: &'a mut [u8],
     ) -> Result<&'a [u8], Error> {
@@ -73,13 +97,6 @@ where
             }
         }
     }
-}
-
-impl<F> Shamir<F>
-where
-    F: FieldElement,
-{
-    const ELEMENT_SIZE: usize = F::Bytes::SIZE;
 
     fn encode_chunk(secret: &[u8], index: usize) -> F::Bytes {
         let mut bytes = F::Bytes::new();
@@ -214,24 +231,174 @@ where
     }
 }
 
+#[derive(Clone, Copy)]
+struct Gf256(u8);
+
+impl Gf256 {
+    const POLYNOMIAL: u8 = 0x1b;
+
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 ^ rhs.0)
+    }
+
+    fn mul(self, rhs: Self) -> Self {
+        let mut a = self.0;
+        let mut b = rhs.0;
+        let mut r = 0u8;
+        for _ in 0..8 {
+            r ^= a & Choice::nonzero(b & 1).mask::<u8>();
+            a = (a << 1) ^ (Self::POLYNOMIAL & Choice::nonzero(a >> 7).mask::<u8>());
+            b >>= 1;
+        }
+        Self(r)
+    }
+
+    fn square(self) -> Self {
+        self.mul(self)
+    }
+
+    fn invert(self) -> Self {
+        let x = self;
+        let x4 = x.square().square();
+        let x8 = x4.square();
+        let x9 = x8.mul(x);
+        let x25 = x8.square().mul(x9);
+        let x50 = x25.square();
+        let x250 = x50.square().square().mul(x50);
+        x250.mul(x4)
+    }
+
+    fn sqrt(self) -> Self {
+        let mut x = self;
+        for _ in 0..7 {
+            x = x.square();
+        }
+        x
+    }
+
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
+        let swapped = *a;
+        *a = Self::select(*a, *b, condition);
+        *b = Self::select(*b, swapped, condition);
+    }
+
+    fn select(a: Self, b: Self, condition: Choice) -> Self {
+        Self(condition.select(a.0, b.0))
+    }
+
+    fn ct_eq(self, other: Self) -> Choice {
+        Choice::eq(self.0, other.0)
+    }
+}
+
+impl Add for Gf256 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.add(rhs)
+    }
+}
+
+impl AddAssign for Gf256 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.add(rhs);
+    }
+}
+
+impl Sub for Gf256 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.add(rhs)
+    }
+}
+
+impl SubAssign for Gf256 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = self.sub(rhs);
+    }
+}
+
+impl Neg for Gf256 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        self
+    }
+}
+
+impl Mul for Gf256 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.mul(rhs)
+    }
+}
+
+impl MulAssign for Gf256 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = self.mul(rhs);
+    }
+}
+
+impl From<[u8; 1]> for Gf256 {
+    fn from(value: [u8; 1]) -> Self {
+        Self(value[0])
+    }
+}
+
+impl From<Gf256> for [u8; 1] {
+    fn from(value: Gf256) -> Self {
+        [value.0]
+    }
+}
+
+impl FieldElement for Gf256 {
+    const ZERO: Self = Self(0);
+    const ONE: Self = Self(1);
+
+    const CAPACITY: usize = 8;
+    const BYTE_ORDER: ByteOrder = ByteOrder::LittleEndian;
+
+    type Bytes = [u8; 1];
+
+    fn swap(a: &mut Self, b: &mut Self, condition: Choice) {
+        Self::swap(a, b, condition);
+    }
+
+    fn select(a: &Self, b: &Self, condition: Choice) -> Self {
+        Self::select(*a, *b, condition)
+    }
+
+    fn ct_eq(&self, other: &Self) -> Choice {
+        Self::ct_eq(*self, *other)
+    }
+
+    fn square(self) -> Self {
+        self.square()
+    }
+
+    fn invert(self) -> Self {
+        self.invert()
+    }
+
+    fn sqrt(self, b: Self) -> (Self, Choice) {
+        let valid = !b.ct_eq(Self::ZERO);
+        let r = self.mul(b.invert()).sqrt();
+        (Self::select(Self::ZERO, r, valid), valid)
+    }
+
+    fn from_u32(value: u32) -> Self {
+        Self(value as u8)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use {
         super::*,
-        crate::{csprngs::ChaCha20Rng, elliptic_curves::Field25519, secret_sharing::Gf256},
+        crate::{csprngs::ChaCha20Rng, elliptic_curves::Field25519},
     };
-
-    #[test]
-    fn test_shamir_chunk_size() {
-        assert_eq!(Shamir::<Gf256>::CHUNK_SIZE, 1);
-        assert_eq!(Shamir::<Field25519>::CHUNK_SIZE, 31);
-    }
-
-    #[test]
-    fn test_shamir_max_shares() {
-        assert_eq!(Shamir::<Gf256>::MAX_SHARES, 255);
-        assert_eq!(Shamir::<Field25519>::MAX_SHARES, u32::MAX as usize);
-    }
 
     #[test]
     fn test_shamir_secret_sharing() {
@@ -246,7 +413,7 @@ mod tests {
             ]
         );
         let mut output = [0u8; 108];
-        let shares = Shamir::<Gf256>::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
+        let shares = Shamir::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(shares.len(), 3);
         assert_eq!(
             shares[0],
@@ -270,7 +437,7 @@ mod tests {
             ]
         );
         let mut buffer = [0u8; 32];
-        let result = Shamir::<Gf256>::combine([shares[2], shares[1]], &mut buffer).unwrap();
+        let result = Shamir::combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result, secret);
     }
 
@@ -280,7 +447,8 @@ mod tests {
         let mut secret = [0u8; 32];
         rng.fill(&mut secret).unwrap();
         let mut output = [0u8; 204];
-        let shares = Shamir::<Field25519>::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
+        let shares =
+            ShamirWith::<Field25519>::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
         assert_eq!(
             shares[0],
             [
@@ -309,7 +477,8 @@ mod tests {
             ]
         );
         let mut buffer = [0u8; 62];
-        let result = Shamir::<Field25519>::combine([shares[2], shares[1]], &mut buffer).unwrap();
+        let result =
+            ShamirWith::<Field25519>::combine([shares[2], shares[1]], &mut buffer).unwrap();
         assert_eq!(result.len(), 62);
         assert_eq!(result[..32], secret);
         assert_eq!(result[32..], [0u8; 30]);
