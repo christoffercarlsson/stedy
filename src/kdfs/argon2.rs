@@ -1,4 +1,3 @@
-#[cfg(feature = "std")]
 use {
     crate::utils::wipe,
     core::ops::{Deref, DerefMut},
@@ -73,7 +72,7 @@ impl Argon2Params {
         self
     }
 
-    pub const fn blocks(&self) -> usize {
+    const fn blocks(&self) -> usize {
         let lanes = self.lanes as usize;
         if lanes == 0 {
             return 0;
@@ -89,10 +88,10 @@ impl Default for Argon2Params {
 }
 
 #[derive(Clone, Copy)]
-pub struct Argon2Block([u64; Self::WORDS]);
+struct Argon2Block([u64; Self::WORDS]);
 
 impl Argon2Block {
-    pub const ZERO: Self = Self([0; Self::WORDS]);
+    const ZERO: Self = Self([0; Self::WORDS]);
 }
 
 impl Default for Argon2Block {
@@ -101,10 +100,8 @@ impl Default for Argon2Block {
     }
 }
 
-#[cfg(feature = "std")]
-pub struct Argon2Memory(Vec<Argon2Block>);
+struct Argon2Memory(Vec<Argon2Block>);
 
-#[cfg(feature = "std")]
 impl TryFrom<Argon2Params> for Argon2Memory {
     type Error = Error;
 
@@ -118,7 +115,6 @@ impl TryFrom<Argon2Params> for Argon2Memory {
     }
 }
 
-#[cfg(feature = "std")]
 impl Deref for Argon2Memory {
     type Target = [Argon2Block];
 
@@ -127,14 +123,12 @@ impl Deref for Argon2Memory {
     }
 }
 
-#[cfg(feature = "std")]
 impl DerefMut for Argon2Memory {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-#[cfg(feature = "std")]
 impl Drop for Argon2Memory {
     fn drop(&mut self) {
         for block in &mut self.0 {
@@ -146,7 +140,6 @@ impl Drop for Argon2Memory {
 pub struct Argon2;
 
 impl Argon2 {
-    #[cfg(feature = "std")]
     pub fn derive(
         params: Argon2Params,
         password: &[u8],
@@ -174,7 +167,7 @@ impl Argon2 {
         )
     }
 
-    pub fn derive_with_memory(
+    fn derive_with_memory(
         params: Argon2Params,
         password: &[u8],
         salt: &[u8],
@@ -197,7 +190,6 @@ impl Argon2 {
         Ok(())
     }
 
-    #[cfg(feature = "std")]
     pub fn phc<'a>(
         params: Argon2Params,
         password: &[u8],
@@ -210,7 +202,7 @@ impl Argon2 {
         Self::phc_with_memory(params, password, salt, hash_length, &mut memory, output)
     }
 
-    pub fn phc_with_memory<'a>(
+    fn phc_with_memory<'a>(
         params: Argon2Params,
         password: &[u8],
         salt: &[u8],
@@ -225,14 +217,13 @@ impl Argon2 {
         params.encode_phc(salt, hash, output)
     }
 
-    #[cfg(feature = "std")]
     pub fn verify_phc(password: &[u8], phc: &[u8]) -> Result<(), Error> {
         let (params, _, _) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
         let mut memory = Argon2Memory::try_from(params)?;
         Self::verify_phc_with_memory(password, phc, &mut memory)
     }
 
-    pub fn verify_phc_with_memory(
+    fn verify_phc_with_memory(
         password: &[u8],
         phc: &[u8],
         memory: &mut [Argon2Block],
@@ -341,7 +332,6 @@ impl Argon2Params {
     }
 
     fn fill_memory(&self, memory: &mut [Argon2Block]) {
-        #[cfg(feature = "std")]
         if self.threads > 1 {
             return self.fill_memory_parallel(memory);
         }
@@ -366,7 +356,6 @@ impl Argon2Params {
         }
     }
 
-    #[cfg(feature = "std")]
     fn fill_memory_parallel(&self, memory: &mut [Argon2Block]) {
         let lanes = self.lanes as usize;
         let passes = self.passes as usize;
@@ -700,7 +689,6 @@ enum Argon2ReferenceArea<'a> {
         before: &'a [Argon2Block],
         after: &'a [Argon2Block],
     },
-    #[cfg(feature = "std")]
     Finished(&'a [Option<&'a [Argon2Block]>]),
 }
 
@@ -719,7 +707,6 @@ impl Argon2Segment<'_> {
                     &after[index - (self.segment_index + 1) * self.segment_length]
                 }
             }
-            #[cfg(feature = "std")]
             Argon2ReferenceArea::Finished(finished) => {
                 let segment = finished[segment].expect("in-progress segments are never referenced");
                 &segment[offset]
@@ -862,8 +849,6 @@ mod tests {
                 b"$argon2id$v=19$m=256,t=2,p=2$c29tZXNhbHQ$bQk8UB/VmZZF4Oo79iDXuL5/0ttZwg2f/5U52iv1cDc",
             ),
         ];
-        #[allow(clippy::large_stack_arrays)]
-        let mut memory = [Argon2Block::ZERO; 256];
         for (variant, lanes, expected) in vectors {
             let params = Argon2Params::new(variant)
                 .memory(256)
@@ -873,42 +858,21 @@ mod tests {
                 Argon2Params::parse_phc(expected).map(|(parsed, _, _)| parsed),
                 Some(params)
             );
-            let mut output = [0u8; 128];
-            let encoded = Argon2::phc_with_memory(
-                params.threads(1),
-                b"password",
-                b"somesalt",
-                32,
-                &mut memory,
-                &mut output,
-            )
-            .unwrap();
-            assert_eq!(encoded, expected);
-            Argon2::verify_phc_with_memory(b"password", expected, &mut memory).unwrap();
-            assert_eq!(
-                Argon2::verify_phc_with_memory(b"Password", expected, &mut memory),
-                Err(Error::Verification)
-            );
-            assert_eq!(
-                Argon2::verify_phc_with_memory(
-                    b"password",
-                    &expected[..expected.len() - 1],
-                    &mut memory
-                ),
-                Err(Error::Encoding)
-            );
-            #[cfg(feature = "std")]
-            {
+            for params in [params.threads(1), params] {
                 let mut output = [0u8; 128];
                 let encoded =
                     Argon2::phc(params, b"password", b"somesalt", 32, &mut output).unwrap();
                 assert_eq!(encoded, expected);
-                Argon2::verify_phc(b"password", expected).unwrap();
-                assert_eq!(
-                    Argon2::verify_phc(b"Password", expected),
-                    Err(Error::Verification)
-                );
             }
+            Argon2::verify_phc(b"password", expected).unwrap();
+            assert_eq!(
+                Argon2::verify_phc(b"Password", expected),
+                Err(Error::Verification)
+            );
+            assert_eq!(
+                Argon2::verify_phc(b"password", &expected[..expected.len() - 1]),
+                Err(Error::Encoding)
+            );
         }
         let rejected: [&[u8]; 9] = [
             b"",
@@ -923,10 +887,7 @@ mod tests {
         ];
         for phc in rejected {
             assert!(Argon2Params::parse_phc(phc).is_none());
-            assert_eq!(
-                Argon2::verify_phc_with_memory(b"password", phc, &mut memory),
-                Err(Error::Encoding)
-            );
+            assert_eq!(Argon2::verify_phc(b"password", phc), Err(Error::Encoding));
         }
     }
 
@@ -934,157 +895,76 @@ mod tests {
 
     #[test]
     fn test_argon2d() {
-        const PARAMS: Argon2Params = Argon2Params::new(Argon2Variant::Argon2d).memory(32);
+        let params = Argon2Params::new(Argon2Variant::Argon2d).memory(32);
         let password = [1u8; 32];
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
-        #[allow(clippy::large_stack_arrays)]
-        let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
-        let mut output = [0u8; 32];
-        Argon2::derive_with_memory(
-            PARAMS.threads(1),
-            &password,
-            &salt,
-            Some(&secret),
-            Some(&associated_data),
-            &mut memory,
-            &mut output,
-        )
-        .unwrap();
-        #[cfg(feature = "std")]
-        {
-            let mut parallel = [0u8; 32];
+        for params in [params.threads(1), params] {
+            let mut output = [0u8; 32];
             Argon2::derive(
-                PARAMS,
+                params,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
-                &mut parallel,
+                &mut output,
             )
             .unwrap();
-            assert_eq!(parallel, output);
-            let mut memory = Argon2Memory::try_from(PARAMS).unwrap();
-            Argon2::derive_with_memory(
-                PARAMS,
-                &password,
-                &salt,
-                Some(&secret),
-                Some(&associated_data),
-                &mut memory,
-                &mut parallel,
-            )
-            .unwrap();
-            assert_eq!(parallel, output);
+            assert_eq!(
+                output,
+                hex!("512b391b6f1162975371d30919734294f868e3be3984f3c1a13a4db9fabe4acb")
+            );
         }
-        assert_eq!(
-            output,
-            hex!("512b391b6f1162975371d30919734294f868e3be3984f3c1a13a4db9fabe4acb")
-        );
     }
 
     #[test]
     fn test_argon2i() {
-        const PARAMS: Argon2Params = Argon2Params::new(Argon2Variant::Argon2i).memory(32);
+        let params = Argon2Params::new(Argon2Variant::Argon2i).memory(32);
         let password = [1u8; 32];
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
-        #[allow(clippy::large_stack_arrays)]
-        let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
-        let mut output = [0u8; 32];
-        Argon2::derive_with_memory(
-            PARAMS.threads(1),
-            &password,
-            &salt,
-            Some(&secret),
-            Some(&associated_data),
-            &mut memory,
-            &mut output,
-        )
-        .unwrap();
-        #[cfg(feature = "std")]
-        {
-            let mut parallel = [0u8; 32];
+        for params in [params.threads(1), params] {
+            let mut output = [0u8; 32];
             Argon2::derive(
-                PARAMS,
+                params,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
-                &mut parallel,
+                &mut output,
             )
             .unwrap();
-            assert_eq!(parallel, output);
-            let mut memory = Argon2Memory::try_from(PARAMS).unwrap();
-            Argon2::derive_with_memory(
-                PARAMS,
-                &password,
-                &salt,
-                Some(&secret),
-                Some(&associated_data),
-                &mut memory,
-                &mut parallel,
-            )
-            .unwrap();
-            assert_eq!(parallel, output);
+            assert_eq!(
+                output,
+                hex!("c814d9d1dc7f37aa13f0d77f2494bda1c8de6b016dd388d29952a4c4672b6ce8")
+            );
         }
-        assert_eq!(
-            output,
-            hex!("c814d9d1dc7f37aa13f0d77f2494bda1c8de6b016dd388d29952a4c4672b6ce8")
-        );
     }
 
     #[test]
     fn test_argon2id() {
-        const PARAMS: Argon2Params = Argon2Params::new(Argon2Variant::Argon2id).memory(32);
+        let params = Argon2Params::new(Argon2Variant::Argon2id).memory(32);
         let password = [1u8; 32];
         let salt = [2u8; 16];
         let secret = [3u8; 8];
         let associated_data = [4u8; 12];
-        #[allow(clippy::large_stack_arrays)]
-        let mut memory = [Argon2Block::ZERO; PARAMS.blocks()];
-        let mut output = [0u8; 32];
-        Argon2::derive_with_memory(
-            PARAMS.threads(1),
-            &password,
-            &salt,
-            Some(&secret),
-            Some(&associated_data),
-            &mut memory,
-            &mut output,
-        )
-        .unwrap();
-        #[cfg(feature = "std")]
-        {
-            let mut parallel = [0u8; 32];
+        for params in [params.threads(1), params] {
+            let mut output = [0u8; 32];
             Argon2::derive(
-                PARAMS,
+                params,
                 &password,
                 &salt,
                 Some(&secret),
                 Some(&associated_data),
-                &mut parallel,
+                &mut output,
             )
             .unwrap();
-            assert_eq!(parallel, output);
-            let mut memory = Argon2Memory::try_from(PARAMS).unwrap();
-            Argon2::derive_with_memory(
-                PARAMS,
-                &password,
-                &salt,
-                Some(&secret),
-                Some(&associated_data),
-                &mut memory,
-                &mut parallel,
-            )
-            .unwrap();
-            assert_eq!(parallel, output);
+            assert_eq!(
+                output,
+                hex!("0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659")
+            );
         }
-        assert_eq!(
-            output,
-            hex!("0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659")
-        );
     }
 }
