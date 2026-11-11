@@ -174,7 +174,7 @@ where
 
     fn hasher(phflag: u8, context: &[u8]) -> H {
         let mut state = H::new();
-        if F::DOMAIN_PURE || phflag != 0 || !context.is_empty() {
+        if phflag != 0 || !context.is_empty() {
             state.update(F::DOMAIN);
             state.update(&[phflag, context.len() as u8]);
             state.update(context);

@@ -230,10 +230,8 @@ impl FieldElement for Field25519 {
 }
 
 impl EdwardsParams<Field25519> for Field25519 {
-    const A: i8 = Edwards25519::A;
     const COFACTOR: u8 = Edwards25519::COFACTOR;
     const DOMAIN: &'static [u8] = Edwards25519::DOMAIN;
-    const DOMAIN_PURE: bool = Edwards25519::DOMAIN_PURE;
     const D: Self = Self::from_bytes(&Edwards25519::D);
     const D2: Self = Self::from_bytes(&Edwards25519::D2);
     const BASE_POINT_X: Self = Self::from_bytes(&Edwards25519::BASE_POINT_X);

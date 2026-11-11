@@ -1,7 +1,6 @@
 #[cfg(feature = "hazmat")]
 mod arithmetic;
 mod curve25519;
-mod curve448;
 mod edwards;
 mod montgomery;
 mod montgomery_ladder;
@@ -15,4 +14,4 @@ pub(crate) use {edwards::*, montgomery::*, montgomery_ladder::*, weierstrass::*}
 #[cfg(feature = "hazmat")]
 pub(crate) use arithmetic::*;
 
-pub use {curve448::*, curve25519::*, p256::*, p384::*, p521::*};
+pub use {curve25519::*, p256::*, p384::*, p521::*};

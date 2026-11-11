@@ -1,11 +1,49 @@
+use crate::{Error, elliptic_curves::P521 as P521Curve, key_exchange::Ecdh, traits::CryptoRng};
 #[cfg(feature = "hazmat")]
-use crate::elliptic_curves::{FieldP521With, ScalarP521, Weierstrass};
-use crate::{elliptic_curves::P521 as P521Curve, key_exchange::Ecdh};
+use {
+    crate::{
+        elliptic_curves::{FieldP521With, ScalarP521, Weierstrass},
+        traits::FieldArithmetic,
+    },
+    core::marker::PhantomData,
+};
 
-pub type P521 = Ecdh<P521Curve>;
+pub struct P521;
+
+impl P521 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 66], [u8; 67]), Error> {
+        Ecdh::<P521Curve>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 66]) -> Result<[u8; 67], Error> {
+        Ecdh::<P521Curve>::public_key(private_key)
+    }
+
+    pub fn key_exchange(private_key: &[u8; 66], public_key: &[u8; 67]) -> Result<[u8; 66], Error> {
+        Ecdh::<P521Curve>::key_exchange(private_key, public_key)
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type P521With<A> = Ecdh<Weierstrass<FieldP521With<A>, ScalarP521>>;
+pub struct P521With<A>(PhantomData<A>);
+
+#[cfg(feature = "hazmat")]
+impl<A> P521With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 66]>,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 66], [u8; 67]), Error> {
+        Ecdh::<Weierstrass<FieldP521With<A>, ScalarP521>>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 66]) -> Result<[u8; 67], Error> {
+        Ecdh::<Weierstrass<FieldP521With<A>, ScalarP521>>::public_key(private_key)
+    }
+
+    pub fn key_exchange(private_key: &[u8; 66], public_key: &[u8; 67]) -> Result<[u8; 66], Error> {
+        Ecdh::<Weierstrass<FieldP521With<A>, ScalarP521>>::key_exchange(private_key, public_key)
+    }
+}
 
 #[cfg(test)]
 mod tests {

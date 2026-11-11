@@ -64,7 +64,6 @@ WYCHEPROOF_FILES := \
 	pbkdf2_hmacsha384 \
 	pbkdf2_hmacsha512 \
 	x25519 \
-	x448 \
 	xchacha20_poly1305
 
 bench:

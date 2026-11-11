@@ -6,7 +6,7 @@ use {
     core::marker::PhantomData,
 };
 
-pub struct Ecdh<C>
+pub(crate) struct Ecdh<C>
 where
     C: EllipticCurve,
 {
@@ -17,7 +17,7 @@ impl<C> Ecdh<C>
 where
     C: EllipticCurve,
 {
-    pub fn generate_key_pair(
+    pub(crate) fn generate_key_pair(
         rng: &mut impl CryptoRng,
     ) -> Result<(C::ScalarBytes, C::PointBytes), Error> {
         let scalar = C::generate_scalar(rng)?;
@@ -27,13 +27,13 @@ where
         Ok((private_key, public_key))
     }
 
-    pub fn public_key(private_key: &C::ScalarBytes) -> Result<C::PointBytes, Error> {
+    pub(crate) fn public_key(private_key: &C::ScalarBytes) -> Result<C::PointBytes, Error> {
         let scalar = C::scalar_from_bytes(private_key)?;
         let point = C::scalar_mult_base(&scalar);
         Ok(C::point_to_bytes(&point))
     }
 
-    pub fn key_exchange(
+    pub(crate) fn key_exchange(
         private_key: &C::ScalarBytes,
         public_key: &C::PointBytes,
     ) -> Result<C::SharedSecretBytes, Error> {

@@ -1,11 +1,49 @@
+use crate::{Error, elliptic_curves::Curve25519, key_exchange::Ecdh, traits::CryptoRng};
 #[cfg(feature = "hazmat")]
-use crate::elliptic_curves::{Field25519With, MontgomeryLadder};
-use crate::{elliptic_curves::Curve25519, key_exchange::Ecdh};
+use {
+    crate::{
+        elliptic_curves::{Field25519With, MontgomeryLadder},
+        traits::FieldArithmetic,
+    },
+    core::marker::PhantomData,
+};
 
-pub type X25519 = Ecdh<Curve25519>;
+pub struct X25519;
+
+impl X25519 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 32]), Error> {
+        Ecdh::<Curve25519>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 32], Error> {
+        Ecdh::<Curve25519>::public_key(private_key)
+    }
+
+    pub fn key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> Result<[u8; 32], Error> {
+        Ecdh::<Curve25519>::key_exchange(private_key, public_key)
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type X25519With<A> = Ecdh<MontgomeryLadder<Field25519With<A>>>;
+pub struct X25519With<A>(PhantomData<A>);
+
+#[cfg(feature = "hazmat")]
+impl<A> X25519With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 32]), Error> {
+        Ecdh::<MontgomeryLadder<Field25519With<A>>>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 32], Error> {
+        Ecdh::<MontgomeryLadder<Field25519With<A>>>::public_key(private_key)
+    }
+
+    pub fn key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> Result<[u8; 32], Error> {
+        Ecdh::<MontgomeryLadder<Field25519With<A>>>::key_exchange(private_key, public_key)
+    }
+}
 
 #[cfg(test)]
 mod tests {

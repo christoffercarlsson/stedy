@@ -1,10 +1,8 @@
 pub struct Edwards25519;
 
 impl Edwards25519 {
-    pub(crate) const A: i8 = -1;
     pub(crate) const COFACTOR: u8 = super::Curve25519::COFACTOR;
     pub(crate) const DOMAIN: &'static [u8] = b"SigEd25519 no Ed25519 collisions";
-    pub(crate) const DOMAIN_PURE: bool = false;
     pub(crate) const D: [u8; 32] = [
         163, 120, 89, 19, 202, 77, 235, 117, 171, 216, 65, 65, 77, 10, 112, 0, 152, 232, 121, 119,
         121, 64, 199, 140, 115, 254, 111, 43, 238, 108, 3, 82,

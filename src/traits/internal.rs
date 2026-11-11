@@ -17,12 +17,10 @@ pub trait EdwardsParams<F>
 where
     F: FieldElement,
 {
-    const A: i8;
     const COFACTOR: u8;
     const D: F;
     const D2: F;
     const DOMAIN: &'static [u8];
-    const DOMAIN_PURE: bool;
     const BASE_POINT_X: F;
     const BASE_POINT_Y: F;
     const BASE_POINT_T: F;

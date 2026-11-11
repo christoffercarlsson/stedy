@@ -1,11 +1,49 @@
+use crate::{Error, elliptic_curves::P384 as P384Curve, key_exchange::Ecdh, traits::CryptoRng};
 #[cfg(feature = "hazmat")]
-use crate::elliptic_curves::{FieldP384With, ScalarP384, Weierstrass};
-use crate::{elliptic_curves::P384 as P384Curve, key_exchange::Ecdh};
+use {
+    crate::{
+        elliptic_curves::{FieldP384With, ScalarP384, Weierstrass},
+        traits::FieldArithmetic,
+    },
+    core::marker::PhantomData,
+};
 
-pub type P384 = Ecdh<P384Curve>;
+pub struct P384;
+
+impl P384 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 48], [u8; 49]), Error> {
+        Ecdh::<P384Curve>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 48]) -> Result<[u8; 49], Error> {
+        Ecdh::<P384Curve>::public_key(private_key)
+    }
+
+    pub fn key_exchange(private_key: &[u8; 48], public_key: &[u8; 49]) -> Result<[u8; 48], Error> {
+        Ecdh::<P384Curve>::key_exchange(private_key, public_key)
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type P384With<A> = Ecdh<Weierstrass<FieldP384With<A>, ScalarP384>>;
+pub struct P384With<A>(PhantomData<A>);
+
+#[cfg(feature = "hazmat")]
+impl<A> P384With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 48]>,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 48], [u8; 49]), Error> {
+        Ecdh::<Weierstrass<FieldP384With<A>, ScalarP384>>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 48]) -> Result<[u8; 49], Error> {
+        Ecdh::<Weierstrass<FieldP384With<A>, ScalarP384>>::public_key(private_key)
+    }
+
+    pub fn key_exchange(private_key: &[u8; 48], public_key: &[u8; 49]) -> Result<[u8; 48], Error> {
+        Ecdh::<Weierstrass<FieldP384With<A>, ScalarP384>>::key_exchange(private_key, public_key)
+    }
+}
 
 #[cfg(test)]
 mod tests {

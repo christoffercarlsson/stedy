@@ -1,7 +1,7 @@
 use {
     crate::{NoGroup, Summary, TestFile, TestResult, compress_point, load, pad_scalar},
     serde::Deserialize,
-    stedy::key_exchange::{P256, P384, P521, X448, X25519},
+    stedy::key_exchange::{P256, P384, P521, X25519},
 };
 
 #[derive(Deserialize)]
@@ -90,11 +90,6 @@ fn x25519() {
         include_str!("vectors/x25519_test.json"),
         xdh!(X25519),
     );
-}
-
-#[test]
-fn x448() {
-    run_xdh("x448", include_str!("vectors/x448_test.json"), xdh!(X448));
 }
 
 #[test]

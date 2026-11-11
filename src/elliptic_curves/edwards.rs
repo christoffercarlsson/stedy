@@ -70,11 +70,7 @@ where
         let canonical = Choice::eq_slice(encoded.as_ref(), bytes.as_ref());
         let y2 = y.square();
         let u = y2 - F::ONE;
-        let v = if F::A == 1 {
-            F::D * y2 - F::ONE
-        } else {
-            F::D * y2 + F::ONE
-        };
+        let v = F::D * y2 + F::ONE;
         let (mut x, mut valid) = u.sqrt(v);
         valid &= canonical & !(x.ct_eq(&F::ZERO) & Choice::nonzero(sign));
         let xs: F::Bytes = x.into();
@@ -145,16 +141,9 @@ where
     }
 
     fn niels_terms(x1: F, y1: F, y_plus_x: F, y_minus_x: F) -> (F, F) {
-        if F::A == 1 {
-            let a = x1 * (y_plus_x - y_minus_x);
-            let b = y1 * (y_plus_x + y_minus_x);
-            let e = (x1 + y1) * (y_plus_x + y_plus_x) - a - b;
-            (e, b - a)
-        } else {
-            let c = (y1 + x1) * y_plus_x;
-            let d = (y1 - x1) * y_minus_x;
-            (c - d, c + d)
-        }
+        let c = (y1 + x1) * y_plus_x;
+        let d = (y1 - x1) * y_minus_x;
+        (c - d, c + d)
     }
 
     #[allow(non_snake_case)]
@@ -214,17 +203,10 @@ where
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let (e, h) = if F::A == 1 {
-            let a = self.x * rhs.x;
-            let b = self.y * rhs.y;
-            let e = (self.x + self.y) * (rhs.x + rhs.y) - a - b;
-            let h = b - a;
-            (e + e, h + h)
-        } else {
-            let a = (self.y - self.x) * (rhs.y - rhs.x);
-            let b = (self.y + self.x) * (rhs.y + rhs.x);
-            (b - a, b + a)
-        };
+        let a = (self.y - self.x) * (rhs.y - rhs.x);
+        let b = (self.y + self.x) * (rhs.y + rhs.x);
+        let e = b - a;
+        let h = b + a;
         let c = self.t * F::D2 * rhs.t;
         let d = (self.z + self.z) * rhs.z;
         let f = d - c;
@@ -319,19 +301,11 @@ where
         let c = self.z.square2();
         let d = self.x + self.y;
         let e = d.square();
-        if F::A == 1 {
-            let z = a + b;
-            let y = a - b;
-            let x = e - z;
-            let t = z - c;
-            Completed::<F, S>::new(x, y, t, z)
-        } else {
-            let y = a + b;
-            let z = b - a;
-            let x = e - y;
-            let t = c - z;
-            Completed::<F, S>::new(x, y, t, z)
-        }
+        let y = a + b;
+        let z = b - a;
+        let x = e - y;
+        let t = c - z;
+        Completed::<F, S>::new(x, y, t, z)
     }
 
     fn to_extended(&self) -> Edwards<F, S> {
