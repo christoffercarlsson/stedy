@@ -243,11 +243,11 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     }
 }
 
-pub(crate) const fn is_accelerated() -> bool {
+const fn is_accelerated() -> bool {
     backend::is_accelerated()
 }
 
-pub(crate) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
+pub fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
     backend::multiply::<N>(x, h)
 }
 

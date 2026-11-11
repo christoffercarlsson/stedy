@@ -13,9 +13,9 @@ use {
     core::marker::PhantomData,
 };
 
-pub struct MlDsa44Params;
-pub struct MlDsa65Params;
-pub struct MlDsa87Params;
+struct MlDsa44Params;
+struct MlDsa65Params;
+struct MlDsa87Params;
 
 impl MlDsaParams<4, 4> for MlDsa44Params {
     const TAU: usize = 39;
@@ -686,7 +686,7 @@ where
     }
 }
 
-pub(crate) struct MlDsaNtt;
+pub struct MlDsaNtt;
 
 impl MlDsaArithmetic for MlDsaNtt {
     fn reduce_poly(w: &mut [i32; 256]) {
@@ -822,7 +822,7 @@ impl MlDsaNtt {
     }
 }
 
-pub(crate) struct MlDsa<const K: usize, const L: usize, P, A, H, G>
+struct MlDsa<const K: usize, const L: usize, P, A, H, G>
 where
     P: MlDsaParams<K, L>,
     A: MlDsaArithmetic,

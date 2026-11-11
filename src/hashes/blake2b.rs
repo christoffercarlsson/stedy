@@ -120,7 +120,7 @@ impl_hasher!(Blake2b160);
 
 #[cfg(feature = "argon2")]
 #[derive(Clone)]
-pub(crate) struct Blake2bVar {
+pub struct Blake2bVar {
     core: Blake2bCore,
     output_size: usize,
 }

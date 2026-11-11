@@ -6,7 +6,7 @@ pub use {
     x_wing::XWing,
 };
 
-pub(crate) use ml_kem::MlKemNtt;
+pub(crate) use ml_kem::{MlKem, MlKem768Params, MlKemNtt};
 
 #[cfg(feature = "hazmat")]
 pub use {

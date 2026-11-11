@@ -9,7 +9,7 @@ use {
     core::{marker::PhantomData, ops::Neg},
 };
 
-pub(crate) struct Eddsa<E, F, H, S>
+pub struct Eddsa<E, F, H, S>
 where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,
@@ -57,7 +57,7 @@ where
     }
 }
 
-pub(crate) struct HashEddsa<E, F, H, S, P>
+pub struct HashEddsa<E, F, H, S, P>
 where
     E: EdwardsScalar,
     F: FieldElement + EdwardsParams<F>,

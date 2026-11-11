@@ -13,9 +13,9 @@ use {
     core::marker::PhantomData,
 };
 
-pub struct MlKem512Params;
+struct MlKem512Params;
 pub struct MlKem768Params;
-pub struct MlKem1024Params;
+struct MlKem1024Params;
 
 impl MlKemParams<2> for MlKem512Params {
     const ETA1: usize = 3;
@@ -278,7 +278,7 @@ where
     }
 }
 
-pub(crate) struct MlKemNtt;
+pub struct MlKemNtt;
 
 impl MlKemArithmetic for MlKemNtt {
     fn reduce_poly(f: &mut [i16; 256]) {
@@ -438,7 +438,7 @@ impl MlKemNtt {
     }
 }
 
-pub(crate) struct MlKem<const K: usize, P, A, G, H, X, F>
+pub struct MlKem<const K: usize, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
     A: MlKemArithmetic,

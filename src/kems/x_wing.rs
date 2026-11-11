@@ -8,7 +8,7 @@ use {
         Error,
         elliptic_curves::Curve25519,
         hashes::{KeccakF1600, Sha3_256With, Sha3_512With, Shake128With, Shake256With},
-        kems::ml_kem::{MlKem, MlKem768Params, MlKemNtt},
+        kems::{MlKem, MlKem768Params, MlKemNtt},
         key_exchange::Ecdh,
         traits::{CryptoRng, EllipticCurve, KeccakPermutation, MlKemArithmetic},
         utils::Secret,
@@ -82,7 +82,7 @@ where
 type Kem<A, P> =
     MlKem<3, MlKem768Params, A, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
 
-pub(crate) struct XWingKem<A, C, P>
+struct XWingKem<A, C, P>
 where
     A: MlKemArithmetic,
     C: EllipticCurve<ScalarBytes = [u8; 32], PointBytes = [u8; 32], SharedSecretBytes = [u8; 32]>,

@@ -6,7 +6,7 @@ use {
     core::marker::PhantomData,
 };
 
-pub(crate) struct Ecdh<C>
+pub struct Ecdh<C>
 where
     C: EllipticCurve,
 {

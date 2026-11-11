@@ -4,7 +4,7 @@ mod field;
 mod scalar;
 mod weierstrass;
 
-use crate::{Error, elliptic_curves::weierstrass::Weierstrass, traits::EllipticCurve};
+use crate::{Error, elliptic_curves::Weierstrass, traits::EllipticCurve};
 #[cfg(feature = "hazmat")]
 pub use arithmetic::FieldP521With;
 pub use field::FieldP521;

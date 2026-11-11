@@ -10,7 +10,7 @@ use {
     },
 };
 
-pub(crate) struct Edwards<F, S>
+pub struct Edwards<F, S>
 where
     F: FieldElement + EdwardsParams<F>,
     S: EdwardsScalar,

@@ -206,7 +206,7 @@ fn base16() -> Base16 {
     Base16::new(BASE16_ALPHABET)
 }
 
-pub(crate) fn base64_encode<'a>(
+pub fn base64_encode<'a>(
     url_safe: bool,
     padded: bool,
     bytes: &[u8],
@@ -216,7 +216,7 @@ pub(crate) fn base64_encode<'a>(
     base.encode(padded, bytes, encoded)
 }
 
-pub(crate) fn base64_decode<'a>(
+pub fn base64_decode<'a>(
     url_safe: bool,
     padded: bool,
     encoded: &[u8],
@@ -226,7 +226,7 @@ pub(crate) fn base64_decode<'a>(
     base.decode(padded, encoded, decoded)
 }
 
-pub(crate) fn base32_encode<'a>(
+pub fn base32_encode<'a>(
     padded: bool,
     decoded: &[u8],
     encoded: &'a mut [u8],
@@ -235,7 +235,7 @@ pub(crate) fn base32_encode<'a>(
     base.encode(padded, decoded, encoded)
 }
 
-pub(crate) fn base32_decode<'a>(
+pub fn base32_decode<'a>(
     padded: bool,
     encoded: &[u8],
     decoded: &'a mut [u8],
@@ -244,12 +244,12 @@ pub(crate) fn base32_decode<'a>(
     base.decode(padded, encoded, decoded)
 }
 
-pub(crate) fn base16_encode<'a>(decoded: &[u8], encoded: &'a mut [u8]) -> Result<&'a [u8], Error> {
+pub fn base16_encode<'a>(decoded: &[u8], encoded: &'a mut [u8]) -> Result<&'a [u8], Error> {
     let base = base16();
     base.encode(false, decoded, encoded)
 }
 
-pub(crate) fn base16_decode<'a>(encoded: &[u8], decoded: &'a mut [u8]) -> Result<&'a [u8], Error> {
+pub fn base16_decode<'a>(encoded: &[u8], decoded: &'a mut [u8]) -> Result<&'a [u8], Error> {
     let base = base16();
     base.decode(false, encoded, decoded)
 }

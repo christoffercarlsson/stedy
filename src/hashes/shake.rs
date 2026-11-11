@@ -1,5 +1,5 @@
 use crate::{
-    hashes::keccak::{KeccakF1600, Sponge},
+    hashes::{KeccakF1600, Sponge},
     traits::{Init, KeccakPermutation, Xof, XofReader},
 };
 
@@ -149,7 +149,7 @@ impl XofReader for Shake256Reader {
     }
 }
 
-pub(crate) struct Shake128With<P>(Shake<168, P>)
+pub struct Shake128With<P>(Shake<168, P>)
 where
     P: KeccakPermutation;
 
@@ -229,7 +229,7 @@ where
     }
 }
 
-pub(crate) struct Shake128ReaderWith<P>(ShakeReader<168, P>)
+pub struct Shake128ReaderWith<P>(ShakeReader<168, P>)
 where
     P: KeccakPermutation;
 
@@ -260,7 +260,7 @@ where
     }
 }
 
-pub(crate) struct Shake256With<P>(Shake<136, P>)
+pub struct Shake256With<P>(Shake<136, P>)
 where
     P: KeccakPermutation;
 
@@ -340,7 +340,7 @@ where
     }
 }
 
-pub(crate) struct Shake256ReaderWith<P>(ShakeReader<136, P>)
+pub struct Shake256ReaderWith<P>(ShakeReader<136, P>)
 where
     P: KeccakPermutation;
 
@@ -371,7 +371,7 @@ where
     }
 }
 
-pub(crate) struct Shake<const RATE: usize, P>(Sponge<RATE, P>)
+struct Shake<const RATE: usize, P>(Sponge<RATE, P>)
 where
     P: KeccakPermutation;
 
@@ -424,7 +424,7 @@ where
     }
 }
 
-pub(crate) struct ShakeReader<const RATE: usize, P>
+struct ShakeReader<const RATE: usize, P>
 where
     P: KeccakPermutation,
 {

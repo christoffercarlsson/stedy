@@ -1,5 +1,5 @@
 use crate::{
-    hashes::keccak::{KeccakF1600, Sponge},
+    hashes::{KeccakF1600, Sponge},
     traits::{Digest, Hasher, Init, KeccakPermutation},
 };
 
@@ -264,7 +264,7 @@ impl Hasher for Sha3_512 {
     }
 }
 
-pub(crate) struct Sha3_256With<P>(Sha3<136, 32, P>)
+pub struct Sha3_256With<P>(Sha3<136, 32, P>)
 where
     P: KeccakPermutation;
 
@@ -354,7 +354,7 @@ where
     }
 }
 
-pub(crate) struct Sha3_512With<P>(Sha3<72, 64, P>)
+pub struct Sha3_512With<P>(Sha3<72, 64, P>)
 where
     P: KeccakPermutation;
 
@@ -444,7 +444,7 @@ where
     }
 }
 
-pub(crate) struct Sha3<const RATE: usize, const N: usize, P>(Sponge<RATE, P>)
+struct Sha3<const RATE: usize, const N: usize, P>(Sponge<RATE, P>)
 where
     P: KeccakPermutation;
 
