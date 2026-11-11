@@ -29,10 +29,14 @@ pub mod kdfs;
 pub mod kems;
 pub mod key_exchange;
 pub mod macs;
+pub mod padding;
 #[cfg(feature = "secret_sharing")]
 pub mod secret_sharing;
 pub mod signatures;
 pub mod traits;
-pub mod utils;
+mod utils;
 
-pub use error::Error;
+pub use {
+    error::Error,
+    utils::{verify, wipe},
+};
