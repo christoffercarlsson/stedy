@@ -29,9 +29,6 @@ use crate::{
 )]
 mod backend;
 
-pub type Aes128Ctr = AesCtr<16>;
-pub type Aes256Ctr = AesCtr<32>;
-
 pub struct AesCtr<const KEY_SIZE: usize> {
     round_keys: Secret<[[u8; 16]; 15]>,
     nonce: [u8; 12],

@@ -1,7 +1,7 @@
 use {
     crate::{
         Error,
-        ciphers::{Aes128Ctr, Aes256Ctr},
+        ciphers::AesCtr,
         csprngs::StreamCipherRng,
         hashes::{Sha256, Sha384},
         traits::CryptoRng,
@@ -9,7 +9,7 @@ use {
     core::array::TryFromSliceError,
 };
 
-pub struct Aes128CtrRng(StreamCipherRng<Aes128Ctr, Sha256>);
+pub struct Aes128CtrRng(StreamCipherRng<AesCtr<16>, Sha256>);
 
 impl Aes128CtrRng {
     pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
@@ -54,7 +54,7 @@ impl CryptoRng for Aes128CtrRng {
     }
 }
 
-pub struct Aes256CtrRng(StreamCipherRng<Aes256Ctr, Sha384>);
+pub struct Aes256CtrRng(StreamCipherRng<AesCtr<32>, Sha384>);
 
 impl Aes256CtrRng {
     pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {

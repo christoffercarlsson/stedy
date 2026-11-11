@@ -1,16 +1,10 @@
-use crate::{
-    Error,
-    aeads::Aead,
-    ciphers::{Aes128Ctr, Aes256Ctr},
-    macs::GHash,
-    traits::CryptoRng,
-};
+use crate::{Error, aeads::Aead, ciphers::AesCtr, macs::GHash, traits::CryptoRng};
 
 pub struct Aes128Gcm;
 
 impl Aes128Gcm {
     pub const fn is_accelerated() -> bool {
-        Aes128Ctr::is_accelerated()
+        AesCtr::<16>::is_accelerated()
     }
 
     pub fn encrypt(
@@ -19,7 +13,7 @@ impl Aes128Gcm {
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<Aes128Ctr, GHash>::encrypt(key, nonce, aad, message)
+        Aead::<AesCtr<16>, GHash>::encrypt(key, nonce, aad, message)
     }
 
     pub fn decrypt(
@@ -29,15 +23,15 @@ impl Aes128Gcm {
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<Aes128Ctr, GHash>::decrypt(key, nonce, aad, message, tag)
+        Aead::<AesCtr<16>, GHash>::decrypt(key, nonce, aad, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 16], Error> {
-        Aead::<Aes128Ctr, GHash>::generate_key(rng)
+        Aead::<AesCtr<16>, GHash>::generate_key(rng)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
-        Aead::<Aes128Ctr, GHash>::increment_nonce(nonce)
+        Aead::<AesCtr<16>, GHash>::increment_nonce(nonce)
     }
 }
 
@@ -45,7 +39,7 @@ pub struct Aes256Gcm;
 
 impl Aes256Gcm {
     pub const fn is_accelerated() -> bool {
-        Aes256Ctr::is_accelerated()
+        AesCtr::<32>::is_accelerated()
     }
 
     pub fn encrypt(
@@ -54,7 +48,7 @@ impl Aes256Gcm {
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<Aes256Ctr, GHash>::encrypt(key, nonce, aad, message)
+        Aead::<AesCtr<32>, GHash>::encrypt(key, nonce, aad, message)
     }
 
     pub fn decrypt(
@@ -64,15 +58,15 @@ impl Aes256Gcm {
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<Aes256Ctr, GHash>::decrypt(key, nonce, aad, message, tag)
+        Aead::<AesCtr<32>, GHash>::decrypt(key, nonce, aad, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
-        Aead::<Aes256Ctr, GHash>::generate_key(rng)
+        Aead::<AesCtr<32>, GHash>::generate_key(rng)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
-        Aead::<Aes256Ctr, GHash>::increment_nonce(nonce)
+        Aead::<AesCtr<32>, GHash>::increment_nonce(nonce)
     }
 }
 
