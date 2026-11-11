@@ -6,10 +6,67 @@ use crate::{
     traits::CryptoRng,
 };
 
-pub type ChaCha20Poly1305 = Aead<ChaCha20, Poly1305>;
-pub type XChaCha20Poly1305 = Aead<XChaCha20, Poly1305>;
+pub struct ChaCha20Poly1305;
+
+impl ChaCha20Poly1305 {
+    pub fn encrypt(
+        key: &[u8; 32],
+        nonce: &[u8; 12],
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<[u8; 16], Error> {
+        Aead::<ChaCha20, Poly1305>::encrypt(key, nonce, aad, message)
+    }
+
+    pub fn decrypt(
+        key: &[u8; 32],
+        nonce: &[u8; 12],
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &[u8; 16],
+    ) -> Result<(), Error> {
+        Aead::<ChaCha20, Poly1305>::decrypt(key, nonce, aad, message, tag)
+    }
+
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
+        Aead::<ChaCha20, Poly1305>::generate_key(rng)
+    }
+
+    pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
+        Aead::<ChaCha20, Poly1305>::increment_nonce(nonce)
+    }
+}
+
+pub struct XChaCha20Poly1305;
 
 impl XChaCha20Poly1305 {
+    pub fn encrypt(
+        key: &[u8; 32],
+        nonce: &[u8; 24],
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<[u8; 16], Error> {
+        Aead::<XChaCha20, Poly1305>::encrypt(key, nonce, aad, message)
+    }
+
+    pub fn decrypt(
+        key: &[u8; 32],
+        nonce: &[u8; 24],
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &[u8; 16],
+    ) -> Result<(), Error> {
+        Aead::<XChaCha20, Poly1305>::decrypt(key, nonce, aad, message, tag)
+    }
+
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
+        Aead::<XChaCha20, Poly1305>::generate_key(rng)
+    }
+
+    pub fn increment_nonce(nonce: &mut [u8; 24]) -> Result<(), Error> {
+        Aead::<XChaCha20, Poly1305>::increment_nonce(nonce)
+    }
+
     pub fn generate_nonce(rng: &mut impl CryptoRng) -> Result<[u8; 24], Error> {
         let mut nonce = [0u8; 24];
         rng.fill(&mut nonce)?;
