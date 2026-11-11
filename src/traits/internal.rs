@@ -1,6 +1,8 @@
 use {
     crate::{
         Error,
+        kems::MlKemNtt,
+        signatures::MlDsaNtt,
         traits::{ByteArray, CryptoRng},
         utils::{Choice, Secret, is_zero, less_than},
     },
@@ -270,3 +272,59 @@ pub trait WeierstrassScalar:
 pub trait Sealed {}
 
 impl<const N: usize> Sealed for [u8; N] {}
+
+pub trait MlDsaArithmetic {
+    fn reduce_poly(w: &mut [i32; 256]) {
+        MlDsaNtt::reduce_poly(w);
+    }
+
+    fn ntt(w: &mut [i32; 256]);
+
+    fn inverse_ntt(w: &mut [i32; 256]);
+
+    fn multiply_ntt(a: &[i32; 256], b: &[i32; 256], w: &mut [i32; 256]);
+
+    fn multiply_accumulate_ntt<const L: usize>(
+        row: &[[i32; 256]; L],
+        v: &[[i32; 256]; L],
+        w: &mut [i32; 256],
+    ) {
+        let mut product = Secret::from([0i32; 256]);
+        *w = [0; 256];
+        for (a, b) in row.iter().zip(v) {
+            Self::multiply_ntt(a, b, product.get_mut());
+            for (w, &product) in w.iter_mut().zip(product.get()) {
+                *w += product;
+            }
+        }
+        Self::reduce_poly(w);
+    }
+}
+
+pub trait MlKemArithmetic {
+    fn reduce_poly(f: &mut [i16; 256]) {
+        MlKemNtt::reduce_poly(f);
+    }
+
+    fn ntt(f: &mut [i16; 256]);
+
+    fn inverse_ntt(f: &mut [i16; 256]);
+
+    fn multiply_ntt(f: &[i16; 256], g: &[i16; 256], h: &mut [i16; 256]);
+
+    fn multiply_accumulate_ntt<const K: usize>(
+        row: &[[i16; 256]; K],
+        v: &[[i16; 256]; K],
+        h: &mut [i16; 256],
+    ) {
+        let mut product = Secret::from([0i16; 256]);
+        *h = [0; 256];
+        for (f, g) in row.iter().zip(v) {
+            Self::multiply_ntt(f, g, product.get_mut());
+            for (h, &product) in h.iter_mut().zip(product.get()) {
+                *h += product;
+            }
+        }
+        Self::reduce_poly(h);
+    }
+}

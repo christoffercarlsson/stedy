@@ -1,3 +1,8 @@
+#[cfg(feature = "hazmat")]
+use crate::{
+    hashes::{Sha3_256With, Sha3_512With, Shake128With, Shake256With},
+    traits::KeccakPermutation,
+};
 use {
     crate::{
         Error,
@@ -51,15 +56,229 @@ impl MlKemParams<4> for MlKem1024Params {
     type Ciphertext = [u8; 1568];
 }
 
-pub type MlKem512With<A, G, H, X, F> = MlKem<2, MlKem512Params, A, G, H, X, F>;
-pub type MlKem768With<A, G, H, X, F> = MlKem<3, MlKem768Params, A, G, H, X, F>;
-pub type MlKem1024With<A, G, H, X, F> = MlKem<4, MlKem1024Params, A, G, H, X, F>;
+pub struct MlKem512;
 
-pub type MlKem512 = MlKem512With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>;
-pub type MlKem768 = MlKem768With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>;
-pub type MlKem1024 = MlKem1024With<MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>;
+impl MlKem512 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 1632], [u8; 800]), Error> {
+        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::generate_key_pair(rng)
+    }
 
-pub struct MlKemNtt;
+    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 1632], [u8; 800]) {
+        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 1632]) -> [u8; 800] {
+        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::public_key(
+            private_key,
+        )
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 800],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 768]), Error> {
+        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::encapsulate(
+            public_key, rng,
+        )
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 1632],
+        ciphertext: &[u8; 768],
+    ) -> Result<[u8; 32], Error> {
+        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
+            private_key,
+            ciphertext,
+        )
+    }
+}
+
+pub struct MlKem768;
+
+impl MlKem768 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2400], [u8; 1184]), Error> {
+        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 2400], [u8; 1184]) {
+        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 2400]) -> [u8; 1184] {
+        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::public_key(
+            private_key,
+        )
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1184],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1088]), Error> {
+        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::encapsulate(
+            public_key, rng,
+        )
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 2400],
+        ciphertext: &[u8; 1088],
+    ) -> Result<[u8; 32], Error> {
+        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
+            private_key,
+            ciphertext,
+        )
+    }
+}
+
+pub struct MlKem1024;
+
+impl MlKem1024 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 3168], [u8; 1568]), Error> {
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 3168], [u8; 1568]) {
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(
+            seed,
+        )
+    }
+
+    pub fn public_key(private_key: &[u8; 3168]) -> [u8; 1568] {
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::public_key(
+            private_key,
+        )
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1568],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1568]), Error> {
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::encapsulate(
+            public_key, rng,
+        )
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 3168],
+        ciphertext: &[u8; 1568],
+    ) -> Result<[u8; 32], Error> {
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
+            private_key,
+            ciphertext,
+        )
+    }
+}
+
+#[cfg(feature = "hazmat")]
+type KeccakMlKem<const K: usize, Q, P> =
+    MlKem<K, Q, MlKemNtt, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
+
+#[cfg(feature = "hazmat")]
+pub struct MlKem512With<P>(PhantomData<P>);
+
+#[cfg(feature = "hazmat")]
+impl<P> MlKem512With<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 1632], [u8; 800]), Error> {
+        KeccakMlKem::<2, MlKem512Params, P>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 1632], [u8; 800]) {
+        KeccakMlKem::<2, MlKem512Params, P>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 1632]) -> [u8; 800] {
+        KeccakMlKem::<2, MlKem512Params, P>::public_key(private_key)
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 800],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 768]), Error> {
+        KeccakMlKem::<2, MlKem512Params, P>::encapsulate(public_key, rng)
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 1632],
+        ciphertext: &[u8; 768],
+    ) -> Result<[u8; 32], Error> {
+        KeccakMlKem::<2, MlKem512Params, P>::decapsulate(private_key, ciphertext)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+pub struct MlKem768With<P>(PhantomData<P>);
+
+#[cfg(feature = "hazmat")]
+impl<P> MlKem768With<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2400], [u8; 1184]), Error> {
+        KeccakMlKem::<3, MlKem768Params, P>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 2400], [u8; 1184]) {
+        KeccakMlKem::<3, MlKem768Params, P>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 2400]) -> [u8; 1184] {
+        KeccakMlKem::<3, MlKem768Params, P>::public_key(private_key)
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1184],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1088]), Error> {
+        KeccakMlKem::<3, MlKem768Params, P>::encapsulate(public_key, rng)
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 2400],
+        ciphertext: &[u8; 1088],
+    ) -> Result<[u8; 32], Error> {
+        KeccakMlKem::<3, MlKem768Params, P>::decapsulate(private_key, ciphertext)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+pub struct MlKem1024With<P>(PhantomData<P>);
+
+#[cfg(feature = "hazmat")]
+impl<P> MlKem1024With<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 3168], [u8; 1568]), Error> {
+        KeccakMlKem::<4, MlKem1024Params, P>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 3168], [u8; 1568]) {
+        KeccakMlKem::<4, MlKem1024Params, P>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 3168]) -> [u8; 1568] {
+        KeccakMlKem::<4, MlKem1024Params, P>::public_key(private_key)
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1568],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1568]), Error> {
+        KeccakMlKem::<4, MlKem1024Params, P>::encapsulate(public_key, rng)
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 3168],
+        ciphertext: &[u8; 1568],
+    ) -> Result<[u8; 32], Error> {
+        KeccakMlKem::<4, MlKem1024Params, P>::decapsulate(private_key, ciphertext)
+    }
+}
+
+pub(crate) struct MlKemNtt;
 
 impl MlKemArithmetic for MlKemNtt {
     fn reduce_poly(f: &mut [i16; 256]) {
@@ -219,7 +438,7 @@ impl MlKemNtt {
     }
 }
 
-pub struct MlKem<const K: usize, P, A, G, H, X, F>
+pub(crate) struct MlKem<const K: usize, P, A, G, H, X, F>
 where
     P: MlKemParams<K>,
     A: MlKemArithmetic,

@@ -1,11 +1,14 @@
 #[cfg(feature = "hazmat")]
-use crate::elliptic_curves::{Field25519With, MontgomeryLadder};
+use crate::{
+    elliptic_curves::{Field25519With, MontgomeryLadder},
+    traits::FieldArithmetic,
+};
 use {
     crate::{
         Error,
         elliptic_curves::Curve25519,
         hashes::{KeccakF1600, Sha3_256With, Sha3_512With, Shake128With, Shake256With},
-        kems::ml_kem::{MlKem768With, MlKemNtt},
+        kems::ml_kem::{MlKem, MlKem768Params, MlKemNtt},
         key_exchange::Ecdh,
         traits::{CryptoRng, EllipticCurve, KeccakPermutation, MlKemArithmetic},
         utils::Secret,
@@ -13,15 +16,73 @@ use {
     core::marker::PhantomData,
 };
 
-pub type XWing = XWingKem<MlKemNtt, Curve25519, KeccakF1600>;
+pub struct XWing;
+
+impl XWing {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
+        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
+        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
+        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::public_key(private_key)
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1216],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1120]), Error> {
+        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::encapsulate(public_key, rng)
+    }
+
+    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
+        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::decapsulate(private_key, ciphertext)
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type XWingWith<A, B, P> = XWingKem<A, MontgomeryLadder<Field25519With<B>>, P>;
+pub struct XWingWith<B, P>(PhantomData<(B, P)>);
+
+#[cfg(feature = "hazmat")]
+impl<B, P> XWingWith<B, P>
+where
+    B: FieldArithmetic<Bytes = [u8; 32]>,
+    P: KeccakPermutation,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
+        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
+        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
+        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::public_key(private_key)
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1216],
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1120]), Error> {
+        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::encapsulate(public_key, rng)
+    }
+
+    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
+        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::decapsulate(
+            private_key,
+            ciphertext,
+        )
+    }
+}
 
 type Kem<A, P> =
-    MlKem768With<A, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
+    MlKem<3, MlKem768Params, A, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
 
-pub struct XWingKem<A, C, P>
+pub(crate) struct XWingKem<A, C, P>
 where
     A: MlKemArithmetic,
     C: EllipticCurve<ScalarBytes = [u8; 32], PointBytes = [u8; 32], SharedSecretBytes = [u8; 32]>,
@@ -38,22 +99,24 @@ where
 {
     const LABEL: [u8; 6] = [92, 46, 47, 47, 94, 92];
 
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
+    pub(crate) fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<([u8; 32], [u8; 1216]), Error> {
         let mut seed = Secret::from([0u8; 32]);
         rng.fill(seed.get_mut())?;
         Ok(Self::key_pair(seed.get()))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
+    pub(crate) fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
         let (_, _, public_key) = Self::expand(seed);
         (*seed, public_key)
     }
 
-    pub fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
+    pub(crate) fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
         Self::key_pair(private_key).1
     }
 
-    pub fn encapsulate(
+    pub(crate) fn encapsulate(
         public_key: &[u8; 1216],
         rng: &mut impl CryptoRng,
     ) -> Result<([u8; 32], [u8; 1120]), Error> {
@@ -62,7 +125,7 @@ where
         Self::encapsulate_derand(public_key, eseed.get())
     }
 
-    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
+    pub(crate) fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
         let (ml_kem_private_key, x25519_private_key, public_key) = Self::expand(private_key);
         let (ml_kem_ciphertext, x25519_ciphertext) = ciphertext.split_at(1088);
         let x25519_ciphertext = x25519_ciphertext
@@ -158,6 +221,8 @@ where
 mod tests {
     use {super::*, crate::csprngs::ChaCha20Rng, hex_literal::hex};
 
+    type Engine = XWingKem<MlKemNtt, Curve25519, KeccakF1600>;
+
     #[test]
     fn test_x_wing_generate_key_pair() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
@@ -189,7 +254,7 @@ mod tests {
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
+            Engine::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
@@ -217,7 +282,7 @@ mod tests {
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
+            Engine::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
@@ -245,7 +310,7 @@ mod tests {
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
         let (shared_secret, ciphertext) =
-            XWing::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
+            Engine::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(

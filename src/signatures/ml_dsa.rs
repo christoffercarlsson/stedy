@@ -1,3 +1,8 @@
+#[cfg(feature = "hazmat")]
+use crate::{
+    hashes::{Shake128With, Shake256With},
+    traits::KeccakPermutation,
+};
 use {
     crate::{
         Error,
@@ -355,25 +360,27 @@ impl MlDsa87 {
 }
 
 #[cfg(feature = "hazmat")]
-pub struct MlDsa44With<A, H, G>(PhantomData<(A, H, G)>);
+pub struct MlDsa44With<P>(PhantomData<P>);
 
 #[cfg(feature = "hazmat")]
-impl<A, H, G> MlDsa44With<A, H, G>
+impl<P> MlDsa44With<P>
 where
-    A: MlDsaArithmetic,
-    H: Xof<Block = [u8; 136]>,
-    G: Xof<Block = [u8; 168]>,
+    P: KeccakPermutation,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2560], [u8; 1312]), Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::generate_key_pair(rng)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(
+            rng,
+        )
     }
 
     pub fn key_pair(seed: &[u8; 32]) -> ([u8; 2560], [u8; 1312]) {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::key_pair(seed)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(seed)
     }
 
     pub fn public_key(private_key: &[u8; 2560]) -> [u8; 1312] {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::public_key(private_key)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::public_key(
+            private_key,
+        )
     }
 
     pub fn sign(
@@ -381,11 +388,18 @@ where
         message: &[u8],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 2420], Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::sign(private_key, message, rng)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign(
+            private_key,
+            message,
+            rng,
+        )
     }
 
     pub fn sign_deterministic(private_key: &[u8; 2560], message: &[u8]) -> [u8; 2420] {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::sign_deterministic(private_key, message)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_deterministic(
+            private_key,
+            message,
+        )
     }
 
     pub fn sign_with_context(
@@ -394,7 +408,12 @@ where
         context: &[u8],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 2420], Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::sign_with_context(private_key, message, context, rng)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_with_context(
+            private_key,
+            message,
+            context,
+            rng,
+        )
     }
 
     pub fn sign_deterministic_with_context(
@@ -402,7 +421,7 @@ where
         message: &[u8],
         context: &[u8],
     ) -> Result<[u8; 2420], Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::sign_deterministic_with_context(
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_deterministic_with_context(
             private_key,
             message,
             context,
@@ -415,12 +434,16 @@ where
         mu: &[u8; 64],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 2420], Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::sign_external_mu(private_key, mu, rng)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_external_mu(
+            private_key,
+            mu,
+            rng,
+        )
     }
 
     #[cfg(feature = "hazmat")]
     pub fn sign_external_mu_deterministic(private_key: &[u8; 2560], mu: &[u8; 64]) -> [u8; 2420] {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::sign_external_mu_deterministic(private_key, mu)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_external_mu_deterministic(private_key, mu)
     }
 
     pub fn verify(
@@ -428,7 +451,9 @@ where
         public_key: &[u8; 1312],
         signature: &[u8; 2420],
     ) -> Result<(), Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::verify(message, public_key, signature)
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::verify(
+            message, public_key, signature,
+        )
     }
 
     pub fn verify_with_context(
@@ -437,32 +462,34 @@ where
         public_key: &[u8; 1312],
         signature: &[u8; 2420],
     ) -> Result<(), Error> {
-        MlDsa::<4, 4, MlDsa44Params, A, H, G>::verify_with_context(
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::verify_with_context(
             message, context, public_key, signature,
         )
     }
 }
 
 #[cfg(feature = "hazmat")]
-pub struct MlDsa65With<A, H, G>(PhantomData<(A, H, G)>);
+pub struct MlDsa65With<P>(PhantomData<P>);
 
 #[cfg(feature = "hazmat")]
-impl<A, H, G> MlDsa65With<A, H, G>
+impl<P> MlDsa65With<P>
 where
-    A: MlDsaArithmetic,
-    H: Xof<Block = [u8; 136]>,
-    G: Xof<Block = [u8; 168]>,
+    P: KeccakPermutation,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 4032], [u8; 1952]), Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::generate_key_pair(rng)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(
+            rng,
+        )
     }
 
     pub fn key_pair(seed: &[u8; 32]) -> ([u8; 4032], [u8; 1952]) {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::key_pair(seed)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(seed)
     }
 
     pub fn public_key(private_key: &[u8; 4032]) -> [u8; 1952] {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::public_key(private_key)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::public_key(
+            private_key,
+        )
     }
 
     pub fn sign(
@@ -470,11 +497,18 @@ where
         message: &[u8],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 3309], Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::sign(private_key, message, rng)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign(
+            private_key,
+            message,
+            rng,
+        )
     }
 
     pub fn sign_deterministic(private_key: &[u8; 4032], message: &[u8]) -> [u8; 3309] {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::sign_deterministic(private_key, message)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_deterministic(
+            private_key,
+            message,
+        )
     }
 
     pub fn sign_with_context(
@@ -483,7 +517,12 @@ where
         context: &[u8],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 3309], Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::sign_with_context(private_key, message, context, rng)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_with_context(
+            private_key,
+            message,
+            context,
+            rng,
+        )
     }
 
     pub fn sign_deterministic_with_context(
@@ -491,7 +530,7 @@ where
         message: &[u8],
         context: &[u8],
     ) -> Result<[u8; 3309], Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::sign_deterministic_with_context(
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_deterministic_with_context(
             private_key,
             message,
             context,
@@ -504,12 +543,16 @@ where
         mu: &[u8; 64],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 3309], Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::sign_external_mu(private_key, mu, rng)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_external_mu(
+            private_key,
+            mu,
+            rng,
+        )
     }
 
     #[cfg(feature = "hazmat")]
     pub fn sign_external_mu_deterministic(private_key: &[u8; 4032], mu: &[u8; 64]) -> [u8; 3309] {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::sign_external_mu_deterministic(private_key, mu)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_external_mu_deterministic(private_key, mu)
     }
 
     pub fn verify(
@@ -517,7 +560,9 @@ where
         public_key: &[u8; 1952],
         signature: &[u8; 3309],
     ) -> Result<(), Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::verify(message, public_key, signature)
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::verify(
+            message, public_key, signature,
+        )
     }
 
     pub fn verify_with_context(
@@ -526,32 +571,34 @@ where
         public_key: &[u8; 1952],
         signature: &[u8; 3309],
     ) -> Result<(), Error> {
-        MlDsa::<6, 5, MlDsa65Params, A, H, G>::verify_with_context(
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::verify_with_context(
             message, context, public_key, signature,
         )
     }
 }
 
 #[cfg(feature = "hazmat")]
-pub struct MlDsa87With<A, H, G>(PhantomData<(A, H, G)>);
+pub struct MlDsa87With<P>(PhantomData<P>);
 
 #[cfg(feature = "hazmat")]
-impl<A, H, G> MlDsa87With<A, H, G>
+impl<P> MlDsa87With<P>
 where
-    A: MlDsaArithmetic,
-    H: Xof<Block = [u8; 136]>,
-    G: Xof<Block = [u8; 168]>,
+    P: KeccakPermutation,
 {
     pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 4896], [u8; 2592]), Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::generate_key_pair(rng)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(
+            rng,
+        )
     }
 
     pub fn key_pair(seed: &[u8; 32]) -> ([u8; 4896], [u8; 2592]) {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::key_pair(seed)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(seed)
     }
 
     pub fn public_key(private_key: &[u8; 4896]) -> [u8; 2592] {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::public_key(private_key)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::public_key(
+            private_key,
+        )
     }
 
     pub fn sign(
@@ -559,11 +606,18 @@ where
         message: &[u8],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 4627], Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::sign(private_key, message, rng)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign(
+            private_key,
+            message,
+            rng,
+        )
     }
 
     pub fn sign_deterministic(private_key: &[u8; 4896], message: &[u8]) -> [u8; 4627] {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::sign_deterministic(private_key, message)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_deterministic(
+            private_key,
+            message,
+        )
     }
 
     pub fn sign_with_context(
@@ -572,7 +626,12 @@ where
         context: &[u8],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 4627], Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::sign_with_context(private_key, message, context, rng)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_with_context(
+            private_key,
+            message,
+            context,
+            rng,
+        )
     }
 
     pub fn sign_deterministic_with_context(
@@ -580,7 +639,7 @@ where
         message: &[u8],
         context: &[u8],
     ) -> Result<[u8; 4627], Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::sign_deterministic_with_context(
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_deterministic_with_context(
             private_key,
             message,
             context,
@@ -593,12 +652,16 @@ where
         mu: &[u8; 64],
         rng: &mut impl CryptoRng,
     ) -> Result<[u8; 4627], Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::sign_external_mu(private_key, mu, rng)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_external_mu(
+            private_key,
+            mu,
+            rng,
+        )
     }
 
     #[cfg(feature = "hazmat")]
     pub fn sign_external_mu_deterministic(private_key: &[u8; 4896], mu: &[u8; 64]) -> [u8; 4627] {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::sign_external_mu_deterministic(private_key, mu)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::sign_external_mu_deterministic(private_key, mu)
     }
 
     pub fn verify(
@@ -606,7 +669,9 @@ where
         public_key: &[u8; 2592],
         signature: &[u8; 4627],
     ) -> Result<(), Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::verify(message, public_key, signature)
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::verify(
+            message, public_key, signature,
+        )
     }
 
     pub fn verify_with_context(
@@ -615,13 +680,13 @@ where
         public_key: &[u8; 2592],
         signature: &[u8; 4627],
     ) -> Result<(), Error> {
-        MlDsa::<8, 7, MlDsa87Params, A, H, G>::verify_with_context(
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::verify_with_context(
             message, context, public_key, signature,
         )
     }
 }
 
-pub struct MlDsaNtt;
+pub(crate) struct MlDsaNtt;
 
 impl MlDsaArithmetic for MlDsaNtt {
     fn reduce_poly(w: &mut [i32; 256]) {
