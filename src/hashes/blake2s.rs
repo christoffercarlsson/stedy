@@ -121,47 +121,6 @@ impl_hasher!(Blake2s160);
 impl_hasher!(Blake2s128);
 
 #[derive(Clone)]
-pub struct Blake2sVar {
-    core: Blake2sCore,
-    output_size: usize,
-}
-
-impl Blake2sVar {
-    pub fn new(key: Option<&[u8]>, output_size: usize) -> Result<Self, Error> {
-        if output_size == 0 || output_size > Blake2sCore::MAX_OUTPUT_SIZE {
-            return Err(Error::Misuse);
-        }
-        if key.is_some_and(|key| key.len() > Blake2sCore::MAX_KEY_SIZE) {
-            return Err(Error::InvalidKey);
-        }
-        Ok(Self {
-            core: Blake2sCore::new(key, output_size),
-            output_size,
-        })
-    }
-
-    pub fn digest(message: &[u8], digest: &mut [u8]) -> Result<(), Error> {
-        let mut hasher = Self::new(None, digest.len())?;
-        hasher.update(message);
-        hasher.finalize_into(digest);
-        Ok(())
-    }
-
-    pub fn output_size(&self) -> usize {
-        self.output_size
-    }
-
-    pub fn update(&mut self, message: &[u8]) {
-        self.core.update(message);
-    }
-
-    pub fn finalize_into(self, digest: &mut [u8]) {
-        let size = digest.len().min(self.output_size);
-        self.core.finalize_into(&mut digest[..size]);
-    }
-}
-
-#[derive(Clone)]
 struct Blake2sCore {
     h: Secret<[u32; 8]>,
     t: u64,

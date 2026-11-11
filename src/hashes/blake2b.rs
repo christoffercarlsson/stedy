@@ -119,13 +119,13 @@ impl_hasher!(Blake2b256);
 impl_hasher!(Blake2b160);
 
 #[derive(Clone)]
-pub struct Blake2bVar {
+pub(crate) struct Blake2bVar {
     core: Blake2bCore,
     output_size: usize,
 }
 
 impl Blake2bVar {
-    pub fn new(key: Option<&[u8]>, output_size: usize) -> Result<Self, Error> {
+    pub(crate) fn new(key: Option<&[u8]>, output_size: usize) -> Result<Self, Error> {
         if output_size == 0 || output_size > Blake2bCore::MAX_OUTPUT_SIZE {
             return Err(Error::Misuse);
         }
@@ -138,22 +138,11 @@ impl Blake2bVar {
         })
     }
 
-    pub fn digest(message: &[u8], digest: &mut [u8]) -> Result<(), Error> {
-        let mut hasher = Self::new(None, digest.len())?;
-        hasher.update(message);
-        hasher.finalize_into(digest);
-        Ok(())
-    }
-
-    pub fn output_size(&self) -> usize {
-        self.output_size
-    }
-
-    pub fn update(&mut self, message: &[u8]) {
+    pub(crate) fn update(&mut self, message: &[u8]) {
         self.core.update(message);
     }
 
-    pub fn finalize_into(self, digest: &mut [u8]) {
+    pub(crate) fn finalize_into(self, digest: &mut [u8]) {
         let size = digest.len().min(self.output_size);
         self.core.finalize_into(&mut digest[..size]);
     }

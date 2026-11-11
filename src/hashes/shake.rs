@@ -1,33 +1,48 @@
 use crate::{
     hashes::keccak::{KeccakF1600, Sponge},
-    traits::{Digest, Hasher, Init, KeccakPermutation, Xof, XofReader},
+    traits::{Init, KeccakPermutation, Xof, XofReader},
 };
 
-pub type Shake128With<P> = Shake<168, P>;
-pub type Shake256With<P> = Shake<136, P>;
-pub type Shake128DigestWith<const N: usize, P> = ShakeDigest<168, N, P>;
-pub type Shake256DigestWith<const N: usize, P> = ShakeDigest<136, N, P>;
+#[derive(Clone)]
+pub struct Shake128(Shake<168, KeccakF1600>);
 
-pub type Shake128 = Shake128With<KeccakF1600>;
-pub type Shake256 = Shake256With<KeccakF1600>;
-pub type Shake128Digest<const N: usize> = Shake128DigestWith<N, KeccakF1600>;
-pub type Shake256Digest<const N: usize> = Shake256DigestWith<N, KeccakF1600>;
+impl Shake128 {
+    pub fn digest(message: &[u8], output: &mut [u8]) {
+        Shake::<168, KeccakF1600>::digest(message, output);
+    }
 
-impl<const RATE: usize, P> Init for Shake<RATE, P>
-where
-    P: KeccakPermutation,
-{
+    pub fn new() -> Self {
+        Self(Shake::<168, KeccakF1600>::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn finalize_into(self, output: &mut [u8]) {
+        self.0.finalize_into(output);
+    }
+
+    pub fn finalize_xof(self) -> Shake128Reader {
+        Shake128Reader(self.0.finalize_xof())
+    }
+}
+
+impl Default for Shake128 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Init for Shake128 {
     fn new() -> Self {
         Self::new()
     }
 }
 
-impl<const RATE: usize, P> Xof for Shake<RATE, P>
-where
-    P: KeccakPermutation,
-{
-    type Block = [u8; RATE];
-    type Reader = ShakeReader<RATE, P>;
+impl Xof for Shake128 {
+    type Block = [u8; 168];
+    type Reader = Shake128Reader;
 
     fn digest(message: &[u8], output: &mut [u8]) {
         Self::digest(message, output);
@@ -41,12 +56,202 @@ where
         self.finalize_into(output);
     }
 
-    fn finalize_xof(self) -> ShakeReader<RATE, P> {
+    fn finalize_xof(self) -> Self::Reader {
         self.finalize_xof()
     }
 }
 
-impl<const RATE: usize, P> XofReader for ShakeReader<RATE, P>
+#[derive(Clone)]
+pub struct Shake128Reader(ShakeReader<168, KeccakF1600>);
+
+impl Shake128Reader {
+    pub fn read(&mut self, output: &mut [u8]) {
+        self.0.read(output);
+    }
+}
+
+impl XofReader for Shake128Reader {
+    fn read(&mut self, output: &mut [u8]) {
+        self.read(output);
+    }
+}
+
+#[derive(Clone)]
+pub struct Shake256(Shake<136, KeccakF1600>);
+
+impl Shake256 {
+    pub fn digest(message: &[u8], output: &mut [u8]) {
+        Shake::<136, KeccakF1600>::digest(message, output);
+    }
+
+    pub fn new() -> Self {
+        Self(Shake::<136, KeccakF1600>::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn finalize_into(self, output: &mut [u8]) {
+        self.0.finalize_into(output);
+    }
+
+    pub fn finalize_xof(self) -> Shake256Reader {
+        Shake256Reader(self.0.finalize_xof())
+    }
+}
+
+impl Default for Shake256 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Init for Shake256 {
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl Xof for Shake256 {
+    type Block = [u8; 136];
+    type Reader = Shake256Reader;
+
+    fn digest(message: &[u8], output: &mut [u8]) {
+        Self::digest(message, output);
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize_into(self, output: &mut [u8]) {
+        self.finalize_into(output);
+    }
+
+    fn finalize_xof(self) -> Self::Reader {
+        self.finalize_xof()
+    }
+}
+
+#[derive(Clone)]
+pub struct Shake256Reader(ShakeReader<136, KeccakF1600>);
+
+impl Shake256Reader {
+    pub fn read(&mut self, output: &mut [u8]) {
+        self.0.read(output);
+    }
+}
+
+impl XofReader for Shake256Reader {
+    fn read(&mut self, output: &mut [u8]) {
+        self.read(output);
+    }
+}
+
+pub(crate) struct Shake128With<P>(Shake<168, P>)
+where
+    P: KeccakPermutation;
+
+impl<P> Clone for Shake128With<P>
+where
+    P: KeccakPermutation,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<P> Shake128With<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn digest(message: &[u8], output: &mut [u8]) {
+        Shake::<168, P>::digest(message, output);
+    }
+
+    pub fn new() -> Self {
+        Self(Shake::<168, P>::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn finalize_into(self, output: &mut [u8]) {
+        self.0.finalize_into(output);
+    }
+
+    pub fn finalize_xof(self) -> Shake128ReaderWith<P> {
+        Shake128ReaderWith(self.0.finalize_xof())
+    }
+}
+
+impl<P> Default for Shake128With<P>
+where
+    P: KeccakPermutation,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<P> Init for Shake128With<P>
+where
+    P: KeccakPermutation,
+{
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl<P> Xof for Shake128With<P>
+where
+    P: KeccakPermutation,
+{
+    type Block = [u8; 168];
+    type Reader = Shake128ReaderWith<P>;
+
+    fn digest(message: &[u8], output: &mut [u8]) {
+        Self::digest(message, output);
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize_into(self, output: &mut [u8]) {
+        self.finalize_into(output);
+    }
+
+    fn finalize_xof(self) -> Self::Reader {
+        self.finalize_xof()
+    }
+}
+
+pub(crate) struct Shake128ReaderWith<P>(ShakeReader<168, P>)
+where
+    P: KeccakPermutation;
+
+impl<P> Clone for Shake128ReaderWith<P>
+where
+    P: KeccakPermutation,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<P> Shake128ReaderWith<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn read(&mut self, output: &mut [u8]) {
+        self.0.read(output);
+    }
+}
+
+impl<P> XofReader for Shake128ReaderWith<P>
 where
     P: KeccakPermutation,
 {
@@ -55,7 +260,118 @@ where
     }
 }
 
-pub struct Shake<const RATE: usize, P>(Sponge<RATE, P>)
+pub(crate) struct Shake256With<P>(Shake<136, P>)
+where
+    P: KeccakPermutation;
+
+impl<P> Clone for Shake256With<P>
+where
+    P: KeccakPermutation,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<P> Shake256With<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn digest(message: &[u8], output: &mut [u8]) {
+        Shake::<136, P>::digest(message, output);
+    }
+
+    pub fn new() -> Self {
+        Self(Shake::<136, P>::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn finalize_into(self, output: &mut [u8]) {
+        self.0.finalize_into(output);
+    }
+
+    pub fn finalize_xof(self) -> Shake256ReaderWith<P> {
+        Shake256ReaderWith(self.0.finalize_xof())
+    }
+}
+
+impl<P> Default for Shake256With<P>
+where
+    P: KeccakPermutation,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<P> Init for Shake256With<P>
+where
+    P: KeccakPermutation,
+{
+    fn new() -> Self {
+        Self::new()
+    }
+}
+
+impl<P> Xof for Shake256With<P>
+where
+    P: KeccakPermutation,
+{
+    type Block = [u8; 136];
+    type Reader = Shake256ReaderWith<P>;
+
+    fn digest(message: &[u8], output: &mut [u8]) {
+        Self::digest(message, output);
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize_into(self, output: &mut [u8]) {
+        self.finalize_into(output);
+    }
+
+    fn finalize_xof(self) -> Self::Reader {
+        self.finalize_xof()
+    }
+}
+
+pub(crate) struct Shake256ReaderWith<P>(ShakeReader<136, P>)
+where
+    P: KeccakPermutation;
+
+impl<P> Clone for Shake256ReaderWith<P>
+where
+    P: KeccakPermutation,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<P> Shake256ReaderWith<P>
+where
+    P: KeccakPermutation,
+{
+    pub fn read(&mut self, output: &mut [u8]) {
+        self.0.read(output);
+    }
+}
+
+impl<P> XofReader for Shake256ReaderWith<P>
+where
+    P: KeccakPermutation,
+{
+    fn read(&mut self, output: &mut [u8]) {
+        self.read(output);
+    }
+}
+
+pub(crate) struct Shake<const RATE: usize, P>(Sponge<RATE, P>)
 where
     P: KeccakPermutation;
 
@@ -74,13 +390,13 @@ where
 {
     const DOMAIN: u8 = 0x1f;
 
-    pub fn digest(message: &[u8], output: &mut [u8]) {
+    pub(crate) fn digest(message: &[u8], output: &mut [u8]) {
         let mut hasher = Self::new();
         hasher.update(message);
         hasher.finalize_into(output);
     }
 
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         const {
             assert!(
                 RATE == 168 || RATE == 136,
@@ -90,16 +406,16 @@ where
         Self(Sponge::<RATE, P>::new())
     }
 
-    pub fn update(&mut self, message: &[u8]) {
+    pub(crate) fn update(&mut self, message: &[u8]) {
         self.0.update(message);
     }
 
-    pub fn finalize_into(mut self, output: &mut [u8]) {
+    pub(crate) fn finalize_into(mut self, output: &mut [u8]) {
         self.0.pad(Self::DOMAIN);
         self.0.squeeze(output);
     }
 
-    pub fn finalize_xof(mut self) -> ShakeReader<RATE, P> {
+    pub(crate) fn finalize_xof(mut self) -> ShakeReader<RATE, P> {
         self.0.pad(Self::DOMAIN);
         ShakeReader {
             sponge: self.0,
@@ -108,120 +424,7 @@ where
     }
 }
 
-impl<const RATE: usize, P> Default for Shake<RATE, P>
-where
-    P: KeccakPermutation,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-pub struct ShakeDigest<const RATE: usize, const N: usize, P>(Shake<RATE, P>)
-where
-    P: KeccakPermutation;
-
-impl<const RATE: usize, const N: usize, P> Clone for ShakeDigest<RATE, N, P>
-where
-    P: KeccakPermutation,
-{
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<const RATE: usize, const N: usize, P> ShakeDigest<RATE, N, P>
-where
-    P: KeccakPermutation,
-{
-    pub fn digest(message: &[u8]) -> [u8; N] {
-        let mut hasher = Self::new();
-        hasher.update(message);
-        hasher.finalize()
-    }
-
-    pub fn new() -> Self {
-        const { assert!(N >= 1, "SHAKE digests are at least 1 byte") }
-        Self(Shake::<RATE, P>::new())
-    }
-
-    pub fn update(&mut self, message: &[u8]) {
-        self.0.update(message);
-    }
-
-    pub fn finalize_into(self, digest: &mut [u8]) {
-        let size = digest.len().min(N);
-        self.0.finalize_into(&mut digest[..size]);
-    }
-
-    pub fn finalize(self) -> [u8; N] {
-        let mut digest = [0u8; N];
-        self.finalize_into(&mut digest);
-        digest
-    }
-}
-
-impl<const RATE: usize, const N: usize, P> Default for ShakeDigest<RATE, N, P>
-where
-    P: KeccakPermutation,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<const RATE: usize, const N: usize, P> Init for ShakeDigest<RATE, N, P>
-where
-    P: KeccakPermutation,
-{
-    fn new() -> Self {
-        Self::new()
-    }
-}
-
-impl<const RATE: usize, const N: usize, P> Digest for ShakeDigest<RATE, N, P>
-where
-    P: KeccakPermutation,
-{
-    const OUTPUT_SIZE: usize = N;
-
-    type Output = [u8; N];
-
-    fn update(&mut self, message: &[u8]) {
-        self.update(message);
-    }
-
-    fn finalize(self) -> Self::Output {
-        self.finalize()
-    }
-
-    fn finalize_into(self, output: &mut [u8]) {
-        self.finalize_into(output);
-    }
-}
-
-macro_rules! impl_hasher {
-    ($rate:literal, $n:literal) => {
-        impl<P> Hasher for ShakeDigest<$rate, $n, P>
-        where
-            P: KeccakPermutation,
-        {
-            const BLOCK_SIZE: usize = $rate;
-
-            type Block = [u8; $rate];
-
-            fn digest(message: &[u8]) -> Self::Output {
-                Self::digest(message)
-            }
-        }
-    };
-}
-
-impl_hasher!(168, 32);
-impl_hasher!(136, 64);
-impl_hasher!(136, 114);
-
-pub struct ShakeReader<const RATE: usize, P>
+pub(crate) struct ShakeReader<const RATE: usize, P>
 where
     P: KeccakPermutation,
 {
@@ -245,7 +448,7 @@ impl<const RATE: usize, P> ShakeReader<RATE, P>
 where
     P: KeccakPermutation,
 {
-    pub fn read(&mut self, output: &mut [u8]) {
+    pub(crate) fn read(&mut self, output: &mut [u8]) {
         let mut output = output;
         while !output.is_empty() {
             if self.offset == RATE {
