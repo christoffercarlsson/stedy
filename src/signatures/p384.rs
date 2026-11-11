@@ -1,15 +1,72 @@
-#[cfg(feature = "hazmat")]
-use crate::elliptic_curves::FieldP384With;
 use crate::{
+    Error,
     elliptic_curves::{FieldP384, ScalarP384},
     hashes::Sha384,
     signatures::Ecdsa,
+    traits::CryptoRng,
+};
+#[cfg(feature = "hazmat")]
+use {
+    crate::{
+        elliptic_curves::FieldP384With,
+        traits::{FieldArithmetic, Hasher},
+    },
+    core::marker::PhantomData,
 };
 
-pub type P384 = Ecdsa<FieldP384, Sha384, ScalarP384, [u8; 96]>;
+pub struct P384;
+
+impl P384 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 48], [u8; 49]), Error> {
+        Ecdsa::<FieldP384, Sha384, ScalarP384, [u8; 96]>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 48]) -> Result<[u8; 49], Error> {
+        Ecdsa::<FieldP384, Sha384, ScalarP384, [u8; 96]>::public_key(private_key)
+    }
+
+    pub fn sign(private_key: &[u8; 48], message: &[u8]) -> Result<[u8; 96], Error> {
+        Ecdsa::<FieldP384, Sha384, ScalarP384, [u8; 96]>::sign(private_key, message)
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &[u8; 49],
+        signature: &[u8; 96],
+    ) -> Result<(), Error> {
+        Ecdsa::<FieldP384, Sha384, ScalarP384, [u8; 96]>::verify(message, public_key, signature)
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type P384With<A, H> = Ecdsa<FieldP384With<A>, H, ScalarP384, [u8; 96]>;
+pub struct P384With<A, H>(PhantomData<(A, H)>);
+
+#[cfg(feature = "hazmat")]
+impl<A, H> P384With<A, H>
+where
+    A: FieldArithmetic<Bytes = [u8; 48]>,
+    H: Hasher,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 48], [u8; 49]), Error> {
+        Ecdsa::<FieldP384With<A>, H, ScalarP384, [u8; 96]>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 48]) -> Result<[u8; 49], Error> {
+        Ecdsa::<FieldP384With<A>, H, ScalarP384, [u8; 96]>::public_key(private_key)
+    }
+
+    pub fn sign(private_key: &[u8; 48], message: &[u8]) -> Result<[u8; 96], Error> {
+        Ecdsa::<FieldP384With<A>, H, ScalarP384, [u8; 96]>::sign(private_key, message)
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &[u8; 49],
+        signature: &[u8; 96],
+    ) -> Result<(), Error> {
+        Ecdsa::<FieldP384With<A>, H, ScalarP384, [u8; 96]>::verify(message, public_key, signature)
+    }
+}
 
 #[cfg(test)]
 mod tests {

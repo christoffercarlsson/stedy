@@ -8,13 +8,11 @@ use crate::{
 mod arithmetic;
 mod edwards;
 mod field;
-mod scalar;
 
 #[cfg(feature = "hazmat")]
 pub use arithmetic::Field448With;
 pub(crate) use edwards::Edwards448;
 pub use field::Field448;
-pub(crate) use scalar::Scalar448;
 
 pub struct Curve448;
 

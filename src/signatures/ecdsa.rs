@@ -12,7 +12,7 @@ use {
     core::{cmp::Ordering, marker::PhantomData},
 };
 
-pub struct Ecdsa<F, H, S, B>
+pub(crate) struct Ecdsa<F, H, S, B>
 where
     F: FieldElement + WeierstrassParams<F>,
     H: Hasher,

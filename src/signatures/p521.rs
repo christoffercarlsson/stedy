@@ -1,15 +1,72 @@
-#[cfg(feature = "hazmat")]
-use crate::elliptic_curves::FieldP521With;
 use crate::{
+    Error,
     elliptic_curves::{FieldP521, ScalarP521},
     hashes::Sha512,
     signatures::Ecdsa,
+    traits::CryptoRng,
+};
+#[cfg(feature = "hazmat")]
+use {
+    crate::{
+        elliptic_curves::FieldP521With,
+        traits::{FieldArithmetic, Hasher},
+    },
+    core::marker::PhantomData,
 };
 
-pub type P521 = Ecdsa<FieldP521, Sha512, ScalarP521, [u8; 132]>;
+pub struct P521;
+
+impl P521 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 66], [u8; 67]), Error> {
+        Ecdsa::<FieldP521, Sha512, ScalarP521, [u8; 132]>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 66]) -> Result<[u8; 67], Error> {
+        Ecdsa::<FieldP521, Sha512, ScalarP521, [u8; 132]>::public_key(private_key)
+    }
+
+    pub fn sign(private_key: &[u8; 66], message: &[u8]) -> Result<[u8; 132], Error> {
+        Ecdsa::<FieldP521, Sha512, ScalarP521, [u8; 132]>::sign(private_key, message)
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &[u8; 67],
+        signature: &[u8; 132],
+    ) -> Result<(), Error> {
+        Ecdsa::<FieldP521, Sha512, ScalarP521, [u8; 132]>::verify(message, public_key, signature)
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type P521With<A, H> = Ecdsa<FieldP521With<A>, H, ScalarP521, [u8; 132]>;
+pub struct P521With<A, H>(PhantomData<(A, H)>);
+
+#[cfg(feature = "hazmat")]
+impl<A, H> P521With<A, H>
+where
+    A: FieldArithmetic<Bytes = [u8; 66]>,
+    H: Hasher,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 66], [u8; 67]), Error> {
+        Ecdsa::<FieldP521With<A>, H, ScalarP521, [u8; 132]>::generate_key_pair(rng)
+    }
+
+    pub fn public_key(private_key: &[u8; 66]) -> Result<[u8; 67], Error> {
+        Ecdsa::<FieldP521With<A>, H, ScalarP521, [u8; 132]>::public_key(private_key)
+    }
+
+    pub fn sign(private_key: &[u8; 66], message: &[u8]) -> Result<[u8; 132], Error> {
+        Ecdsa::<FieldP521With<A>, H, ScalarP521, [u8; 132]>::sign(private_key, message)
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &[u8; 67],
+        signature: &[u8; 132],
+    ) -> Result<(), Error> {
+        Ecdsa::<FieldP521With<A>, H, ScalarP521, [u8; 132]>::verify(message, public_key, signature)
+    }
+}
 
 #[cfg(test)]
 mod tests {

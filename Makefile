@@ -26,7 +26,6 @@ WYCHEPROOF_FILES := \
 	ecdsa_secp384r1_sha384_p1363 \
 	ecdsa_secp521r1_sha512_p1363 \
 	ed25519 \
-	ed448 \
 	hkdf_sha1 \
 	hkdf_sha256 \
 	hkdf_sha384 \

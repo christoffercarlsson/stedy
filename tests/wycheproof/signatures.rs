@@ -1,7 +1,7 @@
 use {
     crate::{Summary, TestFile, TestResult, compress_point, load},
     serde::{Deserialize, de::DeserializeOwned},
-    stedy::signatures::{Ed448, Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
+    stedy::signatures::{Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
 };
 
 #[cfg(feature = "hazmat")]
@@ -307,16 +307,6 @@ fn ed25519() {
         include_str!("vectors/ed25519_test.json"),
         |group: &EddsaGroup| &group.public_key.pk,
         eddsa!(Ed25519),
-    );
-}
-
-#[test]
-fn ed448() {
-    run_verify(
-        "ed448",
-        include_str!("vectors/ed448_test.json"),
-        |group: &EddsaGroup| &group.public_key.pk,
-        eddsa!(Ed448),
     );
 }
 

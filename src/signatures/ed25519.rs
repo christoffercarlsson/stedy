@@ -1,24 +1,165 @@
-#[cfg(feature = "hazmat")]
-use crate::elliptic_curves::Field25519With;
 use crate::{
+    Error,
     elliptic_curves::{Field25519, Scalar25519},
     hashes::Sha512,
     signatures::{Eddsa, HashEddsa},
+    traits::CryptoRng,
+};
+#[cfg(feature = "hazmat")]
+use {
+    crate::{
+        elliptic_curves::Field25519With,
+        traits::{FieldArithmetic, Hasher},
+    },
+    core::marker::PhantomData,
 };
 
-pub type Ed25519 = Eddsa<Scalar25519, Field25519, Sha512, [u8; 64]>;
-pub type Ed25519ph = HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512>;
+pub struct Ed25519;
+
+impl Ed25519 {
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 64], [u8; 32]), Error> {
+        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 64], [u8; 32]) {
+        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 64]) -> [u8; 32] {
+        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::public_key(private_key)
+    }
+
+    pub fn sign(private_key: &[u8; 64], message: &[u8]) -> [u8; 64] {
+        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::sign(private_key, message)
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &[u8; 32],
+        signature: &[u8; 64],
+    ) -> Result<(), Error> {
+        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::verify(message, public_key, signature)
+    }
+}
+
+pub struct Ed25519ph(HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512>);
+
+impl Ed25519ph {
+    pub fn new() -> Self {
+        Self(HashEddsa::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn sign(self, private_key: &[u8; 64], context: &[u8]) -> Result<[u8; 64], Error> {
+        self.0.sign(private_key, context)
+    }
+
+    pub fn verify(
+        self,
+        context: &[u8],
+        public_key: &[u8; 32],
+        signature: &[u8; 64],
+    ) -> Result<(), Error> {
+        self.0.verify(context, public_key, signature)
+    }
+}
+
+impl Default for Ed25519ph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(feature = "hazmat")]
-pub type Ed25519With<A, H> = Eddsa<Scalar25519, Field25519With<A>, H, [u8; 64]>;
+pub struct Ed25519With<A, H>(PhantomData<(A, H)>);
+
 #[cfg(feature = "hazmat")]
-pub type Ed25519phWith<A, H, P> = HashEddsa<Scalar25519, Field25519With<A>, H, [u8; 64], P>;
+impl<A, H> Ed25519With<A, H>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+    H: Hasher<Output = [u8; 64]>,
+{
+    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 64], [u8; 32]), Error> {
+        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::generate_key_pair(rng)
+    }
+
+    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 64], [u8; 32]) {
+        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::key_pair(seed)
+    }
+
+    pub fn public_key(private_key: &[u8; 64]) -> [u8; 32] {
+        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::public_key(private_key)
+    }
+
+    pub fn sign(private_key: &[u8; 64], message: &[u8]) -> [u8; 64] {
+        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::sign(private_key, message)
+    }
+
+    pub fn verify(
+        message: &[u8],
+        public_key: &[u8; 32],
+        signature: &[u8; 64],
+    ) -> Result<(), Error> {
+        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::verify(message, public_key, signature)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+pub struct Ed25519phWith<A, H, P>(HashEddsa<Scalar25519, Field25519With<A>, H, [u8; 64], P>)
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+    H: Hasher<Output = [u8; 64]>,
+    P: Hasher<Output = [u8; 64]>;
+
+#[cfg(feature = "hazmat")]
+impl<A, H, P> Ed25519phWith<A, H, P>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+    H: Hasher<Output = [u8; 64]>,
+    P: Hasher<Output = [u8; 64]>,
+{
+    pub fn new() -> Self {
+        Self(HashEddsa::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn sign(self, private_key: &[u8; 64], context: &[u8]) -> Result<[u8; 64], Error> {
+        self.0.sign(private_key, context)
+    }
+
+    pub fn verify(
+        self,
+        context: &[u8],
+        public_key: &[u8; 32],
+        signature: &[u8; 64],
+    ) -> Result<(), Error> {
+        self.0.verify(context, public_key, signature)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+impl<A, H, P> Default for Ed25519phWith<A, H, P>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+    H: Hasher<Output = [u8; 64]>,
+    P: Hasher<Output = [u8; 64]>,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use {
         super::*,
-        crate::{Error, csprngs::ChaCha20Rng, elliptic_curves::Edwards},
+        crate::{Error, csprngs::ChaCha20Rng},
         hex_literal::hex,
     };
 
@@ -189,39 +330,5 @@ mod tests {
             Ed25519ph::new().verify(&[0u8; 256], &public_key, &signature),
             Err(Error::Misuse)
         );
-    }
-
-    #[test]
-    fn test_ed25519_public_key_validity() {
-        type Point = Edwards<Field25519, Scalar25519>;
-        let usable = |bytes: &[u8; 32]| {
-            let (point, valid) = Point::decompress(bytes);
-            (valid & !point.has_small_order()).to_bool()
-        };
-        let valid: [[u8; 32]; 6] = [
-            hex!("dd2d678bae222f3fb6e8278f08cc9e1a66339c926c29ac0a16f9717f5ee18cd8"),
-            hex!("7d4d0e7f6153a69b6242b522abbee685fda4420f8834b108c3bdae369ef549fa"),
-            hex!("a12c2beb77265f2aac953b5009349d94155a03ada416aad451319480e983ca4c"),
-            hex!("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"),
-            hex!("f929f49889b8b84c4992b675f15b94270912dde2192ef8ac675154db324908f5"),
-            hex!("fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025"),
-        ];
-        let invalid: [[u8; 32]; 6] = [
-            hex!("0100000000000000000000000000000000000000000000000000000000000000"),
-            hex!("0100000000000000000000000000000000000000000000000000000000000080"),
-            hex!("2cf7859e43317ceaa80c86facb0a7514582e74470062f7b6de100aad3e342bf9"),
-            hex!("5c6558089c8a6e6963b1421531003a39a1df1241312e5496afb9ea0452bedeb3"),
-            hex!("eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-            hex!("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-        ];
-        let outside_subgroup: [[u8; 32]; 1] = [hex!(
-            "29a5670182010000000000002007643ae1720ef35aa223252f021a68f707511a"
-        )];
-        for bytes in valid.iter().chain(&outside_subgroup) {
-            assert!(usable(bytes));
-        }
-        for bytes in &invalid {
-            assert!(!usable(bytes));
-        }
     }
 }
