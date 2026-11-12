@@ -8,7 +8,7 @@ use {
         Error,
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaArithmetic, MlDsaParams, Xof, XofReader},
-        utils::{Choice, Choices, Secret, verify},
+        utils::{Choice, Choices, Secret, constant_time_eq},
     },
     core::marker::PhantomData,
 };
@@ -1217,7 +1217,7 @@ where
         xof.update(&mu);
         xof.update(&w1_bytes[..w1_size]);
         xof.finalize_into(&mut c_tilde_prime[..P::LAMBDA / 4]);
-        if !z_bound & verify(c_tilde, &c_tilde_prime[..P::LAMBDA / 4]) {
+        if !z_bound & constant_time_eq(c_tilde, &c_tilde_prime[..P::LAMBDA / 4]) {
             Ok(())
         } else {
             Err(Error::Verification)

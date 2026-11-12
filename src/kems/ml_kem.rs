@@ -8,7 +8,7 @@ use {
         Error,
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
         traits::{ByteArray, CryptoRng, Hasher, MlKemArithmetic, MlKemParams, Xof, XofReader},
-        utils::{Choice, Choices, Secret, verify},
+        utils::{Choice, Choices, Secret, constant_time_eq},
     },
     core::marker::PhantomData,
 };
@@ -776,7 +776,7 @@ where
         let (_, rest) = dk.split_at(384 * K);
         let (ek, rest) = rest.split_at(384 * K + 32);
         let (h, _) = rest.split_at(32);
-        verify(&H::digest(ek), h)
+        constant_time_eq(&H::digest(ek), h)
     }
 
     fn sample_poly(eta: usize, seed: &[u8], n: &mut u8, f: &mut [i16; 256]) {

@@ -1,7 +1,7 @@
 use crate::{
     ciphers::{AesCtr, multiply},
     traits::{Authenticator, SeekableStreamCipher},
-    utils::verify,
+    utils::constant_time_eq,
 };
 
 pub struct GHash {
@@ -36,7 +36,7 @@ where
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
-        verify(&self.finalize(), tag)
+        constant_time_eq(&self.finalize(), tag)
     }
 }
 

@@ -3,7 +3,7 @@ use {
         Error,
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
         traits::{Authenticator, SeekableStreamCipher},
-        utils::{Block, Choice, verify, wipe},
+        utils::{Block, Choice, constant_time_eq, wipe},
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
@@ -49,7 +49,7 @@ impl Poly1305 {
     }
 
     pub fn verify(self, code: &[u8; 16]) -> Result<(), Error> {
-        if verify(&self.finalize(), code) {
+        if constant_time_eq(&self.finalize(), code) {
             Ok(())
         } else {
             Err(Error::Verification)

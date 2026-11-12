@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::Hasher,
-    utils::{Block, Secret, verify},
+    utils::{Block, Secret, constant_time_eq},
 };
 
 #[derive(Clone)]
@@ -37,7 +37,7 @@ impl<const N: usize> Blake2s<N> {
     }
 
     pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
-        if verify(code, &self.finalize()) {
+        if constant_time_eq(code, &self.finalize()) {
             Ok(())
         } else {
             Err(Error::Verification)

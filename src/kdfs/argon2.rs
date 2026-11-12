@@ -9,7 +9,7 @@ use {
         encoding::{Encoding, decode, encode},
         hashes::{Blake2b512, Blake2bVar},
         traits::Hasher,
-        utils::{Secret, verify},
+        utils::{Secret, constant_time_eq},
     },
     core::ops::{BitXorAssign, Index, IndexMut},
 };
@@ -236,7 +236,7 @@ impl Argon2 {
         let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
         let computed = &mut computed[..expected.len()];
         Self::derive_with_memory(params, password, salt, None, None, memory, computed)?;
-        if verify(computed, expected) {
+        if constant_time_eq(computed, expected) {
             Ok(())
         } else {
             Err(Error::Verification)

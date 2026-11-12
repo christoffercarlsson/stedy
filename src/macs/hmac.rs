@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::{ByteArray, Hasher},
-    utils::{Secret, verify, xor},
+    utils::{Secret, constant_time_eq, xor},
 };
 
 #[derive(Clone)]
@@ -63,7 +63,7 @@ where
     }
 
     pub fn verify(self, code: &H::Output) -> Result<(), Error> {
-        if verify(code.as_ref(), self.finalize().as_ref()) {
+        if constant_time_eq(code.as_ref(), self.finalize().as_ref()) {
             Ok(())
         } else {
             Err(Error::Verification)

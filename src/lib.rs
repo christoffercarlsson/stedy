@@ -38,5 +38,5 @@ mod utils;
 
 pub use {
     error::Error,
-    utils::{verify, wipe},
+    utils::{constant_time_eq, wipe},
 };
