@@ -57,6 +57,54 @@ pub fn bench(c: &mut Criterion) {
 
     let message = b"sample";
 
+    let mut rng = ChaCha20Rng::from(&[0u8; 96]);
+    let seed = [90u8; 32];
+
+    let (private_key, public_key) = MlDsa44::key_pair(&seed);
+    let signature = MlDsa44::sign(&private_key, message, &mut rng).unwrap();
+
+    c.bench_function("ml_dsa_44_key_pair", |b| {
+        b.iter(|| MlDsa44::key_pair(&seed));
+    });
+
+    c.bench_function("ml_dsa_44_sign", |b| {
+        b.iter(|| MlDsa44::sign(&private_key, message, &mut rng).unwrap());
+    });
+
+    c.bench_function("ml_dsa_44_verify", |b| {
+        b.iter(|| MlDsa44::verify(message, &public_key, &signature));
+    });
+
+    let (private_key, public_key) = MlDsa65::key_pair(&seed);
+    let signature = MlDsa65::sign(&private_key, message, &mut rng).unwrap();
+
+    c.bench_function("ml_dsa_65_key_pair", |b| {
+        b.iter(|| MlDsa65::key_pair(&seed));
+    });
+
+    c.bench_function("ml_dsa_65_sign", |b| {
+        b.iter(|| MlDsa65::sign(&private_key, message, &mut rng).unwrap());
+    });
+
+    c.bench_function("ml_dsa_65_verify", |b| {
+        b.iter(|| MlDsa65::verify(message, &public_key, &signature));
+    });
+
+    let (private_key, public_key) = MlDsa87::key_pair(&seed);
+    let signature = MlDsa87::sign(&private_key, message, &mut rng).unwrap();
+
+    c.bench_function("ml_dsa_87_key_pair", |b| {
+        b.iter(|| MlDsa87::key_pair(&seed));
+    });
+
+    c.bench_function("ml_dsa_87_sign", |b| {
+        b.iter(|| MlDsa87::sign(&private_key, message, &mut rng).unwrap());
+    });
+
+    c.bench_function("ml_dsa_87_verify", |b| {
+        b.iter(|| MlDsa87::verify(message, &public_key, &signature));
+    });
+
     let p256_private_key = [
         201, 175, 169, 216, 69, 186, 117, 22, 107, 92, 33, 87, 103, 177, 214, 147, 78, 80, 195,
         219, 54, 232, 155, 18, 123, 138, 98, 43, 18, 15, 103, 33,
@@ -146,53 +194,5 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ecdsa_p521_verify", |b| {
         b.iter(|| P521::verify(message, &p521_public_key, &p521_signature));
-    });
-
-    let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-    let seed = [90u8; 32];
-
-    let (private_key, public_key) = MlDsa44::key_pair(&seed);
-    let signature = MlDsa44::sign(&private_key, message, &mut rng).unwrap();
-
-    c.bench_function("ml_dsa_44_key_pair", |b| {
-        b.iter(|| MlDsa44::key_pair(&seed));
-    });
-
-    c.bench_function("ml_dsa_44_sign", |b| {
-        b.iter(|| MlDsa44::sign(&private_key, message, &mut rng).unwrap());
-    });
-
-    c.bench_function("ml_dsa_44_verify", |b| {
-        b.iter(|| MlDsa44::verify(message, &public_key, &signature));
-    });
-
-    let (private_key, public_key) = MlDsa65::key_pair(&seed);
-    let signature = MlDsa65::sign(&private_key, message, &mut rng).unwrap();
-
-    c.bench_function("ml_dsa_65_key_pair", |b| {
-        b.iter(|| MlDsa65::key_pair(&seed));
-    });
-
-    c.bench_function("ml_dsa_65_sign", |b| {
-        b.iter(|| MlDsa65::sign(&private_key, message, &mut rng).unwrap());
-    });
-
-    c.bench_function("ml_dsa_65_verify", |b| {
-        b.iter(|| MlDsa65::verify(message, &public_key, &signature));
-    });
-
-    let (private_key, public_key) = MlDsa87::key_pair(&seed);
-    let signature = MlDsa87::sign(&private_key, message, &mut rng).unwrap();
-
-    c.bench_function("ml_dsa_87_key_pair", |b| {
-        b.iter(|| MlDsa87::key_pair(&seed));
-    });
-
-    c.bench_function("ml_dsa_87_sign", |b| {
-        b.iter(|| MlDsa87::sign(&private_key, message, &mut rng).unwrap());
-    });
-
-    c.bench_function("ml_dsa_87_verify", |b| {
-        b.iter(|| MlDsa87::verify(message, &public_key, &signature));
     });
 }
