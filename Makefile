@@ -63,6 +63,7 @@ WYCHEPROOF_FILES := \
 	pbkdf2_hmacsha256 \
 	pbkdf2_hmacsha384 \
 	pbkdf2_hmacsha512 \
+	ristretto255_scalar_invert \
 	x25519 \
 	xchacha20_poly1305
 

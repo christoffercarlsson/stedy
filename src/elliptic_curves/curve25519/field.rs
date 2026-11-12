@@ -113,6 +113,39 @@ where
     (r, valid)
 }
 
+#[cfg(feature = "hazmat")]
+pub fn sqrt_ratio_m1<F>(u: F, v: F, sqrt_m1: F) -> (Choice, F)
+where
+    F: FieldElement,
+{
+    let v3 = v * v.square();
+    let v7 = v * v3.square();
+    let r = u * v3 * pow22523(u * v7);
+    let check = v * r.square();
+    let correct_sign_sqrt = check.ct_eq(&u);
+    let flipped_sign_sqrt = check.ct_eq(&u.neg());
+    let flipped_sign_sqrt_i = check.ct_eq(&(u.neg() * sqrt_m1));
+    let r = F::select(&r, &(sqrt_m1 * r), flipped_sign_sqrt | flipped_sign_sqrt_i);
+    (correct_sign_sqrt | flipped_sign_sqrt, abs(r))
+}
+
+#[cfg(feature = "hazmat")]
+pub fn is_negative<F>(x: F) -> Choice
+where
+    F: FieldElement,
+{
+    let bytes: F::Bytes = x.into();
+    Choice::nonzero(bytes.as_ref()[0] & 1)
+}
+
+#[cfg(feature = "hazmat")]
+pub fn abs<F>(x: F) -> F
+where
+    F: FieldElement,
+{
+    F::select(&x, &x.neg(), is_negative(x))
+}
+
 impl Add for Field25519 {
     type Output = Self;
 

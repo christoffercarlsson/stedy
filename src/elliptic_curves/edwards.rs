@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::{EdwardsParams, EdwardsScalar, FieldElement},
+        traits::{EdwardsParams, EdwardsScalar, FieldElement, Wipe},
         utils::{Choice, Secret},
     },
     core::{
@@ -40,6 +40,19 @@ where
 {
 }
 
+impl<F, S> Wipe for Edwards<F, S>
+where
+    F: FieldElement + EdwardsParams<F>,
+    S: EdwardsScalar,
+{
+    fn wipe(&mut self) {
+        self.x.wipe();
+        self.y.wipe();
+        self.t.wipe();
+        self.z.wipe();
+    }
+}
+
 impl<F, S> Edwards<F, S>
 where
     F: FieldElement + EdwardsParams<F>,
@@ -49,7 +62,7 @@ where
         Self::new(F::BASE_POINT_X, F::BASE_POINT_Y, F::BASE_POINT_T, F::ONE);
     const IDENTITY: Self = Self::new(F::ZERO, F::ONE, F::ZERO, F::ONE);
 
-    const fn new(x: F, y: F, t: F, z: F) -> Self {
+    pub(crate) const fn new(x: F, y: F, t: F, z: F) -> Self {
         Self {
             x,
             y,
@@ -57,6 +70,11 @@ where
             z,
             _marker: PhantomData::<S>,
         }
+    }
+
+    #[cfg(feature = "hazmat")]
+    pub(crate) fn coordinates(&self) -> (F, F, F, F) {
+        (self.x, self.y, self.t, self.z)
     }
 
     pub(crate) fn decompress(bytes: &F::Bytes) -> (Self, Choice) {

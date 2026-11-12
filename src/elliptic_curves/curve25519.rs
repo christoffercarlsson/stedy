@@ -8,12 +8,16 @@ use crate::{
 mod arithmetic;
 mod edwards;
 mod field;
+#[cfg(feature = "hazmat")]
+mod ristretto255;
 mod scalar;
 
 #[cfg(feature = "hazmat")]
 pub use arithmetic::Field25519With;
 use edwards::Edwards25519;
 pub use field::Field25519;
+#[cfg(feature = "hazmat")]
+pub use ristretto255::{Ristretto255, Ristretto255With};
 pub use scalar::Scalar25519;
 
 pub struct Curve25519;

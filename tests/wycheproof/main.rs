@@ -5,6 +5,8 @@
 )]
 
 mod aeads;
+#[cfg(feature = "hazmat")]
+mod elliptic_curves;
 mod kdfs;
 mod kems;
 mod key_exchange;

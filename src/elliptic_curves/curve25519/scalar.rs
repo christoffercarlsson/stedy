@@ -40,6 +40,13 @@ impl MontgomeryFormParams<4> for Scalar25519Params {
 #[derive(Clone)]
 pub struct Scalar25519(Secret<Scalar25519Inner>);
 
+impl Scalar25519 {
+    #[cfg(feature = "hazmat")]
+    pub(crate) fn invert(&self) -> Self {
+        Self(Secret::from(self.0.get().invert_binary()))
+    }
+}
+
 const ORDER: [u8; 32] = [
     237, 211, 245, 92, 26, 99, 18, 88, 214, 156, 247, 162, 222, 249, 222, 20, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 16,

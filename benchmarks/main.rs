@@ -4,6 +4,8 @@ mod aeads;
 #[cfg(feature = "hazmat")]
 mod ciphers;
 mod csprngs;
+#[cfg(feature = "hazmat")]
+mod elliptic_curves;
 mod encoding;
 mod hashes;
 mod kdfs;
@@ -31,6 +33,8 @@ fn bench(c: &mut Criterion) {
     #[cfg(feature = "hazmat")]
     ciphers::bench(c);
     csprngs::bench(c);
+    #[cfg(feature = "hazmat")]
+    elliptic_curves::bench(c);
     encoding::bench(c);
     hashes::bench(c);
     kdfs::bench(c);

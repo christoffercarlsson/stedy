@@ -21,7 +21,10 @@ mod ciphers;
 #[cfg(feature = "hazmat")]
 pub mod ciphers;
 pub mod csprngs;
+#[cfg(not(feature = "hazmat"))]
 mod elliptic_curves;
+#[cfg(feature = "hazmat")]
+pub mod elliptic_curves;
 pub mod encoding;
 mod error;
 pub mod hashes;
