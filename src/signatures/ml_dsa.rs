@@ -8,7 +8,7 @@ use {
         Error,
         hashes::{Shake128, Shake256},
         traits::{ByteArray, CryptoRng, MlDsaArithmetic, MlDsaParams, Xof, XofReader},
-        utils::{Choice, Choices, Secret, constant_time_eq},
+        utils::{Choice, Choices, Secret, SecretBytes, constant_time_eq},
     },
     core::marker::PhantomData,
 };
@@ -65,12 +65,25 @@ impl MlDsaParams<8, 7> for MlDsa87Params {
 pub struct MlDsa44;
 
 impl MlDsa44 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2560], [u8; 1312]), Error> {
-        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256, Shake128>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<2560>, [u8; 1312]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256, Shake128>::generate_key_pair(
+                rng,
+                private_key.get_mut(),
+            )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 2560], [u8; 1312]) {
-        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256, Shake128>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<2560>, [u8; 1312]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256, Shake128>::key_pair(
+            seed,
+            private_key.get_mut(),
+        );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 2560]) -> [u8; 1312] {
@@ -164,12 +177,25 @@ impl MlDsa44 {
 pub struct MlDsa65;
 
 impl MlDsa65 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 4032], [u8; 1952]), Error> {
-        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256, Shake128>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<4032>, [u8; 1952]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256, Shake128>::generate_key_pair(
+                rng,
+                private_key.get_mut(),
+            )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 4032], [u8; 1952]) {
-        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256, Shake128>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<4032>, [u8; 1952]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256, Shake128>::key_pair(
+            seed,
+            private_key.get_mut(),
+        );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 4032]) -> [u8; 1952] {
@@ -263,12 +289,25 @@ impl MlDsa65 {
 pub struct MlDsa87;
 
 impl MlDsa87 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 4896], [u8; 2592]), Error> {
-        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256, Shake128>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<4896>, [u8; 2592]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256, Shake128>::generate_key_pair(
+                rng,
+                private_key.get_mut(),
+            )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 4896], [u8; 2592]) {
-        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256, Shake128>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<4896>, [u8; 2592]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256, Shake128>::key_pair(
+            seed,
+            private_key.get_mut(),
+        );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 4896]) -> [u8; 2592] {
@@ -367,14 +406,23 @@ impl<P> MlDsa44With<P>
 where
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2560], [u8; 1312]), Error> {
-        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(
-            rng,
-        )
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<2560>, [u8; 1312]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 2560], [u8; 1312]) {
-        MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<2560>, [u8; 1312]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlDsa::<4, 4, MlDsa44Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(
+                seed,
+                private_key.get_mut(),
+            );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 2560]) -> [u8; 1312] {
@@ -476,14 +524,23 @@ impl<P> MlDsa65With<P>
 where
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 4032], [u8; 1952]), Error> {
-        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(
-            rng,
-        )
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<4032>, [u8; 1952]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 4032], [u8; 1952]) {
-        MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<4032>, [u8; 1952]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlDsa::<6, 5, MlDsa65Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(
+                seed,
+                private_key.get_mut(),
+            );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 4032]) -> [u8; 1952] {
@@ -585,14 +642,23 @@ impl<P> MlDsa87With<P>
 where
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 4896], [u8; 2592]), Error> {
-        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(
-            rng,
-        )
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<4896>, [u8; 2592]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 4896], [u8; 2592]) {
-        MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<4896>, [u8; 2592]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlDsa::<8, 7, MlDsa87Params, MlDsaNtt, Shake256With<P>, Shake128With<P>>::key_pair(
+                seed,
+                private_key.get_mut(),
+            );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 4896]) -> [u8; 2592] {
@@ -841,17 +907,17 @@ where
 {
     pub fn generate_key_pair(
         rng: &mut impl CryptoRng,
-    ) -> Result<(P::PrivateKey, P::PublicKey), Error> {
+        private_key: &mut P::PrivateKey,
+    ) -> Result<P::PublicKey, Error> {
         let mut seed = Secret::from(P::Seed::new());
         rng.fill(seed.get_mut().as_mut())?;
-        Ok(Self::key_pair(seed.get()))
+        Ok(Self::key_pair(seed.get(), private_key))
     }
 
-    pub fn key_pair(seed: &P::Seed) -> (P::PrivateKey, P::PublicKey) {
-        let mut sk = P::PrivateKey::new();
+    pub fn key_pair(seed: &P::Seed, private_key: &mut P::PrivateKey) -> P::PublicKey {
         let mut pk = P::PublicKey::new();
-        Self::key_gen_internal(seed.as_ref(), pk.as_mut(), sk.as_mut());
-        (sk, pk)
+        Self::key_gen_internal(seed.as_ref(), pk.as_mut(), private_key.as_mut());
+        pk
     }
 
     pub fn public_key(private_key: &P::PrivateKey) -> P::PublicKey {

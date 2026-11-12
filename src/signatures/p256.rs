@@ -3,7 +3,8 @@ use crate::{
     elliptic_curves::{FieldP256, ScalarP256},
     hashes::Sha256,
     signatures::Ecdsa,
-    traits::CryptoRng,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
 };
 #[cfg(feature = "hazmat")]
 use {
@@ -17,8 +18,15 @@ use {
 pub struct P256;
 
 impl P256 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 33]), Error> {
-        Ecdsa::<FieldP256, Sha256, ScalarP256, [u8; 64]>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 33]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Ecdsa::<FieldP256, Sha256, ScalarP256, [u8; 64]>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 33], Error> {
@@ -47,8 +55,15 @@ where
     A: FieldArithmetic<Bytes = [u8; 32]>,
     H: Hasher,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 33]), Error> {
-        Ecdsa::<FieldP256With<A>, H, ScalarP256, [u8; 64]>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 33]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Ecdsa::<FieldP256With<A>, H, ScalarP256, [u8; 64]>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 33], Error> {

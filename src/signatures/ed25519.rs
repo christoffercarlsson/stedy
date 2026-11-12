@@ -3,7 +3,8 @@ use crate::{
     elliptic_curves::{Field25519, Scalar25519},
     hashes::Sha512,
     signatures::{Eddsa, HashEddsa},
-    traits::CryptoRng,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
 };
 #[cfg(feature = "hazmat")]
 use {
@@ -17,12 +18,24 @@ use {
 pub struct Ed25519;
 
 impl Ed25519 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 64], [u8; 32]), Error> {
-        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<64>, [u8; 32]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 64], [u8; 32]) {
-        Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<64>, [u8; 32]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = Eddsa::<Scalar25519, Field25519, Sha512, [u8; 64]>::key_pair(
+            seed,
+            private_key.get_mut(),
+        );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 64]) -> [u8; 32] {
@@ -82,12 +95,24 @@ where
     A: FieldArithmetic<Bytes = [u8; 32]>,
     H: Hasher<Output = [u8; 64]>,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 64], [u8; 32]), Error> {
-        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<64>, [u8; 32]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 64], [u8; 32]) {
-        Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<64>, [u8; 32]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::key_pair(
+            seed,
+            private_key.get_mut(),
+        );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 64]) -> [u8; 32] {

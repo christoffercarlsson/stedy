@@ -3,7 +3,7 @@ use {
         Error,
         kems::MlKemNtt,
         signatures::MlDsaNtt,
-        traits::{ByteArray, CryptoRng},
+        traits::ByteArray,
         utils::{Choice, Secret, is_zero, less_than},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -36,6 +36,8 @@ pub trait EdwardsScalar:
     + From<Self::Bytes>
     + From<Self::SecretBytes>
     + From<Self::WideBytes>
+    + for<'a> From<&'a Self::SecretBytes>
+    + for<'a> From<&'a Self::WideBytes>
     + Into<Self::Bytes>
     + Add<Self, Output = Self>
     + AddAssign
@@ -46,7 +48,7 @@ pub trait EdwardsScalar:
     type Bytes: ByteArray;
     type SecretBytes: ByteArray;
     type WideBytes: ByteArray;
-    type Radix16: Copy + AsRef<[i8]>;
+    type Radix16: AsRef<[i8]> + Wipe;
     type Naf5: AsRef<[i8]>;
 
     fn split(bytes: &Self::WideBytes) -> (Self::SecretBytes, Self::SecretBytes);
@@ -63,21 +65,11 @@ pub trait EdwardsScalar:
 }
 
 pub trait EllipticCurve {
-    type Point;
+    type Point: Wipe;
     type Scalar;
     type PointBytes: ByteArray;
     type ScalarBytes: ByteArray;
     type SharedSecretBytes: ByteArray;
-
-    fn generate_scalar(rng: &mut impl CryptoRng) -> Result<Self::Scalar, Error> {
-        loop {
-            let mut bytes = Secret::from(Self::ScalarBytes::new());
-            rng.fill(bytes.get_mut().as_mut())?;
-            if let Ok(scalar) = Self::scalar_from_bytes(bytes.get()) {
-                return Ok(scalar);
-            }
-        }
-    }
 
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point;
 
@@ -88,8 +80,6 @@ pub trait EllipticCurve {
     fn shared_secret_bytes(point: &Self::Point) -> Self::SharedSecretBytes;
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error>;
-
-    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes;
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error>;
 }
@@ -106,6 +96,7 @@ pub trait FieldElement:
     + Neg<Output = Self>
     + From<Self::Bytes>
     + Into<Self::Bytes>
+    + Wipe
 {
     const CAPACITY: usize;
     const BYTE_ORDER: ByteOrder;
@@ -234,6 +225,7 @@ pub trait WeierstrassScalar:
     Sized
     + Clone
     + From<Self::Bytes>
+    + for<'a> From<&'a Self::Bytes>
     + Into<Self::Bytes>
     + Add<Self, Output = Self>
     + AddAssign
@@ -247,7 +239,7 @@ pub trait WeierstrassScalar:
     const ORDER: Self::Bytes;
 
     type Bytes: ByteArray;
-    type Radix16: Copy + AsRef<[i8]>;
+    type Radix16: AsRef<[i8]> + Wipe;
     type Naf5: AsRef<[i8]>;
 
     fn is_zero(&self) -> Choice;
@@ -259,7 +251,7 @@ pub trait WeierstrassScalar:
     fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
         let non_zero = !is_zero(bytes.as_ref());
         let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
-        (non_zero & below).to_bool().then(|| Self::from(*bytes))
+        (non_zero & below).to_bool().then(|| Self::from(bytes))
     }
 
     fn as_radix_16(&self) -> Self::Radix16;
@@ -384,3 +376,9 @@ pub trait SeekableStreamCipher: StreamCipher {
 
     fn seek(&mut self, counter: u32);
 }
+
+pub trait Wipe {
+    fn wipe(&mut self);
+}
+
+pub trait ZeroDefault: Copy + Default {}

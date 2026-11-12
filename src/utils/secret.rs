@@ -1,20 +1,18 @@
-#![allow(unsafe_code)]
 use {
-    super::wipe,
+    crate::traits::Wipe,
     core::{
-        mem::size_of,
-        ops::{Index, IndexMut},
-        ptr, slice,
+        fmt::{self, Debug, Formatter},
+        ops::{Deref, DerefMut},
     },
 };
 
-pub struct Secret<T>(pub T)
+pub struct Secret<T>(T)
 where
-    T: Copy;
+    T: Wipe;
 
 impl<T> Secret<T>
 where
-    T: Copy,
+    T: Wipe,
 {
     pub fn get(&self) -> &T {
         &self.0
@@ -27,7 +25,7 @@ where
 
 impl<T> Default for Secret<T>
 where
-    T: Copy + Default,
+    T: Wipe + Default,
 {
     fn default() -> Self {
         Self(T::default())
@@ -36,64 +34,99 @@ where
 
 impl<T> Clone for Secret<T>
 where
-    T: Copy,
+    T: Wipe + Clone,
 {
     fn clone(&self) -> Self {
-        Self(self.0)
+        Self(self.0.clone())
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        self.0.wipe();
+        self.0.clone_from(&source.0);
+    }
+}
+
+impl<T> Debug for Secret<T>
+where
+    T: Wipe,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("Secret(..)")
     }
 }
 
 impl<T> Drop for Secret<T>
 where
-    T: Copy,
+    T: Wipe,
 {
     fn drop(&mut self) {
-        let bytes = ptr::from_mut(&mut self.0).cast::<u8>();
-        let bytes = unsafe { slice::from_raw_parts_mut(bytes, size_of::<T>()) };
-        let (head, words, tail) = unsafe { bytes.align_to_mut::<usize>() };
-        wipe(head);
-        wipe(words);
-        wipe(tail);
+        self.0.wipe();
     }
 }
 
-impl<T, I> Index<I> for Secret<T>
+impl<T> Deref for Secret<T>
 where
-    T: Copy + Index<I>,
+    T: Wipe,
 {
-    type Output = T::Output;
+    type Target = T;
 
-    fn index(&self, index: I) -> &Self::Output {
-        &self.0[index]
+    fn deref(&self) -> &T {
+        &self.0
     }
 }
 
-impl<T, I> IndexMut<I> for Secret<T>
+impl<T> DerefMut for Secret<T>
 where
-    T: Copy + IndexMut<I>,
+    T: Wipe,
 {
-    fn index_mut(&mut self, index: I) -> &mut Self::Output {
-        &mut self.0[index]
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
     }
 }
 
 impl<T> From<T> for Secret<T>
 where
-    T: Copy,
+    T: Wipe,
 {
     fn from(inner: T) -> Self {
         Self(inner)
     }
 }
 
-impl<const N: usize> AsRef<[u8]> for Secret<[u8; N]> {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
+impl<T, U> AsRef<U> for Secret<T>
+where
+    T: Wipe + AsRef<U>,
+    U: ?Sized,
+{
+    fn as_ref(&self) -> &U {
+        self.0.as_ref()
     }
 }
 
-impl<const N: usize> AsMut<[u8]> for Secret<[u8; N]> {
-    fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.0
+impl<T, U> AsMut<U> for Secret<T>
+where
+    T: Wipe + AsMut<U>,
+    U: ?Sized,
+{
+    fn as_mut(&mut self) -> &mut U {
+        self.0.as_mut()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_secret_clone_from() {
+        let mut secret = Secret::from([1u8; 4]);
+        secret.clone_from(&Secret::from([2u8; 4]));
+        assert_eq!(*secret, [2u8; 4]);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_secret_debug() {
+        assert_eq!(format!("{:?}", Secret::from([1u8; 4])), "Secret(..)");
     }
 }

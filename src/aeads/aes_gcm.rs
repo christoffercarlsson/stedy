@@ -1,4 +1,11 @@
-use crate::{Error, aeads::Aead, ciphers::AesCtr, macs::GHash, traits::CryptoRng};
+use crate::{
+    Error,
+    aeads::Aead,
+    ciphers::AesCtr,
+    macs::GHash,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
+};
 
 pub struct Aes128Gcm;
 
@@ -26,8 +33,10 @@ impl Aes128Gcm {
         Aead::<AesCtr<16>, GHash>::decrypt(key, nonce, aad, message, tag)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 16], Error> {
-        Aead::<AesCtr<16>, GHash>::generate_key(rng)
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<16>, Error> {
+        let mut key = SecretBytes::new();
+        Aead::<AesCtr<16>, GHash>::generate_key(rng, key.get_mut())?;
+        Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
@@ -61,8 +70,10 @@ impl Aes256Gcm {
         Aead::<AesCtr<32>, GHash>::decrypt(key, nonce, aad, message, tag)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
-        Aead::<AesCtr<32>, GHash>::generate_key(rng)
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
+        let mut key = SecretBytes::new();
+        Aead::<AesCtr<32>, GHash>::generate_key(rng, key.get_mut())?;
+        Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {

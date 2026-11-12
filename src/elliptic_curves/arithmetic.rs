@@ -16,6 +16,15 @@ macro_rules! impl_field_arithmetic {
 
         impl<A> Copy for $field<A> where A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]> {}
 
+        impl<A> $crate::traits::Wipe for $field<A>
+        where
+            A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,
+        {
+            fn wipe(&mut self) {
+                $crate::traits::Wipe::wipe(&mut self.0);
+            }
+        }
+
         impl<A> $field<A>
         where
             A: $crate::traits::FieldArithmetic<Bytes = [u8; $size]>,

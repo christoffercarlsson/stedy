@@ -94,7 +94,7 @@ where
     type SharedSecretBytes = F::PointBytes;
 
     fn point_from_bytes(bytes: &Self::PointBytes) -> Result<Self::Point, Error> {
-        let mut bytes = *bytes;
+        let mut bytes = bytes.clone();
         Self::truncate(&mut bytes);
         Ok(F::point_from_bytes(&bytes))
     }
@@ -108,11 +108,7 @@ where
     }
 
     fn scalar_from_bytes(bytes: &Self::ScalarBytes) -> Result<Self::Scalar, Error> {
-        Ok(MontgomeryScalar(Secret::from(*bytes)))
-    }
-
-    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        *scalar.0.get()
+        Ok(MontgomeryScalar(Secret::from(bytes.clone())))
     }
 
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {

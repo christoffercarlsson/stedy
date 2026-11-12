@@ -8,7 +8,7 @@ use {
         Error,
         hashes::{Sha3_256, Sha3_512, Shake128, Shake256},
         traits::{ByteArray, CryptoRng, Hasher, MlKemArithmetic, MlKemParams, Xof, XofReader},
-        utils::{Choice, Choices, Secret, constant_time_eq},
+        utils::{Choice, Choices, Secret, SecretBytes, constant_time_eq},
     },
     core::marker::PhantomData,
 };
@@ -59,12 +59,30 @@ impl MlKemParams<4> for MlKem1024Params {
 pub struct MlKem512;
 
 impl MlKem512 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 1632], [u8; 800]), Error> {
-        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<1632>, [u8; 800]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlKem::<
+            2,
+            MlKem512Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 1632], [u8; 800]) {
-        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<1632>, [u8; 800]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(
+                seed,
+                private_key.get_mut(),
+            );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 1632]) -> [u8; 800] {
@@ -76,32 +94,61 @@ impl MlKem512 {
     pub fn encapsulate(
         public_key: &[u8; 800],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 768]), Error> {
-        MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::encapsulate(
-            public_key, rng,
-        )
+    ) -> Result<(SecretBytes<32>, [u8; 768]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = MlKem::<
+            2,
+            MlKem512Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::encapsulate(public_key, rng, shared_secret.get_mut())?;
+        Ok((shared_secret, ciphertext))
     }
 
     pub fn decapsulate(
         private_key: &[u8; 1632],
         ciphertext: &[u8; 768],
-    ) -> Result<[u8; 32], Error> {
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
         MlKem::<2, MlKem512Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
             private_key,
             ciphertext,
-        )
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
 pub struct MlKem768;
 
 impl MlKem768 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2400], [u8; 1184]), Error> {
-        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<2400>, [u8; 1184]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlKem::<
+            3,
+            MlKem768Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 2400], [u8; 1184]) {
-        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<2400>, [u8; 1184]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(
+                seed,
+                private_key.get_mut(),
+            );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 2400]) -> [u8; 1184] {
@@ -113,34 +160,65 @@ impl MlKem768 {
     pub fn encapsulate(
         public_key: &[u8; 1184],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1088]), Error> {
-        MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::encapsulate(
-            public_key, rng,
-        )
+    ) -> Result<(SecretBytes<32>, [u8; 1088]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = MlKem::<
+            3,
+            MlKem768Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::encapsulate(public_key, rng, shared_secret.get_mut())?;
+        Ok((shared_secret, ciphertext))
     }
 
     pub fn decapsulate(
         private_key: &[u8; 2400],
         ciphertext: &[u8; 1088],
-    ) -> Result<[u8; 32], Error> {
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
         MlKem::<3, MlKem768Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
             private_key,
             ciphertext,
-        )
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
 pub struct MlKem1024;
 
 impl MlKem1024 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 3168], [u8; 1568]), Error> {
-        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<3168>, [u8; 1568]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlKem::<
+            4,
+            MlKem1024Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 3168], [u8; 1568]) {
-        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::key_pair(
-            seed,
-        )
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<3168>, [u8; 1568]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlKem::<
+            4,
+            MlKem1024Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::key_pair(seed, private_key.get_mut());
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 3168]) -> [u8; 1568] {
@@ -152,20 +230,31 @@ impl MlKem1024 {
     pub fn encapsulate(
         public_key: &[u8; 1568],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1568]), Error> {
-        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::encapsulate(
-            public_key, rng,
-        )
+    ) -> Result<(SecretBytes<32>, [u8; 1568]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = MlKem::<
+            4,
+            MlKem1024Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::encapsulate(public_key, rng, shared_secret.get_mut())?;
+        Ok((shared_secret, ciphertext))
     }
 
     pub fn decapsulate(
         private_key: &[u8; 3168],
         ciphertext: &[u8; 1568],
-    ) -> Result<[u8; 32], Error> {
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
         MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
             private_key,
             ciphertext,
-        )
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
@@ -181,12 +270,19 @@ impl<P> MlKem512With<P>
 where
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 1632], [u8; 800]), Error> {
-        KeccakMlKem::<2, MlKem512Params, P>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<1632>, [u8; 800]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            KeccakMlKem::<2, MlKem512Params, P>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 1632], [u8; 800]) {
-        KeccakMlKem::<2, MlKem512Params, P>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<1632>, [u8; 800]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = KeccakMlKem::<2, MlKem512Params, P>::key_pair(seed, private_key.get_mut());
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 1632]) -> [u8; 800] {
@@ -196,15 +292,27 @@ where
     pub fn encapsulate(
         public_key: &[u8; 800],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 768]), Error> {
-        KeccakMlKem::<2, MlKem512Params, P>::encapsulate(public_key, rng)
+    ) -> Result<(SecretBytes<32>, [u8; 768]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = KeccakMlKem::<2, MlKem512Params, P>::encapsulate(
+            public_key,
+            rng,
+            shared_secret.get_mut(),
+        )?;
+        Ok((shared_secret, ciphertext))
     }
 
     pub fn decapsulate(
         private_key: &[u8; 1632],
         ciphertext: &[u8; 768],
-    ) -> Result<[u8; 32], Error> {
-        KeccakMlKem::<2, MlKem512Params, P>::decapsulate(private_key, ciphertext)
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        KeccakMlKem::<2, MlKem512Params, P>::decapsulate(
+            private_key,
+            ciphertext,
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
@@ -216,12 +324,19 @@ impl<P> MlKem768With<P>
 where
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 2400], [u8; 1184]), Error> {
-        KeccakMlKem::<3, MlKem768Params, P>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<2400>, [u8; 1184]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            KeccakMlKem::<3, MlKem768Params, P>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 2400], [u8; 1184]) {
-        KeccakMlKem::<3, MlKem768Params, P>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<2400>, [u8; 1184]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = KeccakMlKem::<3, MlKem768Params, P>::key_pair(seed, private_key.get_mut());
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 2400]) -> [u8; 1184] {
@@ -231,15 +346,27 @@ where
     pub fn encapsulate(
         public_key: &[u8; 1184],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1088]), Error> {
-        KeccakMlKem::<3, MlKem768Params, P>::encapsulate(public_key, rng)
+    ) -> Result<(SecretBytes<32>, [u8; 1088]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = KeccakMlKem::<3, MlKem768Params, P>::encapsulate(
+            public_key,
+            rng,
+            shared_secret.get_mut(),
+        )?;
+        Ok((shared_secret, ciphertext))
     }
 
     pub fn decapsulate(
         private_key: &[u8; 2400],
         ciphertext: &[u8; 1088],
-    ) -> Result<[u8; 32], Error> {
-        KeccakMlKem::<3, MlKem768Params, P>::decapsulate(private_key, ciphertext)
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        KeccakMlKem::<3, MlKem768Params, P>::decapsulate(
+            private_key,
+            ciphertext,
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
@@ -251,12 +378,20 @@ impl<P> MlKem1024With<P>
 where
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 3168], [u8; 1568]), Error> {
-        KeccakMlKem::<4, MlKem1024Params, P>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<3168>, [u8; 1568]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            KeccakMlKem::<4, MlKem1024Params, P>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 64]) -> ([u8; 3168], [u8; 1568]) {
-        KeccakMlKem::<4, MlKem1024Params, P>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<3168>, [u8; 1568]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            KeccakMlKem::<4, MlKem1024Params, P>::key_pair(seed, private_key.get_mut());
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 3168]) -> [u8; 1568] {
@@ -266,15 +401,27 @@ where
     pub fn encapsulate(
         public_key: &[u8; 1568],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1568]), Error> {
-        KeccakMlKem::<4, MlKem1024Params, P>::encapsulate(public_key, rng)
+    ) -> Result<(SecretBytes<32>, [u8; 1568]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = KeccakMlKem::<4, MlKem1024Params, P>::encapsulate(
+            public_key,
+            rng,
+            shared_secret.get_mut(),
+        )?;
+        Ok((shared_secret, ciphertext))
     }
 
     pub fn decapsulate(
         private_key: &[u8; 3168],
         ciphertext: &[u8; 1568],
-    ) -> Result<[u8; 32], Error> {
-        KeccakMlKem::<4, MlKem1024Params, P>::decapsulate(private_key, ciphertext)
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        KeccakMlKem::<4, MlKem1024Params, P>::decapsulate(
+            private_key,
+            ciphertext,
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
@@ -461,18 +608,18 @@ where
 {
     pub fn generate_key_pair(
         rng: &mut impl CryptoRng,
-    ) -> Result<(P::PrivateKey, P::PublicKey), Error> {
+        private_key: &mut P::PrivateKey,
+    ) -> Result<P::PublicKey, Error> {
         let mut seed = Secret::from(P::Seed::new());
         rng.fill(seed.get_mut().as_mut())?;
-        Ok(Self::key_pair(seed.get()))
+        Ok(Self::key_pair(seed.get(), private_key))
     }
 
-    pub fn key_pair(seed: &P::Seed) -> (P::PrivateKey, P::PublicKey) {
+    pub fn key_pair(seed: &P::Seed, private_key: &mut P::PrivateKey) -> P::PublicKey {
         let (d, z) = seed.as_ref().split_at(32);
-        let mut keys = (P::PrivateKey::new(), P::PublicKey::new());
-        let (dk, ek) = &mut keys;
-        Self::key_gen_internal(d, z, ek.as_mut(), dk.as_mut());
-        keys
+        let mut public_key = P::PublicKey::new();
+        Self::key_gen_internal(d, z, public_key.as_mut(), private_key.as_mut());
+        public_key
     }
 
     pub fn public_key(private_key: &P::PrivateKey) -> P::PublicKey {
@@ -484,25 +631,29 @@ where
     pub fn encapsulate(
         public_key: &P::PublicKey,
         rng: &mut impl CryptoRng,
-    ) -> Result<(P::SharedSecret, P::Ciphertext), Error> {
+        shared_secret: &mut P::SharedSecret,
+    ) -> Result<P::Ciphertext, Error> {
         if !Self::encapsulation_key_check(public_key.as_ref()) {
             return Err(Error::InvalidKey);
         }
         let mut m = Secret::from([0u8; 32]);
         rng.fill(m.as_mut())?;
         let (k, c) = Self::encaps_internal(public_key.as_ref(), m.as_ref());
-        Ok((P::SharedSecret::from_slice(k.get()), c))
+        shared_secret.as_mut().copy_from_slice(k.get());
+        Ok(c)
     }
 
     pub fn decapsulate(
         private_key: &P::PrivateKey,
         ciphertext: &P::Ciphertext,
-    ) -> Result<P::SharedSecret, Error> {
+        shared_secret: &mut P::SharedSecret,
+    ) -> Result<(), Error> {
         if !Self::decapsulation_key_check(private_key.as_ref()) {
             return Err(Error::InvalidKey);
         }
         let k = Self::decaps_internal(private_key.as_ref(), ciphertext.as_ref());
-        Ok(P::SharedSecret::from_slice(k.get()))
+        shared_secret.as_mut().copy_from_slice(k.get());
+        Ok(())
     }
 }
 

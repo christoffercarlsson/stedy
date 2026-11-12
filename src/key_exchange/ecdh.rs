@@ -2,6 +2,7 @@ use {
     crate::{
         Error,
         traits::{CryptoRng, EllipticCurve},
+        utils::Secret,
     },
     core::marker::PhantomData,
 };
@@ -19,12 +20,14 @@ where
 {
     pub(crate) fn generate_key_pair(
         rng: &mut impl CryptoRng,
-    ) -> Result<(C::ScalarBytes, C::PointBytes), Error> {
-        let scalar = C::generate_scalar(rng)?;
-        let point = C::scalar_mult_base(&scalar);
-        let private_key = C::scalar_to_bytes(&scalar);
-        let public_key = C::point_to_bytes(&point);
-        Ok((private_key, public_key))
+        private_key: &mut C::ScalarBytes,
+    ) -> Result<C::PointBytes, Error> {
+        loop {
+            rng.fill(private_key.as_mut())?;
+            if let Ok(public_key) = Self::public_key(private_key) {
+                return Ok(public_key);
+            }
+        }
     }
 
     pub(crate) fn public_key(private_key: &C::ScalarBytes) -> Result<C::PointBytes, Error> {
@@ -36,10 +39,12 @@ where
     pub(crate) fn key_exchange(
         private_key: &C::ScalarBytes,
         public_key: &C::PointBytes,
-    ) -> Result<C::SharedSecretBytes, Error> {
+        shared_secret: &mut C::SharedSecretBytes,
+    ) -> Result<(), Error> {
         let scalar = C::scalar_from_bytes(private_key)?;
         let point = C::point_from_bytes(public_key)?;
-        let shared_secret = C::scalar_mult(&scalar, &point)?;
-        Ok(C::shared_secret_bytes(&shared_secret))
+        let product = Secret::from(C::scalar_mult(&scalar, &point)?);
+        *shared_secret = C::shared_secret_bytes(product.get());
+        Ok(())
     }
 }

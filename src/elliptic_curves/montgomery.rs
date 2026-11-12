@@ -1,6 +1,6 @@
 use {
     crate::{
-        traits::MontgomeryFormParams,
+        traits::{MontgomeryFormParams, Wipe},
         utils::{Choice, unsigned_mul},
     },
     core::marker::PhantomData,
@@ -24,6 +24,12 @@ const WORD_BYTES: usize = Word::BITS as usize / 8;
 
 #[derive(Clone, Copy)]
 pub struct Montgomery<const N: usize, P>([Word; N], PhantomData<P>);
+
+impl<const N: usize, P> Wipe for Montgomery<N, P> {
+    fn wipe(&mut self) {
+        self.0.wipe();
+    }
+}
 
 macro_rules! impl_montgomery {
     ($words:literal, $limbs:literal, $bytes:literal) => {

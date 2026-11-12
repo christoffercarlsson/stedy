@@ -1,4 +1,11 @@
-use crate::{Error, aeads::Aead, ciphers::XSalsa20, macs::Poly1305, traits::CryptoRng};
+use crate::{
+    Error,
+    aeads::Aead,
+    ciphers::XSalsa20,
+    macs::Poly1305,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
+};
 
 pub struct XSalsa20Poly1305;
 
@@ -22,8 +29,10 @@ impl XSalsa20Poly1305 {
         Aead::<XSalsa20, Poly1305>::decrypt(key, nonce, aad, message, tag)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
-        Aead::<XSalsa20, Poly1305>::generate_key(rng)
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
+        let mut key = SecretBytes::new();
+        Aead::<XSalsa20, Poly1305>::generate_key(rng, key.get_mut())?;
+        Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 24]) -> Result<(), Error> {

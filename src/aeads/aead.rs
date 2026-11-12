@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{Authenticator, ByteArray, CryptoRng, SeekableStreamCipher},
+    traits::{Authenticator, CryptoRng, SeekableStreamCipher},
     utils::increment,
 };
 
@@ -49,10 +49,8 @@ where
         aead.cipher.apply_keystream(message)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<C::Key, Error> {
-        let mut key = C::Key::new();
-        rng.fill(key.as_mut())?;
-        Ok(key)
+    pub fn generate_key(rng: &mut impl CryptoRng, key: &mut C::Key) -> Result<(), Error> {
+        rng.fill(key.as_mut())
     }
 
     pub fn increment_nonce(nonce: &mut C::Nonce) -> Result<(), Error> {

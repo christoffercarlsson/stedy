@@ -53,10 +53,6 @@ impl EllipticCurve for Curve25519 {
         Ladder::scalar_from_bytes(bytes)
     }
 
-    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        Ladder::scalar_to_bytes(scalar)
-    }
-
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
         Ladder::scalar_mult_base(scalar)
     }

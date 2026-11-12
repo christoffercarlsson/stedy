@@ -1,7 +1,7 @@
 use {
     crate::{
         Error,
-        traits::{ByteArray, ByteOrder, CryptoRng, FieldElement},
+        traits::{ByteArray, ByteOrder, CryptoRng, FieldElement, Wipe},
         utils::{Choice, wipe},
     },
     core::{
@@ -233,6 +233,12 @@ where
 
 #[derive(Clone, Copy)]
 struct Gf256(u8);
+
+impl Wipe for Gf256 {
+    fn wipe(&mut self) {
+        self.0.wipe();
+    }
+}
 
 impl Gf256 {
     const POLYNOMIAL: u8 = 0x1b;

@@ -38,5 +38,5 @@ mod utils;
 
 pub use {
     error::Error,
-    utils::{constant_time_eq, wipe},
+    utils::{SecretBytes, constant_time_eq, wipe},
 };

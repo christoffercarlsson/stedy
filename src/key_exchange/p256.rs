@@ -1,4 +1,10 @@
-use crate::{Error, elliptic_curves::P256 as P256Curve, key_exchange::Ecdh, traits::CryptoRng};
+use crate::{
+    Error,
+    elliptic_curves::P256 as P256Curve,
+    key_exchange::Ecdh,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
+};
 #[cfg(feature = "hazmat")]
 use {
     crate::{
@@ -11,16 +17,25 @@ use {
 pub struct P256;
 
 impl P256 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 33]), Error> {
-        Ecdh::<P256Curve>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 33]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Ecdh::<P256Curve>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 33], Error> {
         Ecdh::<P256Curve>::public_key(private_key)
     }
 
-    pub fn key_exchange(private_key: &[u8; 32], public_key: &[u8; 33]) -> Result<[u8; 32], Error> {
-        Ecdh::<P256Curve>::key_exchange(private_key, public_key)
+    pub fn key_exchange(
+        private_key: &[u8; 32],
+        public_key: &[u8; 33],
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        Ecdh::<P256Curve>::key_exchange(private_key, public_key, shared_secret.get_mut())?;
+        Ok(shared_secret)
     }
 }
 
@@ -32,16 +47,32 @@ impl<A> P256With<A>
 where
     A: FieldArithmetic<Bytes = [u8; 32]>,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 33]), Error> {
-        Ecdh::<Weierstrass<FieldP256With<A>, ScalarP256>>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 33]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Ecdh::<Weierstrass<FieldP256With<A>, ScalarP256>>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 33], Error> {
         Ecdh::<Weierstrass<FieldP256With<A>, ScalarP256>>::public_key(private_key)
     }
 
-    pub fn key_exchange(private_key: &[u8; 32], public_key: &[u8; 33]) -> Result<[u8; 32], Error> {
-        Ecdh::<Weierstrass<FieldP256With<A>, ScalarP256>>::key_exchange(private_key, public_key)
+    pub fn key_exchange(
+        private_key: &[u8; 32],
+        public_key: &[u8; 33],
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        Ecdh::<Weierstrass<FieldP256With<A>, ScalarP256>>::key_exchange(
+            private_key,
+            public_key,
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 

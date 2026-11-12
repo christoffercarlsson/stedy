@@ -10,8 +10,8 @@ use {
         hashes::{KeccakF1600, Sha3_256With, Sha3_512With, Shake128With, Shake256With},
         kems::{MlKem, MlKem768Params, MlKemNtt},
         key_exchange::Ecdh,
-        traits::{CryptoRng, EllipticCurve, KeccakPermutation, MlKemArithmetic},
-        utils::Secret,
+        traits::{ByteArray, CryptoRng, EllipticCurve, KeccakPermutation, MlKemArithmetic},
+        utils::{Secret, SecretBytes},
     },
     core::marker::PhantomData,
 };
@@ -19,12 +19,22 @@ use {
 pub struct XWing;
 
 impl XWing {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
-        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 1216]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
-        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<32>, [u8; 1216]) {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::key_pair(seed, private_key.get_mut());
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
@@ -34,12 +44,24 @@ impl XWing {
     pub fn encapsulate(
         public_key: &[u8; 1216],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1120]), Error> {
-        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::encapsulate(public_key, rng)
+    ) -> Result<(SecretBytes<32>, [u8; 1120]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::encapsulate(
+            public_key,
+            rng,
+            shared_secret.get_mut(),
+        )?;
+        Ok((shared_secret, ciphertext))
     }
 
-    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
-        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::decapsulate(private_key, ciphertext)
+    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> SecretBytes<32> {
+        let mut shared_secret = SecretBytes::new();
+        XWingKem::<MlKemNtt, Curve25519, KeccakF1600>::decapsulate(
+            private_key,
+            ciphertext,
+            shared_secret.get_mut(),
+        );
+        shared_secret
     }
 }
 
@@ -52,12 +74,25 @@ where
     B: FieldArithmetic<Bytes = [u8; 32]>,
     P: KeccakPermutation,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 1216]), Error> {
-        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 1216]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key =
+            XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::generate_key_pair(
+                rng,
+                private_key.get_mut(),
+            )?;
+        Ok((private_key, public_key))
     }
 
-    pub fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
-        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::key_pair(seed)
+    pub fn key_pair(seed: &[u8; 32]) -> (SecretBytes<32>, [u8; 1216]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::key_pair(
+            seed,
+            private_key.get_mut(),
+        );
+        (private_key, public_key)
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
@@ -67,15 +102,24 @@ where
     pub fn encapsulate(
         public_key: &[u8; 1216],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1120]), Error> {
-        XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::encapsulate(public_key, rng)
+    ) -> Result<(SecretBytes<32>, [u8; 1120]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::encapsulate(
+            public_key,
+            rng,
+            shared_secret.get_mut(),
+        )?;
+        Ok((shared_secret, ciphertext))
     }
 
-    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
+    pub fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> SecretBytes<32> {
+        let mut shared_secret = SecretBytes::new();
         XWingKem::<MlKemNtt, MontgomeryLadder<Field25519With<B>>, P>::decapsulate(
             private_key,
             ciphertext,
-        )
+            shared_secret.get_mut(),
+        );
+        shared_secret
     }
 }
 
@@ -101,31 +145,37 @@ where
 
     pub(crate) fn generate_key_pair(
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1216]), Error> {
-        let mut seed = Secret::from([0u8; 32]);
-        rng.fill(seed.get_mut())?;
-        Ok(Self::key_pair(seed.get()))
+        private_key: &mut [u8; 32],
+    ) -> Result<[u8; 1216], Error> {
+        rng.fill(private_key)?;
+        Ok(Self::public_key(private_key))
     }
 
-    pub(crate) fn key_pair(seed: &[u8; 32]) -> ([u8; 32], [u8; 1216]) {
-        let (_, _, public_key) = Self::expand(seed);
-        (*seed, public_key)
+    pub(crate) fn key_pair(seed: &[u8; 32], private_key: &mut [u8; 32]) -> [u8; 1216] {
+        private_key.copy_from_slice(seed);
+        Self::public_key(private_key)
     }
 
     pub(crate) fn public_key(private_key: &[u8; 32]) -> [u8; 1216] {
-        Self::key_pair(private_key).1
+        let (_, _, public_key) = Self::expand(private_key);
+        public_key
     }
 
     pub(crate) fn encapsulate(
         public_key: &[u8; 1216],
         rng: &mut impl CryptoRng,
-    ) -> Result<([u8; 32], [u8; 1120]), Error> {
+        shared_secret: &mut [u8; 32],
+    ) -> Result<[u8; 1120], Error> {
         let mut eseed = Secret::from([0u8; 64]);
         rng.fill(eseed.get_mut())?;
-        Self::encapsulate_derand(public_key, eseed.get())
+        Self::encapsulate_derand(public_key, eseed.get(), shared_secret)
     }
 
-    pub(crate) fn decapsulate(private_key: &[u8; 32], ciphertext: &[u8; 1120]) -> [u8; 32] {
+    pub(crate) fn decapsulate(
+        private_key: &[u8; 32],
+        ciphertext: &[u8; 1120],
+        shared_secret: &mut [u8; 32],
+    ) {
         let (ml_kem_private_key, x25519_private_key, public_key) = Self::expand(private_key);
         let (ml_kem_ciphertext, x25519_ciphertext) = ciphertext.split_at(1088);
         let x25519_ciphertext = x25519_ciphertext
@@ -139,13 +189,15 @@ where
             x25519_shared_secret.get(),
             x25519_ciphertext,
             &public_key[1184..],
-        )
+            shared_secret,
+        );
     }
 
     fn encapsulate_derand(
         public_key: &[u8; 1216],
         eseed: &[u8; 64],
-    ) -> Result<([u8; 32], [u8; 1120]), Error> {
+        shared_secret: &mut [u8; 32],
+    ) -> Result<[u8; 1120], Error> {
         let (ml_kem_public_key, x25519_public_key) = public_key.split_at(1184);
         let x25519_public_key = x25519_public_key
             .try_into()
@@ -161,16 +213,17 @@ where
         let x25519_shared_secret = Self::x25519(x25519_ephemeral_key.get(), &x25519_public_key);
         let (ml_kem_shared_secret, ml_kem_ciphertext) =
             Kem::<A, P>::encaps_internal(ml_kem_public_key, m);
-        let shared_secret = Self::combine(
+        Self::combine(
             ml_kem_shared_secret.get(),
             x25519_shared_secret.get(),
             &x25519_ciphertext,
             &x25519_public_key,
+            shared_secret,
         );
         let mut ciphertext = [0u8; 1120];
         ciphertext[..1088].copy_from_slice(&ml_kem_ciphertext);
         ciphertext[1088..].copy_from_slice(&x25519_ciphertext);
-        Ok((shared_secret, ciphertext))
+        Ok(ciphertext)
     }
 
     fn expand(seed: &[u8; 32]) -> (Secret<[u8; 2400]>, Secret<[u8; 32]>, [u8; 1216]) {
@@ -181,16 +234,13 @@ where
         let x25519_private_key = Secret::from(
             <[u8; 32]>::try_from(x25519_private_key).expect("X25519 private key is 32 bytes"),
         );
-        let (ml_kem_private_key, ml_kem_public_key) = Kem::<A, P>::key_pair(ml_kem_seed);
+        let mut ml_kem_private_key = Secret::from([0u8; 2400]);
+        let ml_kem_public_key = Kem::<A, P>::key_pair(ml_kem_seed, ml_kem_private_key.get_mut());
         let x25519_public_key = Self::x25519_public_key(x25519_private_key.get());
         let mut public_key = [0u8; 1216];
         public_key[..1184].copy_from_slice(&ml_kem_public_key);
         public_key[1184..].copy_from_slice(&x25519_public_key);
-        (
-            Secret::from(ml_kem_private_key),
-            x25519_private_key,
-            public_key,
-        )
+        (ml_kem_private_key, x25519_private_key, public_key)
     }
 
     fn x25519_public_key(private_key: &[u8; 32]) -> [u8; 32] {
@@ -198,7 +248,11 @@ where
     }
 
     fn x25519(private_key: &[u8; 32], public_key: &[u8; 32]) -> Secret<[u8; 32]> {
-        Secret::from(Ecdh::<C>::key_exchange(private_key, public_key).unwrap_or([0u8; 32]))
+        let mut shared_secret = Secret::from([0u8; 32]);
+        if Ecdh::<C>::key_exchange(private_key, public_key, shared_secret.get_mut()).is_err() {
+            *shared_secret.get_mut() = [0u8; 32];
+        }
+        shared_secret
     }
 
     fn combine(
@@ -206,14 +260,15 @@ where
         x25519_shared_secret: &[u8; 32],
         x25519_ciphertext: &[u8; 32],
         x25519_public_key: &[u8],
-    ) -> [u8; 32] {
+        shared_secret: &mut [u8; 32],
+    ) {
         let mut hasher = Sha3_256With::<P>::new();
         hasher.update(ml_kem_shared_secret);
         hasher.update(x25519_shared_secret);
         hasher.update(x25519_ciphertext);
         hasher.update(x25519_public_key);
         hasher.update(&Self::LABEL);
-        hasher.finalize()
+        hasher.finalize_into(shared_secret);
     }
 }
 
@@ -253,8 +308,9 @@ mod tests {
         assert_eq!(private_key, seed);
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
-        let (shared_secret, ciphertext) =
-            Engine::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
+        let mut shared_secret = [0u8; 32];
+        let ciphertext = Engine::encapsulate_derand(&public_key, &eseed, &mut shared_secret)
+            .expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
@@ -281,8 +337,9 @@ mod tests {
         assert_eq!(private_key, seed);
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
-        let (shared_secret, ciphertext) =
-            Engine::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
+        let mut shared_secret = [0u8; 32];
+        let ciphertext = Engine::encapsulate_derand(&public_key, &eseed, &mut shared_secret)
+            .expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(
@@ -309,8 +366,9 @@ mod tests {
         assert_eq!(private_key, seed);
         assert_eq!(public_key, public_key_ref);
         assert_eq!(XWing::public_key(&private_key), public_key_ref);
-        let (shared_secret, ciphertext) =
-            Engine::encapsulate_derand(&public_key, &eseed).expect("encapsulation key is valid");
+        let mut shared_secret = [0u8; 32];
+        let ciphertext = Engine::encapsulate_derand(&public_key, &eseed, &mut shared_secret)
+            .expect("encapsulation key is valid");
         assert_eq!(ciphertext, ciphertext_ref);
         assert_eq!(shared_secret, shared_secret_ref);
         assert_eq!(

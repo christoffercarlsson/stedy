@@ -3,7 +3,8 @@ use crate::{
     aeads::Aead,
     ciphers::{ChaCha20, XChaCha20},
     macs::Poly1305,
-    traits::CryptoRng,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
 };
 
 pub struct ChaCha20Poly1305;
@@ -28,8 +29,10 @@ impl ChaCha20Poly1305 {
         Aead::<ChaCha20, Poly1305>::decrypt(key, nonce, aad, message, tag)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
-        Aead::<ChaCha20, Poly1305>::generate_key(rng)
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
+        let mut key = SecretBytes::new();
+        Aead::<ChaCha20, Poly1305>::generate_key(rng, key.get_mut())?;
+        Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
@@ -59,8 +62,10 @@ impl XChaCha20Poly1305 {
         Aead::<XChaCha20, Poly1305>::decrypt(key, nonce, aad, message, tag)
     }
 
-    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<[u8; 32], Error> {
-        Aead::<XChaCha20, Poly1305>::generate_key(rng)
+    pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
+        let mut key = SecretBytes::new();
+        Aead::<XChaCha20, Poly1305>::generate_key(rng, key.get_mut())?;
+        Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 24]) -> Result<(), Error> {

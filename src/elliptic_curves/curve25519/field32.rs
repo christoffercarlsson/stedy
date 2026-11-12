@@ -1,5 +1,8 @@
 use {
-    crate::utils::{Choice, signed_mul as m},
+    crate::{
+        traits::Wipe,
+        utils::{Choice, signed_mul as m},
+    },
     core::{
         array::from_fn,
         ops::{Index, IndexMut},
@@ -8,6 +11,12 @@ use {
 
 #[derive(Clone, Copy)]
 pub struct Field25519([i32; 10]);
+
+impl Wipe for Field25519 {
+    fn wipe(&mut self) {
+        self.0.wipe();
+    }
+}
 
 impl Index<usize> for Field25519 {
     type Output = i32;

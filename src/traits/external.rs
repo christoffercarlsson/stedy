@@ -1,5 +1,5 @@
 use {
-    super::Sealed,
+    super::{Sealed, Wipe},
     crate::Error,
     core::{
         array::TryFromSliceError,
@@ -8,7 +8,7 @@ use {
 };
 
 pub trait ByteArray:
-    Copy
+    Clone
     + Sized
     + AsRef<[u8]>
     + AsMut<[u8]>
@@ -17,6 +17,7 @@ pub trait ByteArray:
     + IndexMut<usize, Output = u8>
     + IndexMut<RangeFrom<usize>, Output = [u8]>
     + Sealed
+    + Wipe
 {
     const SIZE: usize;
 

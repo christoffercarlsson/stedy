@@ -91,15 +91,27 @@ impl Neg for Scalar25519 {
     }
 }
 
+impl From<&[u8; 32]> for Scalar25519 {
+    fn from(value: &[u8; 32]) -> Self {
+        Self(Secret::from(Scalar25519Inner::from_le_bytes(value)))
+    }
+}
+
 impl From<[u8; 32]> for Scalar25519 {
     fn from(value: [u8; 32]) -> Self {
-        Self(Secret::from(Scalar25519Inner::from_le_bytes(&value)))
+        Self::from(&value)
+    }
+}
+
+impl From<&[u8; 64]> for Scalar25519 {
+    fn from(value: &[u8; 64]) -> Self {
+        Self(Secret::from(Scalar25519Inner::from_wide_le_bytes(value)))
     }
 }
 
 impl From<[u8; 64]> for Scalar25519 {
     fn from(value: [u8; 64]) -> Self {
-        Self(Secret::from(Scalar25519Inner::from_wide_le_bytes(&value)))
+        Self::from(&value)
     }
 }
 

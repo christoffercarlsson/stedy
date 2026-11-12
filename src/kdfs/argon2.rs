@@ -8,7 +8,7 @@ use {
         Error,
         encoding::{Encoding, decode, encode},
         hashes::{Blake2b512, Blake2bVar},
-        traits::Hasher,
+        traits::{Hasher, Wipe},
         utils::{Secret, constant_time_eq},
     },
     core::ops::{BitXorAssign, Index, IndexMut},
@@ -92,6 +92,12 @@ struct Argon2Block([u64; Self::WORDS]);
 
 impl Argon2Block {
     const ZERO: Self = Self([0; Self::WORDS]);
+}
+
+impl Wipe for Argon2Block {
+    fn wipe(&mut self) {
+        self.0.wipe();
+    }
 }
 
 impl Default for Argon2Block {

@@ -1,7 +1,9 @@
 use {
     crate::{
         Error,
-        traits::{ByteArray, EllipticCurve, FieldElement, WeierstrassParams, WeierstrassScalar},
+        traits::{
+            ByteArray, EllipticCurve, FieldElement, WeierstrassParams, WeierstrassScalar, Wipe,
+        },
         utils::{Choice, Secret},
     },
     core::{
@@ -20,6 +22,18 @@ where
     y: F,
     z: F,
     _marker: PhantomData<S>,
+}
+
+impl<F, S> Wipe for Weierstrass<F, S>
+where
+    F: FieldElement + WeierstrassParams<F>,
+    S: WeierstrassScalar,
+{
+    fn wipe(&mut self) {
+        self.x.wipe();
+        self.y.wipe();
+        self.z.wipe();
+    }
 }
 
 #[allow(clippy::expl_impl_clone_on_copy)]
@@ -69,7 +83,7 @@ where
         let valid_prefix = Choice::eq(prefix, 2) | Choice::eq(prefix, 3);
         let sign = prefix & 1;
         let encoded = F::Bytes::from_slice(&bytes[1..]);
-        let x = F::from(encoded);
+        let x = F::from(encoded.clone());
         let canonical: F::Bytes = x.into();
         let valid_x = Choice::eq_slice(encoded.as_ref(), canonical.as_ref());
         let x2 = x.square();
@@ -246,10 +260,6 @@ where
 
     fn scalar_mult_base(scalar: &Self::Scalar) -> Self::Point {
         Self::mul_base(scalar)
-    }
-
-    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        scalar.clone().into()
     }
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {

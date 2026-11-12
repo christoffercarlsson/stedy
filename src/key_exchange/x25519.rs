@@ -1,4 +1,10 @@
-use crate::{Error, elliptic_curves::Curve25519, key_exchange::Ecdh, traits::CryptoRng};
+use crate::{
+    Error,
+    elliptic_curves::Curve25519,
+    key_exchange::Ecdh,
+    traits::{ByteArray, CryptoRng},
+    utils::SecretBytes,
+};
 #[cfg(feature = "hazmat")]
 use {
     crate::{
@@ -11,16 +17,25 @@ use {
 pub struct X25519;
 
 impl X25519 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 32]), Error> {
-        Ecdh::<Curve25519>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 32]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Ecdh::<Curve25519>::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 32], Error> {
         Ecdh::<Curve25519>::public_key(private_key)
     }
 
-    pub fn key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> Result<[u8; 32], Error> {
-        Ecdh::<Curve25519>::key_exchange(private_key, public_key)
+    pub fn key_exchange(
+        private_key: &[u8; 32],
+        public_key: &[u8; 32],
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        Ecdh::<Curve25519>::key_exchange(private_key, public_key, shared_secret.get_mut())?;
+        Ok(shared_secret)
     }
 }
 
@@ -32,16 +47,32 @@ impl<A> X25519With<A>
 where
     A: FieldArithmetic<Bytes = [u8; 32]>,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<([u8; 32], [u8; 32]), Error> {
-        Ecdh::<MontgomeryLadder<Field25519With<A>>>::generate_key_pair(rng)
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 32]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = Ecdh::<MontgomeryLadder<Field25519With<A>>>::generate_key_pair(
+            rng,
+            private_key.get_mut(),
+        )?;
+        Ok((private_key, public_key))
     }
 
     pub fn public_key(private_key: &[u8; 32]) -> Result<[u8; 32], Error> {
         Ecdh::<MontgomeryLadder<Field25519With<A>>>::public_key(private_key)
     }
 
-    pub fn key_exchange(private_key: &[u8; 32], public_key: &[u8; 32]) -> Result<[u8; 32], Error> {
-        Ecdh::<MontgomeryLadder<Field25519With<A>>>::key_exchange(private_key, public_key)
+    pub fn key_exchange(
+        private_key: &[u8; 32],
+        public_key: &[u8; 32],
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        Ecdh::<MontgomeryLadder<Field25519With<A>>>::key_exchange(
+            private_key,
+            public_key,
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
     }
 }
 
@@ -135,7 +166,7 @@ mod tests {
         for _ in 0..1000 {
             let result = X25519::key_exchange(&k, &u).unwrap();
             u = k;
-            k = result;
+            k = *result;
         }
         assert_eq!(
             k,

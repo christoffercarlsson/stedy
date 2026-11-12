@@ -41,10 +41,6 @@ impl EllipticCurve for P256 {
         Point::scalar_mult_base(scalar)
     }
 
-    fn scalar_to_bytes(scalar: &Self::Scalar) -> Self::ScalarBytes {
-        Point::scalar_to_bytes(scalar)
-    }
-
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
         Point::scalar_mult(scalar, point)
     }

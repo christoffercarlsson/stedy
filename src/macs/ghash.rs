@@ -1,7 +1,7 @@
 use crate::{
     ciphers::{AesCtr, multiply},
-    traits::{Authenticator, SeekableStreamCipher},
-    utils::constant_time_eq,
+    traits::{Authenticator, SeekableStreamCipher, Wipe},
+    utils::{Secret, constant_time_eq},
 };
 
 pub struct GHash {
@@ -17,8 +17,9 @@ where
     type Output = [u8; 16];
 
     fn new(cipher: &mut AesCtr<KEY_SIZE>) -> Self {
+        let hash_subkey = Secret::from(cipher.hash_subkey());
         let mut mac = Self {
-            h: Self::element(&cipher.hash_subkey()),
+            h: Self::element(hash_subkey.get()),
             y: 0,
             mask: [0u8; 16],
         };
@@ -40,6 +41,14 @@ where
     }
 }
 
+impl Drop for GHash {
+    fn drop(&mut self) {
+        self.h.wipe();
+        self.y.wipe();
+        self.mask.wipe();
+    }
+}
+
 impl GHash {
     fn calculate_tag(&mut self, ciphertext: &[u8], aad: Option<&[u8]>) {
         let aad = aad.unwrap_or_default();
@@ -54,7 +63,7 @@ impl GHash {
     fn update(&mut self, message: &[u8]) {
         let (batches, remaining) = message.as_chunks::<128>();
         if !batches.is_empty() {
-            let powers = self.powers();
+            let powers = Secret::from(self.powers());
             for batch in batches {
                 let (blocks, _) = batch.as_chunks::<16>();
                 let mut x = [0u128; 8];
@@ -62,7 +71,7 @@ impl GHash {
                     *x = Self::element(block);
                 }
                 x[7] ^= self.y;
-                self.y = multiply(&x, &powers);
+                self.y = multiply(&x, powers.get());
             }
         }
         for chunk in remaining.chunks(16) {

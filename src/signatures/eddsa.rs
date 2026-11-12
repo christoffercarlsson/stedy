@@ -26,21 +26,21 @@ where
     H: Hasher<Output = E::WideBytes>,
     S: ByteArray,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<(S, F::Bytes), Error> {
-        let mut seed = Secret::from(E::SecretBytes::new());
-        rng.fill(seed.get_mut().as_mut())?;
-        Ok(Self::key_pair(seed.get()))
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+        private_key: &mut S,
+    ) -> Result<F::Bytes, Error> {
+        let (s, _) =
+            Self::private_key_components_mut(private_key).expect("private key size is correct");
+        rng.fill(s)?;
+        Ok(Self::complete_key_pair(private_key))
     }
 
-    pub fn key_pair(seed: &E::SecretBytes) -> (S, F::Bytes) {
-        let (a, _) = Self::expand(seed.as_ref());
-        let public_key = Edwards::<F, E>::mul_base(&a).compress();
-        let mut private_key = S::new();
-        let (s, A) = Self::private_key_components_mut(&mut private_key)
-            .expect("private key size is correct");
+    pub fn key_pair(seed: &E::SecretBytes, private_key: &mut S) -> F::Bytes {
+        let (s, _) =
+            Self::private_key_components_mut(private_key).expect("private key size is correct");
         s.copy_from_slice(seed.as_ref());
-        A.copy_from_slice(public_key.as_ref());
-        (private_key, public_key)
+        Self::complete_key_pair(private_key)
     }
 
     pub fn public_key(private_key: &S) -> F::Bytes {
@@ -134,7 +134,8 @@ where
         let mut state = Self::hasher(phflag, context);
         state.update(prefix.get().as_ref());
         state.update(message);
-        let r = E::from(state.finalize());
+        let digest = Secret::from(state.finalize());
+        let r = E::from(digest.get());
         let R = Edwards::<F, E>::mul_base(&r).compress();
         let mut state = Self::hasher(phflag, context);
         state.update(R.as_ref());
@@ -187,7 +188,16 @@ where
         let (a, prefix) = E::split(digest.get());
         let mut a = Secret::from(a);
         E::clamp(a.get_mut());
-        (E::from(*a.get()), Secret::from(prefix))
+        (E::from(a.get()), Secret::from(prefix))
+    }
+
+    fn complete_key_pair(private_key: &mut S) -> F::Bytes {
+        let (s, A) =
+            Self::private_key_components_mut(private_key).expect("private key size is correct");
+        let (a, _) = Self::expand(s);
+        let public_key = Edwards::<F, E>::mul_base(&a).compress();
+        A.copy_from_slice(public_key.as_ref());
+        public_key
     }
 
     fn private_key_components_mut(private_key: &mut S) -> Option<(&mut [u8], &mut [u8])> {

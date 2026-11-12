@@ -7,7 +7,7 @@ use {
         traits::{
             ByteArray, CryptoRng, FieldElement, Hasher, WeierstrassParams, WeierstrassScalar,
         },
-        utils::shift_right,
+        utils::{Secret, shift_right},
     },
     core::{cmp::Ordering, marker::PhantomData},
 };
@@ -29,11 +29,17 @@ where
     S: WeierstrassScalar,
     B: ByteArray,
 {
-    pub fn generate_key_pair(rng: &mut impl CryptoRng) -> Result<(S::Bytes, F::PointBytes), Error> {
-        let d = Self::next_scalar(rng)?;
-        let private_key: S::Bytes = d.clone().into();
-        let public_key = Self::public_key_from_scalar(&d);
-        Ok((private_key, public_key))
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+        private_key: &mut S::Bytes,
+    ) -> Result<F::PointBytes, Error> {
+        loop {
+            rng.fill(private_key.as_mut())?;
+            shift_right(private_key.as_mut(), Self::DISCARD_BITS);
+            if let Ok(public_key) = Self::public_key(private_key) {
+                return Ok(public_key);
+            }
+        }
     }
 
     pub fn public_key(private_key: &S::Bytes) -> Result<F::PointBytes, Error> {
@@ -44,8 +50,9 @@ where
     pub fn sign(private_key: &S::Bytes, message: &[u8]) -> Result<B, Error> {
         let d = S::from_canonical(private_key).ok_or(Error::InvalidKey)?;
         let e = Self::message_representative(message);
+        let d_bytes = Secret::from(d.clone().into());
         let mut drbg =
-            HmacDrbg::<H>::instantiate(d.clone().into().as_ref(), e.clone().into().as_ref());
+            HmacDrbg::<H>::instantiate(d_bytes.get().as_ref(), e.clone().into().as_ref());
         loop {
             let k = Self::next_scalar(&mut drbg).expect("a fresh DRBG never reaches its limit");
             if let Some(signature) = Self::try_sign(&k, &d, &e) {
@@ -87,10 +94,10 @@ where
 
     fn next_scalar(rng: &mut impl CryptoRng) -> Result<S, Error> {
         loop {
-            let mut bytes = S::Bytes::new();
-            rng.fill(bytes.as_mut())?;
-            let candidate = Self::bits2octets(bytes.as_ref());
-            if let Some(scalar) = S::from_canonical(&candidate) {
+            let mut bytes = Secret::from(S::Bytes::new());
+            rng.fill(bytes.get_mut().as_mut())?;
+            let candidate = Secret::from(Self::bits2octets(bytes.get().as_ref()));
+            if let Some(scalar) = S::from_canonical(candidate.get()) {
                 return Ok(scalar);
             }
         }

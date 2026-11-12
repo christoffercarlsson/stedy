@@ -63,9 +63,9 @@ where
         let slice = bytes.as_ref();
         let last = slice.len() - 1;
         let sign = slice[last] >> 7;
-        let mut bytes = *bytes;
+        let mut bytes = bytes.clone();
         bytes[last] &= 127;
-        let y = F::from(bytes);
+        let y = F::from(bytes.clone());
         let encoded: F::Bytes = y.into();
         let canonical = Choice::eq_slice(encoded.as_ref(), bytes.as_ref());
         let y2 = y.square();
