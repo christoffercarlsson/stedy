@@ -26,6 +26,7 @@ where
         while !bytes.is_empty() {
             let take = bytes.len().min(Self::REKEY_INTERVAL - self.produced);
             let (head, tail) = bytes.split_at_mut(take);
+            head.fill(0);
             self.cipher.apply_keystream(head)?;
             self.produced += take;
             if self.produced == Self::REKEY_INTERVAL {
@@ -44,7 +45,7 @@ where
     H: Hasher<Output = C::Seed>,
 {
     pub fn seed() -> Result<Self, Error> {
-        let mut seed = Secret::from([H::Output::new(); 2]);
+        let mut seed = Secret::from([H::Output::new(), H::Output::new()]);
         for part in seed.get_mut() {
             getrandom::fill(part.as_mut()).map_err(|_| Error::Entropy)?;
         }

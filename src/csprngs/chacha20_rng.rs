@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn test_fill() {
         let mut rng = ChaCha20Rng::from(&[0u8; 96]);
-        let mut output = [0u8; 32];
+        let mut output = [255u8; 32];
         rng.fill(&mut output).unwrap();
         assert_eq!(
             output,
