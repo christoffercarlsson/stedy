@@ -55,37 +55,6 @@ impl Ed25519 {
     }
 }
 
-pub struct Ed25519ph(HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512>);
-
-impl Ed25519ph {
-    pub fn new() -> Self {
-        Self(HashEddsa::new())
-    }
-
-    pub fn update(&mut self, message: &[u8]) {
-        self.0.update(message);
-    }
-
-    pub fn sign(self, private_key: &[u8; 64], context: &[u8]) -> Result<[u8; 64], Error> {
-        self.0.sign(private_key, context)
-    }
-
-    pub fn verify(
-        self,
-        context: &[u8],
-        public_key: &[u8; 32],
-        signature: &[u8; 64],
-    ) -> Result<(), Error> {
-        self.0.verify(context, public_key, signature)
-    }
-}
-
-impl Default for Ed25519ph {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[cfg(feature = "hazmat")]
 pub struct Ed25519With<A, H>(PhantomData<(A, H)>);
 
@@ -129,6 +98,37 @@ where
         signature: &[u8; 64],
     ) -> Result<(), Error> {
         Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::verify(message, public_key, signature)
+    }
+}
+
+pub struct Ed25519ph(HashEddsa<Scalar25519, Field25519, Sha512, [u8; 64], Sha512>);
+
+impl Ed25519ph {
+    pub fn new() -> Self {
+        Self(HashEddsa::new())
+    }
+
+    pub fn update(&mut self, message: &[u8]) {
+        self.0.update(message);
+    }
+
+    pub fn sign(self, private_key: &[u8; 64], context: &[u8]) -> Result<[u8; 64], Error> {
+        self.0.sign(private_key, context)
+    }
+
+    pub fn verify(
+        self,
+        context: &[u8],
+        public_key: &[u8; 32],
+        signature: &[u8; 64],
+    ) -> Result<(), Error> {
+        self.0.verify(context, public_key, signature)
+    }
+}
+
+impl Default for Ed25519ph {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

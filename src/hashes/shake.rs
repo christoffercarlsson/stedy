@@ -34,46 +34,6 @@ impl Default for Shake128 {
     }
 }
 
-impl Xof for Shake128 {
-    type Block = [u8; 168];
-    type Reader = Shake128Reader;
-
-    fn new() -> Self {
-        Self::new()
-    }
-
-    fn digest(message: &[u8], output: &mut [u8]) {
-        Self::digest(message, output);
-    }
-
-    fn update(&mut self, message: &[u8]) {
-        self.update(message);
-    }
-
-    fn finalize_into(self, output: &mut [u8]) {
-        self.finalize_into(output);
-    }
-
-    fn finalize_xof(self) -> Self::Reader {
-        self.finalize_xof()
-    }
-}
-
-#[derive(Clone)]
-pub struct Shake128Reader(ShakeReader<168, KeccakF1600>);
-
-impl Shake128Reader {
-    pub fn read(&mut self, output: &mut [u8]) {
-        self.0.read(output);
-    }
-}
-
-impl XofReader for Shake128Reader {
-    fn read(&mut self, output: &mut [u8]) {
-        self.read(output);
-    }
-}
-
 #[derive(Clone)]
 pub struct Shake256(Shake<136, KeccakF1600>);
 
@@ -105,9 +65,27 @@ impl Default for Shake256 {
     }
 }
 
-impl Xof for Shake256 {
-    type Block = [u8; 136];
-    type Reader = Shake256Reader;
+#[derive(Clone)]
+pub struct Shake128Reader(ShakeReader<168, KeccakF1600>);
+
+impl Shake128Reader {
+    pub fn read(&mut self, output: &mut [u8]) {
+        self.0.read(output);
+    }
+}
+
+#[derive(Clone)]
+pub struct Shake256Reader(ShakeReader<136, KeccakF1600>);
+
+impl Shake256Reader {
+    pub fn read(&mut self, output: &mut [u8]) {
+        self.0.read(output);
+    }
+}
+
+impl Xof for Shake128 {
+    type Block = [u8; 168];
+    type Reader = Shake128Reader;
 
     fn new() -> Self {
         Self::new()
@@ -130,12 +108,34 @@ impl Xof for Shake256 {
     }
 }
 
-#[derive(Clone)]
-pub struct Shake256Reader(ShakeReader<136, KeccakF1600>);
+impl XofReader for Shake128Reader {
+    fn read(&mut self, output: &mut [u8]) {
+        self.read(output);
+    }
+}
 
-impl Shake256Reader {
-    pub fn read(&mut self, output: &mut [u8]) {
-        self.0.read(output);
+impl Xof for Shake256 {
+    type Block = [u8; 136];
+    type Reader = Shake256Reader;
+
+    fn new() -> Self {
+        Self::new()
+    }
+
+    fn digest(message: &[u8], output: &mut [u8]) {
+        Self::digest(message, output);
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        self.update(message);
+    }
+
+    fn finalize_into(self, output: &mut [u8]) {
+        self.finalize_into(output);
+    }
+
+    fn finalize_xof(self) -> Self::Reader {
+        self.finalize_xof()
     }
 }
 

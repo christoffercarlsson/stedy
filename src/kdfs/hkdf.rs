@@ -31,6 +31,15 @@ where
     }
 }
 
+impl<H> Drop for Hkdf<H>
+where
+    H: Hasher,
+{
+    fn drop(&mut self) {
+        wipe(self.prk.as_mut());
+    }
+}
+
 impl<H> Hkdf<H>
 where
     H: Hasher,
@@ -56,15 +65,6 @@ where
             let slice = &t.as_ref()[..chunk.len()];
             chunk.copy_from_slice(slice);
         }
-    }
-}
-
-impl<H> Drop for Hkdf<H>
-where
-    H: Hasher,
-{
-    fn drop(&mut self) {
-        wipe(self.prk.as_mut());
     }
 }
 

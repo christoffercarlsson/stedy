@@ -13,12 +13,6 @@ use {
 #[derive(Clone)]
 pub struct SecretBytes<const N: usize>([u8; N]);
 
-impl<const N: usize> SecretBytes<N> {
-    pub(crate) fn get_mut(&mut self) -> &mut [u8; N] {
-        &mut self.0
-    }
-}
-
 impl<const N: usize> ByteArray for SecretBytes<N> {
     const SIZE: usize = N;
 
@@ -28,14 +22,6 @@ impl<const N: usize> ByteArray for SecretBytes<N> {
 
     fn try_from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError> {
         <[u8; N]>::try_from(slice).map(Self)
-    }
-}
-
-impl<const N: usize> Sealed for SecretBytes<N> {}
-
-impl<const N: usize> Wipe for SecretBytes<N> {
-    fn wipe(&mut self) {
-        self.0.wipe();
     }
 }
 
@@ -124,6 +110,20 @@ impl<const N: usize> Index<RangeFrom<usize>> for SecretBytes<N> {
 impl<const N: usize> IndexMut<RangeFrom<usize>> for SecretBytes<N> {
     fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut [u8] {
         &mut self.0[index]
+    }
+}
+
+impl<const N: usize> SecretBytes<N> {
+    pub(crate) fn get_mut(&mut self) -> &mut [u8; N] {
+        &mut self.0
+    }
+}
+
+impl<const N: usize> Sealed for SecretBytes<N> {}
+
+impl<const N: usize> Wipe for SecretBytes<N> {
+    fn wipe(&mut self) {
+        self.0.wipe();
     }
 }
 

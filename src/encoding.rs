@@ -21,22 +21,6 @@ pub enum Encoding {
     Base64UrlUnpadded = 7,
 }
 
-pub fn encode<'a>(
-    encoding: Encoding,
-    decoded: &[u8],
-    encoded: &'a mut [u8],
-) -> Result<&'a [u8], Error> {
-    match encoding {
-        Encoding::Hex | Encoding::Base16 => base16_encode(decoded, encoded),
-        Encoding::Base32 => base32_encode(true, decoded, encoded),
-        Encoding::Base32Unpadded => base32_encode(false, decoded, encoded),
-        Encoding::Base64 => base64_encode(false, true, decoded, encoded),
-        Encoding::Base64Unpadded => base64_encode(false, false, decoded, encoded),
-        Encoding::Base64Url => base64_encode(true, true, decoded, encoded),
-        Encoding::Base64UrlUnpadded => base64_encode(true, false, decoded, encoded),
-    }
-}
-
 pub fn decode<'a>(
     encoding: Encoding,
     encoded: &[u8],
@@ -50,6 +34,22 @@ pub fn decode<'a>(
         Encoding::Base64Unpadded => base64_decode(false, false, encoded, decoded),
         Encoding::Base64Url => base64_decode(true, true, encoded, decoded),
         Encoding::Base64UrlUnpadded => base64_decode(true, false, encoded, decoded),
+    }
+}
+
+pub fn encode<'a>(
+    encoding: Encoding,
+    decoded: &[u8],
+    encoded: &'a mut [u8],
+) -> Result<&'a [u8], Error> {
+    match encoding {
+        Encoding::Hex | Encoding::Base16 => base16_encode(decoded, encoded),
+        Encoding::Base32 => base32_encode(true, decoded, encoded),
+        Encoding::Base32Unpadded => base32_encode(false, decoded, encoded),
+        Encoding::Base64 => base64_encode(false, true, decoded, encoded),
+        Encoding::Base64Unpadded => base64_encode(false, false, decoded, encoded),
+        Encoding::Base64Url => base64_encode(true, true, decoded, encoded),
+        Encoding::Base64UrlUnpadded => base64_encode(true, false, decoded, encoded),
     }
 }
 

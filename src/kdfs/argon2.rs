@@ -14,12 +14,111 @@ use {
     core::ops::{BitXorAssign, Index, IndexMut},
 };
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Argon2Variant {
-    Argon2d = 0,
-    Argon2i = 1,
-    Argon2id = 2,
+pub struct Argon2;
+
+impl Argon2 {
+    pub fn derive(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        secret: Option<&[u8]>,
+        associated_data: Option<&[u8]>,
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        params.validate(
+            password,
+            salt,
+            secret.unwrap_or_default(),
+            associated_data.unwrap_or_default(),
+            output.len(),
+        )?;
+        let mut memory = Argon2Memory::try_from(params)?;
+        Self::derive_with_memory(
+            params,
+            password,
+            salt,
+            secret,
+            associated_data,
+            &mut memory,
+            output,
+        )
+    }
+
+    pub fn phc<'a>(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        hash_length: usize,
+        output: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
+        params.validate_phc(password, salt, hash_length)?;
+        let mut memory = Argon2Memory::try_from(params)?;
+        Self::phc_with_memory(params, password, salt, hash_length, &mut memory, output)
+    }
+
+    pub fn verify_phc(password: &[u8], phc: &[u8]) -> Result<(), Error> {
+        let (params, _, _) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
+        let mut memory = Argon2Memory::try_from(params)?;
+        Self::verify_phc_with_memory(password, phc, &mut memory)
+    }
+
+    fn derive_with_memory(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        secret: Option<&[u8]>,
+        associated_data: Option<&[u8]>,
+        memory: &mut [Argon2Block],
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        let secret = secret.unwrap_or_default();
+        let associated_data = associated_data.unwrap_or_default();
+        params.validate(password, salt, secret, associated_data, output.len())?;
+        if memory.len() < params.blocks() {
+            return Err(Error::Misuse);
+        }
+        let memory = &mut memory[..params.blocks()];
+        let h0 = params.initial_hash(password, salt, secret, associated_data, output);
+        params.fill_first_blocks(memory, h0.get());
+        params.fill_memory(memory);
+        params.calculate_output(memory, output);
+        Ok(())
+    }
+
+    fn phc_with_memory<'a>(
+        params: Argon2Params,
+        password: &[u8],
+        salt: &[u8],
+        hash_length: usize,
+        memory: &mut [Argon2Block],
+        output: &'a mut [u8],
+    ) -> Result<&'a [u8], Error> {
+        params.validate_phc(password, salt, hash_length)?;
+        let mut hash = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let hash = &mut hash[..hash_length];
+        Self::derive_with_memory(params, password, salt, None, None, memory, hash)?;
+        params.encode_phc(salt, hash, output)
+    }
+
+    fn verify_phc_with_memory(
+        password: &[u8],
+        phc: &[u8],
+        memory: &mut [Argon2Block],
+    ) -> Result<(), Error> {
+        let (params, salt, hash) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
+        let mut salt_bytes = [0u8; Argon2Params::PHC_SALT_SIZE];
+        let salt = decode(Encoding::Base64Unpadded, salt, &mut salt_bytes)?;
+        let mut hash_bytes = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let expected = decode(Encoding::Base64Unpadded, hash, &mut hash_bytes)?;
+        let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let computed = &mut computed[..expected.len()];
+        Self::derive_with_memory(params, password, salt, None, None, memory, computed)?;
+        if constant_time_eq(computed, expected) {
+            Ok(())
+        } else {
+            Err(Error::Verification)
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -87,167 +186,12 @@ impl Default for Argon2Params {
     }
 }
 
-#[derive(Clone, Copy)]
-struct Argon2Block([u64; Self::WORDS]);
-
-impl Argon2Block {
-    const ZERO: Self = Self([0; Self::WORDS]);
-}
-
-impl Wipe for Argon2Block {
-    fn wipe(&mut self) {
-        self.0.wipe();
-    }
-}
-
-impl Default for Argon2Block {
-    fn default() -> Self {
-        Self::ZERO
-    }
-}
-
-struct Argon2Memory(Vec<Argon2Block>);
-
-impl TryFrom<Argon2Params> for Argon2Memory {
-    type Error = Error;
-
-    fn try_from(params: Argon2Params) -> Result<Self, Error> {
-        let mut blocks = Vec::new();
-        blocks
-            .try_reserve_exact(params.blocks())
-            .map_err(|_| Error::LimitExceeded)?;
-        blocks.resize(params.blocks(), Argon2Block::ZERO);
-        Ok(Self(blocks))
-    }
-}
-
-impl Deref for Argon2Memory {
-    type Target = [Argon2Block];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Argon2Memory {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl Drop for Argon2Memory {
-    fn drop(&mut self) {
-        for block in &mut self.0 {
-            wipe(&mut block.0);
-        }
-    }
-}
-
-pub struct Argon2;
-
-impl Argon2 {
-    pub fn derive(
-        params: Argon2Params,
-        password: &[u8],
-        salt: &[u8],
-        secret: Option<&[u8]>,
-        associated_data: Option<&[u8]>,
-        output: &mut [u8],
-    ) -> Result<(), Error> {
-        params.validate(
-            password,
-            salt,
-            secret.unwrap_or_default(),
-            associated_data.unwrap_or_default(),
-            output.len(),
-        )?;
-        let mut memory = Argon2Memory::try_from(params)?;
-        Self::derive_with_memory(
-            params,
-            password,
-            salt,
-            secret,
-            associated_data,
-            &mut memory,
-            output,
-        )
-    }
-
-    fn derive_with_memory(
-        params: Argon2Params,
-        password: &[u8],
-        salt: &[u8],
-        secret: Option<&[u8]>,
-        associated_data: Option<&[u8]>,
-        memory: &mut [Argon2Block],
-        output: &mut [u8],
-    ) -> Result<(), Error> {
-        let secret = secret.unwrap_or_default();
-        let associated_data = associated_data.unwrap_or_default();
-        params.validate(password, salt, secret, associated_data, output.len())?;
-        if memory.len() < params.blocks() {
-            return Err(Error::Misuse);
-        }
-        let memory = &mut memory[..params.blocks()];
-        let h0 = params.initial_hash(password, salt, secret, associated_data, output);
-        params.fill_first_blocks(memory, h0.get());
-        params.fill_memory(memory);
-        params.calculate_output(memory, output);
-        Ok(())
-    }
-
-    pub fn phc<'a>(
-        params: Argon2Params,
-        password: &[u8],
-        salt: &[u8],
-        hash_length: usize,
-        output: &'a mut [u8],
-    ) -> Result<&'a [u8], Error> {
-        params.validate_phc(password, salt, hash_length)?;
-        let mut memory = Argon2Memory::try_from(params)?;
-        Self::phc_with_memory(params, password, salt, hash_length, &mut memory, output)
-    }
-
-    fn phc_with_memory<'a>(
-        params: Argon2Params,
-        password: &[u8],
-        salt: &[u8],
-        hash_length: usize,
-        memory: &mut [Argon2Block],
-        output: &'a mut [u8],
-    ) -> Result<&'a [u8], Error> {
-        params.validate_phc(password, salt, hash_length)?;
-        let mut hash = [0u8; Argon2Params::PHC_HASH_SIZE];
-        let hash = &mut hash[..hash_length];
-        Self::derive_with_memory(params, password, salt, None, None, memory, hash)?;
-        params.encode_phc(salt, hash, output)
-    }
-
-    pub fn verify_phc(password: &[u8], phc: &[u8]) -> Result<(), Error> {
-        let (params, _, _) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
-        let mut memory = Argon2Memory::try_from(params)?;
-        Self::verify_phc_with_memory(password, phc, &mut memory)
-    }
-
-    fn verify_phc_with_memory(
-        password: &[u8],
-        phc: &[u8],
-        memory: &mut [Argon2Block],
-    ) -> Result<(), Error> {
-        let (params, salt, hash) = Argon2Params::parse_phc(phc).ok_or(Error::Encoding)?;
-        let mut salt_bytes = [0u8; Argon2Params::PHC_SALT_SIZE];
-        let salt = decode(Encoding::Base64Unpadded, salt, &mut salt_bytes)?;
-        let mut hash_bytes = [0u8; Argon2Params::PHC_HASH_SIZE];
-        let expected = decode(Encoding::Base64Unpadded, hash, &mut hash_bytes)?;
-        let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
-        let computed = &mut computed[..expected.len()];
-        Self::derive_with_memory(params, password, salt, None, None, memory, computed)?;
-        if constant_time_eq(computed, expected) {
-            Ok(())
-        } else {
-            Err(Error::Verification)
-        }
-    }
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Argon2Variant {
+    Argon2d = 0,
+    Argon2i = 1,
+    Argon2id = 2,
 }
 
 impl Argon2Params {
@@ -636,6 +580,62 @@ impl Argon2Params {
                 .checked_add(u32::from(digit - b'0'))?;
         }
         Some(value)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Argon2Block([u64; Self::WORDS]);
+
+impl Argon2Block {
+    const ZERO: Self = Self([0; Self::WORDS]);
+}
+
+impl Wipe for Argon2Block {
+    fn wipe(&mut self) {
+        self.0.wipe();
+    }
+}
+
+impl Default for Argon2Block {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
+struct Argon2Memory(Vec<Argon2Block>);
+
+impl TryFrom<Argon2Params> for Argon2Memory {
+    type Error = Error;
+
+    fn try_from(params: Argon2Params) -> Result<Self, Error> {
+        let mut blocks = Vec::new();
+        blocks
+            .try_reserve_exact(params.blocks())
+            .map_err(|_| Error::LimitExceeded)?;
+        blocks.resize(params.blocks(), Argon2Block::ZERO);
+        Ok(Self(blocks))
+    }
+}
+
+impl Deref for Argon2Memory {
+    type Target = [Argon2Block];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Argon2Memory {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Drop for Argon2Memory {
+    fn drop(&mut self) {
+        for block in &mut self.0 {
+            wipe(&mut block.0);
+        }
     }
 }
 

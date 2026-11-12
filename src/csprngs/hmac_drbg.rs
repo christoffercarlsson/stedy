@@ -75,6 +75,16 @@ where
     }
 }
 
+impl<H> Drop for HmacDrbg<H>
+where
+    H: Hasher,
+{
+    fn drop(&mut self) {
+        wipe(self.k.as_mut());
+        wipe(self.v.as_mut());
+    }
+}
+
 impl<H> HmacDrbg<H>
 where
     H: Hasher,
@@ -103,15 +113,5 @@ where
         let mut mac = Hmac::<H>::new(self.k.as_ref());
         mac.update(self.v.as_ref());
         self.v = mac.finalize();
-    }
-}
-
-impl<H> Drop for HmacDrbg<H>
-where
-    H: Hasher,
-{
-    fn drop(&mut self) {
-        wipe(self.k.as_mut());
-        wipe(self.v.as_mut());
     }
 }

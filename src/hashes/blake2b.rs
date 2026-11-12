@@ -45,18 +45,6 @@ impl<const N: usize> Blake2b<N> {
     }
 }
 
-impl<const N: usize> Blake2b<N> {
-    fn with_key(key: Option<&[u8]>) -> Self {
-        const {
-            assert!(
-                N >= 1 && N <= Blake2bCore::MAX_OUTPUT_SIZE,
-                "BLAKE2b digests are 1 to 64 bytes"
-            );
-        }
-        Self(Blake2bCore::new(key, N))
-    }
-}
-
 impl<const N: usize> Hasher for Blake2b<N> {
     const BLOCK_SIZE: usize = 128;
     const OUTPUT_SIZE: usize = N;
@@ -85,10 +73,22 @@ impl<const N: usize> Hasher for Blake2b<N> {
     }
 }
 
-pub type Blake2b512 = Blake2b<64>;
-pub type Blake2b384 = Blake2b<48>;
-pub type Blake2b256 = Blake2b<32>;
 pub type Blake2b160 = Blake2b<20>;
+pub type Blake2b256 = Blake2b<32>;
+pub type Blake2b384 = Blake2b<48>;
+pub type Blake2b512 = Blake2b<64>;
+
+impl<const N: usize> Blake2b<N> {
+    fn with_key(key: Option<&[u8]>) -> Self {
+        const {
+            assert!(
+                N >= 1 && N <= Blake2bCore::MAX_OUTPUT_SIZE,
+                "BLAKE2b digests are 1 to 64 bytes"
+            );
+        }
+        Self(Blake2bCore::new(key, N))
+    }
+}
 
 #[cfg(feature = "argon2")]
 #[derive(Clone)]

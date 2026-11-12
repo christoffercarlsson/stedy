@@ -45,18 +45,6 @@ impl<const N: usize> Blake2s<N> {
     }
 }
 
-impl<const N: usize> Blake2s<N> {
-    fn with_key(key: Option<&[u8]>) -> Self {
-        const {
-            assert!(
-                N >= 1 && N <= Blake2sCore::MAX_OUTPUT_SIZE,
-                "BLAKE2s digests are 1 to 32 bytes"
-            );
-        }
-        Self(Blake2sCore::new(key, N))
-    }
-}
-
 impl<const N: usize> Hasher for Blake2s<N> {
     const BLOCK_SIZE: usize = 64;
     const OUTPUT_SIZE: usize = N;
@@ -85,10 +73,22 @@ impl<const N: usize> Hasher for Blake2s<N> {
     }
 }
 
-pub type Blake2s256 = Blake2s<32>;
-pub type Blake2s224 = Blake2s<28>;
-pub type Blake2s160 = Blake2s<20>;
 pub type Blake2s128 = Blake2s<16>;
+pub type Blake2s160 = Blake2s<20>;
+pub type Blake2s224 = Blake2s<28>;
+pub type Blake2s256 = Blake2s<32>;
+
+impl<const N: usize> Blake2s<N> {
+    fn with_key(key: Option<&[u8]>) -> Self {
+        const {
+            assert!(
+                N >= 1 && N <= Blake2sCore::MAX_OUTPUT_SIZE,
+                "BLAKE2s digests are 1 to 32 bytes"
+            );
+        }
+        Self(Blake2sCore::new(key, N))
+    }
+}
 
 #[derive(Clone)]
 struct Blake2sCore {

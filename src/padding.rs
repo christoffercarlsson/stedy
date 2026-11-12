@@ -3,10 +3,6 @@ use crate::{
     utils::{Choice, wipe},
 };
 
-pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Result<&'a [u8], Error> {
-    pad(unpadded, buffer, buffer.len())
-}
-
 pub fn pad_to_block<'a>(
     unpadded: &[u8],
     buffer: &'a mut [u8],
@@ -18,6 +14,10 @@ pub fn pad_to_block<'a>(
     let unpadded_size = unpadded.len();
     let padded_size = unpadded_size + block_size - (unpadded_size % block_size);
     pad(unpadded, buffer, padded_size)
+}
+
+pub fn pad_to_capacity<'a>(unpadded: &[u8], buffer: &'a mut [u8]) -> Result<&'a [u8], Error> {
+    pad(unpadded, buffer, buffer.len())
 }
 
 pub fn unpad(padded: &[u8]) -> Result<&[u8], Error> {

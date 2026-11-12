@@ -65,6 +65,51 @@ impl From<&[u8; 48]> for ChaCha20 {
     }
 }
 
+pub struct XChaCha20 {
+    inner: ChaCha20,
+}
+
+impl XChaCha20 {
+    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
+        let k = ChaCha20::read_key(key);
+        let (n1, n2) = Self::read_nonce(nonce);
+        let subkey = Self::calculate_subkey(&k, &n1);
+        Self {
+            inner: ChaCha20::init(&subkey, &n2),
+        }
+    }
+
+    pub fn apply_keystream(&mut self, data: &mut [u8]) -> Result<(), Error> {
+        self.inner.apply_keystream(data)
+    }
+
+    pub fn seek(&mut self, counter: u32) {
+        self.inner.seek(counter);
+    }
+}
+
+impl From<&[u8; 32]> for XChaCha20 {
+    fn from(key: &[u8; 32]) -> Self {
+        Self::new(key, &[0u8; 24])
+    }
+}
+
+impl From<&[u8; 60]> for XChaCha20 {
+    fn from(seed: &[u8; 60]) -> Self {
+        let (key, remaining) = seed.split_at(32);
+        let (nonce, counter) = remaining.split_at(24);
+        let key = <&[u8; 32]>::try_from(key).expect("XChaCha20 key fits within the seed");
+        let nonce = <&[u8; 24]>::try_from(nonce).expect("XChaCha20 nonce fits within the seed");
+        let counter =
+            <&[u8; 4]>::try_from(counter).expect("XChaCha20 counter fits within the seed");
+        let counter = u32::from_le_bytes(*counter);
+        let mut cipher = Self::new(key, nonce);
+        cipher.seek(counter);
+        cipher.inner.blocks = u64::MAX;
+        cipher
+    }
+}
+
 impl StreamCipher for ChaCha20 {
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -171,51 +216,6 @@ impl ChaCha20 {
         block[d] = (block[d] ^ block[a]).rotate_left(8);
         block[c] = block[c].wrapping_add(block[d]);
         block[b] = (block[b] ^ block[c]).rotate_left(7);
-    }
-}
-
-pub struct XChaCha20 {
-    inner: ChaCha20,
-}
-
-impl XChaCha20 {
-    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
-        let k = ChaCha20::read_key(key);
-        let (n1, n2) = Self::read_nonce(nonce);
-        let subkey = Self::calculate_subkey(&k, &n1);
-        Self {
-            inner: ChaCha20::init(&subkey, &n2),
-        }
-    }
-
-    pub fn apply_keystream(&mut self, data: &mut [u8]) -> Result<(), Error> {
-        self.inner.apply_keystream(data)
-    }
-
-    pub fn seek(&mut self, counter: u32) {
-        self.inner.seek(counter);
-    }
-}
-
-impl From<&[u8; 32]> for XChaCha20 {
-    fn from(key: &[u8; 32]) -> Self {
-        Self::new(key, &[0u8; 24])
-    }
-}
-
-impl From<&[u8; 60]> for XChaCha20 {
-    fn from(seed: &[u8; 60]) -> Self {
-        let (key, remaining) = seed.split_at(32);
-        let (nonce, counter) = remaining.split_at(24);
-        let key = <&[u8; 32]>::try_from(key).expect("XChaCha20 key fits within the seed");
-        let nonce = <&[u8; 24]>::try_from(nonce).expect("XChaCha20 nonce fits within the seed");
-        let counter =
-            <&[u8; 4]>::try_from(counter).expect("XChaCha20 counter fits within the seed");
-        let counter = u32::from_le_bytes(*counter);
-        let mut cipher = Self::new(key, nonce);
-        cipher.seek(counter);
-        cipher.inner.blocks = u64::MAX;
-        cipher
     }
 }
 

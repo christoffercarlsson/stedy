@@ -62,6 +62,49 @@ impl From<&[u8; 44]> for Salsa20 {
     }
 }
 
+pub struct XSalsa20 {
+    inner: Salsa20,
+}
+
+impl XSalsa20 {
+    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
+        let k = Salsa20::read_key(key);
+        let (n1, n2) = Self::read_nonce(nonce);
+        let subkey = Self::calculate_subkey(&k, &n1);
+        Self {
+            inner: Salsa20::init(&subkey, n2),
+        }
+    }
+
+    pub fn apply_keystream(&mut self, data: &mut [u8]) -> Result<(), Error> {
+        self.inner.apply_keystream(data)
+    }
+
+    pub fn seek(&mut self, counter: u32) {
+        self.inner.seek(counter);
+    }
+}
+
+impl From<&[u8; 32]> for XSalsa20 {
+    fn from(key: &[u8; 32]) -> Self {
+        Self::new(key, &[0u8; 24])
+    }
+}
+
+impl From<&[u8; 60]> for XSalsa20 {
+    fn from(seed: &[u8; 60]) -> Self {
+        let (key, remaining) = seed.split_at(32);
+        let (nonce, counter) = remaining.split_at(24);
+        let key = <&[u8; 32]>::try_from(key).expect("XSalsa20 key fits within the seed");
+        let nonce = <&[u8; 24]>::try_from(nonce).expect("XSalsa20 nonce fits within the seed");
+        let counter = <&[u8; 4]>::try_from(counter).expect("XSalsa20 counter fits within the seed");
+        let counter = u32::from_le_bytes(*counter);
+        let mut cipher = Self::new(key, nonce);
+        cipher.seek(counter);
+        cipher
+    }
+}
+
 impl StreamCipher for Salsa20 {
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 8;
@@ -166,49 +209,6 @@ impl Salsa20 {
         block[c] ^= block[b].wrapping_add(block[a]).rotate_left(9);
         block[d] ^= block[c].wrapping_add(block[b]).rotate_left(13);
         block[a] ^= block[d].wrapping_add(block[c]).rotate_left(18);
-    }
-}
-
-pub struct XSalsa20 {
-    inner: Salsa20,
-}
-
-impl XSalsa20 {
-    pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
-        let k = Salsa20::read_key(key);
-        let (n1, n2) = Self::read_nonce(nonce);
-        let subkey = Self::calculate_subkey(&k, &n1);
-        Self {
-            inner: Salsa20::init(&subkey, n2),
-        }
-    }
-
-    pub fn apply_keystream(&mut self, data: &mut [u8]) -> Result<(), Error> {
-        self.inner.apply_keystream(data)
-    }
-
-    pub fn seek(&mut self, counter: u32) {
-        self.inner.seek(counter);
-    }
-}
-
-impl From<&[u8; 32]> for XSalsa20 {
-    fn from(key: &[u8; 32]) -> Self {
-        Self::new(key, &[0u8; 24])
-    }
-}
-
-impl From<&[u8; 60]> for XSalsa20 {
-    fn from(seed: &[u8; 60]) -> Self {
-        let (key, remaining) = seed.split_at(32);
-        let (nonce, counter) = remaining.split_at(24);
-        let key = <&[u8; 32]>::try_from(key).expect("XSalsa20 key fits within the seed");
-        let nonce = <&[u8; 24]>::try_from(nonce).expect("XSalsa20 nonce fits within the seed");
-        let counter = <&[u8; 4]>::try_from(counter).expect("XSalsa20 counter fits within the seed");
-        let counter = u32::from_le_bytes(*counter);
-        let mut cipher = Self::new(key, nonce);
-        cipher.seek(counter);
-        cipher
     }
 }
 

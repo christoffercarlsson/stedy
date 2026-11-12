@@ -13,49 +13,6 @@ use {
     core::marker::PhantomData,
 };
 
-struct MlKem512Params;
-pub struct MlKem768Params;
-struct MlKem1024Params;
-
-impl MlKemParams<2> for MlKem512Params {
-    const ETA1: usize = 3;
-    const ETA2: usize = 2;
-    const DU: usize = 10;
-    const DV: usize = 4;
-
-    type Seed = [u8; 64];
-    type SharedSecret = [u8; 32];
-    type PrivateKey = [u8; 1632];
-    type PublicKey = [u8; 800];
-    type Ciphertext = [u8; 768];
-}
-
-impl MlKemParams<3> for MlKem768Params {
-    const ETA1: usize = 2;
-    const ETA2: usize = 2;
-    const DU: usize = 10;
-    const DV: usize = 4;
-
-    type Seed = [u8; 64];
-    type SharedSecret = [u8; 32];
-    type PrivateKey = [u8; 2400];
-    type PublicKey = [u8; 1184];
-    type Ciphertext = [u8; 1088];
-}
-
-impl MlKemParams<4> for MlKem1024Params {
-    const ETA1: usize = 2;
-    const ETA2: usize = 2;
-    const DU: usize = 11;
-    const DV: usize = 5;
-
-    type Seed = [u8; 64];
-    type SharedSecret = [u8; 32];
-    type PrivateKey = [u8; 3168];
-    type PublicKey = [u8; 1568];
-    type Ciphertext = [u8; 1568];
-}
-
 pub struct MlKem512;
 
 impl MlKem512 {
@@ -188,80 +145,6 @@ impl MlKem768 {
     }
 }
 
-pub struct MlKem1024;
-
-impl MlKem1024 {
-    pub fn generate_key_pair(
-        rng: &mut impl CryptoRng,
-    ) -> Result<(SecretBytes<3168>, [u8; 1568]), Error> {
-        let mut private_key = SecretBytes::new();
-        let public_key = MlKem::<
-            4,
-            MlKem1024Params,
-            MlKemNtt,
-            Sha3_512,
-            Sha3_256,
-            Shake128,
-            Shake256,
-        >::generate_key_pair(rng, private_key.get_mut())?;
-        Ok((private_key, public_key))
-    }
-
-    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<3168>, [u8; 1568]) {
-        let mut private_key = SecretBytes::new();
-        let public_key = MlKem::<
-            4,
-            MlKem1024Params,
-            MlKemNtt,
-            Sha3_512,
-            Sha3_256,
-            Shake128,
-            Shake256,
-        >::key_pair(seed, private_key.get_mut());
-        (private_key, public_key)
-    }
-
-    pub fn public_key(private_key: &[u8; 3168]) -> [u8; 1568] {
-        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::public_key(
-            private_key,
-        )
-    }
-
-    pub fn encapsulate(
-        public_key: &[u8; 1568],
-        rng: &mut impl CryptoRng,
-    ) -> Result<(SecretBytes<32>, [u8; 1568]), Error> {
-        let mut shared_secret = SecretBytes::new();
-        let ciphertext = MlKem::<
-            4,
-            MlKem1024Params,
-            MlKemNtt,
-            Sha3_512,
-            Sha3_256,
-            Shake128,
-            Shake256,
-        >::encapsulate(public_key, rng, shared_secret.get_mut())?;
-        Ok((shared_secret, ciphertext))
-    }
-
-    pub fn decapsulate(
-        private_key: &[u8; 3168],
-        ciphertext: &[u8; 1568],
-    ) -> Result<SecretBytes<32>, Error> {
-        let mut shared_secret = SecretBytes::new();
-        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
-            private_key,
-            ciphertext,
-            shared_secret.get_mut(),
-        )?;
-        Ok(shared_secret)
-    }
-}
-
-#[cfg(feature = "hazmat")]
-type KeccakMlKem<const K: usize, Q, P> =
-    MlKem<K, Q, MlKemNtt, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
-
 #[cfg(feature = "hazmat")]
 pub struct MlKem512With<P>(PhantomData<P>);
 
@@ -370,6 +253,76 @@ where
     }
 }
 
+pub struct MlKem1024;
+
+impl MlKem1024 {
+    pub fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<3168>, [u8; 1568]), Error> {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlKem::<
+            4,
+            MlKem1024Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::generate_key_pair(rng, private_key.get_mut())?;
+        Ok((private_key, public_key))
+    }
+
+    pub fn key_pair(seed: &[u8; 64]) -> (SecretBytes<3168>, [u8; 1568]) {
+        let mut private_key = SecretBytes::new();
+        let public_key = MlKem::<
+            4,
+            MlKem1024Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::key_pair(seed, private_key.get_mut());
+        (private_key, public_key)
+    }
+
+    pub fn public_key(private_key: &[u8; 3168]) -> [u8; 1568] {
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::public_key(
+            private_key,
+        )
+    }
+
+    pub fn encapsulate(
+        public_key: &[u8; 1568],
+        rng: &mut impl CryptoRng,
+    ) -> Result<(SecretBytes<32>, [u8; 1568]), Error> {
+        let mut shared_secret = SecretBytes::new();
+        let ciphertext = MlKem::<
+            4,
+            MlKem1024Params,
+            MlKemNtt,
+            Sha3_512,
+            Sha3_256,
+            Shake128,
+            Shake256,
+        >::encapsulate(public_key, rng, shared_secret.get_mut())?;
+        Ok((shared_secret, ciphertext))
+    }
+
+    pub fn decapsulate(
+        private_key: &[u8; 3168],
+        ciphertext: &[u8; 1568],
+    ) -> Result<SecretBytes<32>, Error> {
+        let mut shared_secret = SecretBytes::new();
+        MlKem::<4, MlKem1024Params, MlKemNtt, Sha3_512, Sha3_256, Shake128, Shake256>::decapsulate(
+            private_key,
+            ciphertext,
+            shared_secret.get_mut(),
+        )?;
+        Ok(shared_secret)
+    }
+}
+
 #[cfg(feature = "hazmat")]
 pub struct MlKem1024With<P>(PhantomData<P>);
 
@@ -424,6 +377,53 @@ where
         Ok(shared_secret)
     }
 }
+
+struct MlKem512Params;
+pub struct MlKem768Params;
+struct MlKem1024Params;
+
+impl MlKemParams<2> for MlKem512Params {
+    const ETA1: usize = 3;
+    const ETA2: usize = 2;
+    const DU: usize = 10;
+    const DV: usize = 4;
+
+    type Seed = [u8; 64];
+    type SharedSecret = [u8; 32];
+    type PrivateKey = [u8; 1632];
+    type PublicKey = [u8; 800];
+    type Ciphertext = [u8; 768];
+}
+
+impl MlKemParams<3> for MlKem768Params {
+    const ETA1: usize = 2;
+    const ETA2: usize = 2;
+    const DU: usize = 10;
+    const DV: usize = 4;
+
+    type Seed = [u8; 64];
+    type SharedSecret = [u8; 32];
+    type PrivateKey = [u8; 2400];
+    type PublicKey = [u8; 1184];
+    type Ciphertext = [u8; 1088];
+}
+
+impl MlKemParams<4> for MlKem1024Params {
+    const ETA1: usize = 2;
+    const ETA2: usize = 2;
+    const DU: usize = 11;
+    const DV: usize = 5;
+
+    type Seed = [u8; 64];
+    type SharedSecret = [u8; 32];
+    type PrivateKey = [u8; 3168];
+    type PublicKey = [u8; 1568];
+    type Ciphertext = [u8; 1568];
+}
+
+#[cfg(feature = "hazmat")]
+type KeccakMlKem<const K: usize, Q, P> =
+    MlKem<K, Q, MlKemNtt, Sha3_512With<P>, Sha3_256With<P>, Shake128With<P>, Shake256With<P>>;
 
 pub struct MlKemNtt;
 
@@ -913,13 +913,13 @@ where
         let (t_bytes, _) = ek[..384 * K].as_chunks::<384>();
         let mut f = [0i16; 256];
         let mut test = [0u8; 384];
-        let mut valid = true;
+        let mut valid = Choice::TRUE;
         for bytes in t_bytes {
             Self::byte_decode(12, bytes, &mut f);
             Self::byte_encode(12, &f, &mut test);
-            valid &= test == *bytes;
+            valid &= Choice::eq_slice(&test, bytes);
         }
-        valid
+        valid.to_bool()
     }
 
     // Section 7.3
