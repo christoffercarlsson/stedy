@@ -18,7 +18,7 @@ pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
         let keys = round_keys.map(load);
         let mut states = blocks.map(load);
         for key in &keys[..ROUNDS - 1] {
-            for state in states.iter_mut() {
+            for state in &mut states {
                 *state = vaesmcq_u8(vaeseq_u8(*state, *key));
             }
         }

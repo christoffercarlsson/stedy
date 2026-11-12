@@ -48,6 +48,7 @@ impl FieldP521 {
         selected
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(super) fn square(self) -> Self {
         let a = &self;
         let a0_2 = a[0] * 2;
@@ -243,6 +244,7 @@ impl FieldP521 {
         Self::reduce_wide(t)
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(super) fn mul(self, rhs: Self) -> Self {
         let r1_2 = rhs[1] * 2;
         let r2_2 = rhs[2] * 2;

@@ -58,7 +58,7 @@ impl Field25519 {
 
     pub(super) fn square2(self) -> Self {
         let mut t = self.square_wide();
-        for word in t.iter_mut() {
+        for word in &mut t {
             *word *= 2;
         }
         Self::reduce_wide(t)
@@ -137,6 +137,7 @@ impl Field25519 {
         t
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(super) fn mul(self, rhs: Self) -> Self {
         let r1_19 = rhs[1] * 19;
         let r2_19 = rhs[2] * 19;
@@ -375,18 +376,7 @@ impl Field25519 {
     }
 
     fn reduce(&mut self) {
-        *self = Self::reduce_wide([
-            self[0] as i64,
-            self[1] as i64,
-            self[2] as i64,
-            self[3] as i64,
-            self[4] as i64,
-            self[5] as i64,
-            self[6] as i64,
-            self[7] as i64,
-            self[8] as i64,
-            self[9] as i64,
-        ]);
+        *self = Self::reduce_wide(self.0.map(i64::from));
     }
 
     fn carry(&mut self) {
