@@ -1,10 +1,10 @@
 use crate::utils::Secret;
 
-pub(super) const fn is_accelerated() -> bool {
+pub const fn is_accelerated() -> bool {
     false
 }
 
-pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
+pub fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     round_keys: &[[u8; 16]; 15],
     blocks: &[[u8; 16]; N],
     data: &mut [[u8; 16]; N],
@@ -31,7 +31,7 @@ pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     }
 }
 
-pub(super) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
+pub fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
     let (mut lo, mut mid, mut hi) = (0u128, 0u128, 0u128);
     for (a, b) in x.iter().zip(h) {
         let (a0, a1) = split(*a);

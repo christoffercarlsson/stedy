@@ -38,7 +38,7 @@ impl FieldP256 {
     }
 }
 
-pub(super) fn pow_p_minus_3_div_4<F>(x: F) -> F
+pub fn pow_p_minus_3_div_4<F>(x: F) -> F
 where
     F: FieldElement,
 {
@@ -57,7 +57,7 @@ where
     f94 * pow2n(acc, 94)
 }
 
-pub(super) fn pow2n<F>(x: F, n: usize) -> F
+pub fn pow2n<F>(x: F, n: usize) -> F
 where
     F: FieldElement,
 {
@@ -68,7 +68,7 @@ where
     x
 }
 
-pub(super) fn sqrt<F>(u: F, v: F) -> (F, Choice)
+pub fn sqrt<F>(u: F, v: F) -> (F, Choice)
 where
     F: FieldElement,
 {

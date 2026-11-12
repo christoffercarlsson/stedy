@@ -3,11 +3,11 @@ use {
     core::hint::black_box,
 };
 
-pub(super) fn opaque(value: u32) -> u32 {
+pub fn opaque(value: u32) -> u32 {
     black_box(value)
 }
 
-pub(super) fn opaque_choices(choices: &mut [Choice]) {
+pub fn opaque_choices(choices: &mut [Choice]) {
     black_box(choices);
 }
 

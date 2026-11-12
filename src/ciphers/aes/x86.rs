@@ -10,11 +10,11 @@ use core::arch::x86_64::{
     _mm_set_epi64x, _mm_slli_si128, _mm_srli_si128, _mm_xor_si128,
 };
 
-pub(super) const fn is_accelerated() -> bool {
+pub const fn is_accelerated() -> bool {
     true
 }
 
-pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
+pub fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     round_keys: &[[u8; 16]; 15],
     blocks: &[[u8; 16]; N],
     data: &mut [[u8; 16]; N],
@@ -34,7 +34,7 @@ pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     }
 }
 
-pub(super) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
+pub fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
     unsafe {
         let zero = _mm_set_epi64x(0, 0);
         let (mut lo, mut mid, mut hi) = (zero, zero, zero);

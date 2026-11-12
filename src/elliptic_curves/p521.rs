@@ -8,7 +8,7 @@ use crate::{Error, elliptic_curves::Weierstrass, traits::EllipticCurve};
 #[cfg(feature = "hazmat")]
 pub use arithmetic::FieldP521With;
 pub use field::FieldP521;
-pub(crate) use scalar::ScalarP521;
+pub use scalar::ScalarP521;
 
 pub struct P521;
 

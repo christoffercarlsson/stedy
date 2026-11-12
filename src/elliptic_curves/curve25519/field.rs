@@ -55,7 +55,7 @@ impl Field25519 {
     }
 }
 
-pub(super) fn invert<F>(x: F) -> F
+pub fn invert<F>(x: F) -> F
 where
     F: FieldElement,
 {
@@ -95,7 +95,7 @@ where
     x
 }
 
-pub(super) fn sqrt<F>(a: F, b: F, sqrt_m1: F) -> (F, Choice)
+pub fn sqrt<F>(a: F, b: F, sqrt_m1: F) -> (F, Choice)
 where
     F: FieldElement,
 {

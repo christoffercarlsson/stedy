@@ -4,14 +4,14 @@ use {
     core::arch::asm,
 };
 
-pub(super) fn opaque(mut value: u32) -> u32 {
+pub fn opaque(mut value: u32) -> u32 {
     unsafe {
         asm!("/* {0:w} */", inout(reg) value, options(pure, nomem, nostack, preserves_flags));
     }
     value
 }
 
-pub(super) fn opaque_choices(choices: &mut [Choice]) {
+pub fn opaque_choices(choices: &mut [Choice]) {
     unsafe {
         asm!("/* {0} */", in(reg) choices.as_mut_ptr(), options(nostack, preserves_flags));
     }

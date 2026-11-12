@@ -8,14 +8,14 @@ use {
 
 #[cfg(target_pointer_width = "32")]
 mod words {
-    pub(super) type Word = u32;
-    pub(super) type WideWord = u64;
+    pub type Word = u32;
+    pub type WideWord = u64;
 }
 
 #[cfg(target_pointer_width = "64")]
 mod words {
-    pub(super) type Word = u64;
-    pub(super) type WideWord = u128;
+    pub type Word = u64;
+    pub type WideWord = u128;
 }
 
 use words::{WideWord, Word};

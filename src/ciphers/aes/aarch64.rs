@@ -5,11 +5,11 @@ use core::arch::aarch64::{
     vreinterpretq_p128_u64, vreinterpretq_u8_p128, vreinterpretq_u64_p128,
 };
 
-pub(super) const fn is_accelerated() -> bool {
+pub const fn is_accelerated() -> bool {
     true
 }
 
-pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
+pub fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     round_keys: &[[u8; 16]; 15],
     blocks: &[[u8; 16]; N],
     data: &mut [[u8; 16]; N],
@@ -29,7 +29,7 @@ pub(super) fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
     }
 }
 
-pub(super) fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
+pub fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
     unsafe {
         let zero = vdupq_n_u64(0);
         let (mut lo, mut mid, mut hi) = (zero, zero, zero);
