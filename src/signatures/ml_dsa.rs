@@ -1560,9 +1560,14 @@ where
             while usize::from(j[0]) > i {
                 reader.read(j.get_mut());
             }
-            let j = usize::from(j[0]);
-            c[i] = c[j];
-            c[j] = 1 - 2 * ((h >> (i + P::TAU - 256)) & 1) as i32;
+            let sign = 1 - 2 * ((h >> (i + P::TAU - 256)) & 1) as i32;
+            let mut swapped = 0;
+            for (k, coefficient) in c.iter_mut().enumerate().take(i + 1) {
+                let is_j = Choice::eq(k as u8, j[0]);
+                swapped = is_j.select(swapped, *coefficient);
+                *coefficient = is_j.select(*coefficient, sign);
+            }
+            c[i] = Choice::eq(i as u8, j[0]).select(swapped, sign);
         }
     }
 
