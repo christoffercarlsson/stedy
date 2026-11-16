@@ -2,7 +2,7 @@ use {
     crate::{
         Error,
         traits::{ByteArray, ByteOrder, CryptoRng, FieldElement, Wipe},
-        utils::{Choice, wipe},
+        utils::{Choice, Secret, wipe},
     },
     core::{
         array::from_fn,
@@ -73,9 +73,10 @@ where
         for share in output.chunks_mut(share_size).take(K).skip(1) {
             rng.fill(&mut share[4..])?;
         }
+        let mut chunk = Secret::from(F::Bytes::new());
         for i in 0..columns {
-            let chunk = Self::encode_chunk(secret, i);
-            Self::split_chunk::<K, N>(share_size, i, chunk, output);
+            Self::encode_chunk(secret, i, chunk.get_mut());
+            Self::split_chunk::<K, N>(share_size, i, chunk.get(), output);
         }
         let shares: [&'a [u8]; N] = from_fn(|i| {
             let begin = i * share_size;
@@ -98,27 +99,31 @@ where
         }
     }
 
-    fn encode_chunk(secret: &[u8], index: usize) -> F::Bytes {
-        let mut bytes = F::Bytes::new();
+    fn encode_chunk(secret: &[u8], index: usize, bytes: &mut F::Bytes) {
         let begin = index * Self::CHUNK_SIZE;
         let end = (begin + Self::CHUNK_SIZE).min(secret.len());
         let chunk = &secret[begin..end];
+        bytes.wipe();
         bytes.as_mut()[..chunk.len()].copy_from_slice(chunk);
-        bytes
     }
 
     fn split_chunk<const K: usize, const N: usize>(
         share_size: usize,
         index: usize,
-        secret: F::Bytes,
+        secret: &F::Bytes,
         output: &mut [u8],
     ) {
-        let coefficients = Self::calculate_coefficients::<K>(share_size, index, secret, output);
-        let sub_shares: [F::Bytes; N] = from_fn(|i| {
+        let mut coefficients = Secret::from([F::ZERO; K]);
+        Self::calculate_coefficients::<K>(
+            share_size,
+            index,
+            secret,
+            output,
+            coefficients.get_mut(),
+        );
+        for i in 0..N {
             let x = (i + 1) as u32;
-            Self::calculate_share(x, &coefficients)
-        });
-        for (i, sub_share) in sub_shares.iter().enumerate() {
+            let sub_share = Self::calculate_share(x, coefficients.get());
             let begin = i * share_size + (4 + index * Self::ELEMENT_SIZE);
             let end = begin + Self::ELEMENT_SIZE;
             output[begin..end].copy_from_slice(sub_share.as_ref());
@@ -128,18 +133,23 @@ where
     fn calculate_coefficients<const K: usize>(
         share_size: usize,
         index: usize,
-        secret: F::Bytes,
+        secret: &F::Bytes,
         output: &[u8],
-    ) -> [F; K] {
-        let mut coefficients: [F::Bytes; K] = from_fn(|_| F::Bytes::new());
-        coefficients[0] = Self::reverse_if_big_endian(secret);
+        coefficients: &mut [F; K],
+    ) {
+        let mut bytes = Secret::from(secret.clone());
+        Self::reverse_if_big_endian(bytes.get_mut());
+        coefficients[0] = F::from(bytes.get().clone());
         let offset = 4 + index * Self::ELEMENT_SIZE;
         for (i, coefficient) in coefficients.iter_mut().enumerate().skip(1) {
             let begin = i * share_size + offset;
             let end = begin + Self::ELEMENT_SIZE;
-            coefficient.as_mut().copy_from_slice(&output[begin..end]);
+            bytes
+                .get_mut()
+                .as_mut()
+                .copy_from_slice(&output[begin..end]);
+            *coefficient = F::from(bytes.get().clone());
         }
-        coefficients.map(F::from)
     }
 
     fn calculate_share<const K: usize>(x: u32, coefficients: &[F; K]) -> F::Bytes {
@@ -178,8 +188,8 @@ where
         }
     }
 
-    fn combine_column<const K: usize>(pairs: [(F, F); K]) -> F::Bytes {
-        let mut secret = F::ZERO;
+    fn combine_column<const K: usize>(pairs: [(F, F); K], output: &mut F::Bytes) {
+        let mut secret = Secret::from(F::ZERO);
         for (j, &pair) in pairs.iter().enumerate().take(K) {
             let (xj, yj) = pair;
             let mut lambda = F::ONE;
@@ -190,9 +200,10 @@ where
                 let (xm, _) = pair;
                 lambda *= xm * (xm - xj).invert();
             }
-            secret += yj * lambda;
+            *secret.get_mut() += yj * lambda;
         }
-        Self::reverse_if_big_endian(secret.into())
+        *output = (*secret.get()).into();
+        Self::reverse_if_big_endian(output);
     }
 
     fn combine_secret<const K: usize>(
@@ -200,6 +211,7 @@ where
         secret: &mut [u8],
     ) -> Result<usize, Error> {
         let columns = Self::calculate_columns(shares, secret)?;
+        let mut column = Secret::from(F::Bytes::new());
         for i in 0..columns {
             let begin = 4 + i * Self::ELEMENT_SIZE;
             let end = begin + Self::ELEMENT_SIZE;
@@ -211,10 +223,10 @@ where
                 let y = F::from(bytes);
                 (x, y)
             });
-            let src = Self::combine_column(pairs);
+            Self::combine_column(pairs, column.get_mut());
             let offset = i * Self::CHUNK_SIZE;
             secret[offset..offset + Self::CHUNK_SIZE]
-                .copy_from_slice(&src.as_ref()[..Self::CHUNK_SIZE]);
+                .copy_from_slice(&column.get().as_ref()[..Self::CHUNK_SIZE]);
         }
         Ok(columns * Self::CHUNK_SIZE)
     }
@@ -223,11 +235,10 @@ where
         u32::from_be_bytes([share[0], share[1], share[2], share[3]])
     }
 
-    fn reverse_if_big_endian(mut bytes: F::Bytes) -> F::Bytes {
+    fn reverse_if_big_endian(bytes: &mut F::Bytes) {
         if F::BYTE_ORDER == ByteOrder::BigEndian {
             bytes.as_mut().reverse();
         }
-        bytes
     }
 }
 

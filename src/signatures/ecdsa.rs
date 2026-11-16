@@ -96,7 +96,8 @@ where
         loop {
             let mut bytes = Secret::from(S::Bytes::new());
             rng.fill(bytes.get_mut().as_mut())?;
-            let candidate = Secret::from(Self::bits2octets(bytes.get().as_ref()));
+            let mut candidate = Secret::from(S::Bytes::new());
+            Self::bits2octets(bytes.get().as_ref(), candidate.get_mut());
             if let Some(scalar) = S::from_canonical(candidate.get()) {
                 return Ok(scalar);
             }
@@ -147,13 +148,13 @@ where
     fn message_representative(message: &[u8]) -> S {
         const { assert!(H::OUTPUT_SIZE >= 32, "ECDSA digests are at least 32 bytes") }
         let digest = H::digest(message);
-        let bytes = Self::bits2octets(digest.as_ref());
+        let mut bytes = S::Bytes::new();
+        Self::bits2octets(digest.as_ref(), &mut bytes);
         S::from(bytes)
     }
 
-    fn bits2octets(bits: &[u8]) -> S::Bytes {
+    fn bits2octets(bits: &[u8], bytes: &mut S::Bytes) {
         let size = bits.len();
-        let mut bytes = S::Bytes::new();
         match size.cmp(&S::Bytes::SIZE) {
             Ordering::Equal => {
                 bytes.as_mut().copy_from_slice(bits);
@@ -168,6 +169,5 @@ where
                 shift_right(bytes.as_mut(), Self::DISCARD_BITS);
             }
         }
-        bytes
     }
 }

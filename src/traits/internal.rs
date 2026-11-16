@@ -263,8 +263,6 @@ pub trait WeierstrassScalar:
 
 pub trait Sealed {}
 
-impl<const N: usize> Sealed for [u8; N] {}
-
 pub trait MlDsaArithmetic {
     fn reduce_poly(w: &mut [i32; 256]) {
         MlDsaNtt::reduce_poly(w);
@@ -379,6 +377,15 @@ pub trait SeekableStreamCipher: StreamCipher {
 
 pub trait Wipe {
     fn wipe(&mut self);
+
+    fn wipe_slice(slice: &mut [Self])
+    where
+        Self: Sized,
+    {
+        for element in slice {
+            element.wipe();
+        }
+    }
 }
 
 pub trait ZeroDefault: Copy + Default {}

@@ -13,7 +13,9 @@ pub struct Salsa20 {
 impl Salsa20 {
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn new(key: &[u8; 32], nonce: &[u8; 8]) -> Self {
-        Self::init(&Self::read_key(key), Self::read_nonce(*nonce))
+        let mut words = Secret::from([0u32; 8]);
+        Self::read(key, words.get_mut());
+        Self::init(words.get(), Self::read_nonce(*nonce))
     }
 
     #[allow(clippy::unnecessary_wraps)]
@@ -68,11 +70,13 @@ pub struct XSalsa20 {
 
 impl XSalsa20 {
     pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
-        let k = Salsa20::read_key(key);
+        let mut words = Secret::from([0u32; 8]);
+        Salsa20::read(key, words.get_mut());
         let (n1, n2) = Self::read_nonce(nonce);
-        let subkey = Self::calculate_subkey(&k, &n1);
+        let mut subkey = Secret::from([0u32; 8]);
+        Self::calculate_subkey(words.get(), &n1, subkey.get_mut());
         Self {
-            inner: Salsa20::init(&subkey, n2),
+            inner: Salsa20::init(subkey.get(), n2),
         }
     }
 
@@ -139,15 +143,16 @@ impl Salsa20 {
     const SIGMA: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
     fn init(key: &[u32; 8], nonce: [u32; 2]) -> Self {
+        let mut state = Secret::from([0u32; 16]);
+        Self::state(key, &[nonce[0], nonce[1], 0, 0], state.get_mut());
         Self {
-            state: Secret::from(Self::state(key, &[nonce[0], nonce[1], 0, 0])),
+            state,
             keystream: Secret::from([0u8; 64]),
             offset: 64,
         }
     }
 
-    fn state(key: &[u32; 8], nonce: &[u32; 4]) -> [u32; 16] {
-        let mut state = [0u32; 16];
+    fn state(key: &[u32; 8], nonce: &[u32; 4], state: &mut [u32; 16]) {
         state[0] = Self::SIGMA[0];
         state[5] = Self::SIGMA[1];
         state[10] = Self::SIGMA[2];
@@ -155,24 +160,19 @@ impl Salsa20 {
         state[1..5].copy_from_slice(&key[0..4]);
         state[11..15].copy_from_slice(&key[4..8]);
         state[6..10].copy_from_slice(nonce);
-        state
-    }
-
-    fn read_key(key: &[u8; 32]) -> [u32; 8] {
-        Self::read::<8>(key)
     }
 
     fn read_nonce(nonce: [u8; 8]) -> [u32; 2] {
-        Self::read::<2>(&nonce)
+        let mut words = [0u32; 2];
+        Self::read(&nonce, &mut words);
+        words
     }
 
-    fn read<const WORDS: usize>(bytes: &[u8]) -> [u32; WORDS] {
-        let mut words = [0u32; WORDS];
+    fn read(bytes: &[u8], words: &mut [u32]) {
         let (chunks, _) = bytes.as_chunks::<4>();
-        for (i, chunk) in chunks.iter().enumerate() {
-            words[i] = u32::from_le_bytes(*chunk);
+        for (word, chunk) in words.iter_mut().zip(chunks) {
+            *word = u32::from_le_bytes(*chunk);
         }
-        words
     }
 
     fn next(&mut self) {
@@ -244,16 +244,19 @@ impl SeekableStreamCipher for XSalsa20 {
 
 impl XSalsa20 {
     fn read_nonce(nonce: &[u8; 24]) -> ([u32; 4], [u32; 2]) {
-        let n1 = Salsa20::read::<4>(&nonce[0..16]);
-        let n2 = Salsa20::read::<2>(&nonce[16..24]);
+        let mut n1 = [0u32; 4];
+        let mut n2 = [0u32; 2];
+        Salsa20::read(&nonce[0..16], &mut n1);
+        Salsa20::read(&nonce[16..24], &mut n2);
         (n1, n2)
     }
 
-    fn calculate_subkey(key: &[u32; 8], nonce: &[u32; 4]) -> [u32; 8] {
-        let mut state = Salsa20::state(key, nonce);
-        Salsa20::rounds(&mut state);
-        [
-            state[0], state[5], state[10], state[15], state[6], state[7], state[8], state[9],
-        ]
+    fn calculate_subkey(key: &[u32; 8], nonce: &[u32; 4], subkey: &mut [u32; 8]) {
+        let mut state = Secret::from([0u32; 16]);
+        Salsa20::state(key, nonce, state.get_mut());
+        Salsa20::rounds(state.get_mut());
+        for (word, i) in subkey.iter_mut().zip([0, 5, 10, 15, 6, 7, 8, 9]) {
+            *word = state[i];
+        }
     }
 }

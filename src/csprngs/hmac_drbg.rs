@@ -46,7 +46,7 @@ where
         for chunk in bytes.chunks_mut(H::OUTPUT_SIZE) {
             let mut mac = Hmac::<H>::new(self.k.as_ref());
             mac.update(self.v.as_ref());
-            self.v = mac.finalize();
+            mac.finalize_into(self.v.as_mut());
             chunk.copy_from_slice(&self.v.as_ref()[..chunk.len()]);
         }
         self.update(&[], &[]);
@@ -97,10 +97,10 @@ where
         mac.update(&[0]);
         mac.update(entropy);
         mac.update(nonce);
-        self.k = mac.finalize();
+        mac.finalize_into(self.k.as_mut());
         let mut mac = Hmac::<H>::new(self.k.as_ref());
         mac.update(self.v.as_ref());
-        self.v = mac.finalize();
+        mac.finalize_into(self.v.as_mut());
         if entropy.is_empty() && nonce.is_empty() {
             return;
         }
@@ -109,9 +109,9 @@ where
         mac.update(&[1]);
         mac.update(entropy);
         mac.update(nonce);
-        self.k = mac.finalize();
+        mac.finalize_into(self.k.as_mut());
         let mut mac = Hmac::<H>::new(self.k.as_ref());
         mac.update(self.v.as_ref());
-        self.v = mac.finalize();
+        mac.finalize_into(self.v.as_mut());
     }
 }

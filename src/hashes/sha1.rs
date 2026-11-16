@@ -1,5 +1,5 @@
 use crate::{
-    traits::Hasher,
+    traits::{HashFunction, Hasher, Sealed},
     utils::{Block, Secret},
 };
 
@@ -27,7 +27,7 @@ impl Sha1 {
 
     pub fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks(message) {
-            self.process_block(&head);
+            self.process_block(head.get());
             for block in tail {
                 self.process_block(block);
             }
@@ -53,6 +53,10 @@ impl Default for Sha1 {
     fn default() -> Self {
         Self::new()
     }
+}
+
+impl HashFunction for Sha1 {
+    const ID: u16 = 0x0701;
 }
 
 impl Hasher for Sha1 {
@@ -86,8 +90,9 @@ impl Hasher for Sha1 {
 
 impl Sha1 {
     fn process_block(&mut self, block: &[u8]) {
-        let words = Self::schedule(block);
-        self.compress(&words);
+        let mut words = Secret::from([0u32; 80]);
+        Self::schedule(block, words.get_mut());
+        self.compress(words.get());
         self.total_size += block.len() as u64;
     }
 
@@ -148,8 +153,7 @@ impl Sha1 {
         }
     }
 
-    fn schedule(block: &[u8]) -> [u32; 80] {
-        let mut w = [0u32; 80];
+    fn schedule(block: &[u8], w: &mut [u32; 80]) {
         let (words, _) = block.as_chunks::<4>();
         for (i, &word) in words.iter().enumerate().take(16) {
             w[i] = u32::from_be_bytes(word);
@@ -157,9 +161,10 @@ impl Sha1 {
         for t in 16..80 {
             w[t] = (w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]).rotate_left(1);
         }
-        w
     }
 }
+
+impl Sealed for Sha1 {}
 
 #[cfg(test)]
 mod tests {

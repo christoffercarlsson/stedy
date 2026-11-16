@@ -3,7 +3,7 @@ use {
         Error,
         ciphers::{ChaCha20, XChaCha20, XSalsa20},
         traits::{Authenticator, SeekableStreamCipher},
-        utils::{Block, Choice, constant_time_eq, wipe},
+        utils::{Block, Choice, Secret, constant_time_eq, wipe},
     },
     core::ops::{AddAssign, BitAndAssign, Index, IndexMut, MulAssign},
 };
@@ -30,7 +30,7 @@ impl Poly1305 {
 
     pub fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks(message) {
-            self.process_block(&head);
+            self.process_block(head.get());
             for block in tail {
                 self.process_block(block);
             }
@@ -49,7 +49,8 @@ impl Poly1305 {
     }
 
     pub fn verify(self, code: &[u8; 16]) -> Result<(), Error> {
-        if constant_time_eq(&self.finalize(), code) {
+        let computed = Secret::from(self.finalize());
+        if constant_time_eq(computed.get(), code) {
             Ok(())
         } else {
             Err(Error::Verification)
@@ -99,11 +100,11 @@ impl Authenticator<XSalsa20> for Poly1305 {
     type Output = [u8; 16];
 
     fn new(cipher: &mut XSalsa20) -> Self {
-        let mut key = [0u8; 32];
+        let mut key = Secret::from([0u8; 32]);
         cipher
-            .apply_keystream(&mut key)
+            .apply_keystream(key.get_mut())
             .expect("the first keystream block is always available");
-        Self::new(&key)
+        Self::new(key.get())
     }
 
     fn tag(mut self, ciphertext: &[u8], _aad: Option<&[u8]>) -> Self::Output {
@@ -137,7 +138,7 @@ impl Poly1305 {
         let mut bytes = [0u8; 17];
         bytes[..block.len()].copy_from_slice(block);
         bytes[block.len()] = 1;
-        Poly1305FieldElement::from(bytes)
+        Poly1305FieldElement::from(&bytes)
     }
 
     fn process_element(&mut self, n: Poly1305FieldElement) {
@@ -149,12 +150,12 @@ impl Poly1305 {
     where
         C: SeekableStreamCipher<Key = [u8; 32]>,
     {
-        let mut key = [0u8; 32];
+        let mut key = Secret::from([0u8; 32]);
         cipher
-            .apply_keystream(&mut key)
+            .apply_keystream(key.get_mut())
             .expect("the first keystream block is always available");
         cipher.seek(1);
-        Self::new(&key)
+        Self::new(key.get())
     }
 
     fn calculate_tag(&mut self, ciphertext: &[u8], aad: Option<&[u8]>) {
@@ -298,8 +299,8 @@ impl MulAssign for Poly1305FieldElement {
     }
 }
 
-impl From<[u8; 17]> for Poly1305FieldElement {
-    fn from(value: [u8; 17]) -> Self {
+impl From<&[u8; 17]> for Poly1305FieldElement {
+    fn from(value: &[u8; 17]) -> Self {
         let mut words = [0u64; 5];
         let (chunks, remainder) = value.as_chunks::<4>();
         for (i, chunk) in chunks.iter().enumerate() {
@@ -320,9 +321,9 @@ impl From<[u8; 17]> for Poly1305FieldElement {
 
 impl From<&[u8; 16]> for Poly1305FieldElement {
     fn from(value: &[u8; 16]) -> Self {
-        let mut bytes = [0u8; 17];
+        let mut bytes = Secret::from([0u8; 17]);
         bytes[..16].copy_from_slice(value);
-        Self::from(bytes)
+        Self::from(bytes.get())
     }
 }
 

@@ -1,7 +1,7 @@
 use {
     crate::{
         Error,
-        traits::{ByteArray, CryptoRng, Hasher, SeekableStreamCipher},
+        traits::{ByteArray, Hasher, SeekableStreamCipher},
         utils::Secret,
     },
     core::{array::TryFromSliceError, marker::PhantomData},
@@ -85,16 +85,6 @@ macro_rules! impl_from_seed {
 impl_from_seed!(64, 32);
 impl_from_seed!(96, 48);
 impl_from_seed!(128, 64);
-
-impl<C, H> CryptoRng for StreamCipherRng<C, H>
-where
-    C: SeekableStreamCipher,
-    H: Hasher<Output = C::Seed>,
-{
-    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
-        self.fill(bytes)
-    }
-}
 
 impl<C, H> TryFrom<&[u8]> for StreamCipherRng<C, H>
 where

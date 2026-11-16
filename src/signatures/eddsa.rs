@@ -134,7 +134,8 @@ where
         let mut state = Self::hasher(phflag, context);
         state.update(prefix.get().as_ref());
         state.update(message);
-        let digest = Secret::from(state.finalize());
+        let mut digest = Secret::from(E::WideBytes::new());
+        state.finalize_into(digest.get_mut().as_mut());
         let r = E::from(digest.get());
         let R = Edwards::<F, E>::mul_base(&r).compress();
         let mut state = Self::hasher(phflag, context);
@@ -184,7 +185,10 @@ where
     }
 
     fn expand(seed: &[u8]) -> (E, Secret<E::SecretBytes>) {
-        let digest = Secret::from(H::digest(seed));
+        let mut digest = Secret::from(E::WideBytes::new());
+        let mut state = H::new();
+        state.update(seed);
+        state.finalize_into(digest.get_mut().as_mut());
         let (a, prefix) = E::split(digest.get());
         let mut a = Secret::from(a);
         E::clamp(a.get_mut());

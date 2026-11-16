@@ -1,4 +1,5 @@
 mod block;
+mod byte_array;
 mod choice;
 mod constant_time_eq;
 mod increment;

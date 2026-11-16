@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::Hasher,
+    traits::{HashFunction, Hasher, Sealed},
     utils::{Block, Secret, constant_time_eq},
 };
 
@@ -37,12 +37,29 @@ impl<const N: usize> Blake2s<N> {
     }
 
     pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
-        if constant_time_eq(code, &self.finalize()) {
+        let computed = Secret::from(self.finalize());
+        if constant_time_eq(code, computed.get()) {
             Ok(())
         } else {
             Err(Error::Verification)
         }
     }
+}
+
+impl<const N: usize> Default for Blake2s<N> {
+    fn default() -> Self {
+        Self::with_key(None)
+    }
+}
+
+impl<const N: usize> HashFunction for Blake2s<N> {
+    const ID: u16 = {
+        assert!(
+            N >= 1 && N <= Blake2sCore::MAX_OUTPUT_SIZE,
+            "BLAKE2s digests are 1 to 32 bytes"
+        );
+        0x0780 + (N as u16 - 1)
+    };
 }
 
 impl<const N: usize> Hasher for Blake2s<N> {
@@ -74,8 +91,11 @@ impl<const N: usize> Hasher for Blake2s<N> {
 }
 
 pub type Blake2s128 = Blake2s<16>;
+
 pub type Blake2s160 = Blake2s<20>;
+
 pub type Blake2s224 = Blake2s<28>;
+
 pub type Blake2s256 = Blake2s<32>;
 
 impl<const N: usize> Blake2s<N> {
@@ -126,16 +146,16 @@ impl Blake2sCore {
         };
         state.h[0] ^= 0x01010000 ^ ((key.len() as u32) << 8) ^ (output_size as u32);
         if !key.is_empty() {
-            let mut block = [0u8; 64];
+            let mut block = Secret::from([0u8; 64]);
             block[..key.len()].copy_from_slice(key);
-            state.update(&block);
+            state.update(block.get());
         }
         state
     }
 
     fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks_except_last(message) {
-            self.process_block(&head);
+            self.process_block(head.get());
             for block in tail {
                 self.process_block(block);
             }
@@ -144,10 +164,10 @@ impl Blake2sCore {
 
     fn finalize_into(mut self, digest: &mut [u8]) {
         let remaining = self.block.remaining();
-        let mut block = [0u8; 64];
+        let mut block = Secret::from([0u8; 64]);
         block[..remaining.len()].copy_from_slice(remaining);
         self.accumulate(remaining.len());
-        self.compress(&block, 1);
+        self.compress(block.get(), 1);
         for (i, dest) in digest.chunks_mut(4).take(8).enumerate() {
             let src = self.h[i].to_le_bytes();
             dest.copy_from_slice(&src[..dest.len()]);
@@ -164,12 +184,12 @@ impl Blake2sCore {
     }
 
     fn compress(&mut self, block: &[u8], is_final: u32) {
-        let mut m = [0u32; 16];
+        let mut m = Secret::from([0u32; 16]);
         let (chunks, _) = block.as_chunks::<4>();
         for (i, chunk) in chunks.iter().take(16).enumerate() {
             m[i] = u32::from_le_bytes(*chunk);
         }
-        let mut v = [0u32; 16];
+        let mut v = Secret::from([0u32; 16]);
         v[0..8].copy_from_slice(self.h.get());
         v[8..16].copy_from_slice(&Self::IV);
         v[12] ^= self.t as u32;
@@ -177,14 +197,14 @@ impl Blake2sCore {
         v[14] ^= is_final.wrapping_neg();
         for i in 0..10 {
             let s = &Self::SIGMA[i % 10];
-            Self::g(&mut v, 0, 4, 8, 12, m[s[0]], m[s[1]]);
-            Self::g(&mut v, 1, 5, 9, 13, m[s[2]], m[s[3]]);
-            Self::g(&mut v, 2, 6, 10, 14, m[s[4]], m[s[5]]);
-            Self::g(&mut v, 3, 7, 11, 15, m[s[6]], m[s[7]]);
-            Self::g(&mut v, 0, 5, 10, 15, m[s[8]], m[s[9]]);
-            Self::g(&mut v, 1, 6, 11, 12, m[s[10]], m[s[11]]);
-            Self::g(&mut v, 2, 7, 8, 13, m[s[12]], m[s[13]]);
-            Self::g(&mut v, 3, 4, 9, 14, m[s[14]], m[s[15]]);
+            Self::g(v.get_mut(), 0, 4, 8, 12, m[s[0]], m[s[1]]);
+            Self::g(v.get_mut(), 1, 5, 9, 13, m[s[2]], m[s[3]]);
+            Self::g(v.get_mut(), 2, 6, 10, 14, m[s[4]], m[s[5]]);
+            Self::g(v.get_mut(), 3, 7, 11, 15, m[s[6]], m[s[7]]);
+            Self::g(v.get_mut(), 0, 5, 10, 15, m[s[8]], m[s[9]]);
+            Self::g(v.get_mut(), 1, 6, 11, 12, m[s[10]], m[s[11]]);
+            Self::g(v.get_mut(), 2, 7, 8, 13, m[s[12]], m[s[13]]);
+            Self::g(v.get_mut(), 3, 4, 9, 14, m[s[14]], m[s[15]]);
         }
         for i in 0..8 {
             self.h[i] ^= v[i] ^ v[i + 8];
@@ -202,6 +222,8 @@ impl Blake2sCore {
         v[b] = (v[b] ^ v[c]).rotate_right(7);
     }
 }
+
+impl<const N: usize> Sealed for Blake2s<N> {}
 
 #[cfg(test)]
 mod tests {

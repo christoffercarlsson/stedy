@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{ByteArray, Hasher},
+    traits::{ByteArray, HashFunction, Hasher, Mac, Sealed},
     utils::{Secret, constant_time_eq, xor},
 };
 
@@ -28,8 +28,7 @@ where
         if key.len() > H::BLOCK_SIZE {
             let mut hasher = H::new();
             hasher.update(key);
-            let key_digest = Secret::from(hasher.finalize());
-            k.get_mut().as_mut()[..H::OUTPUT_SIZE].copy_from_slice(key_digest.get().as_ref());
+            hasher.finalize_into(&mut k.get_mut().as_mut()[..H::OUTPUT_SIZE]);
         } else {
             k.get_mut().as_mut()[..key.len()].copy_from_slice(key);
         }
@@ -51,7 +50,8 @@ where
     }
 
     pub fn finalize_into(mut self, code: &mut [u8]) {
-        let digest = Secret::from(self.inner.finalize());
+        let mut digest = Secret::from(H::Output::new());
+        self.inner.finalize_into(digest.get_mut().as_mut());
         self.outer.update(digest.get().as_ref());
         self.outer.finalize_into(code);
     }
@@ -63,13 +63,42 @@ where
     }
 
     pub fn verify(self, code: &H::Output) -> Result<(), Error> {
-        if constant_time_eq(code.as_ref(), self.finalize().as_ref()) {
+        let mut computed = Secret::from(H::Output::new());
+        self.finalize_into(computed.get_mut().as_mut());
+        if constant_time_eq(code.as_ref(), computed.get().as_ref()) {
             Ok(())
         } else {
             Err(Error::Verification)
         }
     }
 }
+
+impl<H> Mac for Hmac<H>
+where
+    H: HashFunction,
+{
+    const ID: u16 = 0x0500 | (H::ID & 0x00ff);
+
+    type Code = H::Output;
+
+    fn new(key: &[u8]) -> Self {
+        Self::new(key)
+    }
+
+    fn update(&mut self, message: &[u8]) {
+        Self::update(self, message);
+    }
+
+    fn finalize(self) -> Self::Code {
+        Self::finalize(self)
+    }
+
+    fn verify(self, code: &Self::Code) -> Result<(), Error> {
+        Self::verify(self, code)
+    }
+}
+
+impl<H> Sealed for Hmac<H> where H: Hasher {}
 
 #[cfg(test)]
 mod tests {

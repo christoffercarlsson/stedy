@@ -17,14 +17,14 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
     pub fn blocks<'a>(
         &mut self,
         data: &'a [u8],
-    ) -> Option<([u8; BLOCK_SIZE], BlockIterator<'a, BLOCK_SIZE>)> {
+    ) -> Option<(Secret<[u8; BLOCK_SIZE]>, BlockIterator<'a, BLOCK_SIZE>)> {
         self.split(data, 0)
     }
 
     pub fn blocks_except_last<'a>(
         &mut self,
         data: &'a [u8],
-    ) -> Option<([u8; BLOCK_SIZE], BlockIterator<'a, BLOCK_SIZE>)> {
+    ) -> Option<(Secret<[u8; BLOCK_SIZE]>, BlockIterator<'a, BLOCK_SIZE>)> {
         self.split(data, 1)
     }
 
@@ -32,13 +32,13 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         &self.buffer.get()[..self.buffer_size as usize]
     }
 
-    pub fn remaining_block(&self) -> Option<([u8; BLOCK_SIZE], usize)> {
+    pub fn remaining_block(&self) -> Option<(Secret<[u8; BLOCK_SIZE]>, usize)> {
         let remaining = self.remaining();
         if remaining.is_empty() {
             return None;
         }
         let size = remaining.len();
-        let mut block = [0u8; BLOCK_SIZE];
+        let mut block = Secret::from([0u8; BLOCK_SIZE]);
         block[..size].copy_from_slice(remaining);
         Some((block, size))
     }
@@ -47,7 +47,7 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         &mut self,
         data: &'a [u8],
         keep: usize,
-    ) -> Option<([u8; BLOCK_SIZE], BlockIterator<'a, BLOCK_SIZE>)> {
+    ) -> Option<(Secret<[u8; BLOCK_SIZE]>, BlockIterator<'a, BLOCK_SIZE>)> {
         let total = self.buffer_size as usize + data.len();
         if total < BLOCK_SIZE + keep {
             self.buffer_chunk(data);
@@ -56,7 +56,7 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         let begin = BLOCK_SIZE - self.buffer_size as usize;
         let end = data.len() - keep - (total - keep) % BLOCK_SIZE;
         self.buffer_chunk(&data[..begin]);
-        let head = *self.buffer.get();
+        let head = self.buffer.clone();
         let tail = BlockIterator::<BLOCK_SIZE> {
             tail: data,
             begin,

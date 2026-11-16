@@ -1,7 +1,9 @@
 mod external;
 mod internal;
 
-pub use external::ByteArray;
+pub use external::{
+    Aead, ByteArray, CryptoRng, HashFunction, Kdf, Kem, KeyExchange, Mac, SignatureScheme,
+};
 
 #[cfg(feature = "hazmat")]
 pub use external::*;

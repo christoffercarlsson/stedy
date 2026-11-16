@@ -1,23 +1,34 @@
 #![allow(unsafe_code)]
-#[cfg(feature = "std")]
-use core::mem::size_of_val;
 use {
     crate::traits::{Wipe, ZeroDefault},
     core::{
+        mem::{align_of, size_of, size_of_val},
         ptr,
         sync::atomic::{Ordering, compiler_fence},
     },
 };
 
-#[inline(never)]
+#[inline]
+#[allow(clippy::cast_ptr_alignment)]
 pub fn wipe<T>(data: &mut [T])
 where
-    T: Copy + Default,
+    T: ZeroDefault,
 {
-    let p = data.as_mut_ptr();
-    for i in 0..data.len() {
-        unsafe {
-            ptr::write_volatile(p.add(i), T::default());
+    let size = size_of_val(data);
+    let bytes = data.as_mut_ptr().cast::<u8>();
+    let head = bytes.align_offset(align_of::<usize>()).min(size);
+    let words = (size - head) / size_of::<usize>();
+    let tail = head + words * size_of::<usize>();
+    unsafe {
+        for i in 0..head {
+            ptr::write_volatile(bytes.add(i), 0);
+        }
+        let aligned = bytes.add(head).cast::<usize>();
+        for i in 0..words {
+            ptr::write_volatile(aligned.add(i), 0);
+        }
+        for i in tail..size {
+            ptr::write_volatile(bytes.add(i), 0);
         }
     }
     compiler_fence(Ordering::SeqCst);
@@ -48,6 +59,10 @@ where
         }
         compiler_fence(Ordering::SeqCst);
     }
+
+    fn wipe_slice(slice: &mut [Self]) {
+        wipe(slice);
+    }
 }
 
 impl<T, const N: usize> Wipe for [T; N]
@@ -55,9 +70,11 @@ where
     T: Wipe,
 {
     fn wipe(&mut self) {
-        for element in self {
-            element.wipe();
-        }
+        T::wipe_slice(self);
+    }
+
+    fn wipe_slice(slice: &mut [Self]) {
+        T::wipe_slice(slice.as_flattened_mut());
     }
 }
 
@@ -82,9 +99,7 @@ where
     T: Wipe,
 {
     fn wipe(&mut self) {
-        for element in self.iter_mut() {
-            element.wipe();
-        }
+        T::wipe_slice(self);
         self.clear();
         let spare = self.spare_capacity_mut();
         let p = spare.as_mut_ptr().cast::<u8>();
@@ -103,9 +118,7 @@ where
     T: Wipe,
 {
     fn wipe(&mut self) {
-        for element in self.iter_mut() {
-            element.wipe();
-        }
+        T::wipe_slice(self);
     }
 }
 
@@ -128,6 +141,15 @@ mod tests {
         ];
         wipe(&mut data);
         assert_eq!(data, [0u8; 32]);
+    }
+
+    #[test]
+    fn test_wipe_unaligned() {
+        let mut data = [255u8; 40];
+        wipe(&mut data[1..38]);
+        assert_eq!(data[0], 255);
+        assert!(data[1..38].iter().all(|&byte| byte == 0));
+        assert_eq!(data[38..], [255, 255]);
     }
 
     #[test]

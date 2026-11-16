@@ -94,7 +94,7 @@ impl Argon2 {
         output: &'a mut [u8],
     ) -> Result<&'a [u8], Error> {
         params.validate_phc(password, salt, hash_length)?;
-        let mut hash = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let mut hash = Secret::from([0u8; Argon2Params::PHC_HASH_SIZE]);
         let hash = &mut hash[..hash_length];
         Self::derive_with_memory(params, password, salt, None, None, memory, hash)?;
         params.encode_phc(salt, hash, output)
@@ -110,7 +110,7 @@ impl Argon2 {
         let salt = decode(Encoding::Base64Unpadded, salt, &mut salt_bytes)?;
         let mut hash_bytes = [0u8; Argon2Params::PHC_HASH_SIZE];
         let expected = decode(Encoding::Base64Unpadded, hash, &mut hash_bytes)?;
-        let mut computed = [0u8; Argon2Params::PHC_HASH_SIZE];
+        let mut computed = Secret::from([0u8; Argon2Params::PHC_HASH_SIZE]);
         let computed = &mut computed[..expected.len()];
         Self::derive_with_memory(params, password, salt, None, None, memory, computed)?;
         if constant_time_eq(computed, expected) {
@@ -263,7 +263,9 @@ impl Argon2Params {
         hasher.update(secret);
         hasher.update(&(associated_data.len() as u32).to_le_bytes());
         hasher.update(associated_data);
-        Secret::from(hasher.finalize())
+        let mut h0 = Secret::from([0u8; 64]);
+        hasher.finalize_into(h0.get_mut());
+        h0
     }
 
     fn fill_first_blocks(&self, memory: &mut [Argon2Block], h0: &[u8; 64]) {
@@ -275,8 +277,7 @@ impl Argon2Params {
                     &[h0, &column.to_le_bytes(), &lane.to_le_bytes()],
                     bytes.get_mut(),
                 );
-                memory[(lane as usize) * lane_length + column as usize] =
-                    Argon2Block::from_bytes(bytes.get());
+                memory[(lane as usize) * lane_length + column as usize].read_bytes(bytes.get());
             }
         }
     }
@@ -466,7 +467,8 @@ impl Argon2Params {
         for lane in 1..lanes {
             *c.get_mut() ^= &memory[lane * lane_length + lane_length - 1];
         }
-        let bytes = Secret::from(c.get().to_bytes());
+        let mut bytes = Secret::from([0u8; Argon2Block::SIZE]);
+        c.write_bytes(bytes.get_mut());
         Self::hash_variable(&[bytes.as_ref()], output);
     }
 
@@ -730,22 +732,18 @@ impl Argon2Block {
     const SIZE: usize = Self::WORDS * 8;
     const MASK: u64 = (1 << 32) - 1;
 
-    fn from_bytes(bytes: &[u8; Self::SIZE]) -> Self {
-        let mut block = Self::ZERO;
+    fn read_bytes(&mut self, bytes: &[u8; Self::SIZE]) {
         let (chunks, _) = bytes.as_chunks::<8>();
         for (i, chunk) in chunks.iter().enumerate() {
-            block[i] = u64::from_le_bytes(*chunk);
+            self[i] = u64::from_le_bytes(*chunk);
         }
-        block
     }
 
-    fn to_bytes(self) -> [u8; Self::SIZE] {
-        let mut bytes = [0u8; Self::SIZE];
+    fn write_bytes(&self, bytes: &mut [u8; Self::SIZE]) {
         let (chunks, _) = bytes.as_chunks_mut::<8>();
         for (i, chunk) in chunks.iter_mut().enumerate() {
             chunk.copy_from_slice(&self[i].to_le_bytes());
         }
-        bytes
     }
 
     fn compress(x: &Self, y: &Self, q: &mut Self) {

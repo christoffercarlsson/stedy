@@ -13,7 +13,9 @@ pub struct ChaCha20 {
 
 impl ChaCha20 {
     pub fn new(key: &[u8; 32], nonce: &[u8; 12]) -> Self {
-        Self::init(&Self::read_key(key), &Self::read_nonce(nonce))
+        let mut words = Secret::from([0u32; 8]);
+        Self::read(key, words.get_mut());
+        Self::init(words.get(), &Self::read_nonce(nonce))
     }
 
     pub fn apply_keystream(&mut self, mut data: &mut [u8]) -> Result<(), Error> {
@@ -71,11 +73,13 @@ pub struct XChaCha20 {
 
 impl XChaCha20 {
     pub fn new(key: &[u8; 32], nonce: &[u8; 24]) -> Self {
-        let k = ChaCha20::read_key(key);
+        let mut words = Secret::from([0u32; 8]);
+        ChaCha20::read(key, words.get_mut());
         let (n1, n2) = Self::read_nonce(nonce);
-        let subkey = Self::calculate_subkey(&k, &n1);
+        let mut subkey = Secret::from([0u32; 8]);
+        Self::calculate_subkey(words.get(), &n1, subkey.get_mut());
         Self {
-            inner: ChaCha20::init(&subkey, &n2),
+            inner: ChaCha20::init(subkey.get(), &n2),
         }
     }
 
@@ -144,12 +148,12 @@ impl ChaCha20 {
     const SIGMA: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
     fn init(key: &[u32; 8], nonce: &[u32; 3]) -> Self {
-        let mut state = [0u32; 16];
+        let mut state = Secret::from([0u32; 16]);
         state[0..4].copy_from_slice(&Self::SIGMA);
         state[4..12].copy_from_slice(key);
         state[13..16].copy_from_slice(nonce);
         Self {
-            state: Secret::from(state),
+            state,
             keystream: Secret::from([0u8; 64]),
             offset: 64,
             blocks: 1 << 32,
@@ -162,21 +166,17 @@ impl ChaCha20 {
             .saturating_add(64 - u64::from(self.offset))
     }
 
-    fn read_key(key: &[u8; 32]) -> [u32; 8] {
-        Self::read::<8>(key)
-    }
-
     fn read_nonce(nonce: &[u8; 12]) -> [u32; 3] {
-        Self::read::<3>(nonce)
+        let mut words = [0u32; 3];
+        Self::read(nonce, &mut words);
+        words
     }
 
-    fn read<const WORDS: usize>(bytes: &[u8]) -> [u32; WORDS] {
-        let mut words = [0u32; WORDS];
+    fn read(bytes: &[u8], words: &mut [u32]) {
         let (chunks, _) = bytes.as_chunks::<4>();
-        for (i, chunk) in chunks.iter().enumerate() {
-            words[i] = u32::from_le_bytes(*chunk);
+        for (word, chunk) in words.iter_mut().zip(chunks) {
+            *word = u32::from_le_bytes(*chunk);
         }
-        words
     }
 
     fn next(&mut self) {
@@ -251,20 +251,20 @@ impl SeekableStreamCipher for XChaCha20 {
 
 impl XChaCha20 {
     fn read_nonce(nonce: &[u8; 24]) -> ([u32; 4], [u32; 3]) {
-        let n1 = ChaCha20::read::<4>(&nonce[0..16]);
-        let n2 = ChaCha20::read::<2>(&nonce[16..24]);
-        let n2 = [0, n2[0], n2[1]];
+        let mut n1 = [0u32; 4];
+        let mut n2 = [0u32; 3];
+        ChaCha20::read(&nonce[0..16], &mut n1);
+        ChaCha20::read(&nonce[16..24], &mut n2[1..]);
         (n1, n2)
     }
 
-    fn calculate_subkey(key: &[u32; 8], nonce: &[u32; 4]) -> [u32; 8] {
-        let mut state = [0u32; 16];
+    fn calculate_subkey(key: &[u32; 8], nonce: &[u32; 4], subkey: &mut [u32; 8]) {
+        let mut state = Secret::from([0u32; 16]);
         state[0..4].copy_from_slice(&ChaCha20::SIGMA);
         state[4..12].copy_from_slice(key);
         state[12..16].copy_from_slice(nonce);
-        ChaCha20::rounds(&mut state);
-        [
-            state[0], state[1], state[2], state[3], state[12], state[13], state[14], state[15],
-        ]
+        ChaCha20::rounds(state.get_mut());
+        subkey[..4].copy_from_slice(&state[..4]);
+        subkey[4..].copy_from_slice(&state[12..]);
     }
 }

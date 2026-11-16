@@ -50,7 +50,7 @@ where
 
     pub fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks(message) {
-            self.absorb(&head);
+            self.absorb(head.get());
             for block in tail {
                 self.absorb(block);
             }
@@ -66,12 +66,12 @@ where
     }
 
     pub fn pad(&mut self, domain: u8) {
-        let mut block = [0u8; RATE];
+        let mut block = Secret::from([0u8; RATE]);
         let remaining = self.block.remaining();
         block[..remaining.len()].copy_from_slice(remaining);
         block[remaining.len()] = domain;
         block[RATE - 1] |= 128;
-        self.absorb(&block);
+        self.absorb(block.get());
     }
 
     pub fn permute(&mut self) {

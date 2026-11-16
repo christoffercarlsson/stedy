@@ -7,6 +7,33 @@ use {
     },
 };
 
+pub trait Aead: Sealed {
+    const ID: u16;
+
+    type Key: ByteArray;
+    type Nonce: ByteArray;
+    type Tag: ByteArray;
+
+    fn encrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<Self::Tag, Error>;
+
+    fn decrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &Self::Tag,
+    ) -> Result<(), Error>;
+
+    fn generate_key(rng: &mut impl CryptoRng) -> Result<Self::Key, Error>;
+
+    fn increment_nonce(nonce: &mut Self::Nonce) -> Result<(), Error>;
+}
+
 pub trait ByteArray:
     Clone
     + Sized
@@ -49,6 +76,10 @@ pub trait FieldArithmetic {
     }
 }
 
+pub trait HashFunction: Clone + Hasher + Sealed {
+    const ID: u16;
+}
+
 pub trait Hasher: Sized {
     const BLOCK_SIZE: usize;
     const OUTPUT_SIZE: usize;
@@ -67,18 +98,100 @@ pub trait Hasher: Sized {
     fn digest(message: &[u8]) -> Self::Output;
 }
 
+pub trait Kdf: Sealed {
+    const ID: u16;
+
+    fn derive(
+        ikm: &[u8],
+        salt: Option<&[u8]>,
+        info: Option<&[u8]>,
+        output: &mut [u8],
+    ) -> Result<(), Error>;
+}
+
 pub trait KeccakPermutation {
     fn permute(lanes: &mut [u64; 25]);
 }
 
-impl<const N: usize> ByteArray for [u8; N] {
-    const SIZE: usize = N;
+pub trait Kem: Sealed {
+    const ID: u16;
 
-    fn new() -> Self {
-        [0u8; N]
-    }
+    type Seed: ByteArray;
+    type PrivateKey: ByteArray;
+    type PublicKey: ByteArray;
+    type Ciphertext: ByteArray;
+    type SharedSecret: ByteArray;
 
-    fn try_from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError> {
-        Self::try_from(slice)
-    }
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error>;
+
+    fn key_pair(seed: &Self::Seed) -> (Self::PrivateKey, Self::PublicKey);
+
+    fn public_key(private_key: &Self::PrivateKey) -> Self::PublicKey;
+
+    fn encapsulate(
+        public_key: &Self::PublicKey,
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::SharedSecret, Self::Ciphertext), Error>;
+
+    fn decapsulate(
+        private_key: &Self::PrivateKey,
+        ciphertext: &Self::Ciphertext,
+    ) -> Result<Self::SharedSecret, Error>;
+}
+
+pub trait KeyExchange: Sealed {
+    const ID: u16;
+
+    type PrivateKey: ByteArray;
+    type PublicKey: ByteArray;
+    type SharedSecret: ByteArray;
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error>;
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error>;
+
+    fn key_exchange(
+        private_key: &Self::PrivateKey,
+        public_key: &Self::PublicKey,
+    ) -> Result<Self::SharedSecret, Error>;
+}
+
+pub trait Mac: Clone + Sealed {
+    const ID: u16;
+
+    type Code: ByteArray;
+
+    fn new(key: &[u8]) -> Self;
+
+    fn update(&mut self, message: &[u8]);
+
+    fn finalize(self) -> Self::Code;
+
+    fn verify(self, code: &Self::Code) -> Result<(), Error>;
+}
+
+pub trait SignatureScheme: Sealed {
+    const ID: u16;
+
+    type PrivateKey: ByteArray;
+    type PublicKey: ByteArray;
+    type Signature: ByteArray;
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error>;
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error>;
+
+    fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Self::Signature, Error>;
+
+    fn verify(
+        message: &[u8],
+        public_key: &Self::PublicKey,
+        signature: &Self::Signature,
+    ) -> Result<(), Error>;
 }

@@ -3,7 +3,7 @@ use crate::{
     elliptic_curves::{FieldP256, ScalarP256},
     hashes::Sha256,
     signatures::Ecdsa,
-    traits::{ByteArray, CryptoRng},
+    traits::{ByteArray, CryptoRng, Sealed, SignatureScheme},
     utils::SecretBytes,
 };
 #[cfg(feature = "hazmat")]
@@ -46,6 +46,36 @@ impl P256 {
     }
 }
 
+impl SignatureScheme for P256 {
+    const ID: u16 = 0x0602;
+
+    type PrivateKey = SecretBytes<32>;
+    type PublicKey = [u8; 33];
+    type Signature = [u8; 64];
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error> {
+        Self::generate_key_pair(rng)
+    }
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error> {
+        Self::public_key(private_key)
+    }
+
+    fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Self::Signature, Error> {
+        Self::sign(private_key, message)
+    }
+
+    fn verify(
+        message: &[u8],
+        public_key: &Self::PublicKey,
+        signature: &Self::Signature,
+    ) -> Result<(), Error> {
+        Self::verify(message, public_key, signature)
+    }
+}
+
 #[cfg(feature = "hazmat")]
 pub struct P256With<A, H>(PhantomData<(A, H)>);
 
@@ -82,6 +112,45 @@ where
         Ecdsa::<FieldP256With<A>, H, ScalarP256, [u8; 64]>::verify(message, public_key, signature)
     }
 }
+
+#[cfg(feature = "hazmat")]
+impl<A> SignatureScheme for P256With<A, Sha256>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
+    const ID: u16 = 0x0602;
+
+    type PrivateKey = SecretBytes<32>;
+    type PublicKey = [u8; 33];
+    type Signature = [u8; 64];
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error> {
+        Self::generate_key_pair(rng)
+    }
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error> {
+        Self::public_key(private_key)
+    }
+
+    fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Self::Signature, Error> {
+        Self::sign(private_key, message)
+    }
+
+    fn verify(
+        message: &[u8],
+        public_key: &Self::PublicKey,
+        signature: &Self::Signature,
+    ) -> Result<(), Error> {
+        Self::verify(message, public_key, signature)
+    }
+}
+
+impl Sealed for P256 {}
+
+#[cfg(feature = "hazmat")]
+impl<A> Sealed for P256With<A, Sha256> where A: FieldArithmetic<Bytes = [u8; 32]> {}
 
 #[cfg(test)]
 mod tests {

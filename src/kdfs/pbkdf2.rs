@@ -1,5 +1,10 @@
 use {
-    crate::{Error, macs::Hmac, traits::Hasher, utils::xor},
+    crate::{
+        Error,
+        macs::Hmac,
+        traits::{ByteArray, Hasher},
+        utils::{Secret, xor},
+    },
     core::marker::PhantomData,
 };
 
@@ -36,19 +41,17 @@ where
     H: Hasher + Clone,
 {
     fn f(prf: &Hmac<H>, salt: &[u8], iterations: usize, i: u32, chunk: &mut [u8]) {
-        let mut u = {
-            let mut p = prf.clone();
-            p.update(salt);
-            p.update(&(i + 1).to_be_bytes());
-            let u = p.finalize();
-            xor(chunk, u.as_ref());
-            u
-        };
+        let mut u = Secret::from(H::Output::new());
+        let mut p = prf.clone();
+        p.update(salt);
+        p.update(&(i + 1).to_be_bytes());
+        p.finalize_into(u.get_mut().as_mut());
+        xor(chunk, u.get().as_ref());
         for _ in 1..iterations {
             let mut p = prf.clone();
-            p.update(u.as_ref());
-            u = p.finalize();
-            xor(chunk, u.as_ref());
+            p.update(u.get().as_ref());
+            p.finalize_into(u.get_mut().as_mut());
+            xor(chunk, u.get().as_ref());
         }
     }
 }

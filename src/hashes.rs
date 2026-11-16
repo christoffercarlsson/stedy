@@ -12,11 +12,7 @@ mod shake;
 #[cfg(feature = "argon2")]
 pub(crate) use blake2b::Blake2bVar;
 
-pub(crate) use {
-    keccak::{KeccakF1600, Sponge},
-    sha3::{Sha3_256With, Sha3_512With},
-    shake::{Shake128With, Shake256With},
-};
+pub(crate) use keccak::{KeccakF1600, Sponge};
 
 pub use {
     blake2b::{Blake2b, Blake2b160, Blake2b256, Blake2b384, Blake2b512},
@@ -29,4 +25,14 @@ pub use {
 };
 
 #[cfg(feature = "hazmat")]
-pub use sha1::*;
+pub use {
+    sha1::*,
+    sha3::{Sha3_224With, Sha3_256With, Sha3_384With, Sha3_512With},
+    shake::{Shake128ReaderWith, Shake128With, Shake256ReaderWith, Shake256With},
+};
+
+#[cfg(not(feature = "hazmat"))]
+pub(crate) use {
+    sha3::{Sha3_256With, Sha3_512With},
+    shake::{Shake128With, Shake256With},
+};

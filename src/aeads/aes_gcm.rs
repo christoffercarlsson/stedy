@@ -3,7 +3,7 @@ use crate::{
     aeads::Aead,
     ciphers::AesCtr,
     macs::GHash,
-    traits::{ByteArray, CryptoRng},
+    traits::{self, ByteArray, CryptoRng, Sealed},
     utils::SecretBytes,
 };
 
@@ -44,6 +44,41 @@ impl Aes128Gcm {
     }
 }
 
+impl traits::Aead for Aes128Gcm {
+    const ID: u16 = 0x0101;
+
+    type Key = SecretBytes<16>;
+    type Nonce = [u8; 12];
+    type Tag = [u8; 16];
+
+    fn encrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<Self::Tag, Error> {
+        Self::encrypt(key, nonce, aad, message)
+    }
+
+    fn decrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &Self::Tag,
+    ) -> Result<(), Error> {
+        Self::decrypt(key, nonce, aad, message, tag)
+    }
+
+    fn generate_key(rng: &mut impl CryptoRng) -> Result<Self::Key, Error> {
+        Self::generate_key(rng)
+    }
+
+    fn increment_nonce(nonce: &mut Self::Nonce) -> Result<(), Error> {
+        Self::increment_nonce(nonce)
+    }
+}
+
 pub struct Aes256Gcm;
 
 impl Aes256Gcm {
@@ -80,6 +115,45 @@ impl Aes256Gcm {
         Aead::<AesCtr<32>, GHash>::increment_nonce(nonce)
     }
 }
+
+impl traits::Aead for Aes256Gcm {
+    const ID: u16 = 0x0102;
+
+    type Key = SecretBytes<32>;
+    type Nonce = [u8; 12];
+    type Tag = [u8; 16];
+
+    fn encrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<Self::Tag, Error> {
+        Self::encrypt(key, nonce, aad, message)
+    }
+
+    fn decrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &Self::Tag,
+    ) -> Result<(), Error> {
+        Self::decrypt(key, nonce, aad, message, tag)
+    }
+
+    fn generate_key(rng: &mut impl CryptoRng) -> Result<Self::Key, Error> {
+        Self::generate_key(rng)
+    }
+
+    fn increment_nonce(nonce: &mut Self::Nonce) -> Result<(), Error> {
+        Self::increment_nonce(nonce)
+    }
+}
+
+impl Sealed for Aes128Gcm {}
+
+impl Sealed for Aes256Gcm {}
 
 #[cfg(test)]
 mod tests {

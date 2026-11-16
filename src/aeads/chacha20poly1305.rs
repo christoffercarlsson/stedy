@@ -3,7 +3,7 @@ use crate::{
     aeads::Aead,
     ciphers::{ChaCha20, XChaCha20},
     macs::Poly1305,
-    traits::{ByteArray, CryptoRng},
+    traits::{self, ByteArray, CryptoRng, Sealed},
     utils::SecretBytes,
 };
 
@@ -37,6 +37,41 @@ impl ChaCha20Poly1305 {
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
         Aead::<ChaCha20, Poly1305>::increment_nonce(nonce)
+    }
+}
+
+impl traits::Aead for ChaCha20Poly1305 {
+    const ID: u16 = 0x0103;
+
+    type Key = SecretBytes<32>;
+    type Nonce = [u8; 12];
+    type Tag = [u8; 16];
+
+    fn encrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<Self::Tag, Error> {
+        Self::encrypt(key, nonce, aad, message)
+    }
+
+    fn decrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &Self::Tag,
+    ) -> Result<(), Error> {
+        Self::decrypt(key, nonce, aad, message, tag)
+    }
+
+    fn generate_key(rng: &mut impl CryptoRng) -> Result<Self::Key, Error> {
+        Self::generate_key(rng)
+    }
+
+    fn increment_nonce(nonce: &mut Self::Nonce) -> Result<(), Error> {
+        Self::increment_nonce(nonce)
     }
 }
 
@@ -78,6 +113,45 @@ impl XChaCha20Poly1305 {
         Ok(nonce)
     }
 }
+
+impl traits::Aead for XChaCha20Poly1305 {
+    const ID: u16 = 0x0104;
+
+    type Key = SecretBytes<32>;
+    type Nonce = [u8; 24];
+    type Tag = [u8; 16];
+
+    fn encrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+    ) -> Result<Self::Tag, Error> {
+        Self::encrypt(key, nonce, aad, message)
+    }
+
+    fn decrypt(
+        key: &Self::Key,
+        nonce: &Self::Nonce,
+        aad: Option<&[u8]>,
+        message: &mut [u8],
+        tag: &Self::Tag,
+    ) -> Result<(), Error> {
+        Self::decrypt(key, nonce, aad, message, tag)
+    }
+
+    fn generate_key(rng: &mut impl CryptoRng) -> Result<Self::Key, Error> {
+        Self::generate_key(rng)
+    }
+
+    fn increment_nonce(nonce: &mut Self::Nonce) -> Result<(), Error> {
+        Self::increment_nonce(nonce)
+    }
+}
+
+impl Sealed for ChaCha20Poly1305 {}
+
+impl Sealed for XChaCha20Poly1305 {}
 
 #[cfg(test)]
 mod tests {

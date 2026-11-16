@@ -71,7 +71,7 @@ impl ScalarP384Inner {
 
     #[cfg(target_pointer_width = "64")]
     fn invert(self) -> Self {
-        let mut table = [Self::ONE; 16];
+        let mut table = Secret::from([Self::ONE; 16]);
         table[1] = self;
         for i in 2..16 {
             table[i] = table[i - 1].mul(self);

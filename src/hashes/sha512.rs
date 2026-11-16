@@ -1,5 +1,5 @@
 use crate::{
-    traits::Hasher,
+    traits::{HashFunction, Hasher, Sealed},
     utils::{Block, Secret},
 };
 
@@ -36,7 +36,7 @@ impl Sha512 {
 
     pub fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks(message) {
-            self.process_block(&head);
+            self.process_block(head.get());
             for block in tail {
                 self.process_block(block);
             }
@@ -62,6 +62,10 @@ impl Default for Sha512 {
     fn default() -> Self {
         Self::new()
     }
+}
+
+impl HashFunction for Sha512 {
+    const ID: u16 = 0x0704;
 }
 
 impl Hasher for Sha512 {
@@ -178,8 +182,9 @@ impl Sha512 {
     ];
 
     fn process_block(&mut self, block: &[u8]) {
-        let words = Self::schedule(block);
-        self.compress(&words);
+        let mut words = Secret::from([0u64; 80]);
+        Self::schedule(block, words.get_mut());
+        self.compress(words.get());
         self.total_size += block.len() as u64;
     }
 
@@ -256,8 +261,7 @@ impl Sha512 {
         (x & y) ^ (x & z) ^ (y & z)
     }
 
-    fn schedule(block: &[u8]) -> [u64; 80] {
-        let mut w = [0u64; 80];
+    fn schedule(block: &[u8], w: &mut [u64; 80]) {
         let (words, _) = block.as_chunks::<8>();
         for (i, &word) in words.iter().enumerate().take(16) {
             w[i] = u64::from_be_bytes(word);
@@ -270,9 +274,10 @@ impl Sha512 {
                 .wrapping_add(w[i - 7])
                 .wrapping_add(s1);
         }
-        w
     }
 }
+
+impl Sealed for Sha512 {}
 
 #[cfg(test)]
 mod tests {

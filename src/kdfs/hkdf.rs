@@ -1,15 +1,15 @@
 use crate::{
     Error,
     macs::Hmac,
-    traits::{ByteArray, Hasher},
-    utils::wipe,
+    traits::{ByteArray, HashFunction, Hasher, Kdf, Sealed},
+    utils::Secret,
 };
 
 pub struct Hkdf<H>
 where
     H: Hasher,
 {
-    prk: H::Output,
+    prk: Secret<H::Output>,
 }
 
 impl<H> Hkdf<H>
@@ -31,12 +31,19 @@ where
     }
 }
 
-impl<H> Drop for Hkdf<H>
+impl<H> Kdf for Hkdf<H>
 where
-    H: Hasher,
+    H: HashFunction,
 {
-    fn drop(&mut self) {
-        wipe(self.prk.as_mut());
+    const ID: u16 = 0x0200 | (H::ID & 0x00ff);
+
+    fn derive(
+        ikm: &[u8],
+        salt: Option<&[u8]>,
+        info: Option<&[u8]>,
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        Self::derive(ikm, salt, info, output)
     }
 }
 
@@ -47,26 +54,29 @@ where
     fn extract(salt: Option<&[u8]>, ikm: &[u8]) -> Self {
         let mut mac = Hmac::<H>::new(salt.unwrap_or(H::Output::new().as_ref()));
         mac.update(ikm);
-        let prk = mac.finalize();
+        let mut prk = Secret::from(H::Output::new());
+        mac.finalize_into(prk.get_mut().as_mut());
         Self { prk }
     }
 
     fn expand(self, info: Option<&[u8]>, okm: &mut [u8]) {
         let info = info.unwrap_or_default();
-        let mut t = H::Output::new();
+        let mut t = Secret::from(H::Output::new());
         for (i, chunk) in okm.chunks_mut(H::OUTPUT_SIZE).enumerate() {
-            let mut mac = Hmac::<H>::new(self.prk.as_ref());
+            let mut mac = Hmac::<H>::new(self.prk.get().as_ref());
             if i > 0 {
-                mac.update(t.as_ref());
+                mac.update(t.get().as_ref());
             }
             mac.update(info);
             mac.update(&[(i + 1) as u8]);
-            mac.finalize_into(t.as_mut());
-            let slice = &t.as_ref()[..chunk.len()];
+            mac.finalize_into(t.get_mut().as_mut());
+            let slice = &t.get().as_ref()[..chunk.len()];
             chunk.copy_from_slice(slice);
         }
     }
 }
+
+impl<H> Sealed for Hkdf<H> where H: Hasher {}
 
 #[cfg(test)]
 mod tests {

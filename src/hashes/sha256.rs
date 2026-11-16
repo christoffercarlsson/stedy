@@ -1,5 +1,5 @@
 use crate::{
-    traits::Hasher,
+    traits::{HashFunction, Hasher, Sealed},
     utils::{Block, Secret},
 };
 
@@ -30,7 +30,7 @@ impl Sha256 {
 
     pub fn update(&mut self, message: &[u8]) {
         if let Some((head, tail)) = self.block.blocks(message) {
-            self.process_block(&head);
+            self.process_block(head.get());
             for block in tail {
                 self.process_block(block);
             }
@@ -56,6 +56,10 @@ impl Default for Sha256 {
     fn default() -> Self {
         Self::new()
     }
+}
+
+impl HashFunction for Sha256 {
+    const ID: u16 = 0x0702;
 }
 
 impl Hasher for Sha256 {
@@ -102,8 +106,9 @@ impl Sha256 {
     ];
 
     fn process_block(&mut self, block: &[u8]) {
-        let words = Self::schedule(block);
-        self.compress(&words);
+        let mut words = Secret::from([0u32; 64]);
+        Self::schedule(block, words.get_mut());
+        self.compress(words.get());
         self.total_size += block.len() as u64;
     }
 
@@ -180,8 +185,7 @@ impl Sha256 {
         (x & y) ^ (x & z) ^ (y & z)
     }
 
-    fn schedule(block: &[u8]) -> [u32; 64] {
-        let mut w = [0u32; 64];
+    fn schedule(block: &[u8], w: &mut [u32; 64]) {
         let (words, _) = block.as_chunks::<4>();
         for (i, &word) in words.iter().enumerate().take(16) {
             w[i] = u32::from_be_bytes(word);
@@ -194,9 +198,10 @@ impl Sha256 {
                 .wrapping_add(w[i - 7])
                 .wrapping_add(s1);
         }
-        w
     }
 }
+
+impl Sealed for Sha256 {}
 
 #[cfg(test)]
 mod tests {

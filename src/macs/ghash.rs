@@ -17,7 +17,8 @@ where
     type Output = [u8; 16];
 
     fn new(cipher: &mut AesCtr<KEY_SIZE>) -> Self {
-        let hash_subkey = Secret::from(cipher.hash_subkey());
+        let mut hash_subkey = Secret::from([0u8; 16]);
+        cipher.hash_subkey(hash_subkey.get_mut());
         let mut mac = Self {
             h: Self::element(hash_subkey.get()),
             y: 0,
@@ -37,7 +38,8 @@ where
 
     fn verify(mut self, ciphertext: &[u8], aad: Option<&[u8]>, tag: &Self::Output) -> bool {
         self.calculate_tag(ciphertext, aad);
-        constant_time_eq(&self.finalize(), tag)
+        let computed = Secret::from(self.finalize());
+        constant_time_eq(computed.get(), tag)
     }
 }
 
@@ -63,15 +65,16 @@ impl GHash {
     fn update(&mut self, message: &[u8]) {
         let (batches, remaining) = message.as_chunks::<128>();
         if !batches.is_empty() {
-            let powers = Secret::from(self.powers());
+            let mut powers = Secret::from([self.h; 8]);
+            self.powers(powers.get_mut());
+            let mut x = Secret::from([0u128; 8]);
             for batch in batches {
                 let (blocks, _) = batch.as_chunks::<16>();
-                let mut x = [0u128; 8];
                 for (x, block) in x.iter_mut().rev().zip(blocks.iter()) {
                     *x = Self::element(block);
                 }
                 x[7] ^= self.y;
-                self.y = multiply(&x, powers.get());
+                self.y = multiply(x.get(), powers.get());
             }
         }
         for chunk in remaining.chunks(16) {
@@ -81,12 +84,10 @@ impl GHash {
         }
     }
 
-    fn powers(&self) -> [u128; 8] {
-        let mut powers = [self.h; 8];
+    fn powers(&self, powers: &mut [u128; 8]) {
         for i in 1..8 {
             powers[i] = multiply(&[powers[i - 1]], &[self.h]);
         }
-        powers
     }
 
     fn finalize(self) -> [u8; 16] {

@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{SeekableStreamCipher, StreamCipher},
+    traits::{SeekableStreamCipher, StreamCipher, Wipe},
     utils::Secret,
 };
 
@@ -44,8 +44,10 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     }
 
     pub fn new(key: &[u8; KEY_SIZE], nonce: &[u8; 12]) -> Self {
+        let mut round_keys = Secret::from([[0u8; 16]; 15]);
+        Self::expand_key(key, round_keys.get_mut());
         Self {
-            round_keys: Secret::from(Self::expand_key(key)),
+            round_keys,
             nonce: *nonce,
             counter: 1,
             keystream: Secret::from([0u8; 16]),
@@ -134,8 +136,12 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         KEY_SIZE / 4 + 6
     };
 
-    pub(crate) fn hash_subkey(&self) -> [u8; 16] {
-        self.encrypt_block([0u8; 16])
+    pub(crate) fn hash_subkey(&self, subkey: &mut [u8; 16]) {
+        Self::encrypt_blocks(
+            self.round_keys.get(),
+            &[[0u8; 16]],
+            core::array::from_mut(subkey),
+        );
     }
 
     fn from_seed(seed: &[u8]) -> Self {
@@ -151,17 +157,14 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         cipher
     }
 
-    fn encrypt_block(&self, block: [u8; 16]) -> [u8; 16] {
-        let mut data = [[0u8; 16]];
-        self.encrypt_blocks(&[block], &mut data);
-        data[0]
-    }
-
-    fn encrypt_blocks<const N: usize>(&self, blocks: &[[u8; 16]; N], data: &mut [[u8; 16]; N]) {
-        let keys = &self.round_keys;
+    fn encrypt_blocks<const N: usize>(
+        round_keys: &[[u8; 16]; 15],
+        blocks: &[[u8; 16]; N],
+        data: &mut [[u8; 16]; N],
+    ) {
         match KEY_SIZE {
-            16 => encrypt_blocks::<10, N>(keys.get(), blocks, data),
-            _ => encrypt_blocks::<14, N>(keys.get(), blocks, data),
+            16 => encrypt_blocks::<10, N>(round_keys, blocks, data),
+            _ => encrypt_blocks::<14, N>(round_keys, blocks, data),
         }
     }
 
@@ -173,7 +176,13 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     }
 
     fn next(&mut self) {
-        self.keystream = Secret::from(self.encrypt_block(self.counter_block(self.counter)));
+        let block = self.counter_block(self.counter);
+        self.keystream.wipe();
+        Self::encrypt_blocks(
+            self.round_keys.get(),
+            &[block],
+            core::array::from_mut(self.keystream.get_mut()),
+        );
         self.counter = self.counter.wrapping_add(1);
         self.blocks = self.blocks.saturating_sub(1);
         self.offset = 0;
@@ -192,14 +201,14 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         }
         let (chunks, _) = data.as_chunks_mut::<16>();
         let chunks = chunks.try_into().expect("a batch holds 8 blocks");
-        self.encrypt_blocks(&blocks, chunks);
+        Self::encrypt_blocks(self.round_keys.get(), &blocks, chunks);
         self.counter = self.counter.wrapping_add(8);
         self.blocks = self.blocks.saturating_sub(8);
     }
 
-    fn expand_key(key: &[u8; KEY_SIZE]) -> [[u8; 16]; 15] {
+    fn expand_key(key: &[u8; KEY_SIZE], round_keys: &mut [[u8; 16]; 15]) {
         let nk = KEY_SIZE / 4;
-        let mut words = [0u32; 60];
+        let mut words = Secret::from([0u32; 60]);
         let (chunks, _) = key.as_chunks::<4>();
         for (i, chunk) in chunks.iter().enumerate() {
             words[i] = u32::from_le_bytes(*chunk);
@@ -215,7 +224,6 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
             }
             words[i] = words[i - nk] ^ temp;
         }
-        let mut round_keys = [[0u8; 16]; 15];
         let (chunks, _) = words.as_chunks::<4>();
         for (i, chunk) in chunks.iter().enumerate() {
             let (bytes, _) = round_keys[i].as_chunks_mut::<4>();
@@ -223,19 +231,18 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
                 b.copy_from_slice(&chunk[j].to_le_bytes());
             }
         }
-        round_keys
     }
 
     #[allow(clippy::inline_always)]
     #[inline(always)]
     fn sub_word(word: u32) -> u32 {
-        let mut block = [0u8; 16];
-        let (chunks, _) = block.as_chunks_mut::<4>();
+        let mut block = Secret::from([[0u8; 16]]);
+        let (chunks, _) = block[0].as_chunks_mut::<4>();
         for chunk in chunks.iter_mut() {
             chunk.copy_from_slice(&word.to_le_bytes());
         }
-        let mut data = [[0u8; 16]];
-        encrypt_blocks::<1, 1>(&[[0u8; 16]; 15], &[block], &mut data);
+        let mut data = Secret::from([[0u8; 16]]);
+        encrypt_blocks::<1, 1>(&[[0u8; 16]; 15], block.get(), data.get_mut());
         u32::from_le_bytes([data[0][0], data[0][1], data[0][2], data[0][3]])
     }
 }

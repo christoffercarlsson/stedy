@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    utils::{Block, Choice, wipe},
+    utils::{Block, Choice, Secret, wipe},
 };
 
 const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";
@@ -34,9 +34,10 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             return Err(Error::Misuse);
         }
         let mut block = Block::<BITS>::new();
+        let mut digits = Secret::from([0u8; 8]);
         for byte in decoded {
-            let digits = Self::to_binary(*byte);
-            if let Some((head, tail)) = block.blocks(&digits) {
+            Self::to_binary(*byte, digits.get_mut());
+            if let Some((head, tail)) = block.blocks(digits.get()) {
                 self.encode_bits(&head, encoded);
                 for chunk in tail {
                     self.encode_bits(chunk, encoded);
@@ -98,11 +99,12 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         }
         let mut block = Block::<8>::new();
         let mut error = Choice::FALSE;
+        let mut digits = Secret::from([0u8; 8]);
         for byte in &encoded[..unpadded_size] {
             let index = self.find_index(&mut error, *byte);
-            let digits = Self::to_binary(index);
+            Self::to_binary(index, digits.get_mut());
             if let Some((head, _)) = block.blocks(&digits[(8 - BITS)..]) {
-                let decoded_byte = Self::from_binary(&head);
+                let decoded_byte = Self::from_binary(head.get());
                 self.push(decoded_byte, decoded);
             }
         }
@@ -175,14 +177,12 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         number
     }
 
-    fn to_binary(byte: u8) -> [u8; 8] {
+    fn to_binary(byte: u8, digits: &mut [u8; 8]) {
         let mut n = byte;
-        let mut digits = [0; 8];
-        for i in (0..8).rev() {
-            digits[i] = n % 2;
+        for digit in digits.iter_mut().rev() {
+            *digit = n % 2;
             n /= 2;
         }
-        digits
     }
 }
 

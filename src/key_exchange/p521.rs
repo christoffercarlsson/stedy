@@ -2,7 +2,7 @@ use crate::{
     Error,
     elliptic_curves::P521 as P521Curve,
     key_exchange::Ecdh,
-    traits::{ByteArray, CryptoRng},
+    traits::{ByteArray, CryptoRng, KeyExchange, Sealed},
     utils::SecretBytes,
 };
 #[cfg(feature = "hazmat")]
@@ -36,6 +36,31 @@ impl P521 {
         let mut shared_secret = SecretBytes::new();
         Ecdh::<P521Curve>::key_exchange(private_key, public_key, shared_secret.get_mut())?;
         Ok(shared_secret)
+    }
+}
+
+impl KeyExchange for P521 {
+    const ID: u16 = 0x0404;
+
+    type PrivateKey = SecretBytes<66>;
+    type PublicKey = [u8; 67];
+    type SharedSecret = SecretBytes<66>;
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error> {
+        Self::generate_key_pair(rng)
+    }
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error> {
+        Self::public_key(private_key)
+    }
+
+    fn key_exchange(
+        private_key: &Self::PrivateKey,
+        public_key: &Self::PublicKey,
+    ) -> Result<Self::SharedSecret, Error> {
+        Self::key_exchange(private_key, public_key)
     }
 }
 
@@ -75,6 +100,40 @@ where
         Ok(shared_secret)
     }
 }
+
+#[cfg(feature = "hazmat")]
+impl<A> KeyExchange for P521With<A>
+where
+    A: FieldArithmetic<Bytes = [u8; 66]>,
+{
+    const ID: u16 = 0x0404;
+
+    type PrivateKey = SecretBytes<66>;
+    type PublicKey = [u8; 67];
+    type SharedSecret = SecretBytes<66>;
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error> {
+        Self::generate_key_pair(rng)
+    }
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error> {
+        Self::public_key(private_key)
+    }
+
+    fn key_exchange(
+        private_key: &Self::PrivateKey,
+        public_key: &Self::PublicKey,
+    ) -> Result<Self::SharedSecret, Error> {
+        Self::key_exchange(private_key, public_key)
+    }
+}
+
+impl Sealed for P521 {}
+
+#[cfg(feature = "hazmat")]
+impl<A> Sealed for P521With<A> where A: FieldArithmetic<Bytes = [u8; 66]> {}
 
 #[cfg(test)]
 mod tests {

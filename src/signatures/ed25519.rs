@@ -3,7 +3,7 @@ use crate::{
     elliptic_curves::{Field25519, Scalar25519},
     hashes::Sha512,
     signatures::{Eddsa, HashEddsa},
-    traits::{ByteArray, CryptoRng},
+    traits::{ByteArray, CryptoRng, Sealed, SignatureScheme},
     utils::SecretBytes,
 };
 #[cfg(feature = "hazmat")]
@@ -55,6 +55,36 @@ impl Ed25519 {
     }
 }
 
+impl SignatureScheme for Ed25519 {
+    const ID: u16 = 0x0601;
+
+    type PrivateKey = SecretBytes<64>;
+    type PublicKey = [u8; 32];
+    type Signature = [u8; 64];
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error> {
+        Self::generate_key_pair(rng)
+    }
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error> {
+        Ok(Self::public_key(private_key))
+    }
+
+    fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Self::Signature, Error> {
+        Ok(Self::sign(private_key, message))
+    }
+
+    fn verify(
+        message: &[u8],
+        public_key: &Self::PublicKey,
+        signature: &Self::Signature,
+    ) -> Result<(), Error> {
+        Self::verify(message, public_key, signature)
+    }
+}
+
 #[cfg(feature = "hazmat")]
 pub struct Ed25519With<A, H>(PhantomData<(A, H)>);
 
@@ -98,6 +128,40 @@ where
         signature: &[u8; 64],
     ) -> Result<(), Error> {
         Eddsa::<Scalar25519, Field25519With<A>, H, [u8; 64]>::verify(message, public_key, signature)
+    }
+}
+
+#[cfg(feature = "hazmat")]
+impl<A> SignatureScheme for Ed25519With<A, Sha512>
+where
+    A: FieldArithmetic<Bytes = [u8; 32]>,
+{
+    const ID: u16 = 0x0601;
+
+    type PrivateKey = SecretBytes<64>;
+    type PublicKey = [u8; 32];
+    type Signature = [u8; 64];
+
+    fn generate_key_pair(
+        rng: &mut impl CryptoRng,
+    ) -> Result<(Self::PrivateKey, Self::PublicKey), Error> {
+        Self::generate_key_pair(rng)
+    }
+
+    fn public_key(private_key: &Self::PrivateKey) -> Result<Self::PublicKey, Error> {
+        Ok(Self::public_key(private_key))
+    }
+
+    fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Self::Signature, Error> {
+        Ok(Self::sign(private_key, message))
+    }
+
+    fn verify(
+        message: &[u8],
+        public_key: &Self::PublicKey,
+        signature: &Self::Signature,
+    ) -> Result<(), Error> {
+        Self::verify(message, public_key, signature)
     }
 }
 
@@ -179,6 +243,11 @@ where
         Self::new()
     }
 }
+
+impl Sealed for Ed25519 {}
+
+#[cfg(feature = "hazmat")]
+impl<A> Sealed for Ed25519With<A, Sha512> where A: FieldArithmetic<Bytes = [u8; 32]> {}
 
 #[cfg(test)]
 mod tests {
