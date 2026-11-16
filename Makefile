@@ -1,4 +1,4 @@
-.PHONY: bench cctv clean ct docs fuzz wycheproof
+.PHONY: bench cctv clean ct docs fuzz miri wycheproof
 
 CRATE := $(shell awk -F'"' '/^\[package\]/ { p = 1 } p && /^name = / { print $$2; exit }' Cargo.toml | tr - _)
 
@@ -104,6 +104,10 @@ fuzz:
 			-max_total_time=$(FUZZ_TIME) -len_control=0 -max_len=8192 -rss_limit_mb=2048 \
 			|| exit 1; \
 	done
+
+miri:
+	@cargo +nightly miri test --quiet --lib --features std $(if $(MIRI_TARGET),--target $(MIRI_TARGET)) \
+		-- utils::wipe utils::secret
 
 wycheproof:
 	@mkdir -p $(WYCHEPROOF_DIR)
