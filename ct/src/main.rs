@@ -47,23 +47,13 @@ fn consume<T: ?Sized>(value: &T) {
     black_box(value);
 }
 
-static TABLE: [u8; 256] = {
-    let mut table = [0u8; 256];
-    let mut i = 0u8;
-    loop {
-        table[i as usize] = i;
-        if i == u8::MAX {
-            break table;
-        }
-        i += 1;
-    }
-};
+static TABLE: [u8; 256] = [0; 256];
 
 #[inline(never)]
 fn control() {
     let secret = [1u8; 2];
     classify(&secret);
-    let looked_up = TABLE[usize::from(secret[0])];
+    let looked_up = black_box(&TABLE)[usize::from(secret[0])];
     let mut counted = 0u8;
     for _ in 0..secret[1] {
         counted = black_box(counted.wrapping_add(1));
@@ -73,9 +63,8 @@ fn control() {
 
 fn equality() {
     let a = [3u8; 32];
-    let b = [4u8; 32];
     classify(&a);
-    public(&constant_time_eq(&a, &b));
+    public(&constant_time_eq(&a, &[4u8; 32]));
     let a = SecretBytes::from([3u8; 32]);
     classify(a.as_ref());
     public(&(a == [4u8; 32]));
@@ -87,8 +76,7 @@ fn key_exchange<X: KeyExchange>() {
     public(public_key.as_ref());
     let (_, peer_public_key) = X::generate_key_pair(&mut rng).unwrap();
     public(peer_public_key.as_ref());
-    let derived = X::public_key(&private_key);
-    public(&derived);
+    public(&X::public_key(&private_key));
     consume(&X::key_exchange(&private_key, &peer_public_key));
 }
 
@@ -96,10 +84,8 @@ fn signature_scheme<S: SignatureScheme>() {
     let mut rng = SecretRng::new();
     let (private_key, public_key) = S::generate_key_pair(&mut rng).unwrap();
     public(public_key.as_ref());
-    let derived = S::public_key(&private_key);
-    public(&derived);
-    let signature = S::sign(&private_key, b"message");
-    public(&signature);
+    public(&S::public_key(&private_key));
+    public(&S::sign(&private_key, b"message"));
 }
 
 fn kem<K: Kem>() {
@@ -209,13 +195,12 @@ fn kdfs() {
     consume(&output);
     public(&Pbkdf2::<Sha256>::derive(&secret, b"salt", 2, &mut output));
     consume(&output);
-    let params = Argon2Params::new(Argon2Variant::Argon2i)
-        .memory(32)
-        .passes(1)
-        .lanes(1)
-        .threads(1);
     public(&Argon2::derive(
-        params,
+        Argon2Params::new(Argon2Variant::Argon2i)
+            .memory(32)
+            .passes(1)
+            .lanes(1)
+            .threads(1),
         &secret,
         b"saltsalt",
         None,
@@ -247,8 +232,7 @@ fn padding() {
     classify(&secret);
     let mut buffer = [0u8; 64];
     let padded = pad_to_block(&secret, &mut buffer, 16).unwrap();
-    let unpadded = unpad(padded).map(<[u8]>::len);
-    public(&unpadded);
+    public(&unpad(padded).map(<[u8]>::len));
 }
 
 fn shamir() {
@@ -270,9 +254,6 @@ fn csprngs() {
     consume(&output);
     Aes256CtrRng::from(&seed).fill(&mut output).unwrap();
     consume(&output);
-    HmacDrbg::<Sha256>::new(&[7u8; 32])
-        .fill(&mut output)
-        .unwrap();
     let mut drbg = HmacDrbg::<Sha256>::instantiate(&seed[..32], &seed[32..48]);
     drbg.fill(&mut output).unwrap();
     consume(&output);
@@ -282,8 +263,7 @@ fn ristretto255() {
     let mut rng = SecretRng::new();
     let scalar = Ristretto255::generate_scalar(&mut rng).unwrap();
     let other = Ristretto255::generate_scalar(&mut rng).unwrap();
-    let element = Ristretto255::scalar_mult_base(&scalar);
-    public(&element);
+    public(&Ristretto255::scalar_mult_base(&scalar));
     let base = Ristretto255::scalar_mult_base(&[9u8; 32]).unwrap();
     consume(&Ristretto255::scalar_mult(&other, &base));
     consume(&Ristretto255::scalar_add(&scalar, &other));

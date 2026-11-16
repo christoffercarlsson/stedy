@@ -1,4 +1,4 @@
-.PHONY: bench cctv clean ct docs wycheproof
+.PHONY: bench cctv clean ct docs fuzz wycheproof
 
 CRATE := $(shell awk -F'"' '/^\[package\]/ { p = 1 } p && /^name = / { print $$2; exit }' Cargo.toml | tr - _)
 
@@ -10,6 +10,8 @@ AES_FEATURES := +aes
 endif
 
 VALGRIND ?= valgrind
+FUZZ_TARGETS := aeads decode unpad verify_phc signatures key_exchange kems ristretto255 shamir
+FUZZ_TIME ?= 60
 CT_BINARY := ct/target/$(if $(CT_TARGET),$(CT_TARGET)/)release/stedy-ct
 
 CCTV_REF := main
@@ -95,6 +97,13 @@ ct:
 docs:
 	@RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --quiet --features docs
 	@echo "$${CARGO_TARGET_DIR:-target}/doc/$(CRATE)/index.html"
+
+fuzz:
+	@cd fuzz && for target in $(or $(FUZZ_TARGET),$(FUZZ_TARGETS)); do \
+		cargo +nightly fuzz run --release $$target -- \
+			-max_total_time=$(FUZZ_TIME) -len_control=0 -max_len=8192 -rss_limit_mb=2048 \
+			|| exit 1; \
+	done
 
 wycheproof:
 	@mkdir -p $(WYCHEPROOF_DIR)

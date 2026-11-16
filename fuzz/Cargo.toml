@@ -1,0 +1,77 @@
+[package]
+name = "stedy-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+stedy = { path = "..", features = ["aes", "argon2", "hazmat", "secret_sharing"] }
+
+[[bin]]
+name = "aeads"
+path = "fuzz_targets/aeads.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode"
+path = "fuzz_targets/decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "unpad"
+path = "fuzz_targets/unpad.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "verify_phc"
+path = "fuzz_targets/verify_phc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "signatures"
+path = "fuzz_targets/signatures.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "key_exchange"
+path = "fuzz_targets/key_exchange.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "kems"
+path = "fuzz_targets/kems.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ristretto255"
+path = "fuzz_targets/ristretto255.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "shamir"
+path = "fuzz_targets/shamir.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]

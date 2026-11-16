@@ -9,16 +9,16 @@ pub fn running() -> bool {
 }
 
 pub fn classify<T: ?Sized>(value: &T) {
-    request(
-        MAKE_MEM_UNDEFINED,
-        core::ptr::from_ref(value).cast::<u8>() as usize,
-        size_of_val(value),
-    );
+    request_for(MAKE_MEM_UNDEFINED, value);
 }
 
 pub fn declassify<T: ?Sized>(value: &T) {
+    request_for(MAKE_MEM_DEFINED, value);
+}
+
+fn request_for<T: ?Sized>(code: usize, value: &T) {
     request(
-        MAKE_MEM_DEFINED,
+        code,
         core::ptr::from_ref(value).cast::<u8>() as usize,
         size_of_val(value),
     );

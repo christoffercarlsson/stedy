@@ -138,6 +138,19 @@ jobs:
         run: rustup target add ${{ matrix.target }}
       - run: make ct CT_TARGET="${{ matrix.target }}" CT_RUSTFLAGS="${{ matrix.rustflags }}"
 
+  fuzz:
+    name: fuzz / ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aeads, decode, unpad, verify_phc, signatures, key_exchange, kems, ristretto255, shamir]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal --no-self-update
+      - run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - run: make fuzz FUZZ_TARGET=${{ matrix.target }}
+
   msrv:
     name: msrv
     runs-on: ubuntu-latest
