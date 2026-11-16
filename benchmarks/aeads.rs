@@ -144,7 +144,7 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("xsalsa20poly1305_encrypt", |b| {
         let mut message = message;
-        b.iter(|| XSalsa20Poly1305::encrypt(&key, &nonce, None, &mut message));
+        b.iter(|| XSalsa20Poly1305::encrypt(&key, &nonce, &mut message));
     });
 
     c.bench_function("xsalsa20poly1305_decrypt", |b| {
@@ -161,7 +161,7 @@ pub fn bench(c: &mut Criterion) {
         ];
         b.iter(|| {
             let mut ciphertext = ciphertext;
-            XSalsa20Poly1305::decrypt(&key, &nonce, None, &mut ciphertext, &tag)
+            XSalsa20Poly1305::decrypt(&key, &nonce, &mut ciphertext, &tag)
         });
     });
 }

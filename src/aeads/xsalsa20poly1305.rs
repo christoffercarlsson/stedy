@@ -13,30 +13,28 @@ impl XSalsa20Poly1305 {
     pub fn encrypt(
         key: &[u8; 32],
         nonce: &[u8; 24],
-        aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<XSalsa20, Poly1305>::encrypt(key, nonce, aad, message)
+        XSalsa20Poly1305Core::encrypt(key, nonce, None, message)
     }
 
     pub fn decrypt(
         key: &[u8; 32],
         nonce: &[u8; 24],
-        aad: Option<&[u8]>,
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<XSalsa20, Poly1305>::decrypt(key, nonce, aad, message, tag)
+        XSalsa20Poly1305Core::decrypt(key, nonce, None, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
         let mut key = SecretBytes::new();
-        Aead::<XSalsa20, Poly1305>::generate_key(rng, key.get_mut())?;
+        XSalsa20Poly1305Core::generate_key(rng, key.get_mut())?;
         Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 24]) -> Result<(), Error> {
-        Aead::<XSalsa20, Poly1305>::increment_nonce(nonce)
+        XSalsa20Poly1305Core::increment_nonce(nonce)
     }
 
     pub fn generate_nonce(rng: &mut impl CryptoRng) -> Result<[u8; 24], Error> {
@@ -45,6 +43,8 @@ impl XSalsa20Poly1305 {
         Ok(nonce)
     }
 }
+
+type XSalsa20Poly1305Core = Aead<XSalsa20, Poly1305>;
 
 #[cfg(test)]
 mod tests {
@@ -73,10 +73,10 @@ mod tests {
     #[test]
     fn test_xsalsa20poly1305() {
         let mut message = PLAINTEXT;
-        let tag = XSalsa20Poly1305::encrypt(&KEY, &NONCE, None, &mut message).unwrap();
+        let tag = XSalsa20Poly1305::encrypt(&KEY, &NONCE, &mut message).unwrap();
         assert_eq!(message, CIPHERTEXT);
         assert_eq!(tag, TAG);
-        let verified = XSalsa20Poly1305::decrypt(&KEY, &NONCE, None, &mut message, &tag);
+        let verified = XSalsa20Poly1305::decrypt(&KEY, &NONCE, &mut message, &tag);
         assert_eq!(verified, Ok(()));
         assert_eq!(message, PLAINTEXT);
     }

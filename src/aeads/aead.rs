@@ -24,9 +24,6 @@ where
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<M::Output, Error> {
-        if !M::ACCEPTS_AAD && aad.is_some() {
-            return Err(Error::Misuse);
-        }
         let mut aead = Self::new(key, nonce);
         aead.cipher.apply_keystream(message)?;
         Ok(aead.mac.tag(message, aad))
@@ -39,9 +36,6 @@ where
         message: &mut [u8],
         tag: &M::Output,
     ) -> Result<(), Error> {
-        if !M::ACCEPTS_AAD && aad.is_some() {
-            return Err(Error::Misuse);
-        }
         let mut aead = Self::new(key, nonce);
         if !declassify(aead.mac.verify(message, aad, tag)) {
             return Err(Error::Decryption);

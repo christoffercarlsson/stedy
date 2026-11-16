@@ -95,8 +95,6 @@ impl Authenticator<XChaCha20> for Poly1305 {
 }
 
 impl Authenticator<XSalsa20> for Poly1305 {
-    const ACCEPTS_AAD: bool = false;
-
     type Output = [u8; 16];
 
     fn new(cipher: &mut XSalsa20) -> Self {

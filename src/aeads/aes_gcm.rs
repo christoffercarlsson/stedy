@@ -20,7 +20,7 @@ impl Aes128Gcm {
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<AesCtr<16>, GHash>::encrypt(key, nonce, aad, message)
+        Aes128GcmCore::encrypt(key, nonce, aad, message)
     }
 
     pub fn decrypt(
@@ -30,17 +30,17 @@ impl Aes128Gcm {
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<AesCtr<16>, GHash>::decrypt(key, nonce, aad, message, tag)
+        Aes128GcmCore::decrypt(key, nonce, aad, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<16>, Error> {
         let mut key = SecretBytes::new();
-        Aead::<AesCtr<16>, GHash>::generate_key(rng, key.get_mut())?;
+        Aes128GcmCore::generate_key(rng, key.get_mut())?;
         Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
-        Aead::<AesCtr<16>, GHash>::increment_nonce(nonce)
+        Aes128GcmCore::increment_nonce(nonce)
     }
 }
 
@@ -92,7 +92,7 @@ impl Aes256Gcm {
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<AesCtr<32>, GHash>::encrypt(key, nonce, aad, message)
+        Aes256GcmCore::encrypt(key, nonce, aad, message)
     }
 
     pub fn decrypt(
@@ -102,17 +102,17 @@ impl Aes256Gcm {
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<AesCtr<32>, GHash>::decrypt(key, nonce, aad, message, tag)
+        Aes256GcmCore::decrypt(key, nonce, aad, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
         let mut key = SecretBytes::new();
-        Aead::<AesCtr<32>, GHash>::generate_key(rng, key.get_mut())?;
+        Aes256GcmCore::generate_key(rng, key.get_mut())?;
         Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
-        Aead::<AesCtr<32>, GHash>::increment_nonce(nonce)
+        Aes256GcmCore::increment_nonce(nonce)
     }
 }
 
@@ -154,6 +154,10 @@ impl traits::Aead for Aes256Gcm {
 impl Sealed for Aes128Gcm {}
 
 impl Sealed for Aes256Gcm {}
+
+type Aes128GcmCore = Aead<AesCtr<16>, GHash>;
+
+type Aes256GcmCore = Aead<AesCtr<32>, GHash>;
 
 #[cfg(test)]
 mod tests {

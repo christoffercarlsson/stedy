@@ -16,7 +16,7 @@ impl ChaCha20Poly1305 {
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<ChaCha20, Poly1305>::encrypt(key, nonce, aad, message)
+        ChaCha20Poly1305Core::encrypt(key, nonce, aad, message)
     }
 
     pub fn decrypt(
@@ -26,17 +26,17 @@ impl ChaCha20Poly1305 {
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<ChaCha20, Poly1305>::decrypt(key, nonce, aad, message, tag)
+        ChaCha20Poly1305Core::decrypt(key, nonce, aad, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
         let mut key = SecretBytes::new();
-        Aead::<ChaCha20, Poly1305>::generate_key(rng, key.get_mut())?;
+        ChaCha20Poly1305Core::generate_key(rng, key.get_mut())?;
         Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 12]) -> Result<(), Error> {
-        Aead::<ChaCha20, Poly1305>::increment_nonce(nonce)
+        ChaCha20Poly1305Core::increment_nonce(nonce)
     }
 }
 
@@ -84,7 +84,7 @@ impl XChaCha20Poly1305 {
         aad: Option<&[u8]>,
         message: &mut [u8],
     ) -> Result<[u8; 16], Error> {
-        Aead::<XChaCha20, Poly1305>::encrypt(key, nonce, aad, message)
+        XChaCha20Poly1305Core::encrypt(key, nonce, aad, message)
     }
 
     pub fn decrypt(
@@ -94,17 +94,17 @@ impl XChaCha20Poly1305 {
         message: &mut [u8],
         tag: &[u8; 16],
     ) -> Result<(), Error> {
-        Aead::<XChaCha20, Poly1305>::decrypt(key, nonce, aad, message, tag)
+        XChaCha20Poly1305Core::decrypt(key, nonce, aad, message, tag)
     }
 
     pub fn generate_key(rng: &mut impl CryptoRng) -> Result<SecretBytes<32>, Error> {
         let mut key = SecretBytes::new();
-        Aead::<XChaCha20, Poly1305>::generate_key(rng, key.get_mut())?;
+        XChaCha20Poly1305Core::generate_key(rng, key.get_mut())?;
         Ok(key)
     }
 
     pub fn increment_nonce(nonce: &mut [u8; 24]) -> Result<(), Error> {
-        Aead::<XChaCha20, Poly1305>::increment_nonce(nonce)
+        XChaCha20Poly1305Core::increment_nonce(nonce)
     }
 
     pub fn generate_nonce(rng: &mut impl CryptoRng) -> Result<[u8; 24], Error> {
@@ -152,6 +152,10 @@ impl traits::Aead for XChaCha20Poly1305 {
 impl Sealed for ChaCha20Poly1305 {}
 
 impl Sealed for XChaCha20Poly1305 {}
+
+type ChaCha20Poly1305Core = Aead<ChaCha20, Poly1305>;
+
+type XChaCha20Poly1305Core = Aead<XChaCha20, Poly1305>;
 
 #[cfg(test)]
 mod tests {

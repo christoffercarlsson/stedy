@@ -325,8 +325,6 @@ pub trait Authenticator<C>
 where
     C: SeekableStreamCipher,
 {
-    const ACCEPTS_AAD: bool = true;
-
     type Output;
 
     fn new(cipher: &mut C) -> Self;

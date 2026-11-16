@@ -147,14 +147,13 @@ fn xsalsa20_poly1305() {
     let nonce = [0u8; 24];
     let mut message = [7u8; 100];
     classify(&message);
-    let tag = XSalsa20Poly1305::encrypt(&key, &nonce, None, &mut message).unwrap();
+    let tag = XSalsa20Poly1305::encrypt(&key, &nonce, &mut message).unwrap();
     public(&message);
     public(&tag);
     let mut decrypted = message;
     public(&XSalsa20Poly1305::decrypt(
         &key,
         &nonce,
-        None,
         &mut decrypted,
         &tag,
     ));
