@@ -7,7 +7,7 @@ use {
         traits::{
             ByteArray, CryptoRng, FieldElement, Hasher, WeierstrassParams, WeierstrassScalar,
         },
-        utils::{Secret, shift_right},
+        utils::{Secret, declassify, shift_right},
     },
     core::{cmp::Ordering, marker::PhantomData},
 };
@@ -113,7 +113,7 @@ where
         let r = Self::affine_x_mod_order(&point);
         let s = k.clone().invert() * (e.clone() + r.clone() * d.clone());
         let valid = !r.is_zero() & !s.is_zero();
-        valid
+        declassify(valid)
             .to_bool()
             .then(|| Self::create_signature(&r.into(), &s.into()))
     }

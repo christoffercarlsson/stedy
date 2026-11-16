@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::{ByteArray, HashFunction, Hasher, Mac, Sealed},
-    utils::{Secret, constant_time_eq, xor},
+    utils::{Secret, constant_time_eq, declassify, xor},
 };
 
 #[derive(Clone)]
@@ -65,7 +65,7 @@ where
     pub fn verify(self, code: &H::Output) -> Result<(), Error> {
         let mut computed = Secret::from(H::Output::new());
         self.finalize_into(computed.get_mut().as_mut());
-        if constant_time_eq(code.as_ref(), computed.get().as_ref()) {
+        if declassify(constant_time_eq(code.as_ref(), computed.get().as_ref())) {
             Ok(())
         } else {
             Err(Error::Verification)

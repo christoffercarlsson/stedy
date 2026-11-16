@@ -112,6 +112,32 @@ jobs:
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
 
+  ct:
+    name: ct / ${{ matrix.target || matrix.runner }} ${{ matrix.rustflags }}
+    runs-on: ${{ matrix.runner }}
+    container: debian:trixie
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest }
+          - { runner: ubuntu-latest, rustflags: '-C target-feature=+aes,+pclmulqdq' }
+          - { runner: ubuntu-latest, target: i686-unknown-linux-gnu }
+          - { runner: ubuntu-24.04-arm }
+          - { runner: ubuntu-24.04-arm, rustflags: -C target-feature=+aes }
+    steps:
+      - uses: actions/checkout@v4
+      - if: matrix.target == 'i686-unknown-linux-gnu'
+        run: dpkg --add-architecture i386
+      - run: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev make valgrind
+      - if: matrix.target == 'i686-unknown-linux-gnu'
+        run: apt-get install -y --no-install-recommends gcc-multilib libc6-dbg:i386
+      - run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+      - run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - if: matrix.target != ''
+        run: rustup target add ${{ matrix.target }}
+      - run: make ct CT_TARGET="${{ matrix.target }}" CT_RUSTFLAGS="${{ matrix.rustflags }}"
+
   msrv:
     name: msrv
     runs-on: ubuntu-latest

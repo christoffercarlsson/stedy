@@ -2,6 +2,7 @@ mod block;
 mod byte_array;
 mod choice;
 mod constant_time_eq;
+mod declassify;
 mod increment;
 mod is_zero;
 mod less_than;
@@ -13,8 +14,16 @@ mod wipe;
 mod xor;
 
 pub(crate) use {
-    block::*, choice::*, increment::*, is_zero::*, less_than::*, mul::*, secret::Secret,
-    shift_right::*, xor::*,
+    block::*,
+    choice::*,
+    declassify::{declassify, declassify_slice},
+    increment::*,
+    is_zero::*,
+    less_than::*,
+    mul::*,
+    secret::Secret,
+    shift_right::*,
+    xor::*,
 };
 
 pub use {constant_time_eq::constant_time_eq, secret_bytes::SecretBytes, wipe::wipe};

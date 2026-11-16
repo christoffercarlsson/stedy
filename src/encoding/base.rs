@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    utils::{Block, Choice, Secret, wipe},
+    utils::{Block, Choice, Secret, declassify, wipe},
 };
 
 const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";
@@ -112,7 +112,7 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             let leftover = digits[..size].iter().fold(0, |acc, digit| acc | digit);
             error |= Choice::nonzero(leftover);
         }
-        if error.to_bool() {
+        if declassify(error).to_bool() {
             wipe(decoded);
             return Err(Error::Encoding);
         }
@@ -133,6 +133,7 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             reached_padding |= is_padding;
             padding_size += is_padding.select(0, 1);
         }
+        let padding_size = declassify(padding_size);
         let unpadded_size = encoded.len() - padding_size;
         let remainder = unpadded_size % GROUPS;
         let expected_padding = if padded {
@@ -141,7 +142,7 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
             0
         };
         let complete = (remainder * BITS) % 8 < BITS;
-        if error.to_bool() || !complete || padding_size != expected_padding {
+        if declassify(error).to_bool() || !complete || padding_size != expected_padding {
             return Err(Error::Encoding);
         }
         Ok(unpadded_size)

@@ -11,7 +11,9 @@ use {
             ByteArray, CryptoRng, MlDsaArithmetic, MlDsaParams, Sealed, SignatureScheme, Wipe, Xof,
             XofReader,
         },
-        utils::{Choice, Choices, Secret, SecretBytes, constant_time_eq},
+        utils::{
+            Choice, Choices, Secret, SecretBytes, constant_time_eq, declassify, declassify_slice,
+        },
     },
     core::marker::PhantomData,
 };
@@ -1093,6 +1095,7 @@ where
         xof.update(&[K as u8, L as u8]);
         xof.finalize_into(seeds.as_mut());
         let (rho, rest) = seeds.get().split_at(32);
+        declassify_slice(rho);
         let (rho_prime, k) = rest.split_at(64);
         let mut s1 = Secret::from([[0i32; 256]; L]);
         let mut s2 = Secret::from([[0i32; 256]; K]);
@@ -1196,7 +1199,7 @@ where
                 Self::add_ntt(z, product.get());
                 A::inverse_ntt(z);
             }
-            if Self::norm_exceeds(z.get(), P::GAMMA1 - P::BETA) {
+            if declassify(Self::norm_exceeds(z.get(), P::GAMMA1 - P::BETA)) {
                 continue;
             }
             for (w, s2) in w.get_mut().iter_mut().zip(s2_hat.get()) {
@@ -1214,7 +1217,7 @@ where
                 A::reduce_poly(r0);
                 r0_bound |= Self::norm_exceeds_poly(r0, P::GAMMA2 - P::BETA);
             }
-            if r0_bound.to_bool() {
+            if declassify(r0_bound).to_bool() {
                 continue;
             }
             let mut ones = 0;
@@ -1247,7 +1250,7 @@ where
                 }
                 ct0_bound |= Self::norm_exceeds_poly(ct0, P::GAMMA2);
             }
-            if (!ct0_bound & !Choice::less_than(P::OMEGA, ones)).to_bool() {
+            if declassify(!ct0_bound & !Choice::less_than(P::OMEGA, ones)).to_bool() {
                 break;
             }
         }
@@ -1328,15 +1331,16 @@ where
 
     // Algorithm 15
     fn coeff_from_half_byte(b: u8) -> Option<i32> {
-        match (P::ETA, b) {
-            (2, 0..=14) => {
+        let bound = if P::ETA == 2 { 15 } else { 9 };
+        declassify(Choice::less_than(b, bound)).to_bool().then(|| {
+            if P::ETA == 2 {
                 let b = Choice::less_than(b, 10).select(b.wrapping_sub(10), b);
                 let b = Choice::less_than(b, 5).select(b.wrapping_sub(5), b);
-                Some(2 - i32::from(b))
+                2 - i32::from(b)
+            } else {
+                4 - i32::from(b)
             }
-            (4, 0..=8) => Some(4 - i32::from(b)),
-            _ => None,
-        }
+        })
     }
 
     // Algorithm 16
@@ -1512,6 +1516,7 @@ where
 
     // Algorithm 26
     fn sig_encode(c_tilde: &[u8], z: &[[i32; 256]; L], h: &[[u8; 32]; K], signature: &mut [u8]) {
+        declassify_slice(h);
         let z_size = Self::packed_size(2 * P::GAMMA1 - 1);
         let (c_bytes, rest) = signature.split_at_mut(P::LAMBDA / 4);
         let (z_bytes, h_bytes) = rest.split_at_mut(L * z_size);
@@ -1557,7 +1562,7 @@ where
         let mut j = Secret::from([0u8; 1]);
         for i in 256 - P::TAU..256 {
             reader.read(j.get_mut());
-            while usize::from(j[0]) > i {
+            while declassify(usize::from(j[0]) > i) {
                 reader.read(j.get_mut());
             }
             let sign = 1 - 2 * ((h >> (i + P::TAU - 256)) & 1) as i32;

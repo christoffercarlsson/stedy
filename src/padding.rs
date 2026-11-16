@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    utils::{Choice, wipe},
+    utils::{Choice, declassify, wipe},
 };
 
 pub fn pad_to_block<'a>(
@@ -33,10 +33,10 @@ pub fn unpad(padded: &[u8]) -> Result<&[u8], Error> {
         found_marker |= is_marker;
     }
     error |= !found_marker;
-    if error.to_bool() {
+    if declassify(error).to_bool() {
         Err(Error::Encoding)
     } else {
-        Ok(&padded[..position])
+        Ok(&padded[..declassify(position)])
     }
 }
 

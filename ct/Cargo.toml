@@ -1,0 +1,13 @@
+[package]
+name = "stedy-ct"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+stedy = { path = "..", features = ["aes", "argon2", "hazmat", "secret_sharing"] }
+
+[profile.release]
+debug = true
+
+[workspace]

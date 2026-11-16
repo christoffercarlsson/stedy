@@ -10,7 +10,7 @@ use {
             ByteArray, CryptoRng, EdwardsParams, EdwardsScalar, FieldArithmetic, FieldElement,
             Hasher,
         },
-        utils::{Choice, Secret, SecretBytes, is_zero, xor},
+        utils::{Choice, Secret, SecretBytes, declassify, is_zero, xor},
     },
     core::marker::PhantomData,
 };
@@ -261,7 +261,7 @@ where
         let scalar = Self::scalar(scalar)?;
         let result = Secret::from(point * scalar);
         *product = Self::encode(result.get());
-        if is_zero(product).to_bool() {
+        if declassify(is_zero(product)).to_bool() {
             return Err(Error::InvalidKey);
         }
         Ok(())
@@ -270,7 +270,7 @@ where
     fn scalar_mult_base(scalar: &[u8; 32]) -> Result<[u8; 32], Error> {
         let scalar = Self::scalar(scalar)?;
         let product = Self::encode(&Edwards::<F, Scalar25519>::mul_base(&scalar));
-        if is_zero(&product).to_bool() {
+        if declassify(is_zero(&product)).to_bool() {
             return Err(Error::InvalidKey);
         }
         Ok(product)
@@ -281,7 +281,7 @@ where
             let mut bytes = Secret::from([0u8; 64]);
             rng.fill(bytes.get_mut())?;
             Self::scalar_reduce(bytes.get(), scalar);
-            if !is_zero(scalar).to_bool() {
+            if !declassify(is_zero(scalar)).to_bool() {
                 return Ok(());
             }
         }
@@ -318,7 +318,7 @@ where
 
     fn scalar_invert(scalar: &[u8; 32], inverse: &mut [u8; 32]) -> Result<(), Error> {
         let value = Self::scalar(scalar)?;
-        if is_zero(scalar).to_bool() {
+        if declassify(is_zero(scalar)).to_bool() {
             return Err(Error::InvalidKey);
         }
         *inverse = value.invert().into();
@@ -335,7 +335,7 @@ where
     }
 
     fn scalar(bytes: &[u8; 32]) -> Result<Scalar25519, Error> {
-        if Scalar25519::is_canonical(bytes).to_bool() {
+        if declassify(Scalar25519::is_canonical(bytes)).to_bool() {
             Ok(Scalar25519::from(bytes))
         } else {
             Err(Error::Encoding)

@@ -1,4 +1,4 @@
-.PHONY: bench cctv clean docs wycheproof
+.PHONY: bench cctv clean ct docs wycheproof
 
 CRATE := $(shell awk -F'"' '/^\[package\]/ { p = 1 } p && /^name = / { print $$2; exit }' Cargo.toml | tr - _)
 
@@ -8,6 +8,9 @@ AES_FEATURES := +aes,+pclmulqdq
 else ifneq ($(filter aarch64 arm64,$(ARCH)),)
 AES_FEATURES := +aes
 endif
+
+VALGRIND ?= valgrind
+CT_BINARY := ct/target/$(if $(CT_TARGET),$(CT_TARGET)/)release/stedy-ct
 
 CCTV_REF := main
 CCTV_URL := https://raw.githubusercontent.com/C2SP/CCTV/$(CCTV_REF)
@@ -78,6 +81,16 @@ cctv:
 
 clean:
 	@cargo clean --quiet
+
+ct:
+	@cd ct && RUSTFLAGS="--cfg stedy_ct_check $(CT_RUSTFLAGS)" cargo build --quiet --release \
+		$(if $(CT_TARGET),--target $(CT_TARGET))
+	@$(VALGRIND) --quiet --error-exitcode=1 $(CT_BINARY)
+	@if $(VALGRIND) --quiet --error-exitcode=1 $(CT_BINARY) control 2>/dev/null; then \
+		echo "ct: the control leak was not detected"; \
+		exit 1; \
+	fi
+	@echo "ct: no secret-dependent branches or memory accesses found"
 
 docs:
 	@RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --quiet --features docs

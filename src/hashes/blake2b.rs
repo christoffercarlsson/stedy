@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::{HashFunction, Hasher, Sealed},
-    utils::{Block, Secret, constant_time_eq},
+    utils::{Block, Secret, constant_time_eq, declassify},
 };
 
 #[derive(Clone)]
@@ -38,7 +38,7 @@ impl<const N: usize> Blake2b<N> {
 
     pub fn verify(self, code: &[u8; N]) -> Result<(), Error> {
         let computed = Secret::from(self.finalize());
-        if constant_time_eq(code, computed.get()) {
+        if declassify(constant_time_eq(code, computed.get())) {
             Ok(())
         } else {
             Err(Error::Verification)

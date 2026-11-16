@@ -44,6 +44,9 @@ hazmat = []
 secret_sharing = []
 std = []
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(stedy_ct_check)"] }
+
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 

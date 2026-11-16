@@ -4,7 +4,7 @@ use {
         kems::MlKemNtt,
         signatures::MlDsaNtt,
         traits::ByteArray,
-        utils::{Choice, Secret, is_zero, less_than},
+        utils::{Choice, Secret, declassify, is_zero, less_than},
     },
     core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -251,7 +251,9 @@ pub trait WeierstrassScalar:
     fn from_canonical(bytes: &Self::Bytes) -> Option<Self> {
         let non_zero = !is_zero(bytes.as_ref());
         let below = less_than(bytes.as_ref(), Self::ORDER.as_ref());
-        (non_zero & below).to_bool().then(|| Self::from(bytes))
+        declassify(non_zero & below)
+            .to_bool()
+            .then(|| Self::from(bytes))
     }
 
     fn as_radix_16(&self) -> Self::Radix16;

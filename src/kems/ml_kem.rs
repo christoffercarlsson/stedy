@@ -10,7 +10,9 @@ use {
         traits::{
             ByteArray, CryptoRng, Hasher, Kem, MlKemArithmetic, MlKemParams, Sealed, Xof, XofReader,
         },
-        utils::{Choice, Choices, Secret, SecretBytes, constant_time_eq},
+        utils::{
+            Choice, Choices, Secret, SecretBytes, constant_time_eq, declassify, declassify_slice,
+        },
     },
     core::marker::PhantomData,
 };
@@ -930,6 +932,7 @@ where
     fn k_pke_key_gen(d: &[u8], ek_pke: &mut [u8], dk_pke: &mut [u8]) {
         let seeds = Self::g(d, &[K as u8]);
         let (rho, sigma) = seeds.get().split_at(32);
+        declassify_slice(rho);
         let mut n = 0;
         let mut s = Secret::from([[0i16; 256]; K]);
         for poly in s.get_mut() {
@@ -1098,7 +1101,7 @@ where
         let (_, rest) = dk.split_at(384 * K);
         let (ek, rest) = rest.split_at(384 * K + 32);
         let (h, _) = rest.split_at(32);
-        constant_time_eq(&H::digest(ek), h)
+        declassify(constant_time_eq(&H::digest(ek), h))
     }
 
     fn sample_poly(eta: usize, seed: &[u8], n: &mut u8, f: &mut [i16; 256]) {

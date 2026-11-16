@@ -2,7 +2,7 @@ use {
     crate::{
         Error,
         traits::{ByteArray, EllipticCurve, FieldElement, MontgomeryParams},
-        utils::{Choice, Secret},
+        utils::{Choice, Secret, declassify},
     },
     core::marker::PhantomData,
 };
@@ -117,7 +117,7 @@ where
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
         let u = Self::ladder(scalar, point);
-        if u.ct_eq(&F::ZERO).to_bool() {
+        if declassify(u.ct_eq(&F::ZERO)).to_bool() {
             Err(Error::InvalidKey)
         } else {
             Ok(u)

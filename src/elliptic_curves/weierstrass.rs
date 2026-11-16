@@ -4,7 +4,7 @@ use {
         traits::{
             ByteArray, EllipticCurve, FieldElement, WeierstrassParams, WeierstrassScalar, Wipe,
         },
-        utils::{Choice, Secret},
+        utils::{Choice, Secret, declassify},
     },
     core::{
         array::from_fn,
@@ -264,7 +264,7 @@ where
 
     fn scalar_mult(scalar: &Self::Scalar, point: &Self::Point) -> Result<Self::Point, Error> {
         let result = point * scalar;
-        if result.is_identity().to_bool() {
+        if declassify(result.is_identity()).to_bool() {
             Err(Error::InvalidKey)
         } else {
             Ok(result)

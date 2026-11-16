@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::{Authenticator, CryptoRng, SeekableStreamCipher},
-    utils::increment,
+    utils::{declassify, increment},
 };
 
 pub struct Aead<C, M>
@@ -43,7 +43,7 @@ where
             return Err(Error::Misuse);
         }
         let mut aead = Self::new(key, nonce);
-        if !aead.mac.verify(message, aad, tag) {
+        if !declassify(aead.mac.verify(message, aad, tag)) {
             return Err(Error::Decryption);
         }
         aead.cipher.apply_keystream(message)
