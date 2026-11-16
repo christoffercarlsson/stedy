@@ -5,6 +5,7 @@ mod ml_dsa;
 mod p256;
 mod p384;
 mod p521;
+mod signer;
 
 pub(crate) use {
     ecdsa::Ecdsa,
@@ -17,6 +18,7 @@ pub use {
     p256::*,
     p384::*,
     p521::*,
+    signer::Signer,
 };
 
 #[cfg(feature = "hazmat")]

@@ -2,7 +2,7 @@ use {
     criterion::Criterion,
     stedy::{
         csprngs::ChaCha20Rng,
-        signatures::{Ed25519, Ed25519ph, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
+        signatures::{Ed25519, Ed25519ph, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521, Signer},
     },
 };
 
@@ -194,5 +194,10 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ecdsa_p521_verify", |b| {
         b.iter(|| P521::verify(message, &p521_public_key, &p521_signature));
+    });
+    c.bench_function("signer_ed25519_sign", |b| {
+        let (private_key, _) = Ed25519::key_pair(&[7u8; 32]);
+        let signer = Signer::<Ed25519>::new(&private_key);
+        b.iter(|| signer.sign(message));
     });
 }
