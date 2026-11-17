@@ -24,9 +24,6 @@ harness = false
 name = "stedy"
 path = "benchmarks/main.rs"
 
-[dependencies]
-getrandom = { version = "0.4.3", default-features = false, optional = true }
-
 [dev-dependencies]
 criterion = { version = "0.8.2", default-features = false }
 hex-literal = "1.1.0"
@@ -37,8 +34,7 @@ serde_json = "1.0.151"
 default = []
 aes = []
 argon2 = ["std"]
-docs = ["aes", "argon2", "getrandom", "hazmat", "secret_sharing", "std"]
-getrandom = ["dep:getrandom"]
+docs = ["aes", "argon2", "hazmat", "secret_sharing", "std"]
 hazmat = []
 secret_sharing = []
 std = []

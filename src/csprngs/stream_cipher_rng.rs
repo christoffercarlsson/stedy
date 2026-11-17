@@ -38,26 +38,6 @@ where
     }
 }
 
-#[cfg(feature = "getrandom")]
-impl<C, H> StreamCipherRng<C, H>
-where
-    C: SeekableStreamCipher,
-    H: Hasher<Output = C::Seed>,
-{
-    pub fn seed() -> Result<Self, Error> {
-        let mut seed = Secret::from([H::Output::new(), H::Output::new()]);
-        for part in seed.get_mut() {
-            getrandom::fill(part.as_mut()).map_err(|_| Error::Entropy)?;
-        }
-        Ok(Self::from_parts(seed.get().iter().map(AsRef::as_ref)))
-    }
-
-    pub fn reseed(&mut self) -> Result<(), Error> {
-        *self = Self::seed()?;
-        Ok(())
-    }
-}
-
 macro_rules! impl_from_seed {
     ($seed:literal, $output:literal) => {
         impl<C, H> From<&[u8; $seed]> for StreamCipherRng<C, H>

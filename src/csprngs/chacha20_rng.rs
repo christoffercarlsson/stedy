@@ -13,17 +13,6 @@ impl ChaCha20Rng {
     }
 }
 
-#[cfg(feature = "getrandom")]
-impl ChaCha20Rng {
-    pub fn seed() -> Result<Self, Error> {
-        StreamCipherRng::seed().map(Self)
-    }
-
-    pub fn reseed(&mut self) -> Result<(), Error> {
-        self.0.reseed()
-    }
-}
-
 impl From<&[u8; 96]> for ChaCha20Rng {
     fn from(seed: &[u8; 96]) -> Self {
         Self(StreamCipherRng::from(seed))
@@ -53,25 +42,6 @@ impl CryptoRng for ChaCha20Rng {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[cfg(feature = "getrandom")]
-    #[test]
-    fn test_seed() {
-        let mut rng = ChaCha20Rng::seed().unwrap();
-        let mut a = [0u8; 32];
-        rng.fill(&mut a).unwrap();
-        assert_ne!(
-            a,
-            [
-                189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
-                238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
-            ]
-        );
-        rng.reseed().unwrap();
-        let mut b = [0u8; 32];
-        rng.fill(&mut b).unwrap();
-        assert_ne!(a, b);
-    }
 
     #[test]
     fn test_fill() {

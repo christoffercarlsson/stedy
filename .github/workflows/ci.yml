@@ -65,7 +65,7 @@ jobs:
           - { target: riscv64gc-unknown-none-elf, flags: '' }
           - { target: riscv64gc-unknown-none-elf, flags: '--features hazmat,secret_sharing' }
           - { target: riscv64gc-unknown-none-elf, flags: '--features aes,hazmat' }
-          - { target: riscv64gc-unknown-linux-gnu, flags: '--features std,argon2,getrandom,hazmat,secret_sharing' }
+          - { target: riscv64gc-unknown-linux-gnu, flags: '--features std,argon2,hazmat,secret_sharing' }
           - { target: aarch64-unknown-none, flags: --features aes }
           - { target: aarch64-unknown-none, flags: '--features aes,hazmat', rustflags: -C target-feature=+aes }
     steps:

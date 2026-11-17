@@ -17,17 +17,6 @@ impl Aes128CtrRng {
     }
 }
 
-#[cfg(feature = "getrandom")]
-impl Aes128CtrRng {
-    pub fn seed() -> Result<Self, Error> {
-        StreamCipherRng::seed().map(Self)
-    }
-
-    pub fn reseed(&mut self) -> Result<(), Error> {
-        self.0.reseed()
-    }
-}
-
 impl From<&[u8; 64]> for Aes128CtrRng {
     fn from(seed: &[u8; 64]) -> Self {
         Self(StreamCipherRng::from(seed))
@@ -59,17 +48,6 @@ pub struct Aes256CtrRng(StreamCipherRng<AesCtr<32>, Sha384>);
 impl Aes256CtrRng {
     pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         self.0.fill(bytes)
-    }
-}
-
-#[cfg(feature = "getrandom")]
-impl Aes256CtrRng {
-    pub fn seed() -> Result<Self, Error> {
-        StreamCipherRng::seed().map(Self)
-    }
-
-    pub fn reseed(&mut self) -> Result<(), Error> {
-        self.0.reseed()
     }
 }
 
