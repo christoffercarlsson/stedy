@@ -32,17 +32,6 @@ impl<const BLOCK_SIZE: usize> Block<BLOCK_SIZE> {
         &self.buffer.get()[..self.buffer_size as usize]
     }
 
-    pub fn remaining_block(&self) -> Option<(Secret<[u8; BLOCK_SIZE]>, usize)> {
-        let remaining = self.remaining();
-        if remaining.is_empty() {
-            return None;
-        }
-        let size = remaining.len();
-        let mut block = Secret::from([0u8; BLOCK_SIZE]);
-        block[..size].copy_from_slice(remaining);
-        Some((block, size))
-    }
-
     fn split<'a>(
         &mut self,
         data: &'a [u8],

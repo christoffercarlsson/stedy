@@ -1,25 +1,53 @@
 use crate::{
     Error,
-    utils::{Block, Choice, Secret, declassify, wipe},
+    utils::{Choice, Secret, declassify, wipe},
 };
 
-const BASE16_ALPHABET: &[u8; 16] = b"0123456789abcdef";
-const BASE32_ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const BASE64_ALPHABET: &[u8; 64] =
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const BASE64_ALPHABET_URL: &[u8; 64] =
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const BASE16_ALPHABET: [Range; 2] = [Range::new(0, b'0', 10), Range::new(10, b'a', 6)];
+const BASE32_ALPHABET: [Range; 2] = [Range::new(0, b'A', 26), Range::new(26, b'2', 6)];
+const BASE64_ALPHABET: [Range; 5] = [
+    Range::new(0, b'A', 26),
+    Range::new(26, b'a', 26),
+    Range::new(52, b'0', 10),
+    Range::new(62, b'+', 1),
+    Range::new(63, b'/', 1),
+];
+const BASE64_ALPHABET_URL: [Range; 5] = [
+    Range::new(0, b'A', 26),
+    Range::new(26, b'a', 26),
+    Range::new(52, b'0', 10),
+    Range::new(62, b'-', 1),
+    Range::new(63, b'_', 1),
+];
 const PADDING_BYTE: u8 = 61;
 
-struct Base<const CHARS: usize, const BITS: usize, const GROUPS: usize> {
-    alphabet: [u8; CHARS],
+struct Range {
+    index: u8,
+    character: u8,
+    size: u8,
+}
+
+impl Range {
+    const fn new(index: u8, character: u8, size: u8) -> Self {
+        Self {
+            index,
+            character,
+            size,
+        }
+    }
+}
+
+struct Base<const BITS: usize, const GROUPS: usize> {
+    alphabet: &'static [Range],
     offset: usize,
 }
 
-impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BITS, GROUPS> {
-    fn new(alphabet: &[u8; CHARS]) -> Self {
+impl<const BITS: usize, const GROUPS: usize> Base<BITS, GROUPS> {
+    const MASK: u32 = (1 << BITS) - 1;
+
+    fn new(alphabet: &'static [Range]) -> Self {
         Self {
-            alphabet: *alphabet,
+            alphabet,
             offset: 0,
         }
     }
@@ -33,19 +61,19 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         if Self::encoded_size(padded, decoded.len()) > encoded.len() {
             return Err(Error::Misuse);
         }
-        let mut block = Block::<BITS>::new();
-        let mut digits = Secret::from([0u8; 8]);
-        for byte in decoded {
-            Self::to_binary(*byte, digits.get_mut());
-            if let Some((head, tail)) = block.blocks(digits.get()) {
-                self.encode_bits(&head, encoded);
-                for chunk in tail {
-                    self.encode_bits(chunk, encoded);
-                }
+        let mut bits = Secret::from(0u32);
+        let mut size = 0;
+        for &byte in decoded {
+            *bits = (*bits << 8) | u32::from(byte);
+            size += 8;
+            while size >= BITS {
+                size -= BITS;
+                self.encode_index(*bits >> size, encoded);
             }
+            *bits &= (1 << size) - 1;
         }
-        if let Some((chunk, _)) = block.remaining_block() {
-            self.encode_bits(&chunk, encoded);
+        if size > 0 {
+            self.encode_index(*bits << (BITS - size), encoded);
         }
         if padded {
             self.add_padding(encoded);
@@ -72,13 +100,14 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         }
     }
 
-    fn encode_bits(&mut self, chunk: &[u8; BITS], encoded: &mut [u8]) {
-        let index = Self::from_binary(chunk);
-        let mut byte = 0;
-        for (i, &a) in self.alphabet.iter().enumerate() {
-            byte = Choice::eq(i as u8, index).select(byte, a);
-        }
-        self.push(byte, encoded);
+    fn encode_index(&mut self, index: u32, encoded: &mut [u8]) {
+        let index = (index & Self::MASK) as u8;
+        let character = self.alphabet.iter().fold(0, |character, range| {
+            let offset = index.wrapping_sub(range.index);
+            Choice::less_than(offset, range.size)
+                .select(character, range.character.wrapping_add(offset))
+        });
+        self.push(character, encoded);
     }
 
     fn push(&mut self, byte: u8, target: &mut [u8]) {
@@ -97,21 +126,20 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         if decoded_size > decoded.len() {
             return Err(Error::Misuse);
         }
-        let mut block = Block::<8>::new();
         let mut error = Choice::FALSE;
-        let mut digits = Secret::from([0u8; 8]);
-        for byte in &encoded[..unpadded_size] {
-            let index = self.find_index(&mut error, *byte);
-            Self::to_binary(index, digits.get_mut());
-            if let Some((head, _)) = block.blocks(&digits[(8 - BITS)..]) {
-                let decoded_byte = Self::from_binary(head.get());
-                self.push(decoded_byte, decoded);
+        let mut bits = Secret::from(0u32);
+        let mut size = 0;
+        for &character in &encoded[..unpadded_size] {
+            let index = self.find_index(&mut error, character);
+            *bits = (*bits << BITS) | u32::from(index);
+            size += BITS;
+            if size >= 8 {
+                size -= 8;
+                self.push((*bits >> size) as u8, decoded);
+                *bits &= (1 << size) - 1;
             }
         }
-        if let Some((digits, size)) = block.remaining_block() {
-            let leftover = digits[..size].iter().fold(0, |acc, digit| acc | digit);
-            error |= Choice::nonzero(leftover);
-        }
+        error |= Choice::nonzero(*bits);
         if declassify(error).to_bool() {
             wipe(decoded);
             return Err(Error::Encoding);
@@ -148,13 +176,14 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         Ok(unpadded_size)
     }
 
-    fn find_index(&self, error: &mut Choice, byte: u8) -> u8 {
-        let byte = Self::normalize(byte);
+    fn find_index(&self, error: &mut Choice, character: u8) -> u8 {
+        let character = Self::normalize(character);
         let mut index = 0;
         let mut found = Choice::FALSE;
-        for (i, &a) in self.alphabet.iter().enumerate() {
-            let is_match = Choice::eq(byte, a);
-            index = is_match.select(index, i as u8);
+        for range in self.alphabet {
+            let offset = character.wrapping_sub(range.character);
+            let is_match = Choice::less_than(offset, range.size);
+            index = is_match.select(index, range.index.wrapping_add(offset));
             found |= is_match;
         }
         *error |= !found;
@@ -168,43 +197,26 @@ impl<const CHARS: usize, const BITS: usize, const GROUPS: usize> Base<CHARS, BIT
         let is_uppercase = !Choice::less_than(byte, b'A') & Choice::less_than(byte, b'F' + 1);
         byte ^ (is_uppercase.mask::<u8>() & 32)
     }
-
-    fn from_binary(chunk: &[u8]) -> u8 {
-        let mut number = 0;
-        let msb = chunk.len() - 1;
-        for (i, digit) in chunk.iter().enumerate() {
-            number |= digit << (msb - i);
-        }
-        number
-    }
-
-    fn to_binary(byte: u8, digits: &mut [u8; 8]) {
-        let mut n = byte;
-        for digit in digits.iter_mut().rev() {
-            *digit = n % 2;
-            n /= 2;
-        }
-    }
 }
 
-type Base64 = Base<64, 6, 4>;
-type Base32 = Base<32, 5, 8>;
-type Base16 = Base<16, 4, 2>;
+type Base64 = Base<6, 4>;
+type Base32 = Base<5, 8>;
+type Base16 = Base<4, 2>;
 
 fn base64(url_safe: bool) -> Base64 {
     if url_safe {
-        Base64::new(BASE64_ALPHABET_URL)
+        Base64::new(&BASE64_ALPHABET_URL)
     } else {
-        Base64::new(BASE64_ALPHABET)
+        Base64::new(&BASE64_ALPHABET)
     }
 }
 
 fn base32() -> Base32 {
-    Base32::new(BASE32_ALPHABET)
+    Base32::new(&BASE32_ALPHABET)
 }
 
 fn base16() -> Base16 {
-    Base16::new(BASE16_ALPHABET)
+    Base16::new(&BASE16_ALPHABET)
 }
 
 pub fn base64_encode<'a>(
