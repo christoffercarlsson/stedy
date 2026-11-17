@@ -1,6 +1,6 @@
 use {
     super::{Sealed, Wipe},
-    crate::{Error, SecretBytes},
+    crate::{Error, utils::SecretBytes},
     core::{
         array::TryFromSliceError,
         ops::{Index, IndexMut, RangeFrom},

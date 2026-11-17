@@ -33,6 +33,7 @@ pub mod kdfs;
 pub mod kems;
 pub mod key_exchange;
 pub mod macs;
+pub mod memory;
 pub mod padding;
 #[cfg(feature = "secret_sharing")]
 pub mod secret_sharing;
@@ -40,7 +41,4 @@ pub mod signatures;
 pub mod traits;
 mod utils;
 
-pub use {
-    error::Error,
-    utils::{SecretBytes, constant_time_eq, wipe},
-};
+pub use error::Error;

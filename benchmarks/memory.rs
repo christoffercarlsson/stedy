@@ -1,7 +1,7 @@
 use {
     criterion::Criterion,
     std::hint::black_box,
-    stedy::{constant_time_eq, wipe},
+    stedy::memory::{constant_time_eq, wipe},
 };
 
 pub fn bench(c: &mut Criterion) {

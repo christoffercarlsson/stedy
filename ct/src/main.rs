@@ -3,9 +3,8 @@ mod valgrind;
 use {
     std::hint::black_box,
     stedy::{
-        Error, SecretBytes,
+        Error,
         aeads::{Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, XChaCha20Poly1305, XSalsa20Poly1305},
-        constant_time_eq,
         csprngs::{Aes256CtrRng, ChaCha20Rng, HmacDrbg},
         elliptic_curves::Ristretto255,
         encoding::{Encoding, decode, encode},
@@ -14,6 +13,7 @@ use {
         kems::{MlKem512, MlKem768, MlKem1024, XWing},
         key_exchange::{self, X25519},
         macs::Hmac,
+        memory::{SecretBytes, constant_time_eq},
         padding::{pad_to_block, unpad},
         secret_sharing::Shamir,
         signatures::{self, Ed25519, Ed25519ph, MlDsa44, MlDsa65, MlDsa87},
