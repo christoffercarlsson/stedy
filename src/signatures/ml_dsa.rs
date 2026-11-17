@@ -816,7 +816,11 @@ impl MlDsaArithmetic for MlDsaNtt {
         Self::inverse_ntt_layer::<64>(w, &Self::ZETAS[2..4]);
         Self::inverse_ntt_layer::<128>(w, &Self::ZETAS[1..2]);
         for a in w.iter_mut() {
-            *a = Self::montgomery_multiply(*a, Self::INVERSE_NTT_SCALE);
+            *a = Self::montgomery_multiply_twisted(
+                Self::INVERSE_NTT_SCALE,
+                Self::INVERSE_NTT_SCALE_TWISTED,
+                *a,
+            );
         }
         Self::reduce_poly(w);
     }
@@ -848,37 +852,40 @@ impl MlDsaArithmetic for MlDsaNtt {
 impl MlDsaNtt {
     const Q: i32 = 8380417;
     const R2: i32 = Self::montgomery_form(Self::montgomery_form(1));
+    const QINV: i32 = 58728449;
     const INVERSE_NTT_SCALE: i32 = Self::montgomery_form(8347681);
-    const ZETAS: [i32; 256] = {
-        let mut zetas = [0i32; 256];
+    const INVERSE_NTT_SCALE_TWISTED: i32 = Self::INVERSE_NTT_SCALE.wrapping_mul(Self::QINV);
+    const ZETAS: [[i32; 2]; 256] = {
+        let mut zetas = [[0i32; 2]; 256];
         let mut m = 0;
         while m < 256 {
-            zetas[m] = Self::zeta_power(Self::bit_rev8(m));
+            let zeta = Self::zeta_power(Self::bit_rev8(m));
+            zetas[m] = [zeta, zeta.wrapping_mul(Self::QINV)];
             m += 1;
         }
         zetas
     };
 
-    fn ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[i32]) {
+    fn ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[[i32; 2]]) {
         let (halves, _) = w.as_chunks_mut::<LEN>();
         let (blocks, _) = halves.as_chunks_mut::<2>();
-        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas) {
+        for ([lower, upper], &[zeta, zeta_twisted]) in blocks.iter_mut().zip(zetas) {
             for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
-                let t = Self::montgomery_multiply(zeta, *b);
+                let t = Self::montgomery_multiply_twisted(zeta, zeta_twisted, *b);
                 *b = *a - t;
                 *a += t;
             }
         }
     }
 
-    fn inverse_ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[i32]) {
+    fn inverse_ntt_layer<const LEN: usize>(w: &mut [i32; 256], zetas: &[[i32; 2]]) {
         let (halves, _) = w.as_chunks_mut::<LEN>();
         let (blocks, _) = halves.as_chunks_mut::<2>();
-        for ([lower, upper], &zeta) in blocks.iter_mut().zip(zetas.iter().rev()) {
+        for ([lower, upper], &[zeta, zeta_twisted]) in blocks.iter_mut().zip(zetas.iter().rev()) {
             for (a, b) in lower.iter_mut().zip(upper.iter_mut()) {
                 let t = *a;
                 *a = t + *b;
-                *b = Self::montgomery_multiply(-zeta, t - *b);
+                *b = Self::montgomery_multiply_twisted(-zeta, zeta_twisted.wrapping_neg(), t - *b);
             }
         }
     }
@@ -890,12 +897,20 @@ impl MlDsaNtt {
 
     // Algorithm 49
     const fn montgomery_reduce(a: i64) -> i32 {
-        let t = (a as i32).wrapping_mul(58728449);
+        let t = (a as i32).wrapping_mul(Self::QINV);
         ((a - t as i64 * Self::Q as i64) >> 32) as i32
     }
 
     const fn montgomery_multiply(a: i32, b: i32) -> i32 {
         Self::montgomery_reduce(a as i64 * b as i64)
+    }
+
+    fn montgomery_multiply_twisted(a: i32, a_twisted: i32, b: i32) -> i32 {
+        Self::multiply_high(a, b) - Self::multiply_high(a_twisted.wrapping_mul(b), Self::Q)
+    }
+
+    fn multiply_high(a: i32, b: i32) -> i32 {
+        ((i64::from(a) * i64::from(b)) >> 32) as i32
     }
 
     const fn montgomery_form(a: i32) -> i32 {
