@@ -11,6 +11,7 @@ mod secret;
 mod secret_bytes;
 mod shift_right;
 mod wipe;
+mod word;
 mod xor;
 
 pub(crate) use {
@@ -23,6 +24,7 @@ pub(crate) use {
     mul::*,
     secret::Secret,
     shift_right::*,
+    word::Word,
     xor::*,
 };
 

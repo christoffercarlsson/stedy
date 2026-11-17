@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::{SeekableStreamCipher, StreamCipher},
-    utils::Secret,
+    utils::{Secret, Word},
 };
 
 pub struct ChaCha20 {
@@ -23,6 +23,12 @@ impl ChaCha20 {
             return Err(Error::LimitExceeded);
         }
         while !data.is_empty() {
+            if self.offset == 64 && data.len() >= 256 {
+                let (head, tail) = data.split_at_mut(256);
+                self.next_blocks(head);
+                data = tail;
+                continue;
+            }
             if self.offset == 64 {
                 self.next();
             }
@@ -194,7 +200,32 @@ impl ChaCha20 {
         self.offset = 0;
     }
 
-    fn rounds(block: &mut [u32; 16]) {
+    fn next_blocks(&mut self, data: &mut [u8]) {
+        let mut initial = Secret::from([[0u32; 4]; 16]);
+        for (lanes, &word) in initial.iter_mut().zip(self.state.iter()) {
+            *lanes = [word; 4];
+        }
+        for (lane, counter) in initial[12].iter_mut().enumerate() {
+            *counter = counter.wrapping_add(lane as u32);
+        }
+        let mut blocks = initial.clone();
+        Self::rounds(blocks.get_mut());
+        let (chunks, _) = data.as_chunks_mut::<4>();
+        for (i, chunk) in chunks.iter_mut().enumerate() {
+            let (lane, word) = (i / 16, i % 16);
+            let keystream = blocks[word][lane].wrapping_add(initial[word][lane]);
+            for (b, k) in chunk.iter_mut().zip(keystream.to_le_bytes()) {
+                *b ^= k;
+            }
+        }
+        self.state[12] = self.state[12].wrapping_add(4);
+        self.blocks = self.blocks.saturating_sub(4);
+    }
+
+    fn rounds<W>(block: &mut [W; 16])
+    where
+        W: Word,
+    {
         for _ in (0..20).step_by(2) {
             Self::quarter_round(0, 4, 8, 12, block);
             Self::quarter_round(1, 5, 9, 13, block);
@@ -207,15 +238,18 @@ impl ChaCha20 {
         }
     }
 
-    fn quarter_round(a: usize, b: usize, c: usize, d: usize, block: &mut [u32; 16]) {
-        block[a] = block[a].wrapping_add(block[b]);
-        block[d] = (block[d] ^ block[a]).rotate_left(16);
-        block[c] = block[c].wrapping_add(block[d]);
-        block[b] = (block[b] ^ block[c]).rotate_left(12);
-        block[a] = block[a].wrapping_add(block[b]);
-        block[d] = (block[d] ^ block[a]).rotate_left(8);
-        block[c] = block[c].wrapping_add(block[d]);
-        block[b] = (block[b] ^ block[c]).rotate_left(7);
+    fn quarter_round<W>(a: usize, b: usize, c: usize, d: usize, block: &mut [W; 16])
+    where
+        W: Word,
+    {
+        block[a] = block[a].add(block[b]);
+        block[d] = block[d].xor(block[a]).rotate(16);
+        block[c] = block[c].add(block[d]);
+        block[b] = block[b].xor(block[c]).rotate(12);
+        block[a] = block[a].add(block[b]);
+        block[d] = block[d].xor(block[a]).rotate(8);
+        block[c] = block[c].add(block[d]);
+        block[b] = block[b].xor(block[c]).rotate(7);
     }
 }
 

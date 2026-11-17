@@ -1,7 +1,7 @@
 use crate::{
     Error,
     traits::{SeekableStreamCipher, StreamCipher},
-    utils::Secret,
+    utils::{Secret, Word},
 };
 
 pub struct Salsa20 {
@@ -21,6 +21,12 @@ impl Salsa20 {
     #[allow(clippy::unnecessary_wraps)]
     pub fn apply_keystream(&mut self, mut data: &mut [u8]) -> Result<(), Error> {
         while !data.is_empty() {
+            if self.offset == 64 && data.len() >= 256 {
+                let (head, tail) = data.split_at_mut(256);
+                self.next_blocks(head);
+                data = tail;
+                continue;
+            }
             if self.offset == 64 {
                 self.next();
             }
@@ -191,7 +197,35 @@ impl Salsa20 {
         self.offset = 0;
     }
 
-    fn rounds(block: &mut [u32; 16]) {
+    fn next_blocks(&mut self, data: &mut [u8]) {
+        let mut initial = Secret::from([[0u32; 4]; 16]);
+        for (lanes, &word) in initial.iter_mut().zip(self.state.iter()) {
+            *lanes = [word; 4];
+        }
+        for lane in 0..4 {
+            let (counter, carry) = initial[8][lane].overflowing_add(lane as u32);
+            initial[8][lane] = counter;
+            initial[9][lane] = initial[9][lane].wrapping_add(u32::from(carry));
+        }
+        let mut blocks = initial.clone();
+        Self::rounds(blocks.get_mut());
+        let (chunks, _) = data.as_chunks_mut::<4>();
+        for (i, chunk) in chunks.iter_mut().enumerate() {
+            let (lane, word) = (i / 16, i % 16);
+            let keystream = blocks[word][lane].wrapping_add(initial[word][lane]);
+            for (b, k) in chunk.iter_mut().zip(keystream.to_le_bytes()) {
+                *b ^= k;
+            }
+        }
+        let (counter, carry) = self.state[8].overflowing_add(4);
+        self.state[8] = counter;
+        self.state[9] = self.state[9].wrapping_add(u32::from(carry));
+    }
+
+    fn rounds<W>(block: &mut [W; 16])
+    where
+        W: Word,
+    {
         for _ in (0..20).step_by(2) {
             Self::quarter_round(0, 4, 8, 12, block);
             Self::quarter_round(5, 9, 13, 1, block);
@@ -204,11 +238,14 @@ impl Salsa20 {
         }
     }
 
-    fn quarter_round(a: usize, b: usize, c: usize, d: usize, block: &mut [u32; 16]) {
-        block[b] ^= block[a].wrapping_add(block[d]).rotate_left(7);
-        block[c] ^= block[b].wrapping_add(block[a]).rotate_left(9);
-        block[d] ^= block[c].wrapping_add(block[b]).rotate_left(13);
-        block[a] ^= block[d].wrapping_add(block[c]).rotate_left(18);
+    fn quarter_round<W>(a: usize, b: usize, c: usize, d: usize, block: &mut [W; 16])
+    where
+        W: Word,
+    {
+        block[b] = block[b].xor(block[a].add(block[d]).rotate(7));
+        block[c] = block[c].xor(block[b].add(block[a]).rotate(9));
+        block[d] = block[d].xor(block[c].add(block[b]).rotate(13));
+        block[a] = block[a].xor(block[d].add(block[c]).rotate(18));
     }
 }
 
