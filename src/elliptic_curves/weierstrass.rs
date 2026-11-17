@@ -457,13 +457,13 @@ where
         let mut result = Self { x, y, z };
         let h_zero = h.ct_eq(&F::ZERO);
         let r_zero = r.ct_eq(&F::ZERO);
-        result.assign(&self.double(), h_zero & r_zero);
-        result.assign(&Self::IDENTITY, h_zero & !r_zero);
         let lifted = Self {
             x: rhs.x,
             y: rhs.y,
             z: F::ONE,
         };
+        result.assign(&lifted.double_affine(), h_zero & r_zero);
+        result.assign(&Self::IDENTITY, h_zero & !r_zero);
         result.assign(&lifted, self.z.ct_eq(&F::ZERO));
         result.assign(self, rhs_is_identity);
         result
@@ -478,6 +478,19 @@ where
         let beta4 = beta.double_value().double_value();
         let x = alpha.square() - beta4.double_value();
         let z = (self.y + self.z).square() - gamma - delta;
+        let gamma8 = gamma.square().double_value().double_value().double_value();
+        let y = alpha * (beta4 - x) - gamma8;
+        Self { x, y, z }
+    }
+
+    fn double_affine(&self) -> Self {
+        let gamma = self.y.square();
+        let beta = self.x * gamma;
+        let alpha = self.x.square() - F::ONE;
+        let alpha = alpha + alpha + alpha;
+        let beta4 = beta.double_value().double_value();
+        let x = alpha.square() - beta4.double_value();
+        let z = self.y.double_value();
         let gamma8 = gamma.square().double_value().double_value().double_value();
         let y = alpha * (beta4 - x) - gamma8;
         Self { x, y, z }

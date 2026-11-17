@@ -138,7 +138,37 @@ macro_rules! impl_montgomery {
             }
 
             pub(crate) fn square(self) -> Self {
-                self.mul(self)
+                let a = &self.0;
+                let mut t = [0 as Word; 2 * $words];
+                for i in 0..$words {
+                    let mut carry = 0;
+                    for j in i + 1..$words {
+                        (t[i + j], carry) = Self::mac(t[i + j], a[i], a[j], carry);
+                    }
+                    t[i + $words] = carry;
+                }
+                let mut carry = 0;
+                for word in &mut t {
+                    (*word, carry) = ((*word << 1) | carry, *word >> (Word::BITS - 1));
+                }
+                let mut carry = 0;
+                for i in 0..$words {
+                    let (low, high) = Self::mac(t[2 * i], a[i], a[i], carry);
+                    t[2 * i] = low;
+                    (t[2 * i + 1], carry) = Self::adc(t[2 * i + 1], high, 0);
+                }
+                let mut top = 0;
+                for i in 0..$words {
+                    let m = t[i].wrapping_mul(Self::N0);
+                    let mut carry = 0;
+                    for j in 0..$words {
+                        (t[i + j], carry) = Self::mac(t[i + j], m, Self::MOD[j], carry);
+                    }
+                    (t[i + $words], top) = Self::adc(t[i + $words], carry, top);
+                }
+                let mut words = [0 as Word; $words];
+                words.copy_from_slice(&t[$words..]);
+                Self::reduce(words, top)
             }
 
             pub(crate) fn pow2n(self, n: usize) -> Self {
