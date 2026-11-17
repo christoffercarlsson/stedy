@@ -52,12 +52,6 @@ impl<const N: usize> FieldArithmetic for Field<N> {
     }
 }
 
-#[test]
-fn test_aead_ids() {
-    assert_eq!(ChaCha20Poly1305::ID, 0x0103);
-    assert_eq!(XChaCha20Poly1305::ID, 0x0104);
-}
-
 #[cfg(feature = "aes")]
 #[test]
 fn test_aes_aead_ids() {
@@ -66,24 +60,9 @@ fn test_aes_aead_ids() {
 }
 
 #[test]
-fn test_hash_function_ids() {
-    assert_eq!(Sha256::ID, 0x0702);
-    assert_eq!(Sha384::ID, 0x0703);
-    assert_eq!(Sha512::ID, 0x0704);
-    assert_eq!(Sha3_224::ID, 0x0705);
-    assert_eq!(Sha3_256::ID, 0x0706);
-    assert_eq!(Sha3_384::ID, 0x0707);
-    assert_eq!(Sha3_512::ID, 0x0708);
-    assert_eq!(Blake2b::<1>::ID, 0x0740);
-    assert_eq!(Blake2b160::ID, 0x0753);
-    assert_eq!(Blake2b256::ID, 0x075f);
-    assert_eq!(Blake2b384::ID, 0x076f);
-    assert_eq!(Blake2b512::ID, 0x077f);
-    assert_eq!(Blake2s::<1>::ID, 0x0780);
-    assert_eq!(Blake2s128::ID, 0x078f);
-    assert_eq!(Blake2s160::ID, 0x0793);
-    assert_eq!(Blake2s224::ID, 0x079b);
-    assert_eq!(Blake2s256::ID, 0x079f);
+fn test_aead_ids() {
+    assert_eq!(ChaCha20Poly1305::ID, 0x0103);
+    assert_eq!(XChaCha20Poly1305::ID, 0x0104);
 }
 
 #[test]
@@ -139,17 +118,31 @@ fn test_signature_scheme_ids() {
     assert_eq!(MlDsa87::ID, 0x0607);
 }
 
+#[test]
+fn test_hash_function_ids() {
+    assert_eq!(Sha256::ID, 0x0702);
+    assert_eq!(Sha384::ID, 0x0703);
+    assert_eq!(Sha512::ID, 0x0704);
+    assert_eq!(Sha3_224::ID, 0x0705);
+    assert_eq!(Sha3_256::ID, 0x0706);
+    assert_eq!(Sha3_384::ID, 0x0707);
+    assert_eq!(Sha3_512::ID, 0x0708);
+    assert_eq!(Blake2b::<1>::ID, 0x0740);
+    assert_eq!(Blake2b160::ID, 0x0753);
+    assert_eq!(Blake2b256::ID, 0x075f);
+    assert_eq!(Blake2b384::ID, 0x076f);
+    assert_eq!(Blake2b512::ID, 0x077f);
+    assert_eq!(Blake2s::<1>::ID, 0x0780);
+    assert_eq!(Blake2s128::ID, 0x078f);
+    assert_eq!(Blake2s160::ID, 0x0793);
+    assert_eq!(Blake2s224::ID, 0x079b);
+    assert_eq!(Blake2s256::ID, 0x079f);
+}
+
 #[cfg(feature = "hazmat")]
 #[test]
 fn test_hazmat_ids() {
-    assert_eq!(Sha1::ID, 0x0701);
     assert_eq!(Hkdf::<Sha1>::ID, 0x0201);
-    assert_eq!(Hmac::<Sha1>::ID, 0x0501);
-    assert_eq!(Sha3_224With::<Keccak>::ID, Sha3_224::ID);
-    assert_eq!(Sha3_256With::<Keccak>::ID, Sha3_256::ID);
-    assert_eq!(Sha3_384With::<Keccak>::ID, Sha3_384::ID);
-    assert_eq!(Sha3_512With::<Keccak>::ID, Sha3_512::ID);
-    assert_eq!(Hmac::<Sha3_256With<Keccak>>::ID, Hmac::<Sha3_256>::ID);
     assert_eq!(Hkdf::<Sha3_256With<Keccak>>::ID, Hkdf::<Sha3_256>::ID);
     assert_eq!(MlKem512With::<Keccak>::ID, MlKem512::ID);
     assert_eq!(MlKem768With::<Keccak>::ID, MlKem768::ID);
@@ -159,6 +152,8 @@ fn test_hazmat_ids() {
     assert_eq!(P256With::<Field<32>>::ID, key_exchange::P256::ID);
     assert_eq!(P384With::<Field<48>>::ID, key_exchange::P384::ID);
     assert_eq!(P521With::<Field<66>>::ID, key_exchange::P521::ID);
+    assert_eq!(Hmac::<Sha1>::ID, 0x0501);
+    assert_eq!(Hmac::<Sha3_256With<Keccak>>::ID, Hmac::<Sha3_256>::ID);
     assert_eq!(Ed25519With::<Field<32>, Sha512>::ID, Ed25519::ID);
     assert_eq!(
         signatures::P256With::<Field<32>, Sha256>::ID,
@@ -175,4 +170,9 @@ fn test_hazmat_ids() {
     assert_eq!(MlDsa44With::<Keccak>::ID, MlDsa44::ID);
     assert_eq!(MlDsa65With::<Keccak>::ID, MlDsa65::ID);
     assert_eq!(MlDsa87With::<Keccak>::ID, MlDsa87::ID);
+    assert_eq!(Sha1::ID, 0x0701);
+    assert_eq!(Sha3_224With::<Keccak>::ID, Sha3_224::ID);
+    assert_eq!(Sha3_256With::<Keccak>::ID, Sha3_256::ID);
+    assert_eq!(Sha3_384With::<Keccak>::ID, Sha3_384::ID);
+    assert_eq!(Sha3_512With::<Keccak>::ID, Sha3_512::ID);
 }
