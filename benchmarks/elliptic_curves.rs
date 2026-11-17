@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::{elliptic_curves::Ristretto255, hashes::Sha512},
 };
 
@@ -19,11 +20,11 @@ pub fn bench(c: &mut Criterion) {
     let uniform_bytes = [7u8; 64];
 
     c.bench_function("ristretto255_is_valid", |b| {
-        b.iter(|| Ristretto255::is_valid(&element));
+        b.iter(|| Ristretto255::is_valid(black_box(&element)));
     });
 
     c.bench_function("ristretto255_from_uniform_bytes", |b| {
-        b.iter(|| Ristretto255::from_uniform_bytes(&uniform_bytes));
+        b.iter(|| Ristretto255::from_uniform_bytes(black_box(&uniform_bytes)));
     });
 
     c.bench_function("ristretto255_from_string", |b| {
@@ -31,26 +32,26 @@ pub fn bench(c: &mut Criterion) {
     });
 
     c.bench_function("ristretto255_add", |b| {
-        b.iter(|| Ristretto255::add(&element, &other));
+        b.iter(|| Ristretto255::add(black_box(&element), black_box(&other)));
     });
 
     c.bench_function("ristretto255_sub", |b| {
-        b.iter(|| Ristretto255::sub(&element, &other));
+        b.iter(|| Ristretto255::sub(black_box(&element), black_box(&other)));
     });
 
     c.bench_function("ristretto255_scalar_mult", |b| {
-        b.iter(|| Ristretto255::scalar_mult(&scalar, &element));
+        b.iter(|| Ristretto255::scalar_mult(black_box(&scalar), black_box(&element)));
     });
 
     c.bench_function("ristretto255_scalar_mult_base", |b| {
-        b.iter(|| Ristretto255::scalar_mult_base(&scalar));
+        b.iter(|| Ristretto255::scalar_mult_base(black_box(&scalar)));
     });
 
     c.bench_function("ristretto255_scalar_mul", |b| {
-        b.iter(|| Ristretto255::scalar_mul(&scalar, &scalar));
+        b.iter(|| Ristretto255::scalar_mul(black_box(&scalar), black_box(&scalar)));
     });
 
     c.bench_function("ristretto255_scalar_invert", |b| {
-        b.iter(|| Ristretto255::scalar_invert(&scalar));
+        b.iter(|| Ristretto255::scalar_invert(black_box(&scalar)));
     });
 }

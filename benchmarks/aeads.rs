@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::aeads::{ChaCha20Poly1305, XChaCha20Poly1305, XSalsa20Poly1305},
 };
 
@@ -26,7 +27,14 @@ pub fn bench(c: &mut Criterion) {
                 104, 9, 83, 47, 207, 14, 36, 73, 166, 181, 37, 177, 106, 237, 245, 170, 13, 230,
                 87, 186, 99, 123, 57,
             ];
-            b.iter(|| Aes128Gcm::encrypt(&key, &nonce, Some(&aad), &mut message));
+            b.iter(|| {
+                Aes128Gcm::encrypt(
+                    black_box(&key),
+                    black_box(&nonce),
+                    Some(black_box(&aad)),
+                    black_box(&mut message),
+                )
+            });
         });
 
         c.bench_function(&crate::aes_id("aes128gcm_decrypt"), |b| {
@@ -41,7 +49,13 @@ pub fn bench(c: &mut Criterion) {
             ];
             b.iter(|| {
                 let mut ciphertext = ciphertext;
-                Aes128Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag)
+                Aes128Gcm::decrypt(
+                    black_box(&key),
+                    black_box(&nonce),
+                    Some(black_box(&aad)),
+                    black_box(&mut ciphertext),
+                    black_box(&tag),
+                )
             });
         });
     }
@@ -65,7 +79,14 @@ pub fn bench(c: &mut Criterion) {
                 104, 9, 83, 47, 207, 14, 36, 73, 166, 181, 37, 177, 106, 237, 245, 170, 13, 230,
                 87, 186, 99, 123, 57,
             ];
-            b.iter(|| Aes256Gcm::encrypt(&key, &nonce, Some(&aad), &mut message));
+            b.iter(|| {
+                Aes256Gcm::encrypt(
+                    black_box(&key),
+                    black_box(&nonce),
+                    Some(black_box(&aad)),
+                    black_box(&mut message),
+                )
+            });
         });
 
         c.bench_function(&crate::aes_id("aes256gcm_decrypt"), |b| {
@@ -80,7 +101,13 @@ pub fn bench(c: &mut Criterion) {
             ];
             b.iter(|| {
                 let mut ciphertext = ciphertext;
-                Aes256Gcm::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag)
+                Aes256Gcm::decrypt(
+                    black_box(&key),
+                    black_box(&nonce),
+                    Some(black_box(&aad)),
+                    black_box(&mut ciphertext),
+                    black_box(&tag),
+                )
             });
         });
     }
@@ -102,7 +129,14 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("chacha20poly1305_encrypt", |b| {
         let mut message = message;
-        b.iter(|| ChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message));
+        b.iter(|| {
+            ChaCha20Poly1305::encrypt(
+                black_box(&key),
+                black_box(&nonce),
+                Some(black_box(&aad)),
+                black_box(&mut message),
+            )
+        });
     });
 
     c.bench_function("chacha20poly1305_decrypt", |b| {
@@ -120,7 +154,13 @@ pub fn bench(c: &mut Criterion) {
         ];
         b.iter(|| {
             let mut ciphertext = ciphertext;
-            ChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag)
+            ChaCha20Poly1305::decrypt(
+                black_box(&key),
+                black_box(&nonce),
+                Some(black_box(&aad)),
+                black_box(&mut ciphertext),
+                black_box(&tag),
+            )
         });
     });
 
@@ -130,7 +170,14 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("xchacha20poly1305_encrypt", |b| {
         let mut message = message;
-        b.iter(|| XChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut message));
+        b.iter(|| {
+            XChaCha20Poly1305::encrypt(
+                black_box(&key),
+                black_box(&nonce),
+                Some(black_box(&aad)),
+                black_box(&mut message),
+            )
+        });
     });
 
     c.bench_function("xchacha20poly1305_decrypt", |b| {
@@ -138,13 +185,21 @@ pub fn bench(c: &mut Criterion) {
         let tag = XChaCha20Poly1305::encrypt(&key, &nonce, Some(&aad), &mut ciphertext).unwrap();
         b.iter(|| {
             let mut ciphertext = ciphertext;
-            XChaCha20Poly1305::decrypt(&key, &nonce, Some(&aad), &mut ciphertext, &tag)
+            XChaCha20Poly1305::decrypt(
+                black_box(&key),
+                black_box(&nonce),
+                Some(black_box(&aad)),
+                black_box(&mut ciphertext),
+                black_box(&tag),
+            )
         });
     });
 
     c.bench_function("xsalsa20poly1305_encrypt", |b| {
         let mut message = message;
-        b.iter(|| XSalsa20Poly1305::encrypt(&key, &nonce, &mut message));
+        b.iter(|| {
+            XSalsa20Poly1305::encrypt(black_box(&key), black_box(&nonce), black_box(&mut message))
+        });
     });
 
     c.bench_function("xsalsa20poly1305_decrypt", |b| {
@@ -161,7 +216,12 @@ pub fn bench(c: &mut Criterion) {
         ];
         b.iter(|| {
             let mut ciphertext = ciphertext;
-            XSalsa20Poly1305::decrypt(&key, &nonce, &mut ciphertext, &tag)
+            XSalsa20Poly1305::decrypt(
+                black_box(&key),
+                black_box(&nonce),
+                black_box(&mut ciphertext),
+                black_box(&tag),
+            )
         });
     });
 }

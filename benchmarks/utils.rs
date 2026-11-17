@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::{constant_time_eq, wipe},
 };
 
@@ -11,11 +12,11 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("constant_time_eq", |b| {
         let b_bytes = a;
-        b.iter(|| constant_time_eq(&a, &b_bytes));
+        b.iter(|| constant_time_eq(black_box(&a), black_box(&b_bytes)));
     });
 
     c.bench_function("wipe", |b| {
         let mut bytes = a;
-        b.iter(|| wipe(&mut bytes));
+        b.iter(|| wipe(black_box(&mut bytes)));
     });
 }

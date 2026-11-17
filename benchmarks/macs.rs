@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::{
         hashes::{Sha256, Sha512},
         macs::Hmac,
@@ -14,8 +15,8 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("hmac_sha256", |b| {
         b.iter(|| {
-            let mut mac = Hmac::<Sha256>::new(&key);
-            mac.update(&message);
+            let mut mac = Hmac::<Sha256>::new(black_box(&key));
+            mac.update(black_box(&message));
             mac.finalize()
         });
     });
@@ -26,16 +27,16 @@ pub fn bench(c: &mut Criterion) {
             0, 201, 131, 61, 167, 38, 233, 55, 108, 46, 50, 207, 247,
         ];
         b.iter(|| {
-            let mut mac = Hmac::<Sha256>::new(&key);
-            mac.update(&message);
-            mac.verify(&code)
+            let mut mac = Hmac::<Sha256>::new(black_box(&key));
+            mac.update(black_box(&message));
+            mac.verify(black_box(&code))
         });
     });
 
     c.bench_function("hmac_sha512", |b| {
         b.iter(|| {
-            let mut mac = Hmac::<Sha512>::new(&key);
-            mac.update(&message);
+            let mut mac = Hmac::<Sha512>::new(black_box(&key));
+            mac.update(black_box(&message));
             mac.finalize()
         });
     });
@@ -48,9 +49,9 @@ pub fn bench(c: &mut Criterion) {
             112, 46, 105, 108, 32, 58, 18, 104, 84,
         ];
         b.iter(|| {
-            let mut mac = Hmac::<Sha512>::new(&key);
-            mac.update(&message);
-            mac.verify(&code)
+            let mut mac = Hmac::<Sha512>::new(black_box(&key));
+            mac.update(black_box(&message));
+            mac.verify(black_box(&code))
         });
     });
 }

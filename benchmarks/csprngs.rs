@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::{
         csprngs::{ChaCha20Rng, HmacDrbg},
         hashes::{Sha256, Sha512},
@@ -22,31 +23,31 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function(&crate::aes_id("aes128ctr_rng_fill"), |b| {
         let mut rng = Aes128CtrRng::from(&seed[..64].try_into().unwrap());
         let mut bytes = [0u8; 96];
-        b.iter(|| rng.fill(&mut bytes));
+        b.iter(|| rng.fill(black_box(&mut bytes)));
     });
 
     #[cfg(feature = "aes")]
     c.bench_function(&crate::aes_id("aes256ctr_rng_fill"), |b| {
         let mut rng = Aes256CtrRng::from(&seed);
         let mut bytes = [0u8; 96];
-        b.iter(|| rng.fill(&mut bytes));
+        b.iter(|| rng.fill(black_box(&mut bytes)));
     });
 
     c.bench_function("chacha20_rng_fill", |b| {
         let mut rng = ChaCha20Rng::from(&seed);
         let mut bytes = [0u8; 96];
-        b.iter(|| rng.fill(&mut bytes));
+        b.iter(|| rng.fill(black_box(&mut bytes)));
     });
 
     c.bench_function("hmac_drbg_sha256_fill", |b| {
         let mut rng = HmacDrbg::<Sha256>::new(&seed[..32].try_into().unwrap());
         let mut bytes = [0u8; 96];
-        b.iter(|| rng.fill(&mut bytes));
+        b.iter(|| rng.fill(black_box(&mut bytes)));
     });
 
     c.bench_function("hmac_drbg_sha512_fill", |b| {
         let mut rng = HmacDrbg::<Sha512>::new(&seed[..64].try_into().unwrap());
         let mut bytes = [0u8; 96];
-        b.iter(|| rng.fill(&mut bytes));
+        b.iter(|| rng.fill(black_box(&mut bytes)));
     });
 }

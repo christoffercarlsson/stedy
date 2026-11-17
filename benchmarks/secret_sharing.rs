@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::{csprngs::ChaCha20Rng, secret_sharing::Shamir},
 };
 
@@ -12,13 +13,20 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("shamir_split", |b| {
         let mut output = [0u8; 108];
-        b.iter(|| Shamir::split::<2, 3>(&mut rng, &secret, &mut output).map(|shares| shares.len()));
+        b.iter(|| {
+            Shamir::split::<2, 3>(
+                black_box(&mut rng),
+                black_box(&secret),
+                black_box(&mut output),
+            )
+            .map(|shares| shares.len())
+        });
     });
 
     c.bench_function("shamir_combine", |b| {
         let mut output = [0u8; 108];
         let [first, second, _] = Shamir::split::<2, 3>(&mut rng, &secret, &mut output).unwrap();
         let mut combined = [0u8; 32];
-        b.iter(|| Shamir::combine([first, second], &mut combined).map(<[u8]>::len));
+        b.iter(|| Shamir::combine([first, second], black_box(&mut combined)).map(<[u8]>::len));
     });
 }

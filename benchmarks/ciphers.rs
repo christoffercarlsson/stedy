@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::ciphers::{ChaCha20, Salsa20, XChaCha20, XSalsa20},
 };
 
@@ -29,25 +30,37 @@ pub fn bench(c: &mut Criterion) {
 
         c.bench_function(&crate::aes_id("aes128ctr"), |b| {
             let mut message = message;
-            b.iter(|| Aes128Ctr::new(&key, &nonce).apply_keystream(&mut message));
+            b.iter(|| {
+                Aes128Ctr::new(black_box(&key), black_box(&nonce))
+                    .apply_keystream(black_box(&mut message))
+            });
         });
     }
 
     #[cfg(feature = "aes")]
     c.bench_function(&crate::aes_id("aes256ctr"), |b| {
         let mut message = message;
-        b.iter(|| Aes256Ctr::new(&key, &nonce).apply_keystream(&mut message));
+        b.iter(|| {
+            Aes256Ctr::new(black_box(&key), black_box(&nonce))
+                .apply_keystream(black_box(&mut message))
+        });
     });
 
     c.bench_function("chacha20", |b| {
         let mut message = message;
-        b.iter(|| ChaCha20::new(&key, &nonce).apply_keystream(&mut message));
+        b.iter(|| {
+            ChaCha20::new(black_box(&key), black_box(&nonce))
+                .apply_keystream(black_box(&mut message))
+        });
     });
 
     c.bench_function("salsa20", |b| {
         let nonce = [7, 0, 0, 0, 64, 65, 66, 67];
         let mut message = message;
-        b.iter(|| Salsa20::new(&key, &nonce).apply_keystream(&mut message));
+        b.iter(|| {
+            Salsa20::new(black_box(&key), black_box(&nonce))
+                .apply_keystream(black_box(&mut message))
+        });
     });
 
     let nonce = [
@@ -56,11 +69,17 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("xchacha20", |b| {
         let mut message = message;
-        b.iter(|| XChaCha20::new(&key, &nonce).apply_keystream(&mut message));
+        b.iter(|| {
+            XChaCha20::new(black_box(&key), black_box(&nonce))
+                .apply_keystream(black_box(&mut message))
+        });
     });
 
     c.bench_function("xsalsa20", |b| {
         let mut message = message;
-        b.iter(|| XSalsa20::new(&key, &nonce).apply_keystream(&mut message));
+        b.iter(|| {
+            XSalsa20::new(black_box(&key), black_box(&nonce))
+                .apply_keystream(black_box(&mut message))
+        });
     });
 }

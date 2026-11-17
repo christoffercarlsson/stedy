@@ -1,5 +1,6 @@
 use {
     criterion::Criterion,
+    std::hint::black_box,
     stedy::{
         hashes::{Sha256, Sha512},
         kdfs::{Hkdf, Pbkdf2},
@@ -22,11 +23,11 @@ pub fn bench(c: &mut Criterion) {
                 let mut output = [0u8; 32];
                 Argon2::derive(
                     Argon2Params::new(Argon2Variant::Argon2d),
-                    &password,
-                    &salt,
-                    Some(&secret),
-                    Some(&associated_data),
-                    &mut output,
+                    black_box(&password),
+                    black_box(&salt),
+                    Some(black_box(&secret)),
+                    Some(black_box(&associated_data)),
+                    black_box(&mut output),
                 )
             });
         });
@@ -36,11 +37,11 @@ pub fn bench(c: &mut Criterion) {
                 let mut output = [0u8; 32];
                 Argon2::derive(
                     Argon2Params::new(Argon2Variant::Argon2i),
-                    &password,
-                    &salt,
-                    Some(&secret),
-                    Some(&associated_data),
-                    &mut output,
+                    black_box(&password),
+                    black_box(&salt),
+                    Some(black_box(&secret)),
+                    Some(black_box(&associated_data)),
+                    black_box(&mut output),
                 )
             });
         });
@@ -50,11 +51,11 @@ pub fn bench(c: &mut Criterion) {
                 let mut output = [0u8; 32];
                 Argon2::derive(
                     Argon2Params::new(Argon2Variant::Argon2id),
-                    &password,
-                    &salt,
-                    Some(&secret),
-                    Some(&associated_data),
-                    &mut output,
+                    black_box(&password),
+                    black_box(&salt),
+                    Some(black_box(&secret)),
+                    Some(black_box(&associated_data)),
+                    black_box(&mut output),
                 )
             });
         });
@@ -69,14 +70,24 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("hkdf_sha256", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
-            Hkdf::<Sha256>::derive(&ikm, Some(&salt), Some(&info), &mut okm)
+            Hkdf::<Sha256>::derive(
+                black_box(&ikm),
+                Some(black_box(&salt)),
+                Some(black_box(&info)),
+                black_box(&mut okm),
+            )
         });
     });
 
     c.bench_function("hkdf_sha512", |b| {
         b.iter(|| {
             let mut okm = [0; 42];
-            Hkdf::<Sha512>::derive(&ikm, Some(&salt), Some(&info), &mut okm)
+            Hkdf::<Sha512>::derive(
+                black_box(&ikm),
+                Some(black_box(&salt)),
+                Some(black_box(&info)),
+                black_box(&mut okm),
+            )
         });
     });
 
@@ -87,14 +98,24 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("pbkdf2_hmac_sha256", |b| {
         b.iter(|| {
             let mut output = [0u8; 32];
-            Pbkdf2::<Sha256>::derive(password, salt, iterations, &mut output)
+            Pbkdf2::<Sha256>::derive(
+                black_box(password),
+                black_box(salt),
+                black_box(iterations),
+                black_box(&mut output),
+            )
         });
     });
 
     c.bench_function("pbkdf2_hmac_sha512", |b| {
         b.iter(|| {
             let mut output = [0u8; 64];
-            Pbkdf2::<Sha512>::derive(password, salt, iterations, &mut output)
+            Pbkdf2::<Sha512>::derive(
+                black_box(password),
+                black_box(salt),
+                black_box(iterations),
+                black_box(&mut output),
+            )
         });
     });
 }
