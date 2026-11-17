@@ -234,7 +234,7 @@ where
             return Err(Error::Misuse);
         }
         let mut bytes = Secret::from([0u8; 64]);
-        expand_message_xmd::<H>(context, message, bytes.get_mut());
+        Self::expand_message_xmd::<H>(context, message, bytes.get_mut());
         Ok(Self::from_uniform_bytes(bytes.get()))
     }
 
@@ -403,43 +403,43 @@ where
         let w3 = F::ONE + ss;
         Edwards::new(w0 * w3, w2 * w1, w0 * w2, w1 * w3)
     }
-}
 
-// RFC 9380, Section 5.3.1
-fn expand_message_xmd<H>(context: &[u8], message: &[u8], output: &mut [u8])
-where
-    H: Hasher,
-{
-    let oversize;
-    let context = if context.len() > 255 {
+    // RFC 9380, Section 5.3.1
+    fn expand_message_xmd<H>(context: &[u8], message: &[u8], output: &mut [u8])
+    where
+        H: Hasher,
+    {
+        let oversize;
+        let context = if context.len() > 255 {
+            let mut hasher = H::new();
+            hasher.update(b"H2C-OVERSIZE-DST-");
+            hasher.update(context);
+            oversize = hasher.finalize();
+            oversize.as_ref()
+        } else {
+            context
+        };
+        let context_size = [context.len() as u8];
         let mut hasher = H::new();
-        hasher.update(b"H2C-OVERSIZE-DST-");
-        hasher.update(context);
-        oversize = hasher.finalize();
-        oversize.as_ref()
-    } else {
-        context
-    };
-    let context_size = [context.len() as u8];
-    let mut hasher = H::new();
-    hasher.update(H::Block::new().as_ref());
-    hasher.update(message);
-    hasher.update(&(output.len() as u16).to_be_bytes());
-    hasher.update(&[0]);
-    hasher.update(context);
-    hasher.update(&context_size);
-    let b0 = Secret::from(hasher.finalize());
-    let mut bi = Secret::from(H::Output::new());
-    for (i, chunk) in (1u8..).zip(output.chunks_mut(H::OUTPUT_SIZE)) {
-        let mut input = Secret::from(b0.get().clone());
-        xor(input.get_mut().as_mut(), bi.get().as_ref());
-        let mut hasher = H::new();
-        hasher.update(input.get().as_ref());
-        hasher.update(&[i]);
+        hasher.update(H::Block::new().as_ref());
+        hasher.update(message);
+        hasher.update(&(output.len() as u16).to_be_bytes());
+        hasher.update(&[0]);
         hasher.update(context);
         hasher.update(&context_size);
-        bi = Secret::from(hasher.finalize());
-        chunk.copy_from_slice(&bi.get().as_ref()[..chunk.len()]);
+        let b0 = Secret::from(hasher.finalize());
+        let mut bi = Secret::from(H::Output::new());
+        for (i, chunk) in (1u8..).zip(output.chunks_mut(H::OUTPUT_SIZE)) {
+            let mut input = Secret::from(b0.get().clone());
+            xor(input.get_mut().as_mut(), bi.get().as_ref());
+            let mut hasher = H::new();
+            hasher.update(input.get().as_ref());
+            hasher.update(&[i]);
+            hasher.update(context);
+            hasher.update(&context_size);
+            bi = Secret::from(hasher.finalize());
+            chunk.copy_from_slice(&bi.get().as_ref()[..chunk.len()]);
+        }
     }
 }
 
@@ -816,7 +816,11 @@ mod tests {
         ];
         for (message, size, uniform_bytes) in vectors {
             let mut output = [0u8; 128];
-            expand_message_xmd::<Sha256>(context, message, &mut output[..size]);
+            Ristretto::<Field25519>::expand_message_xmd::<Sha256>(
+                context,
+                message,
+                &mut output[..size],
+            );
             assert_eq!(&output[..size], uniform_bytes);
         }
     }
@@ -891,7 +895,11 @@ mod tests {
         ];
         for (message, size, uniform_bytes) in vectors {
             let mut output = [0u8; 128];
-            expand_message_xmd::<Sha256>(context, message, &mut output[..size]);
+            Ristretto::<Field25519>::expand_message_xmd::<Sha256>(
+                context,
+                message,
+                &mut output[..size],
+            );
             assert_eq!(&output[..size], uniform_bytes);
         }
     }
@@ -966,7 +974,11 @@ mod tests {
         ];
         for (message, size, uniform_bytes) in vectors {
             let mut output = [0u8; 128];
-            expand_message_xmd::<Sha512>(context, message, &mut output[..size]);
+            Ristretto::<Field25519>::expand_message_xmd::<Sha512>(
+                context,
+                message,
+                &mut output[..size],
+            );
             assert_eq!(&output[..size], uniform_bytes);
         }
     }

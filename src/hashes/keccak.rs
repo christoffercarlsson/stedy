@@ -8,12 +8,6 @@ use {
 
 pub struct KeccakF1600;
 
-impl KeccakPermutation for KeccakF1600 {
-    fn permute(lanes: &mut [u64; 25]) {
-        keccak_f1600(lanes);
-    }
-}
-
 pub struct Sponge<const RATE: usize, P>
 where
     P: KeccakPermutation,
@@ -133,95 +127,97 @@ const ROUND_CONSTANTS: [u64; 24] = [
     0x8000000080008008,
 ];
 
-fn keccak_f1600(lanes: &mut [u64; 25]) {
-    for &constant in &ROUND_CONSTANTS {
-        let c0 = lanes[0] ^ lanes[5] ^ lanes[10] ^ lanes[15] ^ lanes[20];
-        let c1 = lanes[1] ^ lanes[6] ^ lanes[11] ^ lanes[16] ^ lanes[21];
-        let c2 = lanes[2] ^ lanes[7] ^ lanes[12] ^ lanes[17] ^ lanes[22];
-        let c3 = lanes[3] ^ lanes[8] ^ lanes[13] ^ lanes[18] ^ lanes[23];
-        let c4 = lanes[4] ^ lanes[9] ^ lanes[14] ^ lanes[19] ^ lanes[24];
-        let d0 = c4 ^ c1.rotate_left(1);
-        let d1 = c0 ^ c2.rotate_left(1);
-        let d2 = c1 ^ c3.rotate_left(1);
-        let d3 = c2 ^ c4.rotate_left(1);
-        let d4 = c3 ^ c0.rotate_left(1);
-        lanes[0] ^= d0;
-        lanes[5] ^= d0;
-        lanes[10] ^= d0;
-        lanes[15] ^= d0;
-        lanes[20] ^= d0;
-        lanes[1] ^= d1;
-        lanes[6] ^= d1;
-        lanes[11] ^= d1;
-        lanes[16] ^= d1;
-        lanes[21] ^= d1;
-        lanes[2] ^= d2;
-        lanes[7] ^= d2;
-        lanes[12] ^= d2;
-        lanes[17] ^= d2;
-        lanes[22] ^= d2;
-        lanes[3] ^= d3;
-        lanes[8] ^= d3;
-        lanes[13] ^= d3;
-        lanes[18] ^= d3;
-        lanes[23] ^= d3;
-        lanes[4] ^= d4;
-        lanes[9] ^= d4;
-        lanes[14] ^= d4;
-        lanes[19] ^= d4;
-        lanes[24] ^= d4;
-        let b = [
-            lanes[0],
-            lanes[6].rotate_left(44),
-            lanes[12].rotate_left(43),
-            lanes[18].rotate_left(21),
-            lanes[24].rotate_left(14),
-            lanes[3].rotate_left(28),
-            lanes[9].rotate_left(20),
-            lanes[10].rotate_left(3),
-            lanes[16].rotate_left(45),
-            lanes[22].rotate_left(61),
-            lanes[1].rotate_left(1),
-            lanes[7].rotate_left(6),
-            lanes[13].rotate_left(25),
-            lanes[19].rotate_left(8),
-            lanes[20].rotate_left(18),
-            lanes[4].rotate_left(27),
-            lanes[5].rotate_left(36),
-            lanes[11].rotate_left(10),
-            lanes[17].rotate_left(15),
-            lanes[23].rotate_left(56),
-            lanes[2].rotate_left(62),
-            lanes[8].rotate_left(55),
-            lanes[14].rotate_left(39),
-            lanes[15].rotate_left(41),
-            lanes[21].rotate_left(2),
-        ];
-        lanes[0] = b[0] ^ (!b[1] & b[2]);
-        lanes[1] = b[1] ^ (!b[2] & b[3]);
-        lanes[2] = b[2] ^ (!b[3] & b[4]);
-        lanes[3] = b[3] ^ (!b[4] & b[0]);
-        lanes[4] = b[4] ^ (!b[0] & b[1]);
-        lanes[5] = b[5] ^ (!b[6] & b[7]);
-        lanes[6] = b[6] ^ (!b[7] & b[8]);
-        lanes[7] = b[7] ^ (!b[8] & b[9]);
-        lanes[8] = b[8] ^ (!b[9] & b[5]);
-        lanes[9] = b[9] ^ (!b[5] & b[6]);
-        lanes[10] = b[10] ^ (!b[11] & b[12]);
-        lanes[11] = b[11] ^ (!b[12] & b[13]);
-        lanes[12] = b[12] ^ (!b[13] & b[14]);
-        lanes[13] = b[13] ^ (!b[14] & b[10]);
-        lanes[14] = b[14] ^ (!b[10] & b[11]);
-        lanes[15] = b[15] ^ (!b[16] & b[17]);
-        lanes[16] = b[16] ^ (!b[17] & b[18]);
-        lanes[17] = b[17] ^ (!b[18] & b[19]);
-        lanes[18] = b[18] ^ (!b[19] & b[15]);
-        lanes[19] = b[19] ^ (!b[15] & b[16]);
-        lanes[20] = b[20] ^ (!b[21] & b[22]);
-        lanes[21] = b[21] ^ (!b[22] & b[23]);
-        lanes[22] = b[22] ^ (!b[23] & b[24]);
-        lanes[23] = b[23] ^ (!b[24] & b[20]);
-        lanes[24] = b[24] ^ (!b[20] & b[21]);
-        lanes[0] ^= constant;
+impl KeccakPermutation for KeccakF1600 {
+    fn permute(lanes: &mut [u64; 25]) {
+        for &constant in &ROUND_CONSTANTS {
+            let c0 = lanes[0] ^ lanes[5] ^ lanes[10] ^ lanes[15] ^ lanes[20];
+            let c1 = lanes[1] ^ lanes[6] ^ lanes[11] ^ lanes[16] ^ lanes[21];
+            let c2 = lanes[2] ^ lanes[7] ^ lanes[12] ^ lanes[17] ^ lanes[22];
+            let c3 = lanes[3] ^ lanes[8] ^ lanes[13] ^ lanes[18] ^ lanes[23];
+            let c4 = lanes[4] ^ lanes[9] ^ lanes[14] ^ lanes[19] ^ lanes[24];
+            let d0 = c4 ^ c1.rotate_left(1);
+            let d1 = c0 ^ c2.rotate_left(1);
+            let d2 = c1 ^ c3.rotate_left(1);
+            let d3 = c2 ^ c4.rotate_left(1);
+            let d4 = c3 ^ c0.rotate_left(1);
+            lanes[0] ^= d0;
+            lanes[5] ^= d0;
+            lanes[10] ^= d0;
+            lanes[15] ^= d0;
+            lanes[20] ^= d0;
+            lanes[1] ^= d1;
+            lanes[6] ^= d1;
+            lanes[11] ^= d1;
+            lanes[16] ^= d1;
+            lanes[21] ^= d1;
+            lanes[2] ^= d2;
+            lanes[7] ^= d2;
+            lanes[12] ^= d2;
+            lanes[17] ^= d2;
+            lanes[22] ^= d2;
+            lanes[3] ^= d3;
+            lanes[8] ^= d3;
+            lanes[13] ^= d3;
+            lanes[18] ^= d3;
+            lanes[23] ^= d3;
+            lanes[4] ^= d4;
+            lanes[9] ^= d4;
+            lanes[14] ^= d4;
+            lanes[19] ^= d4;
+            lanes[24] ^= d4;
+            let b = [
+                lanes[0],
+                lanes[6].rotate_left(44),
+                lanes[12].rotate_left(43),
+                lanes[18].rotate_left(21),
+                lanes[24].rotate_left(14),
+                lanes[3].rotate_left(28),
+                lanes[9].rotate_left(20),
+                lanes[10].rotate_left(3),
+                lanes[16].rotate_left(45),
+                lanes[22].rotate_left(61),
+                lanes[1].rotate_left(1),
+                lanes[7].rotate_left(6),
+                lanes[13].rotate_left(25),
+                lanes[19].rotate_left(8),
+                lanes[20].rotate_left(18),
+                lanes[4].rotate_left(27),
+                lanes[5].rotate_left(36),
+                lanes[11].rotate_left(10),
+                lanes[17].rotate_left(15),
+                lanes[23].rotate_left(56),
+                lanes[2].rotate_left(62),
+                lanes[8].rotate_left(55),
+                lanes[14].rotate_left(39),
+                lanes[15].rotate_left(41),
+                lanes[21].rotate_left(2),
+            ];
+            lanes[0] = b[0] ^ (!b[1] & b[2]);
+            lanes[1] = b[1] ^ (!b[2] & b[3]);
+            lanes[2] = b[2] ^ (!b[3] & b[4]);
+            lanes[3] = b[3] ^ (!b[4] & b[0]);
+            lanes[4] = b[4] ^ (!b[0] & b[1]);
+            lanes[5] = b[5] ^ (!b[6] & b[7]);
+            lanes[6] = b[6] ^ (!b[7] & b[8]);
+            lanes[7] = b[7] ^ (!b[8] & b[9]);
+            lanes[8] = b[8] ^ (!b[9] & b[5]);
+            lanes[9] = b[9] ^ (!b[5] & b[6]);
+            lanes[10] = b[10] ^ (!b[11] & b[12]);
+            lanes[11] = b[11] ^ (!b[12] & b[13]);
+            lanes[12] = b[12] ^ (!b[13] & b[14]);
+            lanes[13] = b[13] ^ (!b[14] & b[10]);
+            lanes[14] = b[14] ^ (!b[10] & b[11]);
+            lanes[15] = b[15] ^ (!b[16] & b[17]);
+            lanes[16] = b[16] ^ (!b[17] & b[18]);
+            lanes[17] = b[17] ^ (!b[18] & b[19]);
+            lanes[18] = b[18] ^ (!b[19] & b[15]);
+            lanes[19] = b[19] ^ (!b[15] & b[16]);
+            lanes[20] = b[20] ^ (!b[21] & b[22]);
+            lanes[21] = b[21] ^ (!b[22] & b[23]);
+            lanes[22] = b[22] ^ (!b[23] & b[24]);
+            lanes[23] = b[23] ^ (!b[24] & b[20]);
+            lanes[24] = b[24] ^ (!b[20] & b[21]);
+            lanes[0] ^= constant;
+        }
     }
 }

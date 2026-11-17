@@ -29,6 +29,8 @@ use crate::{
 )]
 mod backend;
 
+pub use backend::multiply;
+
 pub struct AesCtr<const KEY_SIZE: usize> {
     round_keys: Secret<[[u8; 16]; 15]>,
     nonce: [u8; 12],
@@ -40,7 +42,7 @@ pub struct AesCtr<const KEY_SIZE: usize> {
 
 impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
     pub const fn is_accelerated() -> bool {
-        is_accelerated()
+        backend::is_accelerated()
     }
 
     pub fn new(key: &[u8; KEY_SIZE], nonce: &[u8; 12]) -> Self {
@@ -163,8 +165,8 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
         data: &mut [[u8; 16]; N],
     ) {
         match KEY_SIZE {
-            16 => encrypt_blocks::<10, N>(round_keys, blocks, data),
-            _ => encrypt_blocks::<14, N>(round_keys, blocks, data),
+            16 => backend::encrypt_blocks::<10, N>(round_keys, blocks, data),
+            _ => backend::encrypt_blocks::<14, N>(round_keys, blocks, data),
         }
     }
 
@@ -242,23 +244,7 @@ impl<const KEY_SIZE: usize> AesCtr<KEY_SIZE> {
             chunk.copy_from_slice(&word.to_le_bytes());
         }
         let mut data = Secret::from([[0u8; 16]]);
-        encrypt_blocks::<1, 1>(&[[0u8; 16]; 15], block.get(), data.get_mut());
+        backend::encrypt_blocks::<1, 1>(&[[0u8; 16]; 15], block.get(), data.get_mut());
         u32::from_le_bytes([data[0][0], data[0][1], data[0][2], data[0][3]])
     }
-}
-
-const fn is_accelerated() -> bool {
-    backend::is_accelerated()
-}
-
-pub fn multiply<const N: usize>(x: &[u128; N], h: &[u128; N]) -> u128 {
-    backend::multiply::<N>(x, h)
-}
-
-fn encrypt_blocks<const ROUNDS: usize, const N: usize>(
-    round_keys: &[[u8; 16]; 15],
-    blocks: &[[u8; 16]; N],
-    data: &mut [[u8; 16]; N],
-) {
-    backend::encrypt_blocks::<ROUNDS, N>(round_keys, blocks, data);
 }
