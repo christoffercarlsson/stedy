@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/signatures/README.md")]
+
 mod ecdsa;
 mod ed25519;
 mod eddsa;

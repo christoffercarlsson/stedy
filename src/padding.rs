@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/padding/README.md")]
+
 use crate::{
     Error,
     utils::{Choice, declassify, wipe},

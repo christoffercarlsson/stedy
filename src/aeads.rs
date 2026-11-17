@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/aeads/README.md")]
+
 mod aead;
 #[cfg(feature = "aes")]
 mod aes_gcm;

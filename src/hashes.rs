@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/hashes/README.md")]
+
 mod blake2b;
 mod blake2s;
 mod keccak;

@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/encoding/README.md")]
+
 mod base;
 
 use crate::{

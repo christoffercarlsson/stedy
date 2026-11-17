@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/key_exchange/README.md")]
+
 mod ecdh;
 mod p256;
 mod p384;

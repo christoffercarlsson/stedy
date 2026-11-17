@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/kems/README.md")]
+
 mod ml_kem;
 mod x_wing;
 

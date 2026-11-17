@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/elliptic_curves/README.md")]
+
 #[cfg(feature = "hazmat")]
 mod arithmetic;
 mod curve25519;

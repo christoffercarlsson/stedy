@@ -3,7 +3,7 @@ name = "stedy"
 version = "1.0.0-beta.5"
 edition = "2024"
 rust-version = "1.88"
-include = ["/LICENSE", "/README.md", "/src"]
+include = ["/LICENSE", "/README.md", "/docs/**/*.md", "/src"]
 
 description = "A solid foundation for modern cryptographic tools and protocols"
 repository = "https://github.com/christoffercarlsson/stedy"

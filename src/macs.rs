@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/macs/README.md")]
+
 #[cfg(feature = "aes")]
 mod ghash;
 mod hmac;

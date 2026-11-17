@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/ciphers/README.md")]
+
 #[cfg(feature = "aes")]
 mod aes;
 #[cfg(all(feature = "aes", feature = "hazmat"))]

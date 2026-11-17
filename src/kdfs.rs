@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/kdfs/README.md")]
+
 #[cfg(feature = "argon2")]
 mod argon2;
 mod hkdf;

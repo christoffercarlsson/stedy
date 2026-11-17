@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/traits/README.md")]
+
 mod external;
 mod internal;
 

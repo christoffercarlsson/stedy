@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/csprngs/README.md")]
+
 #[cfg(feature = "aes")]
 mod aes_ctr_rng;
 mod chacha20_rng;
