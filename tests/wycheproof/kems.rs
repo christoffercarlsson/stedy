@@ -4,6 +4,7 @@ use {
     stedy::kems::{MlKem512, MlKem768, MlKem1024},
 };
 
+#[cfg(feature = "hazmat")]
 use crate::FixedRng;
 
 #[derive(Deserialize)]
@@ -14,6 +15,7 @@ struct Case {
     ek: Option<Vec<u8>>,
     #[serde(default, deserialize_with = "crate::hex_opt")]
     dk: Option<Vec<u8>>,
+    #[cfg(feature = "hazmat")]
     #[serde(default, deserialize_with = "crate::hex_opt")]
     m: Option<Vec<u8>>,
     #[serde(default, deserialize_with = "crate::hex_opt")]
@@ -23,16 +25,19 @@ struct Case {
 }
 
 type KeyPair = fn(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
+#[cfg(feature = "hazmat")]
 type Encapsulate = fn(&[u8], &[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
 type Decapsulate = fn(&[u8], &[u8]) -> Option<Vec<u8>>;
 
 struct MlKem {
     name: &'static str,
     basic_json: &'static str,
+    #[cfg(feature = "hazmat")]
     encaps_json: &'static str,
     keygen_json: &'static str,
     decaps_json: &'static str,
     key_pair: KeyPair,
+    #[cfg(feature = "hazmat")]
     encapsulate: Encapsulate,
     decapsulate: Decapsulate,
 }
@@ -42,6 +47,7 @@ macro_rules! ml_kem {
         MlKem {
             name: $name,
             basic_json: include_str!(concat!("vectors/", $name, "_test.json")),
+            #[cfg(feature = "hazmat")]
             encaps_json: include_str!(concat!("vectors/", $name, "_encaps_test.json")),
             keygen_json: include_str!(concat!("vectors/", $name, "_keygen_seed_test.json")),
             decaps_json: include_str!(concat!(
@@ -53,6 +59,7 @@ macro_rules! ml_kem {
                 let (private_key, public_key) = <$ml_kem>::key_pair(&seed.try_into().ok()?);
                 Some((private_key.to_vec(), public_key.to_vec()))
             },
+            #[cfg(feature = "hazmat")]
             encapsulate: |public_key: &[u8], m: &[u8]| {
                 let public_key = public_key.try_into().ok()?;
                 let (shared_secret, ciphertext) =
@@ -104,6 +111,7 @@ fn run_basic(ml_kem: &MlKem) {
     summary.finish();
 }
 
+#[cfg(feature = "hazmat")]
 fn run_encaps(ml_kem: &MlKem) {
     let file: TestFile<NoGroup, Case> = load(ml_kem.encaps_json);
     let mut summary = Summary::new(&format!("{}_encaps", ml_kem.name), &file);
@@ -169,6 +177,7 @@ fn run_decaps(ml_kem: &MlKem) {
 
 fn run(ml_kem: &MlKem) {
     run_basic(ml_kem);
+    #[cfg(feature = "hazmat")]
     run_encaps(ml_kem);
     run_keygen(ml_kem);
     run_decaps(ml_kem);

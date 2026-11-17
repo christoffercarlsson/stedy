@@ -4,6 +4,7 @@ use {
     stedy::signatures::{Ed25519, MlDsa44, MlDsa65, MlDsa87, P256, P384, P521},
 };
 
+#[cfg(feature = "hazmat")]
 use crate::FixedRng;
 
 #[derive(Deserialize)]
@@ -89,6 +90,7 @@ type Sign = fn(&[u8], &[u8]) -> Option<Vec<u8>>;
 type SignWithContext = fn(&[u8], &[u8], &[u8]) -> Option<Vec<u8>>;
 #[cfg(feature = "hazmat")]
 type SignHedged = fn(&[u8], &[u8], &[u8]) -> Option<Vec<u8>>;
+#[cfg(feature = "hazmat")]
 type SignHedgedWithContext = fn(&[u8], &[u8], &[u8], &[u8]) -> Option<Vec<u8>>;
 
 struct MlDsa {
@@ -100,6 +102,7 @@ struct MlDsa {
     sign: SignWithContext,
     #[cfg(feature = "hazmat")]
     sign_mu: Sign,
+    #[cfg(feature = "hazmat")]
     sign_hedged: SignHedgedWithContext,
     #[cfg(feature = "hazmat")]
     sign_mu_hedged: SignHedged,
@@ -142,6 +145,7 @@ macro_rules! ml_dsa {
                 let mu = mu.try_into().ok()?;
                 Some(<$ml_dsa>::sign_external_mu_deterministic(&private_key, &mu).to_vec())
             },
+            #[cfg(feature = "hazmat")]
             sign_hedged: |private_key: &[u8], message: &[u8], context: &[u8], rnd: &[u8]| {
                 let private_key = private_key.try_into().ok()?;
                 let signature = <$ml_dsa>::sign_with_context(
@@ -240,9 +244,12 @@ fn run_ml_dsa_sign(ml_dsa: &MlDsa, name: &str, json: &str) {
             if let Some(message) = &c.msg {
                 match &c.rnd {
                     None => signatures.push((ml_dsa.sign)(private_key, message, context)),
+                    #[cfg(feature = "hazmat")]
                     Some(rnd) => {
                         signatures.push((ml_dsa.sign_hedged)(private_key, message, context, rnd));
                     }
+                    #[cfg(not(feature = "hazmat"))]
+                    Some(_) => {}
                 }
             }
             #[cfg(feature = "hazmat")]
