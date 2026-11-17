@@ -15,6 +15,14 @@ impl Aes128CtrRng {
     pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         self.0.fill(bytes)
     }
+
+    pub fn next_u32(&mut self) -> Result<u32, Error> {
+        <Self as CryptoRng>::next_u32(self)
+    }
+
+    pub fn next_u64(&mut self) -> Result<u64, Error> {
+        <Self as CryptoRng>::next_u64(self)
+    }
 }
 
 impl From<&[u8; 64]> for Aes128CtrRng {
@@ -48,6 +56,14 @@ pub struct Aes256CtrRng(StreamCipherRng<AesCtr<32>, Sha384>);
 impl Aes256CtrRng {
     pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         self.0.fill(bytes)
+    }
+
+    pub fn next_u32(&mut self) -> Result<u32, Error> {
+        <Self as CryptoRng>::next_u32(self)
+    }
+
+    pub fn next_u64(&mut self) -> Result<u64, Error> {
+        <Self as CryptoRng>::next_u64(self)
     }
 }
 

@@ -1,6 +1,6 @@
 use {
     super::{Sealed, Wipe},
-    crate::Error,
+    crate::{Error, SecretBytes},
     core::{
         array::TryFromSliceError,
         ops::{Index, IndexMut, RangeFrom},
@@ -59,6 +59,18 @@ pub trait ByteArray:
 
 pub trait CryptoRng {
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error>;
+
+    fn next_u32(&mut self) -> Result<u32, Error> {
+        let mut bytes = SecretBytes::new();
+        self.fill(bytes.as_mut())?;
+        Ok(u32::from_le_bytes(*bytes))
+    }
+
+    fn next_u64(&mut self) -> Result<u64, Error> {
+        let mut bytes = SecretBytes::new();
+        self.fill(bytes.as_mut())?;
+        Ok(u64::from_le_bytes(*bytes))
+    }
 }
 
 #[cfg(feature = "hazmat")]

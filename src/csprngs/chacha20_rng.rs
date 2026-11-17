@@ -11,6 +11,14 @@ impl ChaCha20Rng {
     pub fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         self.0.fill(bytes)
     }
+
+    pub fn next_u32(&mut self) -> Result<u32, Error> {
+        <Self as CryptoRng>::next_u32(self)
+    }
+
+    pub fn next_u64(&mut self) -> Result<u64, Error> {
+        <Self as CryptoRng>::next_u64(self)
+    }
 }
 
 impl From<&[u8; 96]> for ChaCha20Rng {
@@ -54,6 +62,19 @@ mod tests {
                 189, 98, 126, 118, 130, 133, 147, 107, 179, 195, 232, 245, 105, 149, 156, 11, 102,
                 238, 246, 149, 42, 27, 28, 74, 169, 187, 175, 23, 175, 195, 58, 204
             ]
+        );
+    }
+
+    #[test]
+    fn test_next_u32_and_next_u64() {
+        let mut rng = ChaCha20Rng::from(&[0u8; 96]);
+        assert_eq!(
+            rng.next_u32().unwrap(),
+            u32::from_le_bytes([189, 98, 126, 118])
+        );
+        assert_eq!(
+            rng.next_u64().unwrap(),
+            u64::from_le_bytes([130, 133, 147, 107, 179, 195, 232, 245])
         );
     }
 

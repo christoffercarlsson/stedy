@@ -53,6 +53,14 @@ where
         self.reseed_counter += 1;
         Ok(())
     }
+
+    pub fn next_u32(&mut self) -> Result<u32, Error> {
+        <Self as CryptoRng>::next_u32(self)
+    }
+
+    pub fn next_u64(&mut self) -> Result<u64, Error> {
+        <Self as CryptoRng>::next_u64(self)
+    }
 }
 
 impl<H> CryptoRng for HmacDrbg<H>
