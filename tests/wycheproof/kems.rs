@@ -5,7 +5,7 @@ use {
 };
 
 #[cfg(feature = "hazmat")]
-use crate::FixedRng;
+use stedy::csprngs::FixedRng;
 
 #[derive(Deserialize)]
 struct Case {
@@ -63,7 +63,7 @@ macro_rules! ml_kem {
             encapsulate: |public_key: &[u8], m: &[u8]| {
                 let public_key = public_key.try_into().ok()?;
                 let (shared_secret, ciphertext) =
-                    <$ml_kem>::encapsulate(&public_key, &mut FixedRng(m)).ok()?;
+                    <$ml_kem>::encapsulate(&public_key, &mut FixedRng::from(m)).ok()?;
                 Some((shared_secret.to_vec(), ciphertext.to_vec()))
             },
             decapsulate: |private_key: &[u8], ciphertext: &[u8]| {

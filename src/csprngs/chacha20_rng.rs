@@ -1,6 +1,10 @@
 use {
     crate::{
-        Error, ciphers::ChaCha20, csprngs::StreamCipherRng, hashes::Blake2b384, traits::CryptoRng,
+        Error,
+        ciphers::ChaCha20,
+        csprngs::StreamCipherRng,
+        hashes::Blake2b384,
+        traits::{CryptoRng, Sealed},
     },
     core::array::TryFromSliceError,
 };
@@ -40,6 +44,8 @@ impl TryFrom<&[u8]> for ChaCha20Rng {
         StreamCipherRng::try_from(seed).map(Self)
     }
 }
+
+impl Sealed for ChaCha20Rng {}
 
 impl CryptoRng for ChaCha20Rng {
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {

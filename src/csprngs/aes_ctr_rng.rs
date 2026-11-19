@@ -4,7 +4,7 @@ use {
         ciphers::AesCtr,
         csprngs::StreamCipherRng,
         hashes::{Sha256, Sha384},
-        traits::CryptoRng,
+        traits::{CryptoRng, Sealed},
     },
     core::array::TryFromSliceError,
 };
@@ -44,6 +44,8 @@ impl TryFrom<&[u8]> for Aes128CtrRng {
         StreamCipherRng::try_from(seed).map(Self)
     }
 }
+
+impl Sealed for Aes128CtrRng {}
 
 impl CryptoRng for Aes128CtrRng {
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
@@ -86,6 +88,8 @@ impl TryFrom<&[u8]> for Aes256CtrRng {
         StreamCipherRng::try_from(seed).map(Self)
     }
 }
+
+impl Sealed for Aes256CtrRng {}
 
 impl CryptoRng for Aes256CtrRng {
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error> {

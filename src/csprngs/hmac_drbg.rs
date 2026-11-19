@@ -2,7 +2,7 @@ use {
     crate::{
         Error,
         macs::Hmac,
-        traits::{ByteArray, CryptoRng, Hasher},
+        traits::{ByteArray, CryptoRng, Hasher, Sealed},
         utils::wipe,
     },
     core::array::TryFromSliceError,
@@ -62,6 +62,8 @@ where
         <Self as CryptoRng>::next_u64(self)
     }
 }
+
+impl<H> Sealed for HmacDrbg<H> where H: Hasher {}
 
 impl<H> CryptoRng for HmacDrbg<H>
 where

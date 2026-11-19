@@ -6,11 +6,10 @@ use core::fmt::{self, Display, Formatter};
 pub enum Error {
     Decryption = 1,
     Encoding = 2,
-    Entropy = 3,
-    InvalidKey = 4,
-    LimitExceeded = 5,
-    Misuse = 6,
-    Verification = 7,
+    InvalidKey = 3,
+    LimitExceeded = 4,
+    Misuse = 5,
+    Verification = 6,
     Unknown = 255,
 }
 
@@ -19,7 +18,6 @@ impl Display for Error {
         f.write_str(match self {
             Self::Decryption => "decryption failed",
             Self::Encoding => "invalid encoding",
-            Self::Entropy => "entropy source failed",
             Self::InvalidKey => "invalid key",
             Self::LimitExceeded => "limit exceeded",
             Self::Misuse => "misuse",
@@ -37,11 +35,10 @@ impl TryFrom<u8> for Error {
             0 => Err(Self::Misuse),
             1 => Ok(Self::Decryption),
             2 => Ok(Self::Encoding),
-            3 => Ok(Self::Entropy),
-            4 => Ok(Self::InvalidKey),
-            5 => Ok(Self::LimitExceeded),
-            6 => Ok(Self::Misuse),
-            7 => Ok(Self::Verification),
+            3 => Ok(Self::InvalidKey),
+            4 => Ok(Self::LimitExceeded),
+            5 => Ok(Self::Misuse),
+            6 => Ok(Self::Verification),
             _ => Ok(Self::Unknown),
         }
     }
@@ -58,7 +55,6 @@ mod tests {
         let errors = [
             Error::Decryption,
             Error::Encoding,
-            Error::Entropy,
             Error::InvalidKey,
             Error::LimitExceeded,
             Error::Misuse,
@@ -68,6 +64,6 @@ mod tests {
             assert_eq!(Error::try_from(error as u8), Ok(error));
         }
         assert_eq!(Error::try_from(0), Err(Error::Misuse));
-        assert_eq!(Error::try_from(8), Ok(Error::Unknown));
+        assert_eq!(Error::try_from(7), Ok(Error::Unknown));
     }
 }

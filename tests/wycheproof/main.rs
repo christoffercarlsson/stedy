@@ -190,16 +190,3 @@ pub fn pad_scalar<const N: usize>(mut scalar: &[u8]) -> Option<[u8; N]> {
     padded[N - scalar.len()..].copy_from_slice(scalar);
     Some(padded)
 }
-
-#[cfg(feature = "hazmat")]
-pub struct FixedRng<'a>(pub &'a [u8]);
-
-#[cfg(feature = "hazmat")]
-impl stedy::traits::CryptoRng for FixedRng<'_> {
-    fn fill(&mut self, bytes: &mut [u8]) -> Result<(), stedy::Error> {
-        let (head, tail) = self.0.split_at(bytes.len());
-        bytes.copy_from_slice(head);
-        self.0 = tail;
-        Ok(())
-    }
-}

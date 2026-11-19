@@ -5,7 +5,7 @@ use {
 };
 
 #[cfg(feature = "hazmat")]
-use crate::FixedRng;
+use stedy::csprngs::FixedRng;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -152,7 +152,7 @@ macro_rules! ml_dsa {
                     &private_key,
                     message,
                     context,
-                    &mut FixedRng(rnd),
+                    &mut FixedRng::from(rnd),
                 )
                 .ok()?;
                 Some(signature.to_vec())
@@ -162,7 +162,7 @@ macro_rules! ml_dsa {
                 let private_key = private_key.try_into().ok()?;
                 let mu = mu.try_into().ok()?;
                 Some(
-                    <$ml_dsa>::sign_external_mu(&private_key, &mu, &mut FixedRng(rnd))
+                    <$ml_dsa>::sign_external_mu(&private_key, &mu, &mut FixedRng::from(rnd))
                         .ok()?
                         .to_vec(),
                 )

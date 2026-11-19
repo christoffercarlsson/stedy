@@ -57,7 +57,7 @@ pub trait ByteArray:
     fn try_from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError>;
 }
 
-pub trait CryptoRng {
+pub trait CryptoRng: Sealed {
     fn fill(&mut self, bytes: &mut [u8]) -> Result<(), Error>;
 
     fn next_u32(&mut self) -> Result<u32, Error> {
